@@ -13,7 +13,7 @@ from __future__ import annotations
 import abc
 import numpy as np
 import kmeans1d
-from ..base import instantiate_obj
+#from ..base import instantiate_obj
 
 __all__ = [
     'BinningBase',
@@ -796,12 +796,13 @@ class AdaptiveBinning:
                                 the fit() method will adjust the bin's upper bound and the subsequent bin's lower bound.
         """
 
-        if isinstance(binning, tuple):
+        """if isinstance(binning, tuple):
             self.binning = instantiate_obj(binning)
         elif isinstance(binning, BinningBase):
             self.binning = binning
         else:
             self.binning = InferredBinsBinning()
+        """
 
         self.value_distance_tolerance = value_distance_tolerance
         self.min_weight = min_weight if min_weight is not None else 0
