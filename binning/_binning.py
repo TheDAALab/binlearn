@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import abc
 import numpy as np
+import pandas as pd
 import kmeans1d
 from sklearn.base import TransformerMixin, BaseEstimator
 # from ..base import instantiate_obj
@@ -33,6 +34,30 @@ class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
     """
     Base class for binning
     """
+
+    def _wrap_method(self, method_name):
+        def wrapper(*args, **kwargs):
+            X = args[0]
+
+            X_1d = X.reshape(-1)
+            result = getattr(self, f"_original_{method_name}")(
+                X_1d,
+                *args[1:],
+                **kwargs,
+            )
+
+            result_2d = result.reshape(-1, 1)
+
+            return result_2d
+
+        return wrapper
+
+    def __init_subclass__(cls):
+        for method_name in ["fit", "transform"]:
+            if hasattr(cls, method_name):
+                original_method = getattr(cls, method_name)
+                setattr(cls, f"_original_{method_name}", original_method)
+                setattr(cls, method_name, cls()._wrap_method(method_name))
 
     def fit(self, X, y=None) -> BinningBase:
         """
@@ -278,7 +303,6 @@ class PredefinedDiscreteBinning(BinningBase):
             self._lookup[(np.array(bin) - self._lowest).astype(int)] = idx
 
         self._lookup = self._lookup.astype(int)
-
 
     def transform(self, X):
         """
