@@ -57,7 +57,7 @@ class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
             if hasattr(cls, method_name):
                 original_method = getattr(cls, method_name)
                 setattr(cls, f"_original_{method_name}", original_method)
-                setattr(cls, method_name, cls()._wrap_method(method_name))
+                setattr(cls, method_name, cls._wrap_method(method_name))
 
     def fit(self, X, y=None) -> BinningBase:
         """
