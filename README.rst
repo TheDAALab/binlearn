@@ -1,26 +1,82 @@
-binning
-=======
+README
+======
 
-# Binning Module
+General Purpose Binning Library
+-------------------------------
 
-## Overview
+This module offers a versatile set of binning capabilities often required in data preprocessing and feature engineering tasks. It provides various strategies for organizing numeric data into discrete groups, known as bins. 
 
-The Binning Module provides a comprehensive set of classes and methods for implementing various binning techniques in data analysis. Binning is a crucial preprocessing step in many machine learning and statistical applications, allowing for the transformation of continuous data into discrete categories. This module supports several binning strategies, including equal width, equal frequency, predefined bins, and clustering-based methods.
+Features
+--------
 
-## Features
+- **Predefined Binning**: Customize bins according to predefined centers, ranges, or discrete sets.
+- **Equal Width and Frequency Binning**: Simple and efficient binning based on equal widths or frequencies of values.
+- **KMeans Clustering Binning**: Utilize k-means clustering to define bins according to detected clusters in the data.
+- **Adaptive Binning**: Flexible bin adjustment according to weights or frequency requirements.
+- **Inferred Binning**: Automatically infer optimal bin configuration based on input data.
 
-- **Base Class**: The `BinningBase` class serves as the foundation for all binning strategies, ensuring a consistent interface and functionality across different implementations.
-- **Multiple Binning Strategies**:
-  - **Equal Width Binning**: Divides the range of data into equal-sized intervals.
-  - **Equal Frequency Binning**: Ensures that each bin contains approximately the same number of data points.
-  - **Predefined Binning**: Allows users to specify custom bins based on domain knowledge.
-  - **K-Means Clustering Binning**: Utilizes k-means clustering to define bins based on data distribution.
-  - **Adaptive Binning**: Adjusts bin boundaries based on observed weights, allowing for dynamic binning based on data characteristics.
-- **Transformations**: Each binning class provides methods to transform data into bin indices, retrieve bin boundaries, and obtain representative values for each bin.
-- **Parameter Management**: Each binning strategy can return its parameters, facilitating easy configuration and reproducibility.
+Fancy Dynamic Badges
+--------------------
 
-## Usage
+.. image:: https://img.shields.io/badge/python-3.8%2B-green
+   :target: https://www.python.org/downloads/
 
-To use the Binning Module, instantiate one of the binning classes and call the `fit` method with your data. After fitting, you can transform your data into bin indices and retrieve various bin-related information.
+.. image:: https://img.shields.io/badge/license-MIT-blue
+   :target: LICENSE
 
-### Example
+.. image:: https://img.shields.io/github/downloads/your_username/your_repository/total
+   :target: https://github.com/your_username/your_repository/
+
+.. image:: https://img.shields.io/github/actions/workflow/status/your_username/your_repository/build.yml?branch=main
+   :target: https://github.com/your_username/your_repository/actions
+
+Installation
+------------
+
+To install the package, simply run:
+
+.. code-block:: bash
+
+   pip install binning
+
+Usage
+-----
+
+.. code-block:: python
+
+   from general_binning import EqualWidthBinning, KMeansClusteringBinning
+
+   # Example data
+   data = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+
+   # Equal Width Binning
+   ewb = EqualWidthBinning(n_bins=3)
+   ewb.fit(data)
+   binned_data = ewb.transform(data)
+
+   # KMeans Clustering Binning
+   kmb = KMeansClusteringBinning(n_bins=3)
+   kmb.fit(data)
+   binned_data_kmeans = kmb.transform(data)
+
+Examples
+--------
+
+- For working code examples, refer to the `examples` directory in the repository.
+- Detailed Jupyter notebooks can be found in the `notebooks` directory.
+
+References
+----------
+
+- **Scikit-learn Documentation**: https://scikit-learn.org/stable/documentation.html
+- **KMeans1D Library**: https://github.com/esokolov/kmeans1d
+
+Contributions
+-------------
+
+We welcome contributions to this repository! Please ensure your code follows the PEP8 style guide and includes appropriate tests.
+
+License
+-------
+
+This project is licensed under the MIT License - see the `LICENSE.md` file for details.
