@@ -7,6 +7,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from copy import deepcopy
+
 from . import _binning
 
 from sklearn.base import TransformerMixin, BaseEstimator
@@ -28,7 +30,7 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
             raise ValueError("Duplicated columns passed")
 
         self.binning_map = {}
-        for binning_definition_tuple in binning_definition_tuple_list.items():
+        for binning_definition_tuple in binning_definition_tuple_list:
             (binning_class_name, binning_params, column_list) = binning_definition_tuple
             binning_class = getattr(_binning, binning_class_name)
             for col in column_list:
@@ -43,9 +45,16 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
 
     def _transform_internal(self, X: np.ndarray | pd.DataFrame, func_name: str):
         if isinstance(X, pd.DataFrame):
-            X = X.copy()
+            X = X.copy(deep=True)
+        else:
+            X = deepcopy(X)
+
         for col, binning_instance in self.binning_map.items():
-            X[col] = getattr(binning_instance, func_name)(X[col])
+            # TODO homogenize indexing
+            if isinstance(X, pd.DataFrame):
+                X[col] = getattr(binning_instance, func_name)(X[col])
+            else:
+                X[:, col] = getattr(binning_instance, func_name)(X[:, col])
         return X
 
     def transform(self, X: np.ndarray | pd.DataFrame):
