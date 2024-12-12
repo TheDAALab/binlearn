@@ -11,6 +11,11 @@ from . import _binning
 
 from sklearn.base import TransformerMixin, BaseEstimator
 
+__all__ = [
+    "BinningsMixed",
+    "BinningsMultiple",
+]
+
 class BinningsMixed(TransformerMixin, BaseEstimator):
     """
     Class to apply differently parametrized 1D binnings to different columns of a dataset
@@ -37,10 +42,10 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
         return X
 
     def transform(self, X: np.ndarray | pd.DataFrame):
-        return self._transform_internal(X, 'transform')
+        return self._transform_internal(X, "transform")
 
     def inverse_transform(self, X: np.ndarray | pd.DataFrame):
-        return self._transform_internal(X, 'inverse_transform')
+        return self._transform_internal(X, "inverse_transform")
 
 class BinningsMultiple(BinningsMixed):
     """
