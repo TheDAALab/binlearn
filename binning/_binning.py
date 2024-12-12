@@ -143,6 +143,8 @@ class InferredBinsBinning(BinningBase):
 
         Args:
             bins (None/np.ndarray): the bin values
+            strict (bool): if True, out of range values result in a
+                            ValueError during a transform call
         """
         self._bins = None
         self._lower_bounds = None
@@ -196,16 +198,17 @@ class InferredBinsBinning(BinningBase):
         Returns:
             np.ndarray: the bin indices
         """
-        
+        values = np.array(values)
         lower_values = values[values < self._lower_bounds[0]].tolist()
         higher_values = values[values >= self._upper_bounds[-1]].tolist()
-        outliers = lower_values + higher_values
+        out_of_range_values = lower_values + higher_values
 
-        if self._strict and len(outliers) > 0:
-            raise ValueError(f'The following value(s) {outliers} are out of range for the strict binning')
+        if self._strict and len(out_of_range_values) > 0:
+            raise ValueError(f'The following value(s) {out_of_range_values} are out of range for the strict binning')
         
-        indices = np.argmax(values[:, None] == self._bins, axis=1)
-        mask = np.any(values[:, None] == self._bins, axis=1)
+        mask_matrix = values[:, None] == self._bins
+        indices = np.argmax(mask_matrix, axis=1)
+        mask = np.any(mask_matrix, axis=1)
         res = np.where(mask, indices, np.searchsorted(self._bins, values) - 1) 
         
         return np.maximum(0, res)
@@ -430,7 +433,7 @@ class PredefinedBinRangesBinning(BinningBase):
     Binning with predefined bin ranges
     """
 
-    def __init__(self, *, bin_ranges: np.ndarray):
+    def __init__(self, *, bin_ranges: np.ndarray, strict=False):
         """
         Constructor of binning with predefined bin ranges
 
@@ -439,12 +442,15 @@ class PredefinedBinRangesBinning(BinningBase):
                     each item should contain either one element (to indicate a discrete bin),
                     or two elements indicating the lower (inclusive) and upper (exclusive)
                     boundaries of the bin
+            strict (bool): if True, out of range values result in a
+                            ValueError during a transform call
         """
         self._bin_ranges = np.array(bin_ranges)
         self._lower_bounds = np.sort(self._bin_ranges[:, 0])
         self._upper_bounds = np.sort(self._bin_ranges[:, 1])
         self._representatives = np.mean(self._bin_ranges, axis=1)
         self._widths = self._bin_ranges[:, 1] - self._bin_ranges[:, 0]
+        self._strict = strict
 
     def transform(self, values):
         """
@@ -456,6 +462,14 @@ class PredefinedBinRangesBinning(BinningBase):
         Returns:
             np.ndarray: the bin indices
         """
+        values = np.array(values)
+        lower_values = values[values < self._lower_bounds[0]].tolist()
+        higher_values = values[values >= self._upper_bounds[-1]].tolist()
+        out_of_range_values = lower_values + higher_values
+
+        if self._strict and len(out_of_range_values) > 0:
+            raise ValueError(f'The following value(s) {out_of_range_values} are out of range for the strict binning')
+        
         mask = (values[:, None] >= self._lower_bounds) & (
             values[:, None] < self._upper_bounds
         )
@@ -516,7 +530,7 @@ class EqualWidthBinning(BinningBase):
     Implements the equal width binning technique inferred from data
     """
 
-    def __init__(self, *, n_bins: int, binning_params=None):
+    def __init__(self, *, n_bins: int, binning_params=None, strict=False):
         """
         Constructor of the equal width binning
 
@@ -526,11 +540,15 @@ class EqualWidthBinning(BinningBase):
                             latest data point with a bin)
             binning_params (None/dict): the parameters of the binning
                                         if it has been already fitted
+            strict (bool): if True, out of range values result in a
+                            ValueError during a transform call
         """
+
         self._n_bins = n_bins
         self._binning = None
         self._lower_bounds = None
         self._upper_bounds = None
+        self._strict = strict
 
         if binning_params is not None:
             self._binning = PredefinedBinRangesBinning(**binning_params)
@@ -552,7 +570,7 @@ class EqualWidthBinning(BinningBase):
         self._lower_bounds = np.arange(self._n_bins + 1) * diff + x_min
         self._upper_bounds = np.arange(1, self._n_bins + 2) * diff + x_min
         bin_ranges = np.vstack([self._lower_bounds, self._upper_bounds]).T
-        self._binning = PredefinedBinRangesBinning(bin_ranges=bin_ranges)
+        self._binning = PredefinedBinRangesBinning(bin_ranges=bin_ranges, strict=self._strict)
 
         return self
 
@@ -565,7 +583,7 @@ class EqualWidthBinning(BinningBase):
 
         Returns:
             np.ndarray: the bin indices
-        """
+        """        
         return self._binning.transform(values)
 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
