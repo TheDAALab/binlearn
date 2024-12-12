@@ -137,7 +137,7 @@ class InferredBinsBinning(BinningBase):
     Binning based on bins inferred from the data
     """
 
-    def __init__(self, *, bins: np.ndarray | None = None):
+    def __init__(self, *, bins: np.ndarray | None = None, strict: bool = False):
         """
         Constructor of the object
 
@@ -149,6 +149,7 @@ class InferredBinsBinning(BinningBase):
         self._upper_bounds = None
         self._boundaries = None
         self._widths = None
+        self._strict = strict
 
         if bins is not None:
             self._init_internals(bins_sorted=np.unique(bins))
@@ -195,7 +196,19 @@ class InferredBinsBinning(BinningBase):
         Returns:
             np.ndarray: the bin indices
         """
-        return np.searchsorted(self._bins, values)
+        
+        lower_values = values[values < self._lower_bounds[0]].tolist()
+        higher_values = values[values >= self._upper_bounds[-1]].tolist()
+        outliers = lower_values + higher_values
+
+        if self._strict and len(outliers) > 0:
+            raise ValueError(f'The following value(s) {outliers} are out of range for the strict binning')
+        
+        indices = np.argmax(values[:, None] == self._bins, axis=1)
+        mask = np.any(values[:, None] == self._bins, axis=1)
+        res = np.where(mask, indices, np.searchsorted(self._bins, values) - 1) 
+        
+        return np.maximum(0, res)
 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
         """
