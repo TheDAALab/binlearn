@@ -36,9 +36,9 @@ CLASSIFIERS= [  'Intended Audience :: Science/Research',
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
 if on_rtd:
-    INSTALL_REQUIRES = ['numpy', 'scipy', 'kmeans1d']
+    INSTALL_REQUIRES = ['numpy', 'scipy', 'kmeans1d', 'pandas']
 else:
-    INSTALL_REQUIRES= ['numpy', 'scipy', 'kmeans1d']
+    INSTALL_REQUIRES= ['numpy', 'scipy', 'kmeans1d', 'pandas']
 
 EXTRAS_REQUIRE= {'tests': ['pytest'],
                     'docs': ['sphinx', 'sphinx-gallery', 'sphinx_rtd_theme']}
