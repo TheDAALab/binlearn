@@ -16,9 +16,10 @@ def homogenize_input(func):
         elif isinstance(input, np.ndarray):
             if (len(input.shape) > 2) or ((len(input.shape) == 2) and (input.shape[1] != 1)):
                 raise ValueError("Invalid np.ndarray input, must be of shape (N,) or (N,1)")
-            return input
+            return input.reshape(-1)
         else:
-            raise ValueError("Invalid input type - must be pd.Series, list, or 1D-like np.ndarray")
+            # Passing through self and additional arguments
+            return input
 
     def inner(*args, **kwargs):
         return func(*[homogenize_input_core(arg) for arg in args],
