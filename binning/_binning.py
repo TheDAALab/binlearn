@@ -13,6 +13,7 @@ from __future__ import annotations
 import abc
 import numpy as np
 import kmeans1d
+import importlib
 #from ..base import instantiate_obj
 
 __all__ = [
@@ -783,6 +784,18 @@ class KMeansClusteringBinning(BinningBase):
         binning_params = None if self._binning is None else self._binning.get_params()
         return {'n_bins': self._n_bins, 'binning_params': binning_params}
 
+def instantiate_obj(description):
+    """
+    Instantiates an object from a description
+    Args:
+        description (tuple): (module_name, class_name, params_dict)
+    Returns:
+        obj: the instantiated object
+    """
+
+    module = importlib.import_module(description[0])
+    class_ = getattr(module, description[1])
+    return class_(**description[2])
 
 class AdaptiveBinning:
     def __init__(self, *, binning, value_distance_tolerance, min_weight=0):
@@ -803,6 +816,13 @@ class AdaptiveBinning:
         else:
             self.binning = InferredBinsBinning()
         """
+
+        if isinstance(binning, tuple):
+            self.binning = instantiate_obj(binning)
+        elif isinstance(binning, BinningBase):
+            self.binning = binning
+        else:
+            self.binning = InferredBinsBinning()
 
         self.value_distance_tolerance = value_distance_tolerance
         self.min_weight = min_weight if min_weight is not None else 0
