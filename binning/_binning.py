@@ -35,7 +35,8 @@ class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
     Base class for binning
     """
 
-    def _wrap_method(self, method_name):
+    @classmethod
+    def _wrap_method(cls, method_name):
         def wrapper(*args, **kwargs):
             X = args[0]
 
