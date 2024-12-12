@@ -29,12 +29,18 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
                 binning_instance.fit(X[col], y, **fit_params)
         return self
 
-    def transform(self, X: np.ndarray | pd.DataFrame):
+    def _transform_internal(self, X: np.ndarray | pd.DataFrame, func_name: str):
         if isinstance(X, pd.DataFrame):
             X = X.copy()
         for col, binning_instance in self.binning_map.items():
-            X[col] = binning_instance.transform(X[col])
+            X[col] = getattr(binning_instance, func_name)(X[col])
         return X
+
+    def transform(self, X: np.ndarray | pd.DataFrame):
+        return self._transform_internal(X, 'transform')
+
+    def inverse_transform(self, X: np.ndarray | pd.DataFrame):
+        return self._transform_internal(X, 'inverse_transform')
 
 class BinningsMultiple(BinningsMixed):
     """
