@@ -29,6 +29,20 @@ __all__ = [
 ]
 
 
+def instantiate_obj(description):
+    """
+    Instantiates an object from a description
+    Args:
+        description (tuple): (module_name, class_name, params_dict)
+    Returns:
+        obj: the instantiated object
+    """
+
+    module = importlib.import_module(description[0])
+    class_ = getattr(module, description[1])
+    return class_(**description[2])
+
+
 class BinningBase(abc.ABC):
     """
     Base class for binning
@@ -785,20 +799,6 @@ class KMeansClusteringBinning(BinningBase):
         return {'n_bins': self._n_bins, 'binning_params': binning_params}
 
 
-def instantiate_obj(description):
-    """
-    Instantiates an object from a description
-    Args:
-        description (tuple): (module_name, class_name, params_dict)
-    Returns:
-        obj: the instantiated object
-    """
-
-    module = importlib.import_module(description[0])
-    class_ = getattr(module, description[1])
-    return class_(**description[2])
-
-
 class AdaptiveBinning:
     def __init__(self, *, binning, value_distance_tolerance, min_weight=0):
         """
@@ -809,14 +809,6 @@ class AdaptiveBinning:
             value_distance_tolerance: the maximum applicable value distance by which the bins can be adjusted
             min_weight: the minimum weight a bin should have. If this is not met for a given bin,
                                 the fit() method will adjust the bin's upper bound and the subsequent bin's lower bound.
-        """
-
-        """if isinstance(binning, tuple):
-            self.binning = instantiate_obj(binning)
-        elif isinstance(binning, BinningBase):
-            self.binning = binning
-        else:
-            self.binning = InferredBinsBinning()
         """
         if isinstance(binning, tuple):
             self.binning = instantiate_obj(binning)
