@@ -46,7 +46,7 @@ class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
                 **kwargs,
             )
 
-            result_2d = result.reshape(-1, 1)
+            result_2d = result.reshape(X.shape)
 
             return result_2d
 
