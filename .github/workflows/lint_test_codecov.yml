@@ -1,4 +1,4 @@
-name: lint, test and coverage
+name: test and coverage
 
 on: [push, pull_request]
 
