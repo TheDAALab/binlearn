@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Install dependencies; Run tests; Upload coverage report
+    name: Testing and coverage
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
