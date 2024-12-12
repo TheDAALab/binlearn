@@ -35,31 +35,6 @@ class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
     Base class for binning
     """
 
-    @classmethod
-    def _wrap_method(cls, method_name):
-        def wrapper(*args, **kwargs):
-            X = args[0]
-
-            X_1d = X.reshape(-1)
-            result = getattr(cls, f"_original_{method_name}")(
-                X_1d,
-                *args[1:],
-                **kwargs,
-            )
-
-            result_2d = result.reshape(X.shape)
-
-            return result_2d
-
-        return wrapper
-
-    def __init_subclass__(cls):
-        for method_name in ["fit", "transform"]:
-            if hasattr(cls, method_name):
-                original_method = getattr(cls, method_name)
-                setattr(cls, f"_original_{method_name}", original_method)
-                setattr(cls, method_name, cls._wrap_method(method_name))
-
     def fit(self, X, y=None) -> BinningBase:
         """
         Fitting the binning to values
