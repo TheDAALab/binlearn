@@ -17,16 +17,17 @@ This project provides a set of utilities for binning numerical data into differe
     00_introduction
 
 .. toctree::
-    :maxdepth: 2
-    :caption: API
+   :maxdepth: 4
+   :caption: API documentation:
 
-    03_api
+   modules
+
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Changelog:
 
-   modules
+   changelog
 
 
 Indices and tables
@@ -35,15 +36,6 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   api 
-   changelog
-
-
 
 Features
 ========
