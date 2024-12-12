@@ -29,7 +29,7 @@ __all__ = [
 ]
 
 
-class BinningBase(BaseEstimator, TransformerMixin, abc.ABC):
+class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
     """
     Base class for binning
     """
@@ -279,17 +279,6 @@ class PredefinedDiscreteBinning(BinningBase):
 
         self._lookup = self._lookup.astype(int)
 
-    def fit(self, X, y=None):
-        """
-        Fitting to data
-
-        Args:
-            X (np.ndarray): the data to fit to
-
-        Returns:
-            self: the fitted binning
-        """
-        return self
 
     def transform(self, X):
         """
@@ -366,18 +355,6 @@ class PredefinedBinCentersBinning(BinningBase):
         self._lower_bounds = np.hstack([np.array([-np.inf]), midpoints])
         self._upper_bounds = np.hstack([midpoints, np.array([np.inf])])
         self._widths = self._upper_bounds - self._lower_bounds
-
-    def fit(self, X, y=None):
-        """
-        Fitting to data
-
-        Args:
-            X (np.ndarray): the data to fit to
-
-        Returns:
-            self: the fitted binning
-        """
-        return self
 
     def transform(self, X):
         """
@@ -456,18 +433,6 @@ class PredefinedBinRangesBinning(BinningBase):
         self._upper_bounds = np.sort(self._bin_ranges[:, 1])
         self._representatives = np.mean(self._bin_ranges, axis=1)
         self._widths = self._bin_ranges[:, 1] - self._bin_ranges[:, 0]
-
-    def fit(self, X, y=None):
-        """
-        Fitting to data
-
-        Args:
-            X (np.ndarray): the data to fit to
-
-        Returns:
-            self: the fitted binning
-        """
-        return self
 
     def transform(self, X):
         """
