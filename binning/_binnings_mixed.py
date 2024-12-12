@@ -20,12 +20,19 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
     """
     Class to apply differently parametrized 1D binnings to different columns of a dataset
     """
-    def __init__(self, *, binning_param_map: dict):
+    def __init__(self, *, binning_definition_tuple_list: list):
+        all_columns = []
+        for tup in binning_definition_tuple_list:
+            all_columns.extend(tup[2])
+        if len(set(all_columns)) != len(all_columns):
+            raise ValueError("Duplicated columns passed")
+
         self.binning_map = {}
-        for binning_definition_tuple, column_list in binning_param_map.items():
-            binning_class = getattr(_binning, binning_definition_tuple[0])
+        for binning_definition_tuple in binning_definition_tuple_list.items():
+            (binning_class_name, binning_params, column_list) = binning_definition_tuple
+            binning_class = getattr(_binning, binning_class_name)
             for col in column_list:
-                binning_instance = binning_class(**binning_definition_tuple[1])
+                binning_instance = binning_class(**binning_params)
                 self.binning_map[col] = binning_instance
 
     def fit(self, X: np.ndarray | pd.DataFrame, y=None, **fit_params):
@@ -52,5 +59,5 @@ class BinningsMultiple(BinningsMixed):
     Class to apply the same 1D binning to multiple columns of a dataset
     """
     def __init__(self, *, binning_class_name, binning_params, column_list):
-        binning_param_map = {(binning_class_name, binning_params): column_list}
-        super().__init__(binning_param_map=binning_param_map)
+        binning_definition_tuple_list = [(binning_class_name, binning_params, column_list)]
+        super().__init__(binning_definition_tuple_list=binning_definition_tuple_list)
