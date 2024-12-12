@@ -50,8 +50,8 @@ def test_inferred_bins_binning():
                                             [2, 3],
                                             [3, 6]]))
 
-    np.testing.assert_array_equal(InferredBinsBinning(**binning.get_params()).bins,
-                                         binning.bins)
+    np.testing.assert_array_equal(InferredBinsBinning(**binning.get_params())._bins,
+                                         binning._bins)
 
     assert len(binning.to_tuple()) == 3
 
@@ -93,7 +93,7 @@ def test_predefined_discrete_binning():
     np.testing.assert_array_equal(binning.bin_representatives(),
                                   np.array([1, 3, 5]))
 
-    assert PredefinedDiscreteBinning(**binning.get_params()).bins == binning.bins
+    assert PredefinedDiscreteBinning(**binning.get_params())._bins == binning._bins
 
     assert len(binning.to_tuple()) == 3
 
@@ -198,13 +198,13 @@ def test_equal_width_binning():
     Testing the equal width binning
     """
 
-    values = np.array([1, 3, 4, 10])
+    values = [1, 3, 4, 10]
     eqwb = EqualWidthBinning(n_bins=3)
 
     eqwb.fit(values)
 
-    assert eqwb.lower_bounds[0] == np.min(values)
-    assert eqwb.upper_bounds[-2] == np.max(values)
+    assert eqwb._lower_bounds[0] == np.min(values)
+    assert eqwb._upper_bounds[-2] == np.max(values)
 
     np.testing.assert_array_equal(eqwb.transform(values),
                                   np.array([0, 0, 1, 3]))
@@ -329,7 +329,7 @@ def test_adaptive_binning():
     # binning that needs adjustment- removing bins that are below the threshold
     bins = np.array([(0, 1), (1, 2), (2, 3), (3, 5), (5, 9)])
 
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=2,
                            value_distance_tolerance=3
     )
@@ -350,7 +350,7 @@ def test_adaptive_binning():
     
     # binning that needs adjustment - keeping bins that are below the threshold
 
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=2,
                            value_distance_tolerance=3)
     
@@ -373,7 +373,7 @@ def test_adaptive_binning():
     # binning that needs adjustment- merging bins below threshold with the previous bin
     bins = np.array([(0, 1), (1, 2), (2, 3), (3, 5), (5, 9)])
 
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=2,
                            value_distance_tolerance=3
     )
@@ -386,7 +386,7 @@ def test_adaptive_binning():
     # binning that needs adjustment- merging bins below threshold with the previous bin
     bins = np.array([(0, 1), (1, 2), (2, 3), (3, 5), (5, 9)])
 
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=2,
                            value_distance_tolerance=1
     )
@@ -401,7 +401,7 @@ def test_adaptive_binning():
     bins = np.array([(0, 1), (1, 2), (2, 3), (3, 5), (5, 9)])
     zeros  = np.zeros(len(values))
 
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=2,
                            value_distance_tolerance=3
     )
@@ -411,7 +411,7 @@ def test_adaptive_binning():
                                   np.array([[0, 9]]))
     
     # no adjustment
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=0,
                            value_distance_tolerance=None
     ).fit(values=values, observed_values=values, weights=None)
@@ -427,7 +427,7 @@ def test_adaptive_binning():
     weights  = np.array([0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 1])
     bins = [(0, 3), (3, 5), (5, 9)]
 
-    ab = AdaptiveBinning(binning=('daaticket.core', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
+    ab = AdaptiveBinning(binning=('binning', 'PredefinedBinRangesBinning', {'bin_ranges': bins}),
                            min_weight=2,
                            value_distance_tolerance=3
     ).fit(values=values, observed_values=values, weights=weights)
