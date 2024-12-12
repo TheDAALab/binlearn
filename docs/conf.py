@@ -26,6 +26,12 @@ extensions = [
     "myst_parser",  # Markdown support
 ]
 
+autodoc_default_options = {
+    "members": True,
+    "special-members": "__init__",
+    "undoc-members": True,
+}
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 

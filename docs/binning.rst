@@ -1,9 +1,6 @@
 binning package
 ===============
 
-Module contents
----------------
-
 .. autoclass:: binning.BinningBase
    :members:
 
