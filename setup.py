@@ -12,7 +12,7 @@ __version__= "0.0.1"
 with open(version_file) as f:
     exec(f.read())
 
-DISTNAME= 'binning'
+DISTNAME= 'daa-adaptive-binning'
 DESCRIPTION= 'Some general purpose binning functionalities'
 LONG_DESCRIPTION= readme()
 LONG_DESCRIPTION_CONTENT_TYPE='text/x-rst'
@@ -66,7 +66,6 @@ setup(name=DISTNAME,
         extras_require=EXTRAS_REQUIRE,
         python_requires=PYTHON_REQUIRES,
         setup_requires=SETUP_REQUIRES,
-        tests_require=TESTS_REQUIRE,
         package_dir=PACKAGE_DIR,
         packages=find_packages(exclude=[]),
         package_data={},
