@@ -261,94 +261,98 @@ class InferredBinsBinning(BinningBase):
 
 class PredefinedDiscreteBinning(BinningBase):
     """
-    Binning with predefined discrete bins
-    """
-
+   Binning with predefined discrete bins
+   """
+ 
     def __init__(self, *, bins: list[list[int]]):
         """
-        The expected bin specification is a list of lists encoding
-        the elements of the bins.
-
-        Args:
-            bins (list[list[int]]): the bin specifications
-        """
+       The expected bin specification is a list of lists encoding
+       the elements of the bins.
+ 
+       Args:
+           bins (list[list[int]]): the bin specifications
+       """
+ 
         bin_mins = [np.min(bin) for bin in bins]
         sorter = np.argsort(bin_mins)
         self._bins = [bins[idx] for idx in sorter]
-
+ 
+        self._dict = {}
+ 
+        for idx, sublist in enumerate(self._bins):
+            for number in sublist:
+                self._dict[number] = idx
+ 
         # number of points in the bins
         self._widths = np.array([len(bin) for bin in self._bins])
-
+ 
         lower_bounds = np.array([np.min(bin) for bin in self._bins])  # inclusive
-        upper_bounds = np.array([np.max(bin) + 1 for bin in self._bins])  # exclusive
+        upper_bounds = np.array([np.max(bin) for bin in self._bins])  # inclusive
         self._boundaries = np.vstack([lower_bounds, upper_bounds]).T
-
-        self._representatives = np.mean(self._boundaries - 1, axis=1)
-        self._representatives = np.ceil(self._representatives).astype(int)
-
+ 
+        self._representatives = np.array([np.min(x) for x in self._bins])
+ 
         self._lowest = np.min(self._boundaries)  # inclusive
-        self._highest = np.max(self._boundaries)  # exclusive
-        self._lookup = np.zeros(int(self._highest - self._lowest + 1))
-
-        for idx, bin in enumerate(self._bins):
-            self._lookup[(np.array(bin) - self._lowest).astype(int)] = idx
-
-        self._lookup = self._lookup.astype(int)
-
+        self._highest = np.max(self._boundaries)  # inclusive
+        self._decode_func = np.vectorize(lambda x: self._dict.get(x, -1))
+ 
     def transform(self, values):
         """
-        Assign bin indices to the values in `values`
-
-        Args:
-            values (np.ndarray): the values to assign bin indices to
-
-        Returns:
-            np.ndarray: the bin indices
-        """
-        return self._lookup[(values - self._lowest).astype(int)]
-
+       Assign bin indices to the values in `values`
+ 
+       Args:
+           values (np.ndarray): the values to assign bin indices to
+ 
+       Returns:
+           np.ndarray: the bin indices
+       """
+        trans = self._decode_func(values)
+        bad_vals = values[trans == -1]
+        if np.any(trans == -1):
+            raise ValueError(f"Following numbers can not be binned: {bad_vals}")
+        return trans
+ 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
         """
-        Returns the bin widths to bin indices
-
-        Args:
-            bin_indices (np.ndarray): the bin indices
-
-        Returns:
-            np.ndarray: the bin widths
-        """
+       Returns the bin widths to bin indices
+ 
+       Args:
+           bin_indices (np.ndarray): the bin indices
+ 
+       Returns:
+           np.ndarray: the bin widths
+       """
         return self._widths[bin_indices]
-
+ 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
         """
-        Returns the bin boundaries to the bin indices
-
-        Args:
-            bin_indices (np.ndarray): the bin indices
-
-        Returns:
-            np.ndarray: the bin boundaries
-        """
+       Returns the bin boundaries to the bin indices
+ 
+       Args:
+           bin_indices (np.ndarray): the bin indices
+ 
+       Returns:
+           np.ndarray: the bin boundaries
+       """
         return self._boundaries[bin_indices]
-
+ 
     def bin_representatives(self):
         """
-        Return representative values from the original domain for each bin index
-
-        Returns:
-            np.ndarray: the representatives
-        """
+       Return representative values from the original domain for each bin index
+ 
+       Returns:
+           np.ndarray: the representatives
+       """
         return self._representatives
-
+ 
     def get_params(self):
         """
-        Returns the parameters of the binning
-
-        Returns:
-            dict: the parameters of the binning
-        """
-        return {'bins': self._bins.copy()}
-
+       Returns the parameters of the binning
+ 
+       Returns:
+           dict: the parameters of the binning
+       """
+        return {"bins": self._bins.copy()}
 
 class PredefinedBinCentersBinning(BinningBase):
     """

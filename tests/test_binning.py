@@ -75,23 +75,23 @@ def test_predefined_discrete_binning():
     inverse = binning.inverse_transform(binning.transform(values))
 
     np.testing.assert_array_equal(inverse,
-                                  np.array([1, 1, 5, 3, 5]))
+                                  np.array([1, 1, 4, 3, 4]))
 
     np.testing.assert_array_equal(binning.lookup_bin_widths(bin_indices),
                                   np.array([2, 2, 3, 1, 3]))
 
     np.testing.assert_array_equal(binning.lookup_bin_boundaries(bin_indices),
-                                  np.array([[1, 3],
-                                            [1, 3],
-                                            [4, 7],
-                                            [3, 4],
-                                            [4, 7]]))
+                                  np.array([[1, 2],
+                                            [1, 2],
+                                            [4, 6],
+                                            [3, 3],
+                                            [4, 6]]))
 
     np.testing.assert_array_equal(binning.bin_range(),
                                   np.array([0, 1, 2]))
 
     np.testing.assert_array_equal(binning.bin_representatives(),
-                                  np.array([1, 3, 5]))
+                                  np.array([1, 3, 4]))
 
     assert PredefinedDiscreteBinning(**binning.get_params())._bins == binning._bins
 
@@ -102,7 +102,7 @@ def test_predefined_bin_centers_binning():
     Testing the bin center binning
     """
 
-    bin_centers = [4, 2, 6, 7]
+    bin_centers = np.array([4, 2, 6, 7])
 
     x = np.array([1.1, 3.4, 1.0, 2.8, 9.9])
 
