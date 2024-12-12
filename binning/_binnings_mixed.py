@@ -39,8 +39,14 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
 
     def fit(self, X: np.ndarray | pd.DataFrame, y=None, **fit_params):
         for col, binning_instance in self.binning_map.items():
-            if isinstance(X, pd.DataFrame) and col in X.columns:
-                binning_instance.fit(X[col], y, **fit_params)
+            # TODO homogenize indexing
+            if isinstance(X, pd.DataFrame):
+                if col in X.columns:
+                    binning_instance.fit(X[col], y, **fit_params)
+            elif isinstance(X, np.ndarray):
+                binning_instance.fit(X[:, col], y, **fit_params)
+            else:
+                raise ValueError('Input X must be pd.DataFrame or np.ndarray')
         return self
 
     def _transform_internal(self, X: np.ndarray | pd.DataFrame, func_name: str):
@@ -53,8 +59,10 @@ class BinningsMixed(TransformerMixin, BaseEstimator):
             # TODO homogenize indexing
             if isinstance(X, pd.DataFrame):
                 X[col] = getattr(binning_instance, func_name)(X[col])
-            else:
+            elif isinstance(X, np.ndarray):
                 X[:, col] = getattr(binning_instance, func_name)(X[:, col])
+            else:
+                raise ValueError('Input X must be pd.DataFrame or np.ndarray')
         return X
 
     def transform(self, X: np.ndarray | pd.DataFrame):
