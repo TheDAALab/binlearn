@@ -38,7 +38,7 @@ class BinningBase(abc.ABC):
         Fitting the binning to values
 
         Args:
-            values (np.ndarray): the values to fit to
+            values (np.ndarray, pd.Series): the values to fit to
 
         Returns:
             self: the fitted object
