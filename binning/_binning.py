@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import importlib
 import kmeans1d
-from ._utils import pandizator
+from ._utils import homogenize_input
 from sklearn.base import TransformerMixin, BaseEstimator
 # from ..base import instantiate_obj
 
@@ -188,7 +188,7 @@ class InferredBinsBinning(BinningBase):
         # andrasva: could be lifted to BinningBase...
         self._widths = self._upper_bounds - self._lower_bounds
 
-    @pandizator
+    @homogenize_input
     def fit(self, X, y=None, **fit_params) -> InferredBinsBinning:
         """
         Fitting to data
@@ -203,7 +203,7 @@ class InferredBinsBinning(BinningBase):
         self._init_internals(bins_sorted=np.unique(X))
         return self
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -298,7 +298,7 @@ class PredefinedDiscreteBinning(BinningBase):
 
         self._lookup = self._lookup.astype(int)
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -375,7 +375,7 @@ class PredefinedBinCentersBinning(BinningBase):
         self._upper_bounds = np.hstack([midpoints, np.array([np.inf])])
         self._widths = self._upper_bounds - self._lower_bounds
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -454,7 +454,7 @@ class PredefinedBinRangesBinning(BinningBase):
         self._representatives = np.mean(self._bin_ranges, axis=1)
         self._widths = self._bin_ranges[:, 1] - self._bin_ranges[:, 0]
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -544,7 +544,7 @@ class EqualWidthBinning(BinningBase):
             self._lower_bounds = self._binning._lower_bounds
             self._upper_bounds = self._binning._upper_bounds
 
-    @pandizator
+    @homogenize_input
     def fit(self, X, y=None, **fit_params) -> EqualWidthBinning:
         """
         Fitting to data
@@ -565,7 +565,7 @@ class EqualWidthBinning(BinningBase):
 
         return self
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -636,7 +636,7 @@ class EqualFrequencyBinning(BinningBase):
         if binning_params is not None:
             self._binning = PredefinedBinRangesBinning(**binning_params)
 
-    @pandizator
+    @homogenize_input
     def fit(self, X, y=None, **fit_params) -> EqualFrequencyBinning:
         """
         Fitting to data
@@ -662,7 +662,7 @@ class EqualFrequencyBinning(BinningBase):
 
         self._binning = PredefinedBinRangesBinning(bin_ranges=bin_ranges)
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -740,7 +740,7 @@ class KMeansClusteringBinning(BinningBase):
         if binning_params is not None:
             self._binning = PredefinedBinCentersBinning(**binning_params)
 
-    @pandizator
+    @homogenize_input
     def fit(self, X, y=None, **fit_params):
         """
         Fitting to data
@@ -755,7 +755,7 @@ class KMeansClusteringBinning(BinningBase):
         self._binning = PredefinedBinCentersBinning(bin_centers=centroids)
         return self
 
-    @pandizator
+    @homogenize_input
     def transform(self, X):
         """
         Assign bin indices to the values in `X`
@@ -834,7 +834,7 @@ class AdaptiveBinning(BinningBase):
         self.min_weight = min_weight if min_weight is not None else 0
         self._bin_boundaries = None
 
-    @pandizator
+    @homogenize_input
     def fit(self, values, observed_values, weights, bins_below_threshold="keep"):
         """
         Fitting to data. If a min_weight is set the bins will be adjusted to include enough weight, starting with the lowest bin.
