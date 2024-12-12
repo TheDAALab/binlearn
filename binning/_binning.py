@@ -41,7 +41,7 @@ class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
             X = args[0]
 
             X_1d = X.reshape(-1)
-            result = getattr(self, f"_original_{method_name}")(
+            result = getattr(cls, f"_original_{method_name}")(
                 X_1d,
                 *args[1:],
                 **kwargs,
