@@ -24,11 +24,11 @@ Fancy Dynamic Badges
 .. image:: https://img.shields.io/badge/license-MIT-blue
    :target: LICENSE
 
-.. image:: https://img.shields.io/github/downloads/your_username/your_repository/total
-   :target: https://github.com/your_username/your_repository/
+.. image:: https://img.shields.io/github/downloads/TheDAALab/binning/total
+   :target: https://github.com/TheDAALab/binning/
 
-.. image:: https://img.shields.io/github/actions/workflow/status/your_username/your_repository/build.yml?branch=main
-   :target: https://github.com/your_username/your_repository/actions
+.. image:: https://img.shields.io/github/actions/workflow/status/TheDAALab/binning/build.yml?branch=main
+   :target: https://github.com/TheDAALab/binning/actions
 
 Installation
 ------------
@@ -37,7 +37,7 @@ To install the package, simply run:
 
 .. code-block:: bash
 
-   pip install binning
+   pip install daa-adaptive-binning
 
 Usage
 -----
