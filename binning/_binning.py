@@ -13,20 +13,23 @@ from __future__ import annotations
 
 import abc
 import numpy as np
+import pandas as pd
 import importlib
 import kmeans1d
-from ._utils import pandizator
+from ._utils import homogenize_input
+from sklearn.base import TransformerMixin, BaseEstimator
+# from ..base import instantiate_obj
 
 __all__ = [
-    'BinningBase',
-    'PredefinedBinCentersBinning',
-    'PredefinedBinRangesBinning',
-    'PredefinedDiscreteBinning',
-    'EqualWidthBinning',
-    'EqualFrequencyBinning',
-    'KMeansClusteringBinning',
-    'InferredBinsBinning',
-    'AdaptiveBinning',
+    "BinningBase",
+    "PredefinedBinCentersBinning",
+    "PredefinedBinRangesBinning",
+    "PredefinedDiscreteBinning",
+    "EqualWidthBinning",
+    "EqualFrequencyBinning",
+    "KMeansClusteringBinning",
+    "InferredBinsBinning",
+    "AdaptiveBinning",
 ]
 
 
@@ -44,17 +47,17 @@ def instantiate_obj(description):
     return class_(**description[2])
 
 
-class BinningBase(abc.ABC):
+class BinningBase(TransformerMixin, BaseEstimator, abc.ABC):
     """
     Base class for binning
     """
 
-    def fit(self, values, **fit_params) -> BinningBase:
+    def fit(self, X, y=None, **fit_params) -> BinningBase:
         """
         Fitting the binning to values
 
         Args:
-            values (np.ndarray): the values to fit to
+            X (np.ndarray): the values to fit to
 
         Returns:
             self: the fitted object
@@ -62,12 +65,12 @@ class BinningBase(abc.ABC):
         return self
 
     @abc.abstractmethod
-    def transform(self, values):
+    def transform(self, X):
         """
-        Assign bin indices to the values in `x`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
@@ -186,33 +189,33 @@ class InferredBinsBinning(BinningBase):
         # andrasva: could be lifted to BinningBase...
         self._widths = self._upper_bounds - self._lower_bounds
 
-    @pandizator
-    def fit(self, values, **fit_params) -> InferredBinsBinning:
+    @homogenize_input
+    def fit(self, X, y=None, **fit_params) -> InferredBinsBinning:
         """
         Fitting to data
 
         Args:
-            values (np.ndarray): the data to fit to
+            X (np.ndarray): the data to fit to
 
         Returns:
             self: the fitted binning
         """
         # mutate and return self to allow chain of member function calls
-        self._init_internals(bins_sorted=np.unique(values))
+        self._init_internals(bins_sorted=np.unique(X))
         return self
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        return np.searchsorted(self._bins, values)
+        return np.searchsorted(self._bins, X)
 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
         """
@@ -257,7 +260,7 @@ class InferredBinsBinning(BinningBase):
             dict: the parameters of the binning
         """
         bins = None if self._bins is None else self._bins.copy()
-        return {'bins': bins}
+        return {"bins": bins}
 
 
 class PredefinedDiscreteBinning(BinningBase):
@@ -296,18 +299,18 @@ class PredefinedDiscreteBinning(BinningBase):
 
         self._lookup = self._lookup.astype(int)
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        return self._lookup[(values - self._lowest).astype(int)]
+        return self._lookup[(X - self._lowest).astype(int)]
 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
         """
@@ -349,7 +352,7 @@ class PredefinedDiscreteBinning(BinningBase):
         Returns:
             dict: the parameters of the binning
         """
-        return {'bins': self._bins.copy()}
+        return {"bins": self._bins.copy()}
 
 
 class PredefinedBinCentersBinning(BinningBase):
@@ -373,18 +376,18 @@ class PredefinedBinCentersBinning(BinningBase):
         self._upper_bounds = np.hstack([midpoints, np.array([np.inf])])
         self._widths = self._upper_bounds - self._lower_bounds
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        distances = np.abs(values[:, None] - self._bin_centers)
+        distances = np.abs(X[:, None] - self._bin_centers)
         return np.argmin(distances, axis=1)
 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
@@ -428,7 +431,7 @@ class PredefinedBinCentersBinning(BinningBase):
         Returns:
             dict: the parameters of the binning
         """
-        return {'bin_centers': self._bin_centers.copy()}
+        return {"bin_centers": self._bin_centers.copy()}
 
 
 class PredefinedBinRangesBinning(BinningBase):
@@ -452,22 +455,20 @@ class PredefinedBinRangesBinning(BinningBase):
         self._representatives = np.mean(self._bin_ranges, axis=1)
         self._widths = self._bin_ranges[:, 1] - self._bin_ranges[:, 0]
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        mask = (values[:, None] >= self._lower_bounds) & (
-            values[:, None] < self._upper_bounds
-        )
+        mask = (X[:, None] >= self._lower_bounds) & (X[:, None] < self._upper_bounds)
 
-        mask_upper = values[:, None] >= self._upper_bounds
+        mask_upper = X[:, None] >= self._upper_bounds
         mu = np.all(mask_upper, axis=1)
 
         if np.any(mu):
@@ -515,7 +516,7 @@ class PredefinedBinRangesBinning(BinningBase):
         Returns:
             dict: the parameters of the binning
         """
-        return {'bin_ranges': self._bin_ranges.copy()}
+        return {"bin_ranges": self._bin_ranges.copy()}
 
 
 class EqualWidthBinning(BinningBase):
@@ -544,19 +545,20 @@ class EqualWidthBinning(BinningBase):
             self._lower_bounds = self._binning._lower_bounds
             self._upper_bounds = self._binning._upper_bounds
 
-    @pandizator
-    def fit(self, values, **fit_params) -> EqualWidthBinning:
+    @homogenize_input
+    def fit(self, X, y=None, **fit_params) -> EqualWidthBinning:
         """
         Fitting to data
 
         Args:
-            values (np.ndarray): the data to fit to
+            X (np.ndarray): the data to fit to
+
 
         Returns:
             self: the fitted binning
         """
-        x_min = np.min(values)
-        diff = (np.max(values) - x_min) / self._n_bins
+        x_min = np.min(X)
+        diff = (np.max(X) - x_min) / self._n_bins
         self._lower_bounds = np.arange(self._n_bins + 1) * diff + x_min
         self._upper_bounds = np.arange(1, self._n_bins + 2) * diff + x_min
         bin_ranges = np.vstack([self._lower_bounds, self._upper_bounds]).T
@@ -564,18 +566,18 @@ class EqualWidthBinning(BinningBase):
 
         return self
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        return self._binning.transform(values)
+        return self._binning.transform(X)
 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
         """
@@ -618,7 +620,7 @@ class EqualWidthBinning(BinningBase):
             dict: the parameters of the binning
         """
         binning_params = None if self._binning is None else self._binning.get_params()
-        return {'n_bins': self._n_bins, 'binning_params': binning_params}
+        return {"n_bins": self._n_bins, "binning_params": binning_params}
 
 
 class EqualFrequencyBinning(BinningBase):
@@ -635,20 +637,20 @@ class EqualFrequencyBinning(BinningBase):
         if binning_params is not None:
             self._binning = PredefinedBinRangesBinning(**binning_params)
 
-    @pandizator
-    def fit(self, values, **fit_params) -> EqualFrequencyBinning:
+    @homogenize_input
+    def fit(self, X, y=None, **fit_params) -> EqualFrequencyBinning:
         """
         Fitting to data
 
         Args:
-            values (np.ndarray): the data to fit to
+            X (np.ndarray): the data to fit to
 
         Returns:
             self: the fitted binning
         """
         percentiles = np.linspace(0, 100, self._n_bins)
 
-        bin_boundaries = np.percentile(values, percentiles)
+        bin_boundaries = np.percentile(X, percentiles)
 
         lower_bounds = bin_boundaries
         upper_bounds = np.hstack(
@@ -661,18 +663,18 @@ class EqualFrequencyBinning(BinningBase):
 
         self._binning = PredefinedBinRangesBinning(bin_ranges=bin_ranges)
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        return self._binning.transform(values)
+        return self._binning.transform(X)
 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
         """
@@ -715,7 +717,7 @@ class EqualFrequencyBinning(BinningBase):
             dict: the parameters of the binning
         """
         binning_params = None if self._binning is None else self._binning.get_params()
-        return {'n_bins': self._n_bins, 'binning_params': binning_params}
+        return {"n_bins": self._n_bins, "binning_params": binning_params}
 
 
 class KMeansClusteringBinning(BinningBase):
@@ -739,33 +741,33 @@ class KMeansClusteringBinning(BinningBase):
         if binning_params is not None:
             self._binning = PredefinedBinCentersBinning(**binning_params)
 
-    @pandizator
-    def fit(self, values, **fit_params):
+    @homogenize_input
+    def fit(self, X, y=None, **fit_params):
         """
         Fitting to data
 
         Args:
-            values (np.ndarray): the data to fit to
+            X (np.ndarray): the data to fit to
 
         Returns:
             self: the fitted binning
         """
-        _, centroids = kmeans1d.cluster(values, self._n_bins)
+        _, centroids = kmeans1d.cluster(X, self._n_bins)
         self._binning = PredefinedBinCentersBinning(bin_centers=centroids)
         return self
 
-    @pandizator
-    def transform(self, values):
+    @homogenize_input
+    def transform(self, X):
         """
-        Assign bin indices to the values in `values`
+        Assign bin indices to the values in `X`
 
         Args:
-            values (np.ndarray): the values to assign bin indices to
+            X (np.ndarray): the values to assign bin indices to
 
         Returns:
             np.ndarray: the bin indices
         """
-        return self._binning.transform(values)
+        return self._binning.transform(X)
 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
         """
@@ -808,7 +810,7 @@ class KMeansClusteringBinning(BinningBase):
             dict: the parameters of the binning
         """
         binning_params = None if self._binning is None else self._binning.get_params()
-        return {'n_bins': self._n_bins, 'binning_params': binning_params}
+        return {"n_bins": self._n_bins, "binning_params": binning_params}
 
 
 class AdaptiveBinning(BinningBase):
@@ -833,8 +835,8 @@ class AdaptiveBinning(BinningBase):
         self.min_weight = min_weight if min_weight is not None else 0
         self._bin_boundaries = None
 
-    @pandizator
-    def fit(self, values, observed_values, weights, bins_below_threshold='keep'):
+    @homogenize_input
+    def fit(self, values, observed_values, weights, bins_below_threshold="keep"):
         """
         Fitting to data. If a min_weight is set the bins will be adjusted to include enough weight, starting with the lowest bin.
         The resulting bins that are still below the min_weight threshold are either kept (default), removed or merged
@@ -941,7 +943,7 @@ class AdaptiveBinning(BinningBase):
 
     @staticmethod
     def get_weights_by_values(observed_values, weights):
-        '''
+        """
         Returns the weights by observed values sorted by the latter.
 
         Args:
@@ -950,7 +952,7 @@ class AdaptiveBinning(BinningBase):
 
         Returns:
             np.array: the two dimensional array of weights by values
-        '''
+        """
         weights_by_values = []
         for val in np.unique(observed_values):
             weight = np.sum(weights[observed_values == val])
@@ -1007,10 +1009,10 @@ class AdaptiveBinning(BinningBase):
         # the resulting zero width bins are removed
         # currently it only considers adjusting to values observed in the data, so it doesn't interpolate
 
-        bins_below_threshold_options = ['keep', 'remove', 'merge']
+        bins_below_threshold_options = ["keep", "remove", "merge"]
         if bins_below_threshold not in bins_below_threshold_options:
             raise ValueError(
-                f'bins_below_threshold=={bins_below_threshold}, it should be one of {bins_below_threshold_options}'
+                f"bins_below_threshold=={bins_below_threshold}, it should be one of {bins_below_threshold_options}"
             )
 
         values_weights = self.get_weights_by_values(observed_values, weights)
@@ -1069,7 +1071,7 @@ class AdaptiveBinning(BinningBase):
                     if len(tmp_bin_boundaries) > 0:
                         tmp_bin_boundaries[0, 0] = closest_value
 
-                elif bins_below_threshold == 'remove':
+                elif bins_below_threshold == "remove":
                     current_bin = []
 
             if len(current_bin) > 0:
@@ -1083,7 +1085,7 @@ class AdaptiveBinning(BinningBase):
         updated_bin_boundaries = updated_bin_boundaries[bin_widths > 0]
         bin_weights = bin_weights[bin_widths > 0]
 
-        if bins_below_threshold == 'merge':
+        if bins_below_threshold == "merge":
             updated_bin_boundaries = self.merge_bins(
                 updated_bin_boundaries, bin_weights
             )
@@ -1130,6 +1132,7 @@ class AdaptiveBinning(BinningBase):
         updated_bin_boundaries = np.array(merged_bin_boundaries)
 
         return updated_bin_boundaries
+
 
 # flake8: noqa
 """
