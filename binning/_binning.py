@@ -13,7 +13,11 @@ from __future__ import annotations
 import abc
 import numpy as np
 import kmeans1d
+
+import importlib
+
 from ._utils import pandizator_decorator_in, pandizator_decorator_inout
+
 #from ..base import instantiate_obj
 
 __all__ = [
@@ -137,18 +141,21 @@ class InferredBinsBinning(BinningBase):
     Binning based on bins inferred from the data
     """
 
-    def __init__(self, *, bins: np.ndarray | None = None):
+    def __init__(self, *, bins: np.ndarray | None = None, strict: bool = False):
         """
         Constructor of the object
 
         Args:
             bins (None/np.ndarray): the bin values
+            strict (bool): if True, out of range values result in a
+                            ValueError during a transform call
         """
         self._bins = None
         self._lower_bounds = None
         self._upper_bounds = None
         self._boundaries = None
         self._widths = None
+        self._strict = strict
 
         if bins is not None:
             self._init_internals(bins_sorted=np.unique(bins))
@@ -196,7 +203,20 @@ class InferredBinsBinning(BinningBase):
         Returns:
             np.ndarray: the bin indices
         """
-        return np.searchsorted(self._bins, values)
+        values = np.array(values)
+        lower_values = values[values < self._lower_bounds[0]].tolist()
+        higher_values = values[values >= self._upper_bounds[-1]].tolist()
+        out_of_range_values = lower_values + higher_values
+
+        if self._strict and len(out_of_range_values) > 0:
+            raise ValueError(f'The following value(s) {out_of_range_values} are out of range for the strict binning')
+        
+        mask_matrix = values[:, None] == self._bins
+        indices = np.argmax(mask_matrix, axis=1)
+        mask = np.any(mask_matrix, axis=1)
+        res = np.where(mask, indices, np.searchsorted(self._bins, values) - 1) 
+        
+        return np.maximum(0, res)
 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
         """
@@ -246,32 +266,42 @@ class InferredBinsBinning(BinningBase):
 
 class PredefinedDiscreteBinning(BinningBase):
     """
-    Binning with predefined discrete bins
-    """
-
+   Binning with predefined discrete bins
+   """
+ 
     def __init__(self, *, bins: list[list[int]]):
         """
-        The expected bin specification is a list of lists encoding
-        the elements of the bins.
-
-        Args:
-            bins (list[list[int]]): the bin specifications
-        """
+       The expected bin specification is a list of lists encoding
+       the elements of the bins.
+ 
+       Args:
+           bins (list[list[int]]): the bin specifications
+       """
+ 
         bin_mins = [np.min(bin) for bin in bins]
         sorter = np.argsort(bin_mins)
         self._bins = [bins[idx] for idx in sorter]
-
+ 
+        self._dict = {}
+ 
+        for idx, sublist in enumerate(self._bins):
+            for number in sublist:
+                self._dict[number] = idx
+ 
         # number of points in the bins
         self._widths = np.array([len(bin) for bin in self._bins])
-
+ 
         lower_bounds = np.array([np.min(bin) for bin in self._bins])  # inclusive
-        upper_bounds = np.array([np.max(bin) + 1 for bin in self._bins])  # exclusive
+        upper_bounds = np.array([np.max(bin) for bin in self._bins])  # inclusive
         self._boundaries = np.vstack([lower_bounds, upper_bounds]).T
-
-        self._representatives = np.mean(self._boundaries - 1, axis=1)
-        self._representatives = np.ceil(self._representatives).astype(int)
-
+ 
+        self._representatives = np.array([np.min(x) for x in self._bins])
+ 
         self._lowest = np.min(self._boundaries)  # inclusive
+
+        self._highest = np.max(self._boundaries)  # inclusive
+        self._decode_func = np.vectorize(lambda x: self._dict.get(x, -1))
+ 
         self._highest = np.max(self._boundaries)  # exclusive
         self._lookup = np.zeros(int(self._highest - self._lowest + 1))
 
@@ -281,60 +311,64 @@ class PredefinedDiscreteBinning(BinningBase):
         self._lookup = self._lookup.astype(int)
 
     @pandizator_decorator_in
+
     def transform(self, values):
         """
-        Assign bin indices to the values in `values`
-
-        Args:
-            values (np.ndarray): the values to assign bin indices to
-
-        Returns:
-            np.ndarray: the bin indices
-        """
-        return self._lookup[(values - self._lowest).astype(int)]
-
+       Assign bin indices to the values in `values`
+ 
+       Args:
+           values (np.ndarray): the values to assign bin indices to
+ 
+       Returns:
+           np.ndarray: the bin indices
+       """
+        trans = self._decode_func(values)
+        bad_vals = values[trans == -1]
+        if np.any(trans == -1):
+            raise ValueError(f"Following numbers can not be binned: {bad_vals}")
+        return trans
+ 
     def lookup_bin_widths(self, bin_indices: np.ndarray):
         """
-        Returns the bin widths to bin indices
-
-        Args:
-            bin_indices (np.ndarray): the bin indices
-
-        Returns:
-            np.ndarray: the bin widths
-        """
+       Returns the bin widths to bin indices
+ 
+       Args:
+           bin_indices (np.ndarray): the bin indices
+ 
+       Returns:
+           np.ndarray: the bin widths
+       """
         return self._widths[bin_indices]
-
+ 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
         """
-        Returns the bin boundaries to the bin indices
-
-        Args:
-            bin_indices (np.ndarray): the bin indices
-
-        Returns:
-            np.ndarray: the bin boundaries
-        """
+       Returns the bin boundaries to the bin indices
+ 
+       Args:
+           bin_indices (np.ndarray): the bin indices
+ 
+       Returns:
+           np.ndarray: the bin boundaries
+       """
         return self._boundaries[bin_indices]
-
+ 
     def bin_representatives(self):
         """
-        Return representative values from the original domain for each bin index
-
-        Returns:
-            np.ndarray: the representatives
-        """
+       Return representative values from the original domain for each bin index
+ 
+       Returns:
+           np.ndarray: the representatives
+       """
         return self._representatives
-
+ 
     def get_params(self):
         """
-        Returns the parameters of the binning
-
-        Returns:
-            dict: the parameters of the binning
-        """
-        return {'bins': self._bins.copy()}
-
+       Returns the parameters of the binning
+ 
+       Returns:
+           dict: the parameters of the binning
+       """
+        return {"bins": self._bins.copy()}
 
 class PredefinedBinCentersBinning(BinningBase):
     """
@@ -420,7 +454,7 @@ class PredefinedBinRangesBinning(BinningBase):
     Binning with predefined bin ranges
     """
 
-    def __init__(self, *, bin_ranges: np.ndarray):
+    def __init__(self, *, bin_ranges: np.ndarray, strict=False):
         """
         Constructor of binning with predefined bin ranges
 
@@ -429,12 +463,15 @@ class PredefinedBinRangesBinning(BinningBase):
                     each item should contain either one element (to indicate a discrete bin),
                     or two elements indicating the lower (inclusive) and upper (exclusive)
                     boundaries of the bin
+            strict (bool): if True, out of range values result in a
+                            ValueError during a transform call
         """
         self._bin_ranges = np.array(bin_ranges)
         self._lower_bounds = np.sort(self._bin_ranges[:, 0])
         self._upper_bounds = np.sort(self._bin_ranges[:, 1])
         self._representatives = np.mean(self._bin_ranges, axis=1)
         self._widths = self._bin_ranges[:, 1] - self._bin_ranges[:, 0]
+        self._strict = strict
 
     @pandizator_decorator_in
     def transform(self, values):
@@ -447,6 +484,14 @@ class PredefinedBinRangesBinning(BinningBase):
         Returns:
             np.ndarray: the bin indices
         """
+        values = np.array(values)
+        lower_values = values[values < self._lower_bounds[0]].tolist()
+        higher_values = values[values >= self._upper_bounds[-1]].tolist()
+        out_of_range_values = lower_values + higher_values
+
+        if self._strict and len(out_of_range_values) > 0:
+            raise ValueError(f'The following value(s) {out_of_range_values} are out of range for the strict binning')
+        
         mask = (values[:, None] >= self._lower_bounds) & (
             values[:, None] < self._upper_bounds
         )
@@ -507,7 +552,7 @@ class EqualWidthBinning(BinningBase):
     Implements the equal width binning technique inferred from data
     """
 
-    def __init__(self, *, n_bins: int, binning_params=None):
+    def __init__(self, *, n_bins: int, binning_params=None, strict=False):
         """
         Constructor of the equal width binning
 
@@ -517,11 +562,15 @@ class EqualWidthBinning(BinningBase):
                             latest data point with a bin)
             binning_params (None/dict): the parameters of the binning
                                         if it has been already fitted
+            strict (bool): if True, out of range values result in a
+                            ValueError during a transform call
         """
+
         self._n_bins = n_bins
         self._binning = None
         self._lower_bounds = None
         self._upper_bounds = None
+        self._strict = strict
 
         if binning_params is not None:
             self._binning = PredefinedBinRangesBinning(**binning_params)
@@ -544,7 +593,7 @@ class EqualWidthBinning(BinningBase):
         self._lower_bounds = np.arange(self._n_bins + 1) * diff + x_min
         self._upper_bounds = np.arange(1, self._n_bins + 2) * diff + x_min
         bin_ranges = np.vstack([self._lower_bounds, self._upper_bounds]).T
-        self._binning = PredefinedBinRangesBinning(bin_ranges=bin_ranges)
+        self._binning = PredefinedBinRangesBinning(bin_ranges=bin_ranges, strict=self._strict)
 
         return self
 
@@ -558,7 +607,7 @@ class EqualWidthBinning(BinningBase):
 
         Returns:
             np.ndarray: the bin indices
-        """
+        """        
         return self._binning.transform(values)
 
     def lookup_bin_boundaries(self, bin_indices: np.ndarray):
@@ -794,6 +843,18 @@ class KMeansClusteringBinning(BinningBase):
         binning_params = None if self._binning is None else self._binning.get_params()
         return {'n_bins': self._n_bins, 'binning_params': binning_params}
 
+def instantiate_obj(description):
+    """
+    Instantiates an object from a description
+    Args:
+        description (tuple): (module_name, class_name, params_dict)
+    Returns:
+        obj: the instantiated object
+    """
+
+    module = importlib.import_module(description[0])
+    class_ = getattr(module, description[1])
+    return class_(**description[2])
 
 class AdaptiveBinning:
     def __init__(self, *, binning, value_distance_tolerance, min_weight=0):
@@ -814,6 +875,13 @@ class AdaptiveBinning:
         else:
             self.binning = InferredBinsBinning()
         """
+
+        if isinstance(binning, tuple):
+            self.binning = instantiate_obj(binning)
+        elif isinstance(binning, BinningBase):
+            self.binning = binning
+        else:
+            self.binning = InferredBinsBinning()
 
         self.value_distance_tolerance = value_distance_tolerance
         self.min_weight = min_weight if min_weight is not None else 0
