@@ -2,5 +2,4 @@ numpy
 pytest
 scipy
 kmeans1d
-pandas
 scikit-learn

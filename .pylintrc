@@ -1,0 +1,8 @@
+[FORMAT]
+good-names=X,X2,X_df,X_df_1d,X_bins,Xt,X_np,X_pd
+
+[SIMILARITIES]
+min-similarity-lines=15
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=yes
