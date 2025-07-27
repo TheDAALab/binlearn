@@ -197,22 +197,19 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
 
         return list(edges), reps
 
-    def get_params(self, deep: bool = True) -> Dict[str, Any]:
-        """Get parameters for this estimator."""
-        params = super().get_params(deep=deep)
-        params.update(
-            {
-                "n_bins": self.n_bins,
-                "bin_range": self.bin_range,
-                "joint_range_method": self.joint_range_method,
-            }
-        )
+    def _get_binning_params(self) -> Dict[str, Any]:
+        """Get equal-width binning specific parameters."""
+        params = super()._get_binning_params()
+        params.update({
+            "n_bins": self.n_bins,
+            "bin_range": self.bin_range,
+            "joint_range_method": self.joint_range_method,
+        })
         return params
 
-    def set_params(self, **params) -> "EqualWidthBinning":
-        """Set parameters for this estimator."""
-        # Handle equal-width specific parameters that should reset fitted state
-        reset_fitted = False
+    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
+        """Handle equal-width binning specific parameter changes."""
+        reset_fitted = super()._handle_bin_params(params)
 
         if "n_bins" in params:
             self.n_bins = params.pop("n_bins")
@@ -226,14 +223,7 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
             self.joint_range_method = params.pop("joint_range_method")
             reset_fitted = True
 
-        if "fit_jointly" in params:
-            reset_fitted = True  # Will be handled by parent
-
-        if reset_fitted:
-            self._fitted = False
-
-        super().set_params(**params)
-        return self
+        return reset_fitted
 
     def _validate_params(self) -> None:
         """Validate parameters for sklearn compatibility."""

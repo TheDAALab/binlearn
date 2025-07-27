@@ -74,7 +74,9 @@ class ValidationMixin:
     """Mixin class providing enhanced validation capabilities."""
 
     @staticmethod
-    def validate_array_like(data: Any, name: str = "data", allow_none: bool = False) -> np.ndarray:
+    def validate_array_like(
+        data: Any, name: str = "data", allow_none: bool = False
+    ) -> Optional[np.ndarray]:
         """Validate and convert array-like input."""
         if data is None and allow_none:
             return None

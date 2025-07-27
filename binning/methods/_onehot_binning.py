@@ -172,3 +172,21 @@ class OneHotBinning(FlexibleBinningBase, ReprMixin):
             representatives.append(val)
 
         return bin_defs, representatives
+
+    def _get_binning_params(self) -> Dict[str, Any]:
+        """Get one-hot binning specific parameters."""
+        params = super()._get_binning_params()
+        params.update({
+            "max_unique_values": self.max_unique_values,
+        })
+        return params
+
+    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
+        """Handle one-hot binning specific parameter changes."""
+        reset_fitted = super()._handle_bin_params(params)
+
+        if "max_unique_values" in params:
+            self.max_unique_values = params.pop("max_unique_values")
+            reset_fitted = True
+
+        return reset_fitted

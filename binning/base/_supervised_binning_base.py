@@ -150,7 +150,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         x_col_validated = self.validate_array_like(x_col, f"feature column {col_id}")
         guidance_data_validated = self.validate_guidance_data(guidance_data)
 
-        # Check data quality
+        # Check data quality (validate_array_like should not return None here)
+        assert x_col_validated is not None, "x_col_validated should not be None"
         self.check_data_quality(x_col_validated, f"feature column {col_id}")
         self.check_data_quality(guidance_data_validated, "guidance data")
 
