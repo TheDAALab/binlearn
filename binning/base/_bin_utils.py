@@ -12,10 +12,6 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 
-# Type aliases
-FlexibleBinSpec = Dict[Any, List[Dict[str, Any]]]  # col_id -> list of bin definitions
-FlexibleBinReps = Dict[Any, List[float]]  # col_id -> list of representatives
-
 
 # =============================================================================
 # INTERVAL BINNING UTILITIES
@@ -118,7 +114,7 @@ def create_bin_masks(
 # =============================================================================
 
 
-def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
+def ensure_flexible_bin_spec(bin_spec: Any) -> Dict[Any, List[Dict[str, Any]]]:
     """Ensure bin_spec is in the correct flexible bin format.
 
     Parameters
@@ -128,7 +124,7 @@ def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
 
     Returns
     -------
-    FlexibleBinSpec
+    Dict[Any, List[Dict[str, Any]]]
         Dictionary mapping columns to lists of bin definitions.
 
     Raises
@@ -176,14 +172,14 @@ def generate_default_flexible_representatives(bin_defs: List[Dict[str, Any]]) ->
     return reps
 
 
-def validate_flexible_bins(bin_spec: FlexibleBinSpec, bin_reps: FlexibleBinReps) -> None:
+def validate_flexible_bins(bin_spec: Dict[Any, List[Dict[str, Any]]], bin_reps: Dict[Any, List[float]]) -> None:
     """Validate flexible bin specifications and representatives.
 
     Parameters
     ----------
-    bin_spec : FlexibleBinSpec
+    bin_spec : Dict[Any, List[Dict[str, Any]]]
         Dictionary mapping columns to lists of bin definitions.
-    bin_reps : FlexibleBinReps
+    bin_reps : Dict[Any, List[float]]
         Dictionary mapping columns to lists of representatives.
 
     Raises
@@ -353,12 +349,12 @@ def transform_value_to_flexible_bin(value: Any, bin_defs: List[Dict[str, Any]]) 
     return find_flexible_bin_for_value(value, bin_defs)
 
 
-def get_flexible_bin_count(bin_spec: FlexibleBinSpec) -> Dict[Any, int]:
+def get_flexible_bin_count(bin_spec: Dict[Any, List[Dict[str, Any]]]) -> Dict[Any, int]:
     """Get number of bins for each column in flexible bin specification.
 
     Parameters
     ----------
-    bin_spec : FlexibleBinSpec
+    bin_spec : Dict[Any, List[Dict[str, Any]]]
         Dictionary mapping columns to bin definitions.
 
     Returns

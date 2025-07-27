@@ -4,7 +4,6 @@ The module brings together the foundations.
 
 # Core types and constants
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-from ._types import BinEdges, IntervalBinSpec, BinRepsType
 
 # Utility functions
 from ._data_utils import (
@@ -21,8 +20,6 @@ from ._bin_utils import (
     default_representatives,
     create_bin_masks,
     # Flexible binning utilities
-    FlexibleBinSpec,
-    FlexibleBinReps,
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
@@ -48,11 +45,6 @@ __all__ = [
     "MISSING_VALUE",
     "ABOVE_RANGE",
     "BELOW_RANGE",
-    # Types
-    "BinEdges",
-    "IntervalBinSpec",
-    "FlexibleBinSpec",
-    "BinRepsType",
     # Utility functions
     "prepare_array",
     "return_like_input",
@@ -65,8 +57,6 @@ __all__ = [
     "default_representatives",
     "create_bin_masks",
     # Flexible binning utilities
-    "FlexibleBinSpec",
-    "FlexibleBinReps",
     "ensure_flexible_bin_spec",
     "generate_default_flexible_representatives",
     "validate_flexible_bins",

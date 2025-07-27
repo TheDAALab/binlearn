@@ -10,8 +10,6 @@ from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import (
     ensure_bin_dict,
     # Flexible bin utilities
-    FlexibleBinSpec,
-    FlexibleBinReps,
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
@@ -36,8 +34,8 @@ class FlexibleBinningBase(GeneralBinningBase):
     def __init__(
         self,
         preserve_dataframe: Optional[bool] = None,
-        bin_spec: Optional[Union[FlexibleBinSpec, Any]] = None,
-        bin_representatives: Optional[Union[FlexibleBinReps, Any]] = None,
+        bin_spec: Optional[Union[Dict[Any, List[Dict[str, Any]]], Any]] = None,
+        bin_representatives: Optional[Union[Dict[Any, List[float]], Any]] = None,
         fit_jointly: Optional[bool] = None,
         guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
@@ -58,8 +56,8 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._user_bin_reps = bin_representatives
 
         # Fitted specifications
-        self._bin_spec: FlexibleBinSpec = {}
-        self._bin_reps: FlexibleBinReps = {}
+        self._bin_spec: Dict[Any, List[Dict[str, Any]]] = {}
+        self._bin_reps: Dict[Any, List[float]] = {}
 
         # If bin_spec is provided, process it immediately to enable transform without fit
         if bin_spec is not None:
@@ -174,7 +172,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         return self._calculate_flexible_bins(x_col, col_id)
 
-    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
+    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> Dict[Any, List[Dict[str, Any]]]:
         """Ensure bin_spec is in the correct dictionary format.
 
         DEPRECATED: Use ensure_flexible_bin_spec from _flexible_bin_utils instead.
@@ -190,7 +188,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         return generate_default_flexible_representatives(bin_defs)
 
-    def _validate_flexible_bins(self, bin_spec: FlexibleBinSpec, bin_reps: FlexibleBinReps) -> None:
+    def _validate_flexible_bins(self, bin_spec: Dict[Any, List[Dict[str, Any]]], bin_reps: Dict[Any, List[float]]) -> None:
         """Validate flexible bin specifications.
 
         DEPRECATED: Use validate_flexible_bins from _flexible_bin_utils instead.

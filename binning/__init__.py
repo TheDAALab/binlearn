@@ -24,11 +24,6 @@ from .base import (
     MISSING_VALUE,
     ABOVE_RANGE,
     BELOW_RANGE,
-    # Types
-    BinEdges,
-    IntervalBinSpec,
-    FlexibleBinSpec,
-    BinRepsType,
     # Base classes
     GeneralBinningBase,
     IntervalBinningBase,
@@ -83,7 +78,6 @@ __all__ = [
     # Types
     "BinEdges",
     "IntervalBinSpec",
-    "FlexibleBinSpec",
     "BinRepsType",
     # Base classes
     "GeneralBinningBase",
