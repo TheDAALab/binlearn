@@ -11,7 +11,7 @@ from ..config import get_config
 from ..errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
 
 
-class SupervisedBinning(SupervisedBinningBase, ReprMixin):
+class SupervisedBinning(ReprMixin, SupervisedBinningBase):
     """
     Supervised binning transformer for single guidance/target column.
 

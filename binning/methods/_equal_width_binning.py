@@ -7,7 +7,7 @@ from ..base._repr_mixin import ReprMixin
 from ..errors import ConfigurationError
 
 
-class EqualWidthBinning(IntervalBinningBase, ReprMixin):
+class EqualWidthBinning(ReprMixin, IntervalBinningBase):
     """Classic equal-width binning transformer.
 
     Creates bins of equal width across the range of each feature.

@@ -2,71 +2,80 @@
 Simple representation mixin for binning classes.
 """
 
+import inspect
+from typing import Dict, Any
+
 
 class ReprMixin:
     """
     Simple mixin providing a clean __repr__ method.
 
-    Just shows class name and non-default parameters.
-    Large objects (bin_edges, bin_spec, etc.) are abbreviated as "...".
+    Shows only parameters that are relevant to the specific class,
+    determined by inspecting the class's constructor signature.
     """
 
-    def __repr__(self) -> str:
-        """Clean string representation."""
-        class_name = self.__class__.__name__
-
-        # Get parameters if available
+    def _get_constructor_info(self) -> Dict[str, Any]:
+        """Get constructor parameter names and their default values."""
         try:
-            params = self.get_params(deep=False)  # type: ignore
-        except Exception:
-            # Fallback: extract common attributes
+            # Get the constructor signature from the EXACT concrete class only
+            cls = self.__class__
+            
+            # Check if the concrete class defines its own __init__
+            if '__init__' in cls.__dict__:
+                sig = inspect.signature(cls.__dict__['__init__'])
+            else:
+                # If no __init__ in concrete class, fall back to class resolution
+                sig = inspect.signature(cls.__init__)
+                
             params = {}
-            for attr in [
-                "n_bins",
-                "max_unique_values",
-                "task_type",
-                "tree_params",
-                "preserve_dataframe",
-                "fit_jointly",
-                "guidance_columns",
-                "bin_edges",
-                "bin_representatives",
-                "bin_spec",
-                "clip",
-            ]:
-                if hasattr(self, attr):
-                    params[attr] = getattr(self, attr)
+            for name, param in sig.parameters.items():
+                if name in {'self', 'kwargs'}:
+                    continue
+                # Get default value if it exists
+                if param.default is not inspect.Parameter.empty:
+                    params[name] = param.default
+                else:
+                    params[name] = inspect.Parameter.empty  # Mark as required parameter
+            return params
+        except Exception:
+            return {}
 
-        # Simple defaults (most common values)
-        defaults = {
-            "preserve_dataframe": False,
-            "fit_jointly": False,
-            "guidance_columns": None,
-            "bin_edges": None,
-            "bin_representatives": None,
-            "bin_spec": None,
-            "n_bins": 10,
-            "max_unique_values": 100,
-            "task_type": "classification",
-            "tree_params": {},
-            "clip": True,
-        }
+    def __repr__(self) -> str:
+        """Clean string representation showing only relevant parameters."""
+        class_name = self.__class__.__name__
+        
+        # Get constructor parameters and their defaults
+        constructor_info = self._get_constructor_info()
 
-        # Show only non-default parameters
+        # Extract current values for ONLY parameters in the concrete constructor
         parts = []
-        for key, value in params.items():
-            if key in defaults and value == defaults[key]:
+        for param_name, default_value in constructor_info.items():
+            # Only show parameters that are actually in this class's constructor
+            # This prevents showing inherited attributes that aren't in the concrete constructor
+            if not hasattr(self, param_name):
                 continue
-            if value is None or value == {} or value == []:
+                
+            current_value = getattr(self, param_name)
+            
+            # Skip if value matches default
+            if current_value == default_value:
+                continue
+            
+            # Skip None values that are defaults
+            if current_value is None and default_value is None:
+                continue
+                
+            # Skip empty containers unless they differ from default
+            if (current_value == {} or current_value == []) and default_value in (None, {}, []):
                 continue
 
             # Abbreviate large objects
-            if key in {"bin_edges", "bin_representatives", "bin_spec"}:
-                parts.append(f"{key}=...")
-            elif isinstance(value, str):
-                parts.append(f"{key}='{value}'")
+            if param_name in {"bin_edges", "bin_representatives", "bin_spec"}:
+                parts.append(f"{param_name}=...")
+            elif isinstance(current_value, str):
+                parts.append(f"{param_name}='{current_value}'")
             else:
-                parts.append(f"{key}={value}")
+                parts.append(f"{param_name}={current_value}")
 
         if parts:
             return f"{class_name}({', '.join(parts)})"

@@ -61,6 +61,36 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._bin_spec: FlexibleBinSpec = {}
         self._bin_reps: FlexibleBinReps = {}
 
+        # If bin_spec is provided, process it immediately to enable transform without fit
+        if bin_spec is not None:
+            self._process_provided_flexible_bins()
+
+    def _process_provided_flexible_bins(self) -> None:
+        """Process user-provided flexible bin specifications and mark as fitted if complete."""
+        try:
+            if self._user_bin_spec is not None:
+                self._bin_spec = ensure_flexible_bin_spec(self._user_bin_spec)
+
+            if self._user_bin_reps is not None:
+                self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+            else:
+                # Generate default representatives for provided specs
+                for col in self._bin_spec:
+                    if col not in self._bin_reps:
+                        bin_defs = self._bin_spec[col]
+                        self._bin_reps[col] = generate_default_flexible_representatives(bin_defs)
+
+            # Validate the bins
+            if self._bin_spec:
+                validate_flexible_bins(self._bin_spec, self._bin_reps)
+                # Mark as fitted since we have complete bin specifications
+                self._fitted = True
+                # Store columns for later reference
+                self._original_columns = list(self._bin_spec.keys())
+
+        except Exception as e:
+            raise ValueError(f"Failed to process provided flexible bin specifications: {str(e)}") from e
+
     def _fit_per_column(
         self,
         X: np.ndarray,

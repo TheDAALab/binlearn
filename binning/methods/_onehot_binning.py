@@ -8,7 +8,7 @@ from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
 
 
-class OneHotBinning(FlexibleBinningBase, ReprMixin):
+class OneHotBinning(ReprMixin, FlexibleBinningBase):
     """
     Creates a singleton bin for each unique value in numeric data.
 

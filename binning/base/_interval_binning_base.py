@@ -62,6 +62,56 @@ class IntervalBinningBase(GeneralBinningBase):
         self._bin_edges: Dict[Any, List[float]] = {}
         self._bin_reps: Dict[Any, List[float]] = {}
 
+        # If bin_edges are provided, process them immediately to enable transform without fit
+        if bin_edges is not None:
+            self._process_provided_bins()
+
+    def _process_provided_bins(self) -> None:
+        """Process user-provided bin specifications and mark as fitted if complete."""
+        try:
+            if self._user_bin_edges is not None:
+                self._bin_edges = ensure_bin_dict(self._user_bin_edges)
+                # Validate bin edges format
+                for col, edges in self._bin_edges.items():
+                    if not isinstance(edges, (list, tuple, np.ndarray)):
+                        raise ConfigurationError(
+                            f"Bin edges for column {col} must be array-like",
+                            suggestions=[
+                                "Provide bin edges as a list, tuple, or numpy array",
+                                "Example: bin_edges = {0: [0, 1, 2, 3]} for column 0",
+                            ],
+                        )
+                    if len(edges) < 2:
+                        raise ConfigurationError(
+                            f"Bin edges for column {col} must have at least 2 values",
+                            suggestions=[
+                                "Provide at least 2 bin edges to define 1 bin",
+                                "Example: [0, 1] creates one bin from 0 to 1",
+                            ],
+                        )
+
+            if self._user_bin_reps is not None:
+                self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+            else:
+                # Generate default representatives for provided edges
+                for col in self._bin_edges:
+                    if col not in self._bin_reps:
+                        edges = self._bin_edges[col]
+                        self._bin_reps[col] = default_representatives(edges)
+
+            # Validate the bins
+            if self._bin_edges:
+                validate_bins(self._bin_edges, self._bin_reps)
+                # Mark as fitted since we have complete bin specifications
+                self._fitted = True
+                # Store columns for later reference
+                self._original_columns = list(self._bin_edges.keys())
+
+        except Exception as e:
+            if isinstance(e, BinningError):
+                raise
+            raise ConfigurationError(f"Failed to process provided bin specifications: {str(e)}") from e
+
     def _fit_per_column(
         self,
         X: np.ndarray,
