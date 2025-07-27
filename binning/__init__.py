@@ -32,14 +32,16 @@ from .methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
 
 # Optional pandas/polars configurations (if available)
 try:
-    from ._pandas_config import *
+    from ._pandas_config import PANDAS_AVAILABLE, pd
 except ImportError:
-    pass
+    PANDAS_AVAILABLE = False
+    pd = None
 
 try:
-    from ._polars_config import *  
+    from ._polars_config import POLARS_AVAILABLE, pl  
 except ImportError:
-    pass
+    POLARS_AVAILABLE = False
+    pl = None
 
 __all__ = [
     # Configuration
