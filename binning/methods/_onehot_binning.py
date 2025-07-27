@@ -2,24 +2,26 @@
 OneHotBinning transformer - creates a singleton bin for each unique value in the data.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from ..base._flexible_binning_base import FlexibleBinningBase
 
 
 class OneHotBinning(FlexibleBinningBase):
     """
-    Creates a singleton bin for each unique value in the data.
+    Creates a singleton bin for each unique value in numeric data.
 
     This is NOT one-hot encoding that expands columns. Instead, it's a binning
     method that creates one bin per unique value, where each bin is defined as
     {"singleton": value}. The output has the same shape as the input.
 
     For example:
-    - Input: [[1, 'A'], [2, 'B'], [1, 'A']]
-    - Bins created: {0: [{"singleton": 1}, {"singleton": 2}],
-                     1: [{"singleton": 'A'}, {"singleton": 'B'}]}
+    - Input: [[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]]
+    - Bins created: {0: [{"singleton": 1.0}, {"singleton": 2.0}],
+                     1: [{"singleton": 10.0}, {"singleton": 20.0}]}
     - Transform output: [[0, 0], [1, 1], [0, 0]]  # Same shape as input
+    
+    Note: Only numeric data is supported. Input will be converted to float.
     """
 
     def __init__(
@@ -63,7 +65,10 @@ class OneHotBinning(FlexibleBinningBase):
         self.max_unique_values = max_unique_values
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any
+        self, 
+        x_col: np.ndarray, 
+        col_id: Any, 
+        guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """
         Calculate singleton bins for each unique value in the column.
@@ -71,29 +76,23 @@ class OneHotBinning(FlexibleBinningBase):
         Args:
             x_col: Data for a single column.
             col_id: Column identifier.
+            guidance_data: Optional guidance data (not used in one-hot binning).
 
         Returns:
             Tuple containing:
             - List of singleton bin definitions: [{"singleton": val1}, {"singleton": val2}, ...]
             - List of representative values: [val1, val2, ...]
         """
-        # Convert to appropriate type and handle NaNs
-        x_col = np.asarray(x_col)
+        # Convert to numeric array and handle NaNs/infinites
+        x_col = np.asarray(x_col, dtype=float)
 
-        # Remove NaNs/infinites for finding unique values
-        if np.issubdtype(x_col.dtype, np.floating):
-            finite_mask = np.isfinite(x_col)
-            if not finite_mask.any():
-                # All values are NaN/inf - create a default bin
-                return [{"singleton": 0.0}], [0.0]
-            finite_values = x_col[finite_mask]
-        else:
-            # For non-floating types, just remove NaNs if they exist
-            if x_col.dtype == object:
-                finite_values = x_col[x_col != None]  # Remove None values
-            else:
-                finite_values = x_col
-
+        # Remove NaN/inf values for finding unique values
+        finite_mask = np.isfinite(x_col)
+        if not finite_mask.any():
+            # All values are NaN/inf - create a default bin
+            return [{"singleton": 0.0}], [0.0]
+        
+        finite_values = x_col[finite_mask]
         unique_values = np.unique(finite_values)
 
         # Check if we have too many unique values
@@ -105,16 +104,11 @@ class OneHotBinning(FlexibleBinningBase):
             )
 
         # Create singleton bins for each unique value
-        # Convert to Python native types to avoid JSON serialization issues
         bin_defs = []
         representatives = []
 
         for val in unique_values:
-            if isinstance(val, (np.integer, np.floating)):
-                val = float(val)
-            elif isinstance(val, np.str_):
-                val = str(val)
-
+            val = float(val)  # Convert to Python float
             bin_defs.append({"singleton": val})
             representatives.append(val)
 
@@ -131,19 +125,10 @@ class OneHotBinning(FlexibleBinningBase):
         all_finite_values = []
 
         for i in range(X.shape[1]):
-            col_data = X[:, i]
-
-            if np.issubdtype(col_data.dtype, np.floating):
-                finite_mask = np.isfinite(col_data)
-                if finite_mask.any():
-                    all_finite_values.extend(col_data[finite_mask])
-            else:
-                # Handle non-floating types
-                if col_data.dtype == object:
-                    valid_values = col_data[col_data != None]
-                else:
-                    valid_values = col_data
-                all_finite_values.extend(valid_values)
+            col_data = np.asarray(X[:, i], dtype=float)
+            finite_mask = np.isfinite(col_data)
+            if finite_mask.any():
+                all_finite_values.extend(col_data[finite_mask])
 
         if not all_finite_values:
             # No valid values across any column
@@ -177,17 +162,13 @@ class OneHotBinning(FlexibleBinningBase):
         representatives = []
 
         for val in global_unique:
-            if isinstance(val, (np.integer, np.floating)):
-                val = float(val)
-            elif isinstance(val, np.str_):
-                val = str(val)
-
+            val = float(val)  # Convert to Python float
             bin_defs.append({"singleton": val})
             representatives.append(val)
 
         return bin_defs, representatives
 
-    def __repr__(self) -> str:
+    def __repr__(self, N_CHAR_MAX: int = 700) -> str:
         """String representation of the estimator."""
         params = []
 

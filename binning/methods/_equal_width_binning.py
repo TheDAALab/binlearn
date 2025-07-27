@@ -115,8 +115,19 @@ class EqualWidthBinning(IntervalBinningBase):
 
         return self._create_equal_width_bins(min_val, max_val, n_bins)
 
-    def _calculate_bins(self, x_col: np.ndarray, col_id: Any) -> Tuple[List[float], List[float]]:
-        """Calculate equal-width bins for a column (per-column logic)."""
+    def _calculate_bins(
+        self, 
+        x_col: np.ndarray, 
+        col_id: Any, 
+        guidance_data: Optional[np.ndarray] = None
+    ) -> Tuple[List[float], List[float]]:
+        """Calculate equal-width bins for a column (per-column logic).
+        
+        Args:
+            x_col: Column data to bin.
+            col_id: Column identifier.
+            guidance_data: Optional guidance data (not used in equal-width binning).
+        """
         # Get n_bins for this column
         if isinstance(self.n_bins, dict):
             n_bins = self.n_bins.get(col_id, 10)
@@ -148,8 +159,10 @@ class EqualWidthBinning(IntervalBinningBase):
                 return self.bin_range[col_id]
             else:
                 raise ValueError(f"No range specified for column {col_id}")
-        else:
+        elif self.bin_range is not None:
             return self.bin_range
+        else:
+            raise ValueError(f"No range specified for column {col_id}")
 
     def _get_data_range(self, x_col: np.ndarray, col_id: Any) -> Tuple[float, float]:
         """Get the data range for a column."""
@@ -217,7 +230,8 @@ class EqualWidthBinning(IntervalBinningBase):
         if reset_fitted:
             self._fitted = False
 
-        return super().set_params(**params)
+        super().set_params(**params)
+        return self
 
     def __repr__(self) -> str:
         """String representation of the estimator."""

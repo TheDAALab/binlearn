@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
-from abc import abstractmethod
 
 import numpy as np
 
@@ -10,10 +9,18 @@ from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import ensure_bin_dict, validate_bins
 from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-
-# Type aliases for flexible binning
-FlexibleBinSpec = Dict[Any, List[Dict[str, Any]]]  # col_id -> list of bin definitions
-FlexibleBinReps = Dict[Any, List[float]]  # col_id -> list of representatives
+from ._flexible_bin_utils import (
+    FlexibleBinSpec,
+    FlexibleBinReps,
+    ensure_flexible_bin_spec,
+    generate_default_flexible_representatives,
+    validate_flexible_bins,
+    is_missing_value,
+    find_flexible_bin_for_value,
+    calculate_flexible_bin_width,
+    transform_value_to_flexible_bin,
+    get_flexible_bin_count,
+)
 
 
 class FlexibleBinningBase(GeneralBinningBase):
@@ -30,9 +37,15 @@ class FlexibleBinningBase(GeneralBinningBase):
         bin_spec: Optional[Union[FlexibleBinSpec, Any]] = None,
         bin_representatives: Optional[Union[FlexibleBinReps, Any]] = None,
         fit_jointly: bool = False,
+        guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
     ):
-        super().__init__(preserve_dataframe=preserve_dataframe, fit_jointly=fit_jointly, **kwargs)
+        super().__init__(
+            preserve_dataframe=preserve_dataframe, 
+            fit_jointly=fit_jointly, 
+            guidance_columns=guidance_columns,
+            **kwargs
+        )
 
         # Store parameters as expected by sklearn
         self.bin_spec = bin_spec
@@ -46,121 +59,63 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._bin_spec: FlexibleBinSpec = {}
         self._bin_reps: FlexibleBinReps = {}
 
-    def _fit_per_column(self, X: np.ndarray, columns: List[Any]) -> None:
-        """Fit flexible bins per column (original logic)."""
+    def _fit_per_column(
+        self, 
+        X: np.ndarray, 
+        columns: List[Any], 
+        guidance_data: Optional[np.ndarray] = None,
+        **fit_params
+    ) -> None:
+        """Fit flexible bins per column with optional guidance data."""
         self._process_user_specifications(columns)
 
-        if not self._user_bin_spec:
-            # Calculate bins from data
-            for i, col in enumerate(columns):
-                if col not in self._bin_spec:
-                    bin_defs, reps = self._calculate_flexible_bins(X[:, i], col)
-                    self._bin_spec[col] = bin_defs
-                    if col not in self._bin_reps:
-                        self._bin_reps[col] = reps
+        # Calculate bins from data for columns that don't have user-provided specs
+        for i, col in enumerate(columns):
+            # Skip column entirely if it already has bin specs or representatives
+            if col not in self._bin_spec and col not in self._bin_reps:
+                bin_defs, reps = self._calculate_flexible_bins(X[:, i], col, guidance_data)
+                self._bin_spec[col] = bin_defs
+                self._bin_reps[col] = reps
 
         self._finalize_fitting()
 
-    def _fit_jointly(self, X: np.ndarray, columns: List[Any]) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
         """Fit flexible bins jointly across all columns."""
         self._process_user_specifications(columns)
 
-        if not self._user_bin_spec:
-            # Calculate joint parameters and apply to each column
+        # Calculate joint parameters and apply to columns without user-provided specs
+        if any(col not in self._bin_spec for col in columns):
             joint_params = self._calculate_joint_parameters(X, columns)
 
             for i, col in enumerate(columns):
-                bin_defs, reps = self._calculate_flexible_bins_jointly(X[:, i], col, joint_params)
-                self._bin_spec[col] = bin_defs
-                self._bin_reps[col] = reps
+                if col not in self._bin_spec:
+                    bin_defs, reps = self._calculate_flexible_bins_jointly(X[:, i], col, joint_params)
+                    self._bin_spec[col] = bin_defs
+                    self._bin_reps[col] = reps
 
         self._finalize_fitting()
 
     def _process_user_specifications(self, columns: List[Any]) -> None:
         """Process user-provided flexible bin specifications."""
         if self._user_bin_spec is not None:
-            self._bin_spec = self._ensure_flexible_bin_dict(self._user_bin_spec)
-        else:
-            self._bin_spec = {}
+            self._bin_spec = ensure_flexible_bin_spec(self._user_bin_spec)
+        # If no user specs provided, keep existing _bin_spec (don't reset to {})
 
         if self._user_bin_reps is not None:
             self._bin_reps = ensure_bin_dict(self._user_bin_reps)
-        else:
-            self._bin_reps = {}
+        # If no user reps provided, keep existing _bin_reps (don't reset to {})
 
     def _finalize_fitting(self) -> None:
         """Finalize the fitting process."""
         # Generate default representatives for any missing ones
         for col in self._bin_spec:
             if col not in self._bin_reps:
-                self._bin_reps[col] = self._generate_default_flexible_representatives(
+                self._bin_reps[col] = generate_default_flexible_representatives(
                     self._bin_spec[col]
                 )
 
         # Validate the bins
-        self._validate_flexible_bins(self._bin_spec, self._bin_reps)
-
-    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
-        """Ensure bin_spec is in the correct dictionary format."""
-        if isinstance(bin_spec, dict):
-            return bin_spec
-        else:
-            # Handle other formats if needed
-            raise ValueError("bin_spec must be a dictionary mapping columns to bin definitions")
-
-    def _generate_default_flexible_representatives(
-        self, bin_defs: List[Dict[str, Any]]
-    ) -> List[float]:
-        """Generate default representatives for flexible bins."""
-        reps = []
-        for bin_def in bin_defs:
-            if "singleton" in bin_def:
-                reps.append(float(bin_def["singleton"]))
-            elif "interval" in bin_def:
-                a, b = bin_def["interval"]
-                reps.append((a + b) / 2)  # Midpoint
-            else:
-                raise ValueError(f"Unknown bin definition: {bin_def}")
-        return reps
-
-    def _validate_flexible_bins(self, bin_spec: FlexibleBinSpec, bin_reps: FlexibleBinReps) -> None:
-        """Validate flexible bin specifications."""
-        for col in bin_spec:
-            bin_defs = bin_spec[col]
-            reps = bin_reps.get(col, [])
-
-            if len(bin_defs) != len(reps):
-                raise ValueError(
-                    f"Column {col}: Number of bin definitions ({len(bin_defs)}) "
-                    f"must match number of representatives ({len(reps)})"
-                )
-
-            # Validate bin definition format
-            for i, bin_def in enumerate(bin_defs):
-                if not isinstance(bin_def, dict):
-                    raise ValueError(f"Column {col}, bin {i}: Bin definition must be a dictionary")
-
-                if "singleton" in bin_def:
-                    if len(bin_def) != 1:
-                        raise ValueError(
-                            f"Column {col}, bin {i}: Singleton bin must have only 'singleton' key"
-                        )
-                elif "interval" in bin_def:
-                    if len(bin_def) != 1:
-                        raise ValueError(
-                            f"Column {col}, bin {i}: Interval bin must have only 'interval' key"
-                        )
-
-                    interval = bin_def["interval"]
-                    if not isinstance(interval, (list, tuple)) or len(interval) != 2:
-                        raise ValueError(f"Column {col}, bin {i}: Interval must be [min, max]")
-
-                    if interval[0] > interval[1]:
-                        raise ValueError(f"Column {col}, bin {i}: Interval min must be <= max")
-                else:
-                    raise ValueError(
-                        f"Column {col}, bin {i}: Bin must have 'singleton' or 'interval' key"
-                    )
+        validate_flexible_bins(self._bin_spec, self._bin_reps)
 
     def _calculate_joint_parameters(self, X: np.ndarray, columns: List[Any]) -> Dict[str, Any]:
         """Calculate parameters shared across all columns for flexible binning.
@@ -170,7 +125,10 @@ class FlexibleBinningBase(GeneralBinningBase):
         return {}
 
     def _calculate_flexible_bins_jointly(
-        self, x_col: np.ndarray, col_id: Any, joint_params: Dict[str, Any]
+        self, 
+        x_col: np.ndarray, 
+        col_id: Any, 
+        joint_params: Dict[str, Any]
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """Calculate flexible bins for a column using joint parameters.
 
@@ -178,24 +136,69 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         return self._calculate_flexible_bins(x_col, col_id)
 
-    @abstractmethod
+    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
+        """Ensure bin_spec is in the correct dictionary format.
+        
+        DEPRECATED: Use ensure_flexible_bin_spec from _flexible_bin_utils instead.
+        """
+        return ensure_flexible_bin_spec(bin_spec)
+
+    def _generate_default_flexible_representatives(
+        self, bin_defs: List[Dict[str, Any]]
+    ) -> List[float]:
+        """Generate default representatives for flexible bins.
+        
+        DEPRECATED: Use generate_default_flexible_representatives from _flexible_bin_utils instead.
+        """
+        return generate_default_flexible_representatives(bin_defs)
+
+    def _validate_flexible_bins(self, bin_spec: FlexibleBinSpec, bin_reps: FlexibleBinReps) -> None:
+        """Validate flexible bin specifications.
+        
+        DEPRECATED: Use validate_flexible_bins from _flexible_bin_utils instead.
+        """
+        return validate_flexible_bins(bin_spec, bin_reps)
+
+    def _is_missing_value(self, value: Any) -> bool:
+        """Check if a value should be considered missing.
+        
+        DEPRECATED: Use is_missing_value from _flexible_bin_utils instead.
+        """
+        return is_missing_value(value)
+
+    def _find_bin_for_value(self, value: float, bin_defs: List[Dict[str, Any]]) -> int:
+        """Find the bin index for a given value.
+        
+        DEPRECATED: Use find_flexible_bin_for_value from _flexible_bin_utils instead.
+        """
+        return find_flexible_bin_for_value(value, bin_defs)
+
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any
+        self, 
+        x_col: np.ndarray, 
+        col_id: Any, 
+        guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """Calculate flexible bin definitions and representatives for a column.
 
-        Args:
-            x_col: Data for a single column.
-            col_id: Column identifier.
+        Parameters
+        ----------
+        x_col : np.ndarray
+            Data for a single column.
+        col_id : Any
+            Column identifier.
+        guidance_data : Optional[np.ndarray], default=None
+            Optional guidance data that can influence bin calculation.
 
-        Returns:
-            Tuple containing:
-            - List of bin definitions (dicts with 'singleton' or 'interval' keys)
-            - List of representative values
+        Returns
+        -------
+        Tuple[List[Dict[str, Any]], List[float]]
+            A tuple of (bin_definitions, bin_representatives).
+            Bin definitions are dicts with 'singleton' or 'interval' keys.
 
         Must be implemented by subclasses.
         """
-        pass
+        raise NotImplementedError("Must be implemented by subclasses.")
 
     def _get_column_key(self, target_col: Any, available_keys: List[Any], col_index: int) -> Any:
         """Find the right key for a column, handling mismatches between fit and transform."""
@@ -224,49 +227,10 @@ class FlexibleBinningBase(GeneralBinningBase):
             col_data = X[:, i]
 
             for row_idx, value in enumerate(col_data):
-                # Robust missing value check
-                if self._is_missing_value(value):
-                    result[row_idx, i] = MISSING_VALUE
-                    continue
-
-                # Find matching bin
-                bin_idx = self._find_bin_for_value(value, bin_defs)
-                result[row_idx, i] = bin_idx
+                # Use utility function for transformation
+                result[row_idx, i] = transform_value_to_flexible_bin(value, bin_defs)
 
         return result
-
-    def _is_missing_value(self, value: Any) -> bool:
-        """Check if a value should be considered missing."""
-        if value is None:
-            return True
-
-        # For numeric types, check for NaN
-        try:
-            if np.isnan(value):
-                return True
-        except (TypeError, ValueError):
-            # Not a numeric type or can't convert to check NaN
-            pass
-
-        # For string types, check common missing representations
-        if isinstance(value, str) and value.lower() in ["nan", "none", "", "null"]:
-            return True
-
-        return False
-
-    def _find_bin_for_value(self, value: float, bin_defs: List[Dict[str, Any]]) -> int:
-        """Find the bin index for a given value."""
-        for bin_idx, bin_def in enumerate(bin_defs):
-            if "singleton" in bin_def:
-                if value == bin_def["singleton"]:
-                    return bin_idx
-            elif "interval" in bin_def:
-                a, b = bin_def["interval"]
-                if a <= value <= b:
-                    return bin_idx
-
-        # Value doesn't match any bin - treat as missing
-        return MISSING_VALUE
 
     def inverse_transform(self, X: Any) -> Any:
         """Transform bin indices back to representative values."""
@@ -316,29 +280,25 @@ class FlexibleBinningBase(GeneralBinningBase):
                 bin_idx_int = int(bin_idx)
                 if 0 <= bin_idx_int < len(bin_defs):
                     bin_def = bin_defs[bin_idx_int]
-
-                    if "singleton" in bin_def:
-                        result[row_idx, i] = 0.0  # Singleton has zero width
-                    elif "interval" in bin_def:
-                        a, b = bin_def["interval"]
-                        result[row_idx, i] = b - a
+                    result[row_idx, i] = calculate_flexible_bin_width(bin_def)
 
         return return_like_input(result, bin_indices, columns, self.preserve_dataframe)
 
     def lookup_bin_ranges(self) -> Dict[Any, int]:
         """Return number of bins for each column."""
         self._check_fitted()
-        return {col: len(bin_defs) for col, bin_defs in self._bin_spec.items()}
+        return get_flexible_bin_count(self._bin_spec)
 
     def get_params(self, deep: bool = True) -> Dict[str, Any]:
         """Get parameters for this estimator."""
         params = super().get_params(deep=deep)
 
-        # Ensure all our parameters are included
+        # Always include these parameters
         params.update(
             {
                 "preserve_dataframe": self.preserve_dataframe,
                 "fit_jointly": self.fit_jointly,
+                "guidance_columns": self.guidance_columns,
                 "bin_spec": self.bin_spec,
                 "bin_representatives": self.bin_representatives,
             }
@@ -366,10 +326,19 @@ class FlexibleBinningBase(GeneralBinningBase):
             self._user_bin_reps = params["bin_representatives"]
             reset_fitted = True
 
+        if "fit_jointly" in params:
+            self.fit_jointly = params["fit_jointly"]
+            reset_fitted = True
+
+        if "guidance_columns" in params:
+            self.guidance_columns = params["guidance_columns"]
+            reset_fitted = True
+
         if reset_fitted:
             self._fitted = False
 
-        return super().set_params(**params)
+        super().set_params(**params)
+        return self
 
     def __repr__(self, N_CHAR_MAX: int = 700) -> str:
         """String representation of the estimator."""
@@ -383,6 +352,8 @@ class FlexibleBinningBase(GeneralBinningBase):
             params.append(f"preserve_dataframe={self.preserve_dataframe}")
         if self.fit_jointly:
             params.append(f"fit_jointly={self.fit_jointly}")
+        if self.guidance_columns is not None:
+            params.append(f"guidance_columns={self.guidance_columns}")
 
         param_str = ", ".join(params)
         return f"FlexibleBinningBase({param_str})"

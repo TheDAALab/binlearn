@@ -24,9 +24,15 @@ class IntervalBinningBase(GeneralBinningBase):
         bin_edges: Optional[Union[Dict[Any, List[float]], Any]] = None,
         bin_representatives: Optional[Union[Dict[Any, List[float]], Any]] = None,
         fit_jointly: bool = False,
+        guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
     ):
-        super().__init__(preserve_dataframe=preserve_dataframe, fit_jointly=fit_jointly, **kwargs)
+        super().__init__(
+            preserve_dataframe=preserve_dataframe, 
+            fit_jointly=fit_jointly, 
+            guidance_columns=guidance_columns,
+            **kwargs
+        )
         self.clip = clip
 
         # Store parameters as expected by sklearn
@@ -41,22 +47,28 @@ class IntervalBinningBase(GeneralBinningBase):
         self._bin_edges: Dict[Any, List[float]] = {}
         self._bin_reps: Dict[Any, List[float]] = {}
 
-    def _fit_per_column(self, X: np.ndarray, columns: List[Any]) -> None:
-        """Fit bins per column (original logic)."""
+    def _fit_per_column(
+        self, 
+        X: np.ndarray, 
+        columns: List[Any], 
+        guidance_data: Optional[np.ndarray] = None,
+        **fit_params
+    ) -> None:
+        """Fit bins per column with optional guidance data."""
         self._process_user_specifications(columns)
 
         if not self._user_bin_edges:
             # Calculate bins from data
             for i, col in enumerate(columns):
                 if col not in self._bin_edges:
-                    edges, reps = self._calculate_bins(X[:, i], col)
+                    edges, reps = self._calculate_bins(X[:, i], col, guidance_data)
                     self._bin_edges[col] = edges
                     if col not in self._bin_reps:
                         self._bin_reps[col] = reps
 
         self._finalize_fitting()
 
-    def _fit_jointly(self, X: np.ndarray, columns: List[Any]) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
         """Fit bins jointly across all columns."""
         self._process_user_specifications(columns)
 
@@ -110,13 +122,31 @@ class IntervalBinningBase(GeneralBinningBase):
         """
         return self._calculate_bins(x_col, col_id)
 
-    @abstractmethod
-    def _calculate_bins(self, x_col: np.ndarray, col_id: Any) -> Tuple[List[float], List[float]]:
+    def _calculate_bins(
+        self, 
+        x_col: np.ndarray, 
+        col_id: Any, 
+        guidance_data: Optional[np.ndarray] = None
+    ) -> Tuple[List[float], List[float]]:
         """Calculate bin edges and representatives for a column.
+
+        Parameters
+        ----------
+        x_col : np.ndarray
+            The data for the column being binned.
+        col_id : Any
+            The identifier for the column.
+        guidance_data : Optional[np.ndarray], default=None
+            Optional guidance data that can influence bin calculation.
+
+        Returns
+        -------
+        Tuple[List[float], List[float]]
+            A tuple of (bin_edges, bin_representatives).
 
         Must be implemented by subclasses.
         """
-        pass  # This makes it truly abstract
+        raise NotImplementedError("Must be implemented by subclasses.")
 
     def _get_column_key(self, target_col: Any, available_keys: List[Any], col_index: int) -> Any:
         """Find the right key for a column, handling mismatches between fit and transform."""
@@ -161,18 +191,16 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return result
 
-    def inverse_transform(self, X: Any) -> Any:
-        """Transform bin indices back to representative values."""
-        self._check_fitted()
-        arr, columns = self._prepare_input(X)
-        result = np.zeros(arr.shape, dtype=float)
+    def _inverse_transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+        """Inverse transform from bin indices to representative values."""
+        result = np.zeros(X.shape, dtype=float)
         available_keys = list(self._bin_reps.keys())
 
         for i, col in enumerate(columns):
             key = self._get_column_key(col, available_keys, i)
             reps = self._bin_reps[key]
 
-            col_data = arr[:, i]
+            col_data = X[:, i]
 
             # Handle special values first
             nan_mask = col_data == MISSING_VALUE
@@ -190,6 +218,13 @@ class IntervalBinningBase(GeneralBinningBase):
             result[below_mask, i] = -np.inf
             result[above_mask, i] = np.inf
 
+        return result
+
+    def inverse_transform(self, X: Any) -> Any:
+        """Transform bin indices back to representative values."""
+        self._check_fitted()
+        arr, columns = self._prepare_input(X)
+        result = self._inverse_transform_columns(arr, columns)
         return return_like_input(result, X, columns, self.preserve_dataframe)
 
     def lookup_bin_widths(self, bin_indices: Any) -> Any:
@@ -229,6 +264,7 @@ class IntervalBinningBase(GeneralBinningBase):
                 "bin_edges": self.bin_edges,
                 "bin_representatives": self.bin_representatives,
                 "fit_jointly": self.fit_jointly,
+                "guidance_columns": self.guidance_columns,
             }
         )
 
@@ -261,7 +297,12 @@ class IntervalBinningBase(GeneralBinningBase):
             self.fit_jointly = params["fit_jointly"]
             reset_fitted = True
 
+        if "guidance_columns" in params:
+            self.guidance_columns = params["guidance_columns"]
+            reset_fitted = True
+
         if reset_fitted:
             self._fitted = False
 
-        return super().set_params(**params)
+        super().set_params(**params)
+        return self

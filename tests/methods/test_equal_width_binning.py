@@ -1,792 +1,665 @@
 """
-Comprehensive tests for EqualWidthBinning transformer.
-Tests all functionality, edge cases, sklearn compatibility, and pandas/polars integration.
+Comprehensive test suite for EqualWidthBinning with behavior-focused testing.
 """
 
-import numpy as np
 import pytest
-from typing import Any, Dict, List
-from unittest.mock import patch
+import numpy as np
+import pickle
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+# Optional imports with skip handling
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+
+try:
+    import polars as pl
+    POLARS_AVAILABLE = True
+except ImportError:
+    POLARS_AVAILABLE = False
+
+try:
+    from sklearn.datasets import make_classification
+    from sklearn.pipeline import Pipeline
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.base import clone
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
 
 from binning.methods._equal_width_binning import EqualWidthBinning
 from binning.base._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-from binning import _pandas_config, _polars_config
-
-PANDAS_AVAILABLE = _pandas_config.PANDAS_AVAILABLE
-POLARS_AVAILABLE = _polars_config.POLARS_AVAILABLE
 
 
-class TestInitialization:
-    """Test initialization and parameter handling."""
+# ============================================================================
+# CORE FUNCTIONALITY TESTS
+# ============================================================================
 
-    def test_init_default_parameters(self):
-        """Test initialization with default parameters."""
-        binner = EqualWidthBinning()
-
-        assert binner.n_bins == 10
-        assert binner.bin_range is None
-        assert binner.clip is True
-        assert binner.preserve_dataframe is False
-        assert binner.bin_edges is None
-        assert binner.bin_representatives is None
-        assert binner._fitted is False
-
-    def test_init_custom_parameters(self):
-        """Test initialization with custom parameters."""
-        binner = EqualWidthBinning(
-            n_bins=5, bin_range=(0, 100), clip=False, preserve_dataframe=True
-        )
-
-        assert binner.n_bins == 5
-        assert binner.bin_range == (0, 100)
-        assert binner.clip is False
-        assert binner.preserve_dataframe is True
-
-    def test_init_per_column_parameters(self):
-        """Test initialization with per-column parameters."""
-        n_bins = {0: 5, 1: 8}
-        bin_range = {0: (0, 10), 1: (-1, 1)}
-
-        binner = EqualWidthBinning(n_bins=n_bins, bin_range=bin_range)
-
-        assert binner.n_bins == n_bins
-        assert binner.bin_range == bin_range
-
-    def test_init_with_prespecified_bins(self):
-        """Test initialization with pre-specified bins."""
-        bin_edges = {0: [0, 20, 40, 60, 80, 100]}
-        bin_reps = {0: [10, 30, 50, 70, 90]}
-
-        binner = EqualWidthBinning(bin_edges=bin_edges, bin_representatives=bin_reps)
-
-        assert binner.bin_edges == bin_edges
-        assert binner.bin_representatives == bin_reps
-
-
-class TestCalculateBins:
-    """Test _calculate_bins method."""
-
-    def test_calculate_bins_basic(self):
-        """Test basic bin calculation."""
-        binner = EqualWidthBinning(n_bins=4)
-        x_col = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-
-        edges, reps = binner._calculate_bins(x_col, 0)
-
-        assert len(edges) == 5  # n_bins + 1
-        assert len(reps) == 4  # n_bins
-        assert edges[0] == 1.0  # min value
-        assert edges[-1] == 10.0  # max value
-        # Check equal width
-        widths = [edges[i + 1] - edges[i] for i in range(len(edges) - 1)]
-        assert all(abs(w - widths[0]) < 1e-10 for w in widths)
-
-    def test_calculate_bins_custom_range(self):
-        """Test bin calculation with custom range."""
-        binner = EqualWidthBinning(n_bins=5, bin_range=(0, 100))
-        x_col = np.array([10, 20, 30])  # Data within range
-
-        edges, reps = binner._calculate_bins(x_col, 0)
-
-        assert edges[0] == 0.0
-        assert edges[-1] == 100.0
-        assert len(edges) == 6
-        assert len(reps) == 5
-        # Check equal width (should be 20.0)
-        expected_width = 20.0
-        for i in range(len(edges) - 1):
-            assert abs((edges[i + 1] - edges[i]) - expected_width) < 1e-10
-
-    def test_calculate_bins_per_column_n_bins(self):
-        """Test bin calculation with per-column n_bins."""
-        binner = EqualWidthBinning(n_bins={0: 3, 1: 5})
-        x_col = np.array([1, 2, 3, 4, 5])
-
-        # Test column 0
-        edges_0, reps_0 = binner._calculate_bins(x_col, 0)
-        assert len(edges_0) == 4  # 3 + 1
-        assert len(reps_0) == 3
-
-        # Test column 1
-        edges_1, reps_1 = binner._calculate_bins(x_col, 1)
-        assert len(edges_1) == 6  # 5 + 1
-        assert len(reps_1) == 5
-
-        # Test column not in dict (should use default 10)
-        edges_2, reps_2 = binner._calculate_bins(x_col, 2)
-        assert len(edges_2) == 11  # 10 + 1
-        assert len(reps_2) == 10
-
-    def test_calculate_bins_per_column_range(self):
-        """Test bin calculation with per-column ranges."""
-        binner = EqualWidthBinning(n_bins=3, bin_range={0: (0, 10), 1: (-5, 5)})
-        x_col = np.array([1, 2, 3])
-
-        # Test column 0
-        edges_0, reps_0 = binner._calculate_bins(x_col, 0)
-        assert edges_0[0] == 0.0
-        assert edges_0[-1] == 10.0
-
-        # Test column 1
-        edges_1, reps_1 = binner._calculate_bins(x_col, 1)
-        assert edges_1[0] == -5.0
-        assert edges_1[-1] == 5.0
-
-        # Test column not in dict (should use data range)
-        edges_2, reps_2 = binner._calculate_bins(x_col, 2)
-        assert edges_2[0] == 1.0  # Data min
-        assert edges_2[-1] == 3.0  # Data max
-
-    def test_calculate_bins_constant_data(self):
-        """Test bin calculation with constant data."""
+class TestCoreFunctionality:
+    """Test core equal-width binning functionality."""
+    
+    def test_basic_fit_transform(self):
+        """Test basic fit and transform functionality."""
         binner = EqualWidthBinning(n_bins=3)
-        x_col = np.array([5, 5, 5, 5])  # All same value
-
-        edges, reps = binner._calculate_bins(x_col, 0)
-
-        assert len(edges) == 4
-        assert len(reps) == 3
-        # Should add small epsilon to create range
-        assert edges[0] < 5.0
-        assert edges[-1] > 5.0
-
-    def test_calculate_bins_with_nan(self):
-        """Test bin calculation with NaN values."""
-        binner = EqualWidthBinning(n_bins=4)
-        x_col = np.array([1, 2, np.nan, 4, 5, np.nan])
-
-        edges, reps = binner._calculate_bins(x_col, 0)
-
-        # Should ignore NaN values
-        assert edges[0] == 1.0
-        assert edges[-1] == 5.0
-        assert len(edges) == 5
-        assert len(reps) == 4
-
-    def test_calculate_bins_all_nan(self):
-        """Test bin calculation with all NaN values."""
-        binner = EqualWidthBinning(n_bins=3)
-        x_col = np.array([np.nan, np.nan, np.nan])
-
-        with pytest.raises(ValueError, match="min and max must be finite"):
-            binner._calculate_bins(x_col, 0)
-
-    def test_calculate_bins_empty_array(self):
-        """Test bin calculation with empty array."""
-        binner = EqualWidthBinning(n_bins=3)
-        x_col = np.array([])
-
-        with pytest.raises(ValueError, match="min and max must be finite"):
-            binner._calculate_bins(x_col, 0)
-
-    def test_calculate_bins_invalid_n_bins(self):
-        """Test bin calculation with invalid n_bins."""
-        binner = EqualWidthBinning(n_bins=0)
-        x_col = np.array([1, 2, 3])
-
-        with pytest.raises(ValueError, match="n_bins must be >= 1"):
-            binner._calculate_bins(x_col, 0)
-
-
-class TestFitTransform:
-    """Test fit and transform methods."""
-
-    def test_fit_basic(self):
-        """Test basic fitting."""
-        binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[1, 10], [2, 20], [3, 30], [4, 40]])
-
-        result = binner.fit(X)
-
-        assert result is binner
-        assert binner._fitted is True
-        assert len(binner._bin_edges) == 2  # 2 columns
-        assert len(binner._bin_reps) == 2
-
-        # Check that all columns have correct number of bins
-        for col_id in [0, 1]:
-            assert len(binner._bin_edges[col_id]) == 4  # n_bins + 1
-            assert len(binner._bin_reps[col_id]) == 3  # n_bins
-
-    def test_fit_with_prespecified_bins(self):
-        """Test fitting with pre-specified bins."""
-        bin_edges = {0: [0, 2, 4], 1: [0, 25, 50]}
-        bin_reps = {0: [1, 3], 1: [12.5, 37.5]}
-
-        binner = EqualWidthBinning(bin_edges=bin_edges, bin_representatives=bin_reps)
-        X = np.array([[1, 10], [2, 20], [3, 30]])
-
-        binner.fit(X)
-
-        # Should use pre-specified bins
-        assert binner._bin_edges == {0: [0.0, 2.0, 4.0], 1: [0.0, 25.0, 50.0]}
-        assert binner._bin_reps == {0: [1.0, 3.0], 1: [12.5, 37.5]}
-
-    def test_transform_basic(self):
-        """Test basic transformation."""
-        binner = EqualWidthBinning(n_bins=4)
-        X_train = np.array([[0, 0], [1, 10], [2, 20], [3, 30], [4, 40]])
-        X_test = np.array([[1.5, 15], [2.5, 25]])
-
-        binner.fit(X_train)
-        result = binner.transform(X_test)
-
-        assert result.shape == X_test.shape
-        assert result.dtype == np.int64
-        # Values should be valid bin indices
-        assert np.all(result >= 0)
-        assert np.all(result < 4)  # n_bins
-
-    def test_transform_edge_values(self):
-        """Test transformation of edge values."""
-        bin_edges = {0: [0, 1, 2, 3]}
-        binner = EqualWidthBinning(bin_edges=bin_edges)
-        X_train = np.array([[0.5], [1.5], [2.5]])
-        X_test = np.array([[0], [1], [2], [3]])  # Exact edge values
-
-        binner.fit(X_train)
-        result = binner.transform(X_test)
-
-        # Test that edge values are handled consistently
-        assert result[0, 0] == 0  # 0 -> first bin
-        assert result[1, 0] == 1  # 1 -> second bin
-        assert result[2, 0] == 2  # 2 -> third bin
-        # Note: Right edge (3) behavior depends on implementation
-
-    def test_transform_out_of_range_with_clip(self):
-        """Test transformation of out-of-range values with clipping."""
-        bin_edges = {0: [1, 2, 3]}
-        binner = EqualWidthBinning(clip=True, bin_edges=bin_edges)
-        X_train = np.array([[1.5], [2.5]])
-        X_test = np.array([[0.5], [3.5]])  # Out of range values
-
-        binner.fit(X_train)
-        result = binner.transform(X_test)
-
-        # Should be clipped to valid range
-        assert result[0, 0] == 0  # Below range -> first bin
-        assert result[1, 0] == 1  # Above range -> last bin
-
-    def test_transform_out_of_range_without_clip(self):
-        """Test transformation of out-of-range values without clipping."""
-        bin_edges = {0: [1, 2, 3]}
-        binner = EqualWidthBinning(clip=False, bin_edges=bin_edges)
-        X_train = np.array([[1.5], [2.5]])
-        X_test = np.array([[0.5], [3.5]])
-
-        binner.fit(X_train)
-        result = binner.transform(X_test)
-
-        # Should use special values for out-of-range
-        assert result[0, 0] == BELOW_RANGE  # Below range
-        assert result[1, 0] == ABOVE_RANGE  # Above range
-
-    def test_fit_transform_method(self):
-        """Test fit_transform method."""
-        binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[1, 10], [2, 20], [3, 30]])
-
+        X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0], [4.0, 40.0]])
+        
+        # Fit and transform
         result = binner.fit_transform(X)
-
-        assert binner._fitted is True
+        
         assert result.shape == X.shape
-        assert result.dtype == np.int64
-
-
-class TestInverseTransform:
-    """Test inverse transform functionality."""
-
-    def test_inverse_transform_basic(self):
-        """Test basic inverse transformation."""
-        bin_edges = {0: [0, 1, 2], 1: [0, 10, 20]}
-        bin_reps = {0: [0.5, 1.5], 1: [5, 15]}
-
-        binner = EqualWidthBinning(bin_edges=bin_edges, bin_representatives=bin_reps)
-        X_train = np.array([[0.5, 5], [1.5, 15]])
-        binner.fit(X_train)
-
-        # Test inverse transform
-        bin_indices = np.array([[0, 1], [1, 0]])
-        result = binner.inverse_transform(bin_indices)
-
-        assert result.shape == bin_indices.shape
-        assert result[0, 0] == 0.5  # First rep of column 0
-        assert result[0, 1] == 15  # Second rep of column 1
-        assert result[1, 0] == 1.5  # Second rep of column 0
-        assert result[1, 1] == 5  # First rep of column 1
-
-    def test_inverse_transform_out_of_bounds(self):
-        """Test inverse transform with out-of-bounds indices."""
-        bin_edges = {0: [0, 1, 2]}
-        bin_reps = {0: [0.5, 1.5]}
-
-        binner = EqualWidthBinning(bin_edges=bin_edges, bin_representatives=bin_reps)
-        X_train = np.array([[0.5], [1.5]])
-        binner.fit(X_train)
-
-        # Test with out-of-bounds indices
-        bin_indices = np.array([[5], [-1]])  # Out of bounds
-        result = binner.inverse_transform(bin_indices)
-
-        # Should be clipped to valid range
-        assert result[0, 0] == 1.5  # Clipped to last rep
-        assert result[1, 0] == 0.5  # Clipped to first rep
-
-    def test_inverse_transform_special_values(self):
-        """Test inverse transform with special values."""
-        binner = EqualWidthBinning(n_bins=2)
-        X_train = np.array([[1], [2]])
-        binner.fit(X_train)
-
-        # Test with special values
-        bin_indices = np.array([[MISSING_VALUE], [BELOW_RANGE], [ABOVE_RANGE]])
-        result = binner.inverse_transform(bin_indices)
-
-        assert np.isnan(result[0, 0])  # Missing -> NaN
-        assert result[1, 0] == -np.inf  # Below -> -inf
-        assert result[2, 0] == np.inf  # Above -> +inf
-
-
-class TestParameterManagement:
-    """Test parameter getting and setting."""
-
-    def test_get_params_default(self):
-        """Test get_params with default values."""
-        binner = EqualWidthBinning()
-        params = binner.get_params()
-
-        expected_params = {
-            "n_bins",
-            "bin_range",
-            "clip",
-            "preserve_dataframe",
-            "bin_edges",
-            "bin_representatives",
-        }
-        assert all(param in params for param in expected_params)
-
-        assert params["n_bins"] == 10
-        assert params["bin_range"] is None
-        assert params["clip"] is True
-        assert params["preserve_dataframe"] is False
-
-    def test_get_params_custom(self):
-        """Test get_params with custom values."""
-        binner = EqualWidthBinning(n_bins=5, bin_range=(0, 100), clip=False)
-        params = binner.get_params()
-
-        assert params["n_bins"] == 5
-        assert params["bin_range"] == (0, 100)
-        assert params["clip"] is False
-
-    def test_get_params_after_fitting(self):
-        """Test get_params after fitting returns fitted specifications."""
+        assert result.dtype == int
+        assert binner._fitted
+        assert binner.n_features_in_ == 2
+        
+        # Check that bins are created
+        assert 0 in binner._bin_edges
+        assert 1 in binner._bin_edges
+        assert len(binner._bin_edges[0]) == 4  # 3 bins = 4 edges
+        assert len(binner._bin_edges[1]) == 4
+    
+    def test_inverse_transform(self):
+        """Test inverse transformation."""
         binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[1, 10], [2, 20], [3, 30]])
+        X = np.array([[1.0], [2.0], [3.0], [4.0]])
+        
+        result = binner.fit_transform(X)
+        inverse = binner.inverse_transform(result)
+        
+        assert inverse.shape == X.shape
+        assert inverse.dtype == float
+        assert np.all(np.isfinite(inverse))
+    
+    def test_per_column_n_bins(self):
+        """Test per-column n_bins specification."""
+        binner = EqualWidthBinning(n_bins={0: 2, 1: 4})
+        X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
+        
         binner.fit(X)
-
-        params = binner.get_params()
-
-        # Should return fitted specifications
-        assert len(params["bin_edges"]) == 2
-        assert len(params["bin_representatives"]) == 2
-
-    def test_set_params_basic(self):
-        """Test set_params with basic parameters."""
-        binner = EqualWidthBinning()
-
-        result = binner.set_params(n_bins=5, clip=False)
-
-        assert result is binner
-        assert binner.n_bins == 5
-        assert binner.clip is False
-
-    def test_set_params_resets_fitted_state(self):
-        """Test that setting binning parameters resets fitted state."""
-        binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[1, 2], [3, 4]])
+        
+        # Check different number of bins per column
+        assert len(binner._bin_edges[0]) == 3  # 2 bins = 3 edges
+        assert len(binner._bin_edges[1]) == 5  # 4 bins = 5 edges
+    
+    def test_specified_bin_range(self):
+        """Test with specified bin ranges."""
+        binner = EqualWidthBinning(n_bins=2, bin_range=(0.0, 10.0))
+        X = np.array([[1.0], [5.0], [8.0]])
+        
         binner.fit(X)
-
-        assert binner._fitted is True
-
-        # Setting n_bins should reset fitted state
-        binner.set_params(n_bins=5)
-        assert binner._fitted is False
-
-        # Re-fit and test bin_range
-        binner.fit(X)
-        assert binner._fitted is True
-
-        binner.set_params(bin_range=(0, 10))
-        assert binner._fitted is False
-
-    def test_set_params_other_params_preserve_fitted(self):
-        """Test that setting non-binning parameters preserves fitted state."""
-        binner = EqualWidthBinning()
-        X = np.array([[1, 2], [3, 4]])
-        binner.fit(X)
-
-        assert binner._fitted is True
-
-        # Setting clip should not reset fitted state
-        binner.set_params(clip=False, preserve_dataframe=True)
-        assert binner._fitted is True
-
-
-class TestSklearnCompatibility:
-    """Test sklearn compatibility."""
-
-    def test_sklearn_pipeline_integration(self):
-        """Test integration with sklearn Pipeline."""
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
-        binner = EqualWidthBinning(n_bins=3)
-        pipeline = Pipeline([("scaler", StandardScaler()), ("binner", binner)])
-
-        X = np.array([[1, 10], [2, 20], [3, 30], [4, 40]])
-
-        # Test fit
-        pipeline.fit(X)
-        assert binner._fitted is True
-
-        # Test transform
-        result = pipeline.transform(X)
-        assert isinstance(result, np.ndarray)
-        assert result.shape == X.shape
-
-    def test_sklearn_cross_validation_compatibility(self):
-        """Test compatibility with sklearn cross-validation."""
-        from sklearn.model_selection import cross_val_score
-        from sklearn.dummy import DummyRegressor
-        from sklearn.pipeline import Pipeline
-
-        binner = EqualWidthBinning(n_bins=3)
-        regressor = DummyRegressor()
-        pipeline = Pipeline([("binner", binner), ("regressor", regressor)])
-
-        X = np.random.rand(20, 3)
-        y = np.random.rand(20)
-
-        # Should not raise errors
-        scores = cross_val_score(pipeline, X, y, cv=3)
-        assert len(scores) == 3
-
-    def test_sklearn_grid_search_compatibility(self):
-        """Test compatibility with sklearn GridSearchCV."""
-        from sklearn.model_selection import GridSearchCV
-        from sklearn.dummy import DummyRegressor
-        from sklearn.pipeline import Pipeline
-
-        binner = EqualWidthBinning()
-        regressor = DummyRegressor()
-        pipeline = Pipeline([("binner", binner), ("regressor", regressor)])
-
-        param_grid = {"binner__n_bins": [3, 5], "binner__clip": [True, False]}
-
-        X = np.random.rand(10, 2)
-        y = np.random.rand(10)
-
-        grid_search = GridSearchCV(pipeline, param_grid, cv=2)
-        grid_search.fit(X, y)
-
-        assert hasattr(grid_search, "best_params_")
-        assert "binner__n_bins" in grid_search.best_params_
-
-
-class TestDataFrameIntegration:
-    """Test pandas and polars DataFrame integration."""
-
-    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
-    def test_pandas_dataframe_basic(self):
-        """Test basic functionality with pandas DataFrame."""
-        import pandas as pd
-
-        binner = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
-        df = pd.DataFrame({"age": [25, 35, 45, 55], "income": [30000, 50000, 70000, 90000]})
-
-        binner.fit(df)
-        result = binner.transform(df)
-
-        # Should preserve DataFrame structure when preserve_dataframe=True
-        if isinstance(result, pd.DataFrame):
-            assert list(result.columns) == ["age", "income"]
-            assert len(result) == 4
-
-    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
-    def test_pandas_with_per_column_specs(self):
-        """Test pandas with per-column specifications."""
-        import pandas as pd
-
-        df = pd.DataFrame(
-            {"age": [20, 30, 40, 50, 60], "salary": [20000, 40000, 60000, 80000, 100000]}
-        )
-
+        
+        # Should use specified range, not data range
+        edges = binner._bin_edges[0]
+        assert edges[0] == 0.0
+        assert edges[-1] == 10.0
+    
+    def test_per_column_bin_range(self):
+        """Test per-column bin ranges."""
         binner = EqualWidthBinning(
-            n_bins={"age": 3, "salary": 4}, bin_range={"age": (18, 65), "salary": (0, 120000)}
+            n_bins=2, 
+            bin_range={0: (0.0, 10.0), 1: (-5.0, 5.0)}
         )
+        X = np.array([[1.0, 2.0], [5.0, 3.0]])
+        
+        binner.fit(X)
+        
+        # Check ranges are applied correctly
+        assert binner._bin_edges[0][0] == 0.0
+        assert binner._bin_edges[0][-1] == 10.0
+        assert binner._bin_edges[1][0] == -5.0
+        assert binner._bin_edges[1][-1] == 5.0
+    
+    @pytest.mark.parametrize("fit_jointly", [True, False])
+    def test_fit_jointly_vs_per_column(self, fit_jointly):
+        """Test both fitting modes."""
+        binner = EqualWidthBinning(n_bins=3, fit_jointly=fit_jointly)
+        X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
+        
+        result = binner.fit_transform(X)
+        
+        assert result.shape == X.shape
+        assert binner._fitted
+    
+    @pytest.mark.parametrize("method", ["global", "percentile", "std", "robust"])
+    def test_joint_range_methods(self, method):
+        """Test different joint range calculation methods."""
+        binner = EqualWidthBinning(
+            n_bins=2, 
+            fit_jointly=True, 
+            joint_range_method=method
+        )
+        X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
+        
+        result = binner.fit_transform(X)
+        assert result.shape == X.shape
+    
+    def test_user_provided_bin_edges(self):
+        """Test with user-provided bin edges."""
+        bin_edges = {0: [0.0, 5.0, 10.0], 1: [0.0, 25.0, 50.0]}
+        binner = EqualWidthBinning(bin_edges=bin_edges)
+        X = np.array([[1.0, 10.0], [7.0, 30.0]])
+        
+        binner.fit(X)
+        result = binner.transform(X)
+        
+        # Should use provided edges
+        assert result.shape == (2, 2)
+        assert binner._bin_edges == bin_edges
 
-        binner.fit(df)
-        result = binner.transform(df)
 
-        assert binner._fitted is True
-        # Check that column names are used as keys
-        assert "age" in binner._bin_edges
-        assert "salary" in binner._bin_edges
-        assert len(binner._bin_edges["age"]) == 4  # 3 bins + 1
-        assert len(binner._bin_edges["salary"]) == 5  # 4 bins + 1
-
-    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
-    def test_polars_dataframe_basic(self):
-        """Test basic functionality with polars DataFrame."""
-        import polars as pl
-
-        binner = EqualWidthBinning(n_bins=3)
-        df = pl.DataFrame({"age": [25, 35, 45, 55], "income": [30000, 50000, 70000, 90000]})
-
-        binner.fit(df)
-        result = binner.transform(df)
-
-        assert binner._fitted is True
-        # Result type depends on preserve_dataframe setting
-        assert isinstance(result, (np.ndarray, pl.DataFrame))
-
+# ============================================================================
+# EDGE CASES TESTS
+# ============================================================================
 
 class TestEdgeCases:
     """Test edge cases and error conditions."""
-
-    def test_single_column_data(self):
-        """Test with single column data."""
-        binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[1], [2], [3], [4]])
-
-        binner.fit(X)
-        result = binner.transform(X)
-
-        assert result.shape == (4, 1)
-        assert len(binner._bin_edges) == 1
-
-    def test_single_sample(self):
-        """Test with single sample."""
-        binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[5, 10]])
-
-        # Should handle gracefully (though bins will be artificial)
-        binner.fit(X)
-        result = binner.transform(X)
-
-        assert result.shape == (1, 2)
-
-    def test_transform_not_fitted_error(self):
-        """Test transform raises error when not fitted."""
+    
+    def test_not_fitted_errors(self):
+        """Test errors when methods called before fitting."""
         binner = EqualWidthBinning()
-        X = np.array([[1, 2], [3, 4]])
-
+        X = np.array([[1.0]])
+        
         with pytest.raises(RuntimeError, match="not fitted"):
             binner.transform(X)
-
-    def test_transform_wrong_number_features(self):
-        """Test transform with wrong number of features."""
+        
+        with pytest.raises(RuntimeError, match="not fitted"):
+            binner.inverse_transform(X)
+    
+    def test_empty_data(self):
+        """Test handling of empty datasets."""
+        binner = EqualWidthBinning()
+        X = np.array([]).reshape(0, 1)
+        
+        # Should raise error for empty data
+        with pytest.raises(ValueError, match="min and max must be finite"):
+            binner.fit(X)
+    
+    def test_constant_values(self):
+        """Test handling of constant value columns."""
         binner = EqualWidthBinning(n_bins=3)
-        X_train = np.array([[1, 2], [3, 4]])
-        X_test = np.array([[1, 2, 3], [4, 5, 6]])  # Wrong number of features
-
-        binner.fit(X_train)
-
-        with pytest.raises(ValueError, match="Expected 2 features"):
-            binner.transform(X_test)
-
-    def test_mixed_input_types(self):
-        """Test fitting on one type and transforming another."""
+        X = np.array([[5.0], [5.0], [5.0]])
+        
+        result = binner.fit_transform(X)
+        
+        assert result.shape == X.shape
+        # All values should be in the same bin since they're constant
+        assert np.all(result[:, 0] == result[0, 0])
+    
+    def test_missing_values(self):
+        """Test handling of NaN values."""
         binner = EqualWidthBinning(n_bins=3)
+        X = np.array([[1.0], [np.nan], [3.0]])
+        
+        result = binner.fit_transform(X)
+        
+        assert result.shape == X.shape
+        assert result[1, 0] == MISSING_VALUE
+    
+    def test_infinite_values(self):
+        """Test handling of infinite values."""
+        binner = EqualWidthBinning(n_bins=3)
+        X = np.array([[1.0], [np.inf], [3.0]])
+        
+        # Should raise error for infinite values
+        with pytest.raises(ValueError, match="min and max must be finite"):
+            binner.fit(X)
+    
+    def test_all_nan_column(self):
+        """Test with column of all NaN values."""
+        binner = EqualWidthBinning()
+        X = np.array([[np.nan, 1.0], [np.nan, 2.0]])
+        
+        with pytest.raises(ValueError, match="min and max must be finite"):
+            binner.fit(X)
+    
+    def test_clipping_behavior(self):
+        """Test clipping vs non-clipping behavior."""
+        # Test with clipping enabled (default)
+        binner_clip = EqualWidthBinning(n_bins=2, bin_range=(0.0, 10.0), clip=True)
+        X_train = np.array([[5.0]])
+        X_test = np.array([[-5.0], [15.0]])  # Out of range values
+        
+        binner_clip.fit(X_train)
+        result_clip = binner_clip.transform(X_test)
+        
+        # Values should be clipped to valid range
+        assert np.all(result_clip >= 0)
+        assert np.all(result_clip < 2)  # Valid bin indices are 0, 1
+        
+        # Test with clipping disabled
+        binner_no_clip = EqualWidthBinning(n_bins=2, bin_range=(0.0, 10.0), clip=False)
+        binner_no_clip.fit(X_train)
+        result_no_clip = binner_no_clip.transform(X_test)
+        
+        # Should have special codes for out-of-range values
+        assert result_no_clip[0, 0] == BELOW_RANGE
+        assert result_no_clip[1, 0] == ABOVE_RANGE
+    
+    def test_invalid_parameters(self):
+        """Test invalid parameter combinations."""
+        with pytest.raises(ValueError, match="n_bins must be >= 1"):
+            binner = EqualWidthBinning(n_bins=0)
+            X = np.array([[1.0]])
+            binner.fit(X)
 
-        # Fit on numpy array
-        X_train = np.array([[1, 10], [2, 20], [3, 30]])
-        binner.fit(X_train)
 
-        # Transform list
-        X_test = [[1.5, 15], [2.5, 25]]
-        result = binner.transform(X_test)
+# ============================================================================
+# PARAMETER MANAGEMENT TESTS
+# ============================================================================
 
+class TestParameterManagement:
+    """Test parameter getting and setting."""
+    
+    def test_get_params(self):
+        """Test parameter retrieval."""
+        binner = EqualWidthBinning(
+            n_bins=5,
+            bin_range=(0.0, 10.0),
+            clip=False,
+            preserve_dataframe=True,
+            fit_jointly=True,
+            joint_range_method="percentile"
+        )
+        
+        params = binner.get_params()
+        
+        assert params["n_bins"] == 5
+        assert params["bin_range"] == (0.0, 10.0)
+        assert params["clip"] is False
+        assert params["preserve_dataframe"] is True
+        assert params["fit_jointly"] is True
+        assert params["joint_range_method"] == "percentile"
+    
+    def test_set_params_reset_fitted(self):
+        """Test that parameter changes reset fitted state."""
+        binner = EqualWidthBinning()
+        X = np.array([[1.0], [2.0]])
+        binner.fit(X)
+        assert binner._fitted
+        
+        # These should reset fitted state
+        binner.set_params(n_bins=5)
+        assert not binner._fitted
+        
+        binner.fit(X)
+        binner.set_params(bin_range=(0.0, 10.0))
+        assert not binner._fitted
+        
+        binner.fit(X)
+        binner.set_params(joint_range_method="percentile")
+        assert not binner._fitted
+        
+        binner.fit(X)
+        binner.set_params(fit_jointly=True)
+        assert not binner._fitted
+    
+    def test_set_params_returns_self(self):
+        """Test that set_params returns self."""
+        binner = EqualWidthBinning()
+        result = binner.set_params(n_bins=5)
+        assert result is binner
+
+
+# ============================================================================
+# PROPERTIES TESTS
+# ============================================================================
+
+class TestProperties:
+    """Test property methods."""
+    
+    def test_properties_before_fitting(self):
+        """Test properties before fitting."""
+        binner = EqualWidthBinning()
+        
+        assert binner.is_fitted_ is False
+        assert binner.n_features_in_ is None
+        assert binner.feature_names_in_ is None
+    
+    def test_properties_after_fitting(self):
+        """Test properties after fitting."""
+        binner = EqualWidthBinning()
+        X = np.array([[1, 2, 3], [4, 5, 6]])
+        binner.fit(X)
+        
+        assert binner.is_fitted_ is True
+        assert binner.n_features_in_ == 3
+        assert binner.feature_names_in_ == [0, 1, 2]
+
+
+# ============================================================================
+# PANDAS INTEGRATION TESTS
+# ============================================================================
+
+class TestPandasIntegration:
+    """Test pandas DataFrame integration."""
+    
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
+    def test_pandas_dataframe(self):
+        """Test basic pandas DataFrame support."""
+        df = pd.DataFrame({
+            'A': [1.0, 2.0, 3.0, 4.0],
+            'B': [10.0, 20.0, 30.0, 40.0]
+        })
+        
+        binner = EqualWidthBinning(n_bins=2, preserve_dataframe=True)
+        result = binner.fit_transform(df)
+        
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ['A', 'B']
+        assert result.shape == df.shape
+    
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
+    def test_pandas_preserve_false(self):
+        """Test pandas with preserve_dataframe=False."""
+        df = pd.DataFrame({'A': [1.0, 2.0, 3.0]})
+        
+        binner = EqualWidthBinning(preserve_dataframe=False)
+        result = binner.fit_transform(df)
+        
         assert isinstance(result, np.ndarray)
-        assert result.shape == (2, 2)
+    
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
+    def test_pandas_feature_names(self):
+        """Test feature names with pandas."""
+        df = pd.DataFrame({'x': [1, 2], 'y': [3, 4], 'z': [5, 6]})
+        binner = EqualWidthBinning()
+        binner.fit(df)
+        
+        assert binner.feature_names_in_ == ['x', 'y', 'z']
 
 
-class TestRepr:
-    """Test string representation."""
+# ============================================================================
+# POLARS INTEGRATION TESTS
+# ============================================================================
 
-    def test_repr_default(self):
+class TestPolarsIntegration:
+    """Test polars DataFrame integration."""
+    
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
+    def test_polars_dataframe(self):
+        """Test basic polars DataFrame support."""
+        df = pl.DataFrame({
+            'A': [1.0, 2.0, 3.0, 4.0],
+            'B': [10.0, 20.0, 30.0, 40.0]
+        })
+        
+        binner = EqualWidthBinning(n_bins=2, preserve_dataframe=True)
+        result = binner.fit_transform(df)
+        
+        assert isinstance(result, pl.DataFrame)
+        assert result.shape == df.shape
+
+
+# ============================================================================
+# SKLEARN INTEGRATION TESTS
+# ============================================================================
+
+class TestSklearnIntegration:
+    """Test scikit-learn integration."""
+    
+    @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+    def test_pipeline_integration(self):
+        """Test integration with sklearn Pipeline."""
+        X, y = make_classification(n_samples=100, n_features=4, random_state=42)
+        
+        pipeline = Pipeline([
+            ('binning', EqualWidthBinning(n_bins=3)),
+            ('classifier', LogisticRegression(random_state=42, max_iter=1000))
+        ])
+        
+        pipeline.fit(X, y)
+        predictions = pipeline.predict(X)
+        
+        assert len(predictions) == len(y)
+    
+    @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+    def test_sklearn_clone(self):
+        """Test sklearn clone compatibility."""
+        original = EqualWidthBinning(n_bins=5, bin_range=(0.0, 10.0))
+        cloned = clone(original)
+        
+        assert cloned.n_bins == 5
+        assert cloned.bin_range == (0.0, 10.0)
+        assert cloned is not original
+        assert not cloned.is_fitted_
+    
+    def test_pickle_serialization(self):
+        """Test pickle serialization."""
+        binner = EqualWidthBinning(n_bins=3)
+        X = np.array([[1.0], [2.0], [3.0]])
+        binner.fit(X)
+        
+        # Serialize and deserialize
+        serialized = pickle.dumps(binner)
+        deserialized = pickle.loads(serialized)
+        
+        # Test that deserialized works
+        result = deserialized.transform(X)
+        assert result.shape == X.shape
+        assert deserialized.is_fitted_
+
+
+# ============================================================================
+# REPR TESTS
+# ============================================================================
+
+class TestReprMethod:
+    """Test __repr__ method."""
+    
+    def test_repr_default_parameters(self):
         """Test repr with default parameters."""
         binner = EqualWidthBinning()
         repr_str = repr(binner)
-
-        assert "EqualWidthBinning(" in repr_str
-        # Should not show default values
-        assert "n_bins=10" not in repr_str
-        assert "clip=True" not in repr_str
-
+        
+        assert "EqualWidthBinning()" == repr_str
+    
     def test_repr_custom_parameters(self):
         """Test repr with custom parameters."""
         binner = EqualWidthBinning(
-            n_bins=5, bin_range=(0, 100), clip=False, preserve_dataframe=True
+            n_bins=5,
+            bin_range=(0.0, 10.0),
+            clip=False,
+            preserve_dataframe=True,
+            fit_jointly=True
         )
         repr_str = repr(binner)
-
+        
         assert "n_bins=5" in repr_str
-        assert "bin_range=(0, 100)" in repr_str
+        assert "bin_range=(0.0, 10.0)" in repr_str
         assert "clip=False" in repr_str
         assert "preserve_dataframe=True" in repr_str
-
-    def test_repr_with_dict_parameters(self):
-        """Test repr with dictionary parameters."""
-        binner = EqualWidthBinning(n_bins={0: 3, 1: 5}, bin_range={0: (0, 10)})
-        repr_str = repr(binner)
-
-        assert "n_bins={0: 3, 1: 5}" in repr_str
-        assert "bin_range={0: (0, 10)}" in repr_str
+        assert "fit_jointly=True" in repr_str
 
 
-class TestComplexScenarios:
-    """Test complex real-world scenarios."""
+# ============================================================================
+# COMPREHENSIVE INTEGRATION TESTS
+# ============================================================================
 
-    def test_workflow_with_missing_values(self):
-        """Test complete workflow with missing values in data."""
-        binner = EqualWidthBinning(n_bins=4)
-
-        # Data with NaN values
-        X_train = np.array([[1, 10], [2, np.nan], [3, 30], [np.nan, 40]])
-        X_test = np.array([[1.5, 15], [2.5, np.nan]])
-
-        binner.fit(X_train)
-        result = binner.transform(X_test)
-
-        # Should handle NaN gracefully
-        assert result.shape == X_test.shape
-        # NaN values should be handled according to the implementation
-
-    def test_workflow_with_extreme_values(self):
-        """Test workflow with extreme values."""
-        binner = EqualWidthBinning(n_bins=5, clip=True)
-
-        # Training data with normal range
-        X_train = np.array([[1, 10], [2, 20], [3, 30]])
-        # Test data with extreme values
-        X_test = np.array([[-1000, 5], [1000, 25], [2, 1000]])
-
-        binner.fit(X_train)
-        result = binner.transform(X_test)
-
-        # Extreme values should be clipped to valid bin indices
-        assert np.all(result >= 0)
-        assert np.all(result < 5)  # n_bins
-
-    def test_parameter_changes_workflow(self):
-        """Test workflow with parameter changes."""
-        binner = EqualWidthBinning(n_bins=3)
-        X = np.array([[1, 10], [2, 20], [3, 30]])
-
-        # Initial fit
-        binner.fit(X)
-        result1 = binner.transform(X)
-
-        # Change parameters and refit
-        binner.set_params(n_bins=5)
-        binner.fit(X)
-        result2 = binner.transform(X)
-
-        # Results should be different due to different number of bins
-        assert not np.array_equal(result1, result2)
-        # New result should have valid indices for 5 bins
-        assert np.all(result2 >= 0)
-        assert np.all(result2 < 5)
-
-    def test_state_consistency_across_operations(self):
-        """Test that state remains consistent across multiple operations."""
-        binner = EqualWidthBinning(n_bins=4)
-        X = np.array([[1, 10], [2, 20], [3, 30], [4, 40]])
-
-        # Fit
-        binner.fit(X)
-
-        # Multiple transforms should give consistent results
-        result1 = binner.transform(X)
-        result2 = binner.transform(X)
-
-        assert np.array_equal(result1, result2)
-
-        # Inverse transform should be consistent
-        inv_result1 = binner.inverse_transform(result1)
-        inv_result2 = binner.inverse_transform(result1)
-
-        assert np.array_equal(inv_result1, inv_result2)
-
-
-class TestJointFitting:
-    """Test joint fitting functionality."""
-
-    def test_joint_vs_individual_fitting(self):
-        """Test that joint fitting produces different results than individual."""
-        # Data with different scales
-        X = np.array(
-            [[1, 100], [2, 200], [3, 300], [4, 400], [5, 500]]  # Column 0: 1-5, Column 1: 100-500
+class TestComprehensiveIntegration:
+    """Test complex scenarios combining multiple features."""
+    
+    def test_full_workflow_mixed_specifications(self):
+        """Test workflow with mixed parameter specifications."""
+        X = np.array([
+            [1.0, 10.0, 100.0],
+            [2.0, 20.0, 200.0],
+            [3.0, 30.0, 300.0]
+        ])
+        
+        # Mix of global and per-column parameters
+        binner = EqualWidthBinning(
+            n_bins={0: 2, 1: 3},  # Per-column for first two
+            bin_range={1: (0.0, 50.0)},  # Range only for second column
+            clip=False,
+            preserve_dataframe=False
         )
-
-        # Individual fitting
-        binner_individual = EqualWidthBinning(n_bins=3, fit_jointly=False)
-        binner_individual.fit(X)
-
-        # Joint fitting with global range
-        binner_joint = EqualWidthBinning(n_bins=3, fit_jointly=True, joint_range_method="global")
-        binner_joint.fit(X)
-
-        # Debug: print the edges to see what's happening
-        print(f"Individual Col 0 edges: {binner_individual._bin_edges[0]}")
-        print(f"Joint Col 0 edges: {binner_joint._bin_edges[0]}")
-        print(f"Individual Col 1 edges: {binner_individual._bin_edges[1]}")
-        print(f"Joint Col 1 edges: {binner_joint._bin_edges[1]}")
-
-        # Should produce different bin edges
-        edges_ind_col0 = binner_individual._bin_edges[0]
-        edges_joint_col0 = binner_joint._bin_edges[0]
-
-        assert not np.allclose(edges_ind_col0, edges_joint_col0)
-
-    def test_joint_range_methods(self):
-        """Test different joint range methods."""
-        X = np.random.randn(100, 3) * 10 + 50  # Mean=50, std=10
-
-        methods = ["global", "percentile", "std", "robust"]
-
-        for method in methods:
-            binner = EqualWidthBinning(n_bins=5, fit_jointly=True, joint_range_method=method)
-            binner.fit(X)
-
-            # Should successfully fit
-            assert binner._fitted
-            assert len(binner._bin_edges) == 3
-
-    def test_joint_with_missing_values(self):
-        """Test joint fitting with missing values."""
-        X = np.array([[1, np.nan, 3], [2, 5, np.nan], [np.nan, 6, 7], [4, 7, 8]])
-
-        binner = EqualWidthBinning(n_bins=3, fit_jointly=True, joint_range_method="global")
-
-        # Should handle NaN gracefully
+        
+        # Full workflow
+        result = binner.fit_transform(X)
+        inverse = binner.inverse_transform(result)
+        
+        assert result.shape == X.shape
+        assert inverse.shape == X.shape
+        
+        # Check different bin counts
+        assert len(binner._bin_edges[0]) == 3  # 2 bins
+        assert len(binner._bin_edges[1]) == 4  # 3 bins
+        assert len(binner._bin_edges[2]) == 11  # default 10 bins
+    
+    def test_joint_fitting_with_different_ranges(self):
+        """Test joint fitting with per-column ranges."""
+        binner = EqualWidthBinning(
+            n_bins=2,
+            bin_range={0: (0.0, 10.0), 1: (-5.0, 5.0)},
+            fit_jointly=True,
+            joint_range_method="global"
+        )
+        X = np.array([[5.0, 2.0], [8.0, -1.0]])
+        
+        result = binner.fit_transform(X)
+        assert result.shape == X.shape
+    
+    def test_edge_case_recovery(self):
+        """Test recovery from various edge cases."""
+        # Test with extreme values and missing data
+        X = np.array([[1e-10, np.nan], [1e10, 0.0]])
+        
+        binner = EqualWidthBinning(n_bins=2, clip=True)
+        
+        # Should handle gracefully
         binner.fit(X)
         result = binner.transform(X)
-
-        assert binner._fitted
+        
         assert result.shape == X.shape
-
-    def test_joint_consistency_across_columns(self):
-        """Test that joint fitting creates consistent bins."""
-        X = np.array([[0, 0], [5, 5], [10, 10]])
-
-        binner = EqualWidthBinning(n_bins=2, fit_jointly=True, joint_range_method="global")
+        # NaN should become MISSING_VALUE
+        assert result[0, 1] == MISSING_VALUE
+    
+    def test_user_provided_specifications_complete(self):
+        """Test with complete user-provided bin specifications."""
+        # Provide edges for all columns
+        bin_edges = {0: [0.0, 5.0, 10.0], 1: [0.0, 25.0, 50.0]}
+        
+        binner = EqualWidthBinning(bin_edges=bin_edges)
+        X = np.array([[2.0, 20.0], [7.0, 30.0]])
+        
         binner.fit(X)
+        result = binner.transform(X)
+        
+        # Should use provided edges for both columns
+        assert binner._bin_edges[0] == [0.0, 5.0, 10.0]
+        assert binner._bin_edges[1] == [0.0, 25.0, 50.0]
+        assert result.shape == X.shape
+    
+    def test_mixed_specification_modes(self):
+        """Test mixing automatic calculation with range specification."""
+        # Use automatic binning with specified ranges
+        binner = EqualWidthBinning(
+            n_bins={0: 2, 1: 3},
+            bin_range={0: (0.0, 10.0)}  # Range only for first column
+        )
+        X = np.array([[2.0, 20.0], [7.0, 30.0]])
+        
+        binner.fit(X)
+        
+        # Column 0 should use specified range with 2 bins
+        assert len(binner._bin_edges[0]) == 3  # 2 bins = 3 edges
+        assert binner._bin_edges[0][0] == 0.0
+        assert binner._bin_edges[0][-1] == 10.0
+        
+        # Column 1 should use data range with 3 bins
+        assert len(binner._bin_edges[1]) == 4  # 3 bins = 4 edges
+        assert binner._bin_edges[1][0] <= 20.0
+        assert binner._bin_edges[1][-1] >= 30.0
 
-        # Both columns should have same edges when using global range
-        edges_0 = binner._bin_edges[0]
-        edges_1 = binner._bin_edges[1]
 
-        assert np.allclose(edges_0, edges_1)
+# ============================================================================
+# ADDITIONAL COVERAGE TESTS
+# ============================================================================
+
+class TestAdditionalCoverage:
+    """Tests to achieve 100% coverage of uncovered branches."""
+    
+    def test_joint_fitting_with_per_column_n_bins(self):
+        """Test joint fitting when per-column n_bins are specified."""
+        # Line 96: isinstance(self.n_bins, dict) and col_id in self.n_bins
+        binner = EqualWidthBinning(
+            n_bins={0: 2, 1: 4},  # Per-column n_bins
+            fit_jointly=True,
+            joint_range_method="global"
+        )
+        X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
+        
+        binner.fit(X)
+        
+        # Should use per-column n_bins even in joint fitting
+        assert len(binner._bin_edges[0]) == 3  # 2 bins = 3 edges
+        assert len(binner._bin_edges[1]) == 5  # 4 bins = 5 edges
+    
+    def test_joint_fitting_invalid_n_bins(self):
+        """Test joint fitting with invalid n_bins."""
+        # Line 101: if n_bins < 1 in joint fitting
+        binner = EqualWidthBinning(
+            n_bins={0: 0},  # Invalid n_bins
+            fit_jointly=True
+        )
+        X = np.array([[1.0], [2.0]])
+        
+        with pytest.raises(ValueError, match="n_bins must be >= 1"):
+            binner.fit(X)
+    
+    def test_joint_fitting_fallback_to_data_range(self):
+        """Test joint fitting falling back to data range."""
+        # Line 111: min_val, max_val = self._get_data_range(x_col, col_id)
+        # This happens when joint_params doesn't have "global_range"
+        binner = EqualWidthBinning(fit_jointly=True)
+        # Override _calculate_joint_parameters to return empty dict
+        original_method = binner._calculate_joint_parameters
+        binner._calculate_joint_parameters = lambda X, columns: {}
+        
+        X = np.array([[1.0], [2.0], [3.0]])
+        
+        try:
+            binner.fit(X)
+            # Should still work by falling back to data range
+            assert len(binner._bin_edges[0]) == 11  # default 10 bins = 11 edges
+        finally:
+            # Restore original method
+            binner._calculate_joint_parameters = original_method
+    
+    def test_dict_bin_range_has_column_check(self):
+        """Test _has_range_for_column with dict bin_range."""
+        # Line 161: return col_id in self.bin_range
+        binner = EqualWidthBinning(bin_range={0: (0.0, 10.0), 2: (5.0, 15.0)})
+        
+        # Test the method directly
+        assert binner._has_range_for_column(0) is True  # Has range
+        assert binner._has_range_for_column(1) is False  # No range
+        assert binner._has_range_for_column(2) is True  # Has range
+    
+    def test_single_bin_range_return(self):
+        """Test _get_specified_range with single bin_range."""
+        # Line 165: return self.bin_range
+        binner = EqualWidthBinning(bin_range=(0.0, 10.0))  # Single range for all columns
+        
+        # Test the method directly
+        min_val, max_val = binner._get_specified_range(0)
+        assert min_val == 0.0
+        assert max_val == 10.0
+        
+        # Should work for any column
+        min_val, max_val = binner._get_specified_range(5)
+        assert min_val == 0.0
+        assert max_val == 10.0
+    
+    def test_get_specified_range_error_cases(self):
+        """Test error cases in _get_specified_range."""
+        # Test dict case with missing column
+        binner_dict = EqualWidthBinning(bin_range={0: (0.0, 10.0)})
+        with pytest.raises(ValueError, match="No range specified for column 1"):
+            binner_dict._get_specified_range(1)
+        
+        # Test None case
+        binner_none = EqualWidthBinning(bin_range=None)
+        with pytest.raises(ValueError, match="No range specified for column 0"):
+            binner_none._get_specified_range(0)

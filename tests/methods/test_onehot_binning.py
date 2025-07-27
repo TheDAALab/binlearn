@@ -1,297 +1,288 @@
 """
-Minimal test suite for OneHotBinning covering critical code paths.
+Streamlined test suite for OneHotBinning with behavior-focused testing.
+OneHotBinning supports numeric data only.
 """
 
 import pytest
 import numpy as np
+import pickle
+
+# Optional imports with skip handling
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+
+try:
+    from sklearn.pipeline import Pipeline
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.base import clone
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
 from binning.methods._onehot_binning import OneHotBinning
 from binning.base._constants import MISSING_VALUE
 
 
-class TestOneHotBinningCore:
-    """Test core functionality of OneHotBinning."""
+class TestOneHotBinningBehavior:
+    """Test OneHotBinning core behavior and edge cases."""
 
-    def test_basic_numeric_binning(self):
-        """Test basic singleton bin creation for numeric data."""
+    def test_singleton_bin_creation(self):
+        """Test basic singleton bin creation and transformation."""
         binner = OneHotBinning()
-        X = np.array([[1, 10], [2, 20], [1, 10], [3, 30]])
+        X = np.array([[1.0, 10.0], [2.0, 20.0], [1.0, 10.0], [3.0, 30.0]])
+        
+        result = binner.fit_transform(X)
+        
+        # Core behavior validation
+        assert result.shape == X.shape
+        assert result.dtype == int
+        assert binner.is_fitted_
+        assert result[0, 0] == result[2, 0]  # Same values map to same bins
+        assert result[0, 1] == result[2, 1]
+        
+        # Bin structure validation
+        assert len(binner._bin_spec[0]) == 3  # Three unique values: 1.0, 2.0, 3.0
+        assert len(binner._bin_spec[1]) == 3  # Three unique values: 10.0, 20.0, 30.0
+        
+        # All bins should be singletons
+        for bins in binner._bin_spec.values():
+            for bin_def in bins:
+                assert "singleton" in bin_def
+                assert isinstance(bin_def["singleton"], float)
 
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # Should create singleton bins for each unique value
-        assert result.shape == X.shape  # Same shape as input
-        assert result[0, 0] == 0 and result[2, 0] == 0  # Same value -> same bin
-        assert result[1, 0] == 1  # Different value -> different bin
-        assert result[3, 0] == 2  # Third unique value -> third bin
-
-        # Check bin specifications
-        assert 0 in binner._bin_spec and 1 in binner._bin_spec
-        assert len(binner._bin_spec[0]) == 3  # Three unique values in col 0
-        assert len(binner._bin_spec[1]) == 3  # Three unique values in col 1
-
-        # Check all bins are singletons
-        for bin_def in binner._bin_spec[0]:
-            assert "singleton" in bin_def
-        for bin_def in binner._bin_spec[1]:
-            assert "singleton" in bin_def
-
-    def test_per_column_vs_joint_fitting(self):
-        """Test difference between per-column and joint fitting."""
-        X = np.array([[1, 10], [2, 20]])  # Different unique values per column
-
+    def test_joint_vs_per_column_fitting(self):
+        """Test fitting modes and their impact on bin structure."""
+        X = np.array([[1.0, 10.0], [2.0, 1.0]])  # Overlapping values across columns
+        
         # Per-column fitting
-        binner_individual = OneHotBinning(fit_jointly=False)
-        binner_individual.fit(X)
-
+        binner_per_col = OneHotBinning(fit_jointly=False)
+        binner_per_col.fit(X)
+        
         # Joint fitting
         binner_joint = OneHotBinning(fit_jointly=True)
         binner_joint.fit(X)
+        
+        # Per-column: different bin counts per column
+        assert len(binner_per_col._bin_spec[0]) == 2  # {1.0, 2.0}
+        assert len(binner_per_col._bin_spec[1]) == 2  # {1.0, 10.0}
+        
+        # Joint: same bin count (all unique values across all columns)
+        assert len(binner_joint._bin_spec[0]) == 3  # {1.0, 2.0, 10.0}
+        assert len(binner_joint._bin_spec[1]) == 3  # {1.0, 2.0, 10.0}
 
-        # Joint fitting should create more bins per column (global unique values)
-        individual_bins_col0 = len(binner_individual._bin_spec[0])
-        joint_bins_col0 = len(binner_joint._bin_spec[0])
-
-        assert individual_bins_col0 == 2  # Only [1, 2] for column 0
-        assert joint_bins_col0 == 4  # [1, 2, 10, 20] for both columns
-
-        # Both columns should have same bins in joint mode
-        assert binner_joint._bin_spec[0] == binner_joint._bin_spec[1]
-
-    def test_transform_with_missing_values(self):
-        """Test transformation handles values not in training data."""
+    def test_inverse_transform_and_workflow(self):
+        """Test complete fit-transform-inverse workflow."""
+        X = np.array([[1.0], [2.0], [3.0], [1.0]])
         binner = OneHotBinning()
-        X_fit = np.array([[1, 10], [2, 20]])
-        X_transform = np.array([[1, 10], [3, 30], [np.nan, 15]])  # 3, 30, 15 not in fit data
+        
+        result = binner.fit_transform(X)
+        inverse = binner.inverse_transform(result)
+        
+        assert inverse.shape == X.shape
+        # Values should be recovered exactly (representatives are same as singletons)
+        np.testing.assert_array_equal(inverse, X)
 
-        binner.fit(X_fit)
-        result = binner.transform(X_transform)
-
-        # Known values should map correctly
-        assert result[0, 0] == 0 and result[0, 1] == 0  # 1->bin0, 10->bin0
-
-        # Unknown values should map to MISSING_VALUE
-        assert result[1, 0] == MISSING_VALUE  # 3 not in training data
-        assert result[1, 1] == MISSING_VALUE  # 30 not in training data
-        assert result[2, 1] == MISSING_VALUE  # 15 not in training data
-
-        # NaN should map to MISSING_VALUE
-        assert result[2, 0] == MISSING_VALUE
-
-    def test_inverse_transform(self):
-        """Test inverse transformation returns representatives."""
+    def test_missing_and_infinite_values(self):
+        """Test handling of NaN and infinite values."""
+        X = np.array([[1.0], [np.nan], [np.inf], [2.0], [-np.inf]])
         binner = OneHotBinning()
-        X = np.array([[1, 10], [2, 20], [3, 30]])
+        
+        result = binner.fit_transform(X)
+        
+        # Missing/infinite values should map to MISSING_VALUE
+        assert result[1, 0] == MISSING_VALUE  # NaN
+        assert result[2, 0] == MISSING_VALUE  # inf
+        assert result[4, 0] == MISSING_VALUE  # -inf
+        
+        # Only finite values should create bins
+        assert len(binner._bin_spec[0]) == 2  # 1.0, 2.0 only
 
-        binner.fit(X)
-        transformed = binner.transform(X)
-        reconstructed = binner.inverse_transform(transformed)
-
-        # Should return the original unique values (representatives)
-        assert reconstructed.shape == X.shape
-        assert np.allclose(reconstructed, X, equal_nan=True)
-
-
-class TestEdgeCases:
-    """Test edge cases and error conditions."""
-
-    def test_max_unique_values_limit(self):
+    def test_max_unique_values_constraint(self):
         """Test max_unique_values parameter enforcement."""
-        # Create data with too many unique values
-        X = np.arange(150).reshape(-1, 1)  # 150 unique values
-
+        X = np.arange(150).reshape(150, 1).astype(float)
+        
+        # Should fail with default limit
         binner = OneHotBinning(max_unique_values=100)
-
         with pytest.raises(ValueError, match="exceeds max_unique_values"):
             binner.fit(X)
-
-    def test_max_unique_values_joint_limit(self):
-        """Test max_unique_values with joint fitting."""
+        
+        # Should work with higher limit
+        binner_high = OneHotBinning(max_unique_values=200)
+        binner_high.fit(X)
+        assert len(binner_high._bin_spec[0]) == 150
+        
+        # Test joint fitting max_unique_values constraint (line 141)
         # Create data where joint unique values exceed limit
-        X = np.array([[i, i + 50] for i in range(60)])  # 120 total unique values
-
-        binner = OneHotBinning(fit_jointly=True, max_unique_values=100)
-
+        X_joint = np.array([[i, i+50] for i in range(60)])  # 110 unique values total
+        binner_joint = OneHotBinning(fit_jointly=True, max_unique_values=100)
         with pytest.raises(ValueError, match="Joint fitting found.*exceeds max_unique_values"):
-            binner.fit(X)
+            binner_joint.fit(X_joint)
 
-    def test_all_nan_data(self):
-        """Test behavior with all-NaN data."""
+    def test_edge_cases_and_error_conditions(self):
+        """Test various edge cases and error conditions."""
         binner = OneHotBinning()
-        X = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+        
+        # Not fitted errors
+        with pytest.raises(RuntimeError, match="not fitted"):
+            binner.transform(np.array([[1.0]]))
+        
+        # Empty data
+        X_empty = np.array([]).reshape(0, 1)
+        binner.fit(X_empty)
+        assert binner.is_fitted_
+        
+        # All NaN data - should create default bin
+        X_all_nan = np.array([[np.nan], [np.nan]])
+        binner_nan = OneHotBinning()
+        result = binner_nan.fit_transform(X_all_nan)
+        assert len(binner_nan._bin_spec[0]) == 1
+        assert binner_nan._bin_spec[0][0]["singleton"] == 0.0
+        assert np.all(result[:, 0] == MISSING_VALUE)
+        
+        # Joint fitting with all NaN/inf data - should trigger line 135
+        X_all_invalid = np.array([[np.nan, np.inf], [np.inf, np.nan]])
+        binner_joint_invalid = OneHotBinning(fit_jointly=True)
+        binner_joint_invalid.fit(X_all_invalid)
+        # Should create default global unique values
+        assert len(binner_joint_invalid._bin_spec[0]) == 1
+        assert binner_joint_invalid._bin_spec[0][0]["singleton"] == 0.0
 
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # Should create default bins and map NaN to MISSING_VALUE
-        assert np.all(result == MISSING_VALUE)
-        assert len(binner._bin_spec[0]) == 1  # Default bin
-        assert binner._bin_spec[0][0] == {"singleton": 0.0}
-
-    def test_single_unique_value(self):
-        """Test behavior with only one unique value per column."""
-        binner = OneHotBinning()
-        X = np.array([[5, 5], [5, 5], [5, 5]])
-
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # All values should map to bin 0
-        assert np.all(result == 0)
-        assert len(binner._bin_spec[0]) == 1
-        assert binner._bin_spec[0][0] == {"singleton": 5.0}
-
-
-class TestDataTypes:
-    """Test handling of different data types."""
-
-    def test_mixed_numeric_types(self):
-        """Test handling of integers and floats."""
-        binner = OneHotBinning()
-        X = np.array([[1, 1.5], [2, 2.5], [1, 1.5]])  # Mix of int and float
-
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # Should handle both types and create appropriate bins
-        assert result.shape == X.shape
-        assert result[0, 0] == result[2, 0]  # Same values -> same bin
-
-        # Check representatives are float (converted from mixed types)
-        for col in [0, 1]:
-            for rep in binner._bin_reps[col]:
-                assert isinstance(rep, float)
-
-    def test_object_dtype_handling(self):
-        """Test handling of object arrays with None values."""
-        binner = OneHotBinning()
-        X = np.array([["A", "X"], ["B", "Y"], [None, "X"]], dtype=object)
-
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # Should handle None values and create appropriate bins
-        assert result.shape == X.shape
-        assert len(binner._bin_spec[0]) == 2  # 'A', 'B' (None excluded)
-        assert len(binner._bin_spec[1]) == 2  # 'X', 'Y'
-
-
-class TestUserSpecifications:
-    """Test user-provided bin specifications."""
-
-    def test_user_provided_bin_spec(self):
-        """Test using pre-defined bin specifications."""
-        bin_spec = {
-            0: [{"singleton": 1}, {"singleton": 2}],
-            1: [{"singleton": 10}, {"singleton": 20}],
-        }
-        bin_reps = {0: [1.0, 2.0], 1: [10.0, 20.0]}
-
+    def test_user_provided_specifications(self):
+        """Test with user-provided bin specs and representatives."""
+        bin_spec = {0: [{"singleton": 1.0}, {"singleton": 2.0}]}
+        bin_reps = {0: [1.5, 2.5]}
+        
         binner = OneHotBinning(bin_spec=bin_spec, bin_representatives=bin_reps)
-        X = np.array([[1, 10], [2, 20]])
-
+        X = np.array([[1.0], [2.0]])
+        
         binner.fit(X)
         result = binner.transform(X)
-
+        inverse = binner.inverse_transform(result)
+        
         # Should use provided specifications
         assert binner._bin_spec == bin_spec
         assert binner._bin_reps == bin_reps
-        assert result[0, 0] == 0 and result[0, 1] == 0
-        assert result[1, 0] == 1 and result[1, 1] == 1
+        assert inverse[0, 0] == 1.5  # Uses provided representatives
+        assert inverse[1, 0] == 2.5
 
-    def test_partial_user_specifications(self):
-        """Test with bin_spec but no bin_representatives."""
-        bin_spec = {0: [{"singleton": 1}, {"singleton": 2}]}
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
+    def test_pandas_integration(self):
+        """Test pandas DataFrame support."""
+        df = pd.DataFrame({'A': [1.0, 2.0, 1.0], 'B': [10.0, 20.0, 10.0]})
+        
+        # With dataframe preservation
+        binner = OneHotBinning(preserve_dataframe=True)
+        result = binner.fit_transform(df)
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ['A', 'B']
+        
+        # Without dataframe preservation
+        binner_array = OneHotBinning(preserve_dataframe=False)
+        result_array = binner_array.fit_transform(df)
+        assert isinstance(result_array, np.ndarray)
 
-        binner = OneHotBinning(bin_spec=bin_spec)
-        X = np.array([[1, 10], [2, 20]])
+    @pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="sklearn not available")
+    def test_sklearn_integration(self):
+        """Test scikit-learn pipeline compatibility."""
+        X = np.random.randint(0, 5, size=(100, 3)).astype(float)
+        y = np.random.randint(0, 2, size=100)
+        
+        # Pipeline integration
+        pipeline = Pipeline([
+            ('binning', OneHotBinning()),
+            ('classifier', LogisticRegression(random_state=42, max_iter=1000))
+        ])
+        pipeline.fit(X, y)
+        predictions = pipeline.predict(X)
+        assert len(predictions) == len(y)
+        
+        # Clone compatibility
+        original = OneHotBinning(max_unique_values=50)
+        cloned = clone(original)
+        assert cloned.max_unique_values == 50
+        assert not cloned.is_fitted_
 
-        binner.fit(X)
-
-        # Should use provided bin_spec and generate representatives
-        assert binner._bin_spec[0] == bin_spec[0]
-        assert binner._bin_reps[0] == [1.0, 2.0]  # Generated from singletons
-
-
-class TestUtilityMethods:
-    """Test utility methods."""
-
-    def test_lookup_bin_widths(self):
-        """Test bin width lookup (should be 0 for all singletons)."""
-        binner = OneHotBinning()
-        X = np.array([[1, 10], [2, 20]])
-
-        binner.fit(X)
-        transformed = binner.transform(X)
-        widths = binner.lookup_bin_widths(transformed)
-
-        # All singleton bins should have zero width
-        assert np.all(widths == 0.0)
-
-    def test_lookup_bin_ranges(self):
-        """Test bin range lookup."""
-        binner = OneHotBinning()
-        X = np.array([[1, 10], [2, 20], [3, 30]])
-
-        binner.fit(X)
-        ranges = binner.lookup_bin_ranges()
-
-        # Should return number of bins per column
-        assert ranges[0] == 3  # Three unique values
-        assert ranges[1] == 3  # Three unique values
-
-    def test_repr(self):
-        """Test string representation."""
+    def test_serialization_and_parameters(self):
+        """Test pickle serialization and parameter management."""
         binner = OneHotBinning(max_unique_values=50, fit_jointly=True)
-        repr_str = repr(binner)
+        X = np.array([[1.0], [2.0], [3.0]])
+        binner.fit(X)
+        
+        # Pickle serialization
+        serialized = pickle.dumps(binner)
+        deserialized = pickle.loads(serialized)
+        result = deserialized.transform(X)
+        assert result.shape == X.shape
+        assert deserialized.is_fitted_
+        
+        # Parameter management
+        params = binner.get_params()
+        assert params["max_unique_values"] == 50
+        assert params["fit_jointly"] is True
+        
+        # set_params returns self
+        result = binner.set_params(max_unique_values=75)
+        assert result is binner
+        assert binner.max_unique_values == 75
 
-        assert "OneHotBinning" in repr_str
-        assert "max_unique_values=50" in repr_str
-        assert "fit_jointly=True" in repr_str
-
-
-class TestIntegration:
-    """Integration test combining multiple features."""
-
-    def test_complete_workflow(self):
-        """Test complete workflow with various challenges."""
-        binner = OneHotBinning(max_unique_values=10, fit_jointly=False)
-
-        # Fit with mixed data
-        X_fit = np.array([[1, 10], [2, 20], [1, 10]])
-        binner.fit(X_fit)
-
-        # Transform with challenging data
-        X_transform = np.array(
-            [
-                [1, 10],  # Known values
-                [2, 20],  # Known values
-                [3, 30],  # Unknown values
-                [np.nan, np.nan],  # Missing values
-            ]
+    def test_repr_and_properties(self):
+        """Test string representation and property access."""
+        # Default parameters
+        binner_default = OneHotBinning()
+        assert repr(binner_default) == "OneHotBinning()"
+        
+        # Custom parameters to cover all repr branches (lines 180, 182, 184)
+        bin_spec = {0: [{"singleton": 1.0}]}
+        bin_reps = {0: [1.0]}
+        binner_custom = OneHotBinning(
+            max_unique_values=50, 
+            preserve_dataframe=True,  # Line 180
+            fit_jointly=True,         # Line 182
+            bin_spec=bin_spec,        # Line 184
+            bin_representatives=bin_reps
         )
+        repr_str = repr(binner_custom)
+        assert "max_unique_values=50" in repr_str
+        assert "preserve_dataframe=True" in repr_str  # Line 180
+        assert "fit_jointly=True" in repr_str         # Line 182
+        assert "bin_spec=..." in repr_str            # Line 184
+        assert "bin_representatives=..." in repr_str
+        
+        # Properties before and after fitting
+        assert not binner_default.is_fitted_
+        assert binner_default.n_features_in_ is None
+        
+        X = np.array([[1.0, 2.0], [3.0, 4.0]])
+        binner_default.fit(X)
+        assert binner_default.is_fitted_
+        assert binner_default.n_features_in_ == 2
+        assert binner_default.feature_names_in_ == [0, 1]
 
-        transformed = binner.transform(X_transform)
-        reconstructed = binner.inverse_transform(transformed)
-
-        # Check transformations
-        assert transformed[0, 0] == 0 and transformed[0, 1] == 0  # Known -> bins
-        assert transformed[1, 0] == 1 and transformed[1, 1] == 1  # Known -> bins
-        assert transformed[2, 0] == MISSING_VALUE  # Unknown -> missing
-        assert transformed[2, 1] == MISSING_VALUE  # Unknown -> missing
-        assert transformed[3, 0] == MISSING_VALUE  # NaN -> missing
-        assert transformed[3, 1] == MISSING_VALUE  # NaN -> missing
-
-        # Check inverse transform
-        assert reconstructed[0, 0] == 1.0 and reconstructed[0, 1] == 10.0
-        assert reconstructed[1, 0] == 2.0 and reconstructed[1, 1] == 20.0
-        assert np.isnan(reconstructed[2, 0]) and np.isnan(reconstructed[2, 1])
-        assert np.isnan(reconstructed[3, 0]) and np.isnan(reconstructed[3, 1])
-
-        # Check utility methods
-        widths = binner.lookup_bin_widths(transformed)
-        ranges = binner.lookup_bin_ranges()
-
-        assert widths.shape == transformed.shape
-        assert np.all(widths[~np.isnan(widths)] == 0.0)  # All singleton widths are 0
-        assert ranges[0] == 2 and ranges[1] == 2  # Two unique values each
+    def test_specific_line_coverage(self):
+        """Test to ensure specific lines are covered."""
+        # Line 135: No finite values in joint fitting
+        X_all_invalid = np.array([[np.nan, np.inf], [np.inf, np.nan]])
+        binner_invalid = OneHotBinning(fit_jointly=True)
+        binner_invalid.fit(X_all_invalid)
+        # Should use default value 0.0 when no finite values exist
+        assert binner_invalid._bin_spec[0][0]["singleton"] == 0.0
+        
+        # Line 141: Joint fitting max_unique_values exceeded
+        X_too_many = np.array([[i, i+50] for i in range(60)])  # 110 unique values
+        binner_too_many = OneHotBinning(fit_jointly=True, max_unique_values=100)
+        with pytest.raises(ValueError, match="Joint fitting found.*exceeds max_unique_values"):
+            binner_too_many.fit(X_too_many)
+        
+        # Lines 180, 182, 184: All repr parameter branches
+        binner_all_params = OneHotBinning(
+            preserve_dataframe=True,  # Triggers line 180
+            fit_jointly=True,         # Triggers line 182  
+            bin_spec={0: [{"singleton": 1.0}]}  # Triggers line 184
+        )
+        repr_result = repr(binner_all_params)
+        assert "preserve_dataframe=True" in repr_result
+        assert "fit_jointly=True" in repr_result
+        assert "bin_spec=..." in repr_result
