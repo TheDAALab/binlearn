@@ -4,6 +4,7 @@ Simplified base class for all binning methods.
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
+from abc import ABC, abstractmethod
 import warnings
 
 import numpy as np
@@ -15,7 +16,7 @@ from ..errors import ValidationMixin, BinningError, InvalidDataError, FittingErr
 from ..sklearn_utils import SklearnCompatibilityMixin
 
 
-class GeneralBinningBase(BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin):
+class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin):
     """Base binning class with universal guidance support."""
 
     def __init__(
@@ -105,6 +106,9 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin, ValidationMixin, Sklea
     def fit(self, X: Any, y: Any = None, **fit_params) -> "GeneralBinningBase":
         """Universal fit method with guidance support."""
         try:
+            # Validate parameters first
+            self._validate_params()
+            
             # Validate input data using ValidationMixin
             self.validate_array_like(X, "X")
             
@@ -242,6 +246,7 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin, ValidationMixin, Sklea
             raise ValueError(f"Failed to inverse transform data: {str(e)}") from e
 
     # Abstract methods to be implemented by subclasses
+    @abstractmethod
     def _fit_per_column(
         self,
         X: np.ndarray,
@@ -252,27 +257,47 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin, ValidationMixin, Sklea
         """Fit bins per column with optional guidance."""
         raise NotImplementedError("Subclasses must implement _fit_per_column method.")
 
+    @abstractmethod
     def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
         """Fit bins jointly (guidance incompatible, so no guidance_data parameter)."""
         raise NotImplementedError(
             "Joint fitting not implemented. Subclasses should override this method."
         )
 
+    @abstractmethod
     def _transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
         """Transform columns to bin indices."""
         raise NotImplementedError("Subclasses must implement _transform_columns method.")
 
+    @abstractmethod
     def _inverse_transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
         """Inverse transform from bin indices to representative values."""
         raise NotImplementedError("Subclasses must implement _inverse_transform_columns method.")
 
     def get_params(self, deep: bool = True) -> Dict[str, Any]:
-        """Get parameters for this estimator."""
+        """Get parameters for this estimator with bin-specific handling."""
         params = super().get_params(deep=deep)
+        
+        # Let subclasses add their specific parameters
+        params.update(self._get_binning_params())
+        
+        # Override with fitted values if fitted, otherwise keep constructor values
+        if self._fitted:
+            fitted_params = self._get_fitted_params()
+            params.update(fitted_params)
+        
         return params
 
+    def _get_binning_params(self) -> Dict[str, Any]:
+        """Get binning-specific parameters. Override in subclasses."""
+        return {}
+    
+    def _get_fitted_params(self) -> Dict[str, Any]:
+        """Get fitted parameter values. Override in subclasses."""
+        return {}
+
     def set_params(self, **params) -> "GeneralBinningBase":
-        """Set parameters for this estimator."""
+        """Set parameters for this estimator with bin-specific handling."""
         # Validate guidance + joint fitting before setting
         guidance_cols = params.get("guidance_columns", self.guidance_columns)
         fit_jointly = params.get("fit_jointly", self.fit_jointly)
@@ -284,7 +309,36 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin, ValidationMixin, Sklea
                 "fit_jointly=True for global fitting, but not both."
             )
 
+        # Let subclasses handle bin-specific parameter changes
+        reset_fitted = self._handle_bin_params(params)
+        
+        if reset_fitted:
+            self._fitted = False
+            
         return super().set_params(**params)
+    
+    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
+        """Handle bin-specific parameter changes. Override in subclasses.
+        
+        Returns:
+            bool: True if fitted state should be reset
+        """
+        return False
+
+    def _validate_params(self) -> None:
+        """Validate parameters for sklearn compatibility."""
+        # Validate preserve_dataframe
+        if self.preserve_dataframe is not None and not isinstance(self.preserve_dataframe, bool):
+            raise TypeError("preserve_dataframe must be a boolean or None")
+        
+        # Validate fit_jointly
+        if self.fit_jointly is not None and not isinstance(self.fit_jointly, bool):
+            raise TypeError("fit_jointly must be a boolean or None")
+        
+        # Validate guidance_columns
+        if self.guidance_columns is not None:
+            if not isinstance(self.guidance_columns, (list, tuple, int, str)):
+                raise TypeError("guidance_columns must be list, tuple, int, str, or None")
 
     # Properties for sklearn compatibility
     @property

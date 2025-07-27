@@ -129,31 +129,26 @@ def validate_flexible_bins(bin_spec: FlexibleBinSpec, bin_reps: FlexibleBinReps)
 
 
 def is_missing_value(value: Any) -> bool:
-    """Check if a value should be considered missing.
+    """Check if a value represents a missing value (numeric only).
     
     Parameters
     ----------
     value : Any
-        Value to check for missingness.
+        Value to check.
         
     Returns
     -------
     bool
-        True if the value should be treated as missing.
+        True if the value is considered missing (NaN), False otherwise.
+        Non-numeric values are treated as missing.
     """
-    if value is None:
-        return True
-
-    # For numeric types, check for NaN
     try:
-        if np.isnan(value):
+        # Convert to float and check for NaN only (not inf)
+        float_val = float(value)
+        if np.isnan(float_val):
             return True
     except (TypeError, ValueError):
-        # Not a numeric type or can't convert to check NaN
-        pass
-
-    # For string types, check common missing representations
-    if isinstance(value, str) and value.lower() in ["nan", "none", "", "null"]:
+        # Cannot convert to numeric - treat as missing for our numeric-only approach
         return True
 
     return False

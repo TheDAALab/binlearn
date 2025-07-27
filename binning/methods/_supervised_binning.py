@@ -6,18 +6,20 @@ from typing import Any, Dict, List, Tuple, Optional, Union
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.base import clone
-from ..base._interval_binning_base import IntervalBinningBase
-from ..base._guided_binning_mixin import GuidedBinningMixin
-from ..base._repr_mixin import ReprMixin
+from ..base._supervised_binning_base import SupervisedBinningBase
 from ..config import get_config
 from ..errors import (
-    ValidationMixin, InvalidDataError, ConfigurationError, 
+    InvalidDataError, ConfigurationError, 
     FittingError, validate_tree_params
 )
-from ..sklearn_utils import SklearnCompatibilityMixin
 
 
-class SupervisedBinning(IntervalBinningBase, GuidedBinningMixin, ReprMixin, SklearnCompatibilityMixin):
+class SupervisedBinning(SupervisedBinningBase):
+    """
+    Supervised binning transformer for single guidance/target column.
+    Inherits all validation and guidance logic from SupervisedBinningBase.
+    """
+
     def __repr__(self):
         defaults = dict(
             task_type='classification',
@@ -73,6 +75,7 @@ class SupervisedBinning(IntervalBinningBase, GuidedBinningMixin, ReprMixin, Skle
         preserve_dataframe: bool = False,
         bin_edges: Any = None,
         bin_representatives: Any = None,
+        guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
     ):
         """
@@ -98,48 +101,29 @@ class SupervisedBinning(IntervalBinningBase, GuidedBinningMixin, ReprMixin, Skle
 
         bin_representatives : dict or None, default=None
             Pre-defined bin representatives.
+            
+        guidance_columns : list or int or None, default=None
+            Column(s) to use as guidance/target for supervised binning.
         """
-        # Validate task type
-        self.validate_task_type(task_type, ["classification", "regression"])
-
-        # Validate tree parameters
+        # Validate tree parameters without modifying the original
         if tree_params is not None:
-            tree_params = validate_tree_params(task_type, tree_params)
+            # Just validate, don't store the result
+            validate_tree_params(task_type, tree_params)
 
         super().__init__(
+            task_type=task_type,
+            tree_params=tree_params,  # Pass original unchanged
+            clip=kwargs.get('clip'),
+            preserve_dataframe=preserve_dataframe,
             bin_edges=bin_edges,
             bin_representatives=bin_representatives,
-            preserve_dataframe=preserve_dataframe,
-            **kwargs,
+            fit_jointly=kwargs.get('fit_jointly'),
+            guidance_columns=guidance_columns,
         )
         
+        # Store original parameters for sklearn clone compatibility (after super call)
         self.task_type = task_type
-        
-        # Get default parameters from config
-        config = get_config()
-        default_tree_params = {
-            "max_depth": config.supervised_default_max_depth,
-            "min_samples_leaf": config.supervised_default_min_samples_leaf,
-            "min_samples_split": config.supervised_default_min_samples_split,
-            "random_state": None,
-        }
-        
-        if tree_params is None:
-            tree_params_for_merge = {}
-        else:
-            tree_params_for_merge = tree_params
-        
-                # Store the original tree_params (as provided by user)
-        self.tree_params = tree_params or {}
-        
-        # Merge with defaults for internal use
-        self._merged_tree_params = {**default_tree_params, **tree_params_for_merge}
-        
-        # Initialize the appropriate tree model
-        if task_type == "classification":
-            self._tree_template = DecisionTreeClassifier(**self._merged_tree_params)
-        else:  # regression
-            self._tree_template = DecisionTreeRegressor(**self._merged_tree_params)
+        self.tree_params = tree_params  # Store exactly as received, overriding any parent modification
 
     def _calculate_bins(
         self, 

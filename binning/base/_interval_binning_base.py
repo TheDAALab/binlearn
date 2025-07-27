@@ -179,6 +179,7 @@ class IntervalBinningBase(GeneralBinningBase):
         """
         return self._calculate_bins(x_col, col_id)
 
+    @abstractmethod
     def _calculate_bins(
         self, 
         x_col: np.ndarray, 
@@ -310,31 +311,25 @@ class IntervalBinningBase(GeneralBinningBase):
         self._check_fitted()
         return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}
 
-    def get_params(self, deep: bool = True) -> Dict[str, Any]:
-        """Get parameters for this estimator."""
-        params = super().get_params(deep=deep)
+    def _get_binning_params(self) -> Dict[str, Any]:
+        """Get interval binning specific parameters."""
+        return {
+            "clip": self.clip,
+            "bin_edges": self.bin_edges,
+            "bin_representatives": self.bin_representatives,
+            "fit_jointly": self.fit_jointly,
+            "guidance_columns": self.guidance_columns,
+        }
+    
+    def _get_fitted_params(self) -> Dict[str, Any]:
+        """Get fitted parameter values."""
+        return {
+            "bin_edges": self._bin_edges,
+            "bin_representatives": self._bin_reps,
+        }
 
-        # Always include these parameters
-        params.update(
-            {
-                "clip": self.clip,
-                "bin_edges": self.bin_edges,
-                "bin_representatives": self.bin_representatives,
-                "fit_jointly": self.fit_jointly,
-                "guidance_columns": self.guidance_columns,
-            }
-        )
-
-        # Override with fitted values if fitted, otherwise keep constructor values
-        if self._fitted:
-            params["bin_edges"] = self._bin_edges
-            params["bin_representatives"] = self._bin_reps
-
-        return params
-
-    def set_params(self, **params) -> "IntervalBinningBase":
-        """Set parameters and reset fitted state if bin specs change."""
-        # Handle bin specifications first (before calling super)
+    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
+        """Handle interval bin-specific parameter changes."""
         reset_fitted = False
 
         if "bin_edges" in params:
@@ -357,9 +352,5 @@ class IntervalBinningBase(GeneralBinningBase):
         if "guidance_columns" in params:
             self.guidance_columns = params["guidance_columns"]
             reset_fitted = True
-
-        if reset_fitted:
-            self._fitted = False
-
-        super().set_params(**params)
-        return self
+            
+        return reset_fitted

@@ -1,21 +1,19 @@
 """
-Example of how to create new guided binning methods using GuidedBinningMixin.
+Example of how to create new guided binning methods using SupervisedBinningBase.
 
 This demonstrates the reusable patterns factored out from SupervisedBinning.
 """
 
 from typing import Any, Dict, List, Tuple, Optional, Union
 import numpy as np
-from ..base._interval_binning_base import IntervalBinningBase
-from ..base._guided_binning_mixin import GuidedBinningMixin
+from ..base._supervised_binning_base import SupervisedBinningBase
 from ..config import get_config
 from ..errors import FittingError
-from ..sklearn_utils import SklearnCompatibilityMixin
 
 
-class ExampleGuidedBinning(IntervalBinningBase, GuidedBinningMixin, SklearnCompatibilityMixin):
+class ExampleGuidedBinning(SupervisedBinningBase):
     """
-    Example guided binning method demonstrating how to use GuidedBinningMixin.
+    Example guided binning method demonstrating how to use SupervisedBinningBase.
     
     This example creates bins based on target correlation (a simple heuristic approach).
     """
@@ -131,7 +129,7 @@ class ExampleGuidedBinning(IntervalBinningBase, GuidedBinningMixin, SklearnCompa
 """
 Common patterns when creating guided binning methods:
 
-1. **Inherit from GuidedBinningMixin**: Provides validation and data handling
+1. **Inherit from SupervisedBinningBase**: Provides validation and data handling
 2. **Use require_guidance_data()**: Ensure guidance data is provided
 3. **Use validate_feature_target_pair()**: Handle missing values, type validation
 4. **Use handle_insufficient_data()**: Graceful handling of edge cases
@@ -139,9 +137,10 @@ Common patterns when creating guided binning methods:
 6. **Use create_fallback_bins()**: Fallback when your method fails
 
 Benefits of this pattern:
-- Consistent error handling across all guided methods
+- Consistent error handling across all supervised methods
 - Robust missing value handling
 - Clear validation error messages
 - Reduced code duplication
 - Easier testing and maintenance
+- Single inheritance for cleaner hierarchy
 """

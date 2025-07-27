@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
+from abc import abstractmethod
 import warnings
 
 import numpy as np
 
 from ._general_binning_base import GeneralBinningBase
-from ._repr_mixin import ReprMixin
 from ._bin_utils import ensure_bin_dict, validate_bins
 from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
@@ -27,7 +27,7 @@ from ..config import get_config
 from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError, FittingError, DataQualityWarning
 
 
-class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
+class FlexibleBinningBase(GeneralBinningBase):
     """Base class for flexible binning methods supporting singleton and interval bins.
 
     This class handles binning where bins can be:
@@ -189,6 +189,7 @@ class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
         """
         return find_flexible_bin_for_value(value, bin_defs)
 
+    @abstractmethod
     def _calculate_flexible_bins(
         self, 
         x_col: np.ndarray, 
@@ -248,18 +249,16 @@ class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
 
         return result
 
-    def inverse_transform(self, X: Any) -> Any:
-        """Transform bin indices back to representative values."""
-        self._check_fitted()
-        arr, columns = self._prepare_input(X)
-        result = np.full(arr.shape, np.nan, dtype=float)
+    def _inverse_transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+        """Transform bin indices back to representative values for flexible bins."""
+        result = np.full(X.shape, np.nan, dtype=float)
         available_keys = list(self._bin_reps.keys())
 
         for i, col in enumerate(columns):
             key = self._get_column_key(col, available_keys, i)
             reps = self._bin_reps[key]
 
-            col_data = arr[:, i]
+            col_data = X[:, i]
 
             # Handle missing values
             missing_mask = col_data == MISSING_VALUE
@@ -273,6 +272,13 @@ class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
             # Handle missing values
             result[missing_mask, i] = np.nan
 
+        return result
+
+    def inverse_transform(self, X: Any) -> Any:
+        """Transform bin indices back to representative values."""
+        self._check_fitted()
+        arr, columns = self._prepare_input(X)
+        result = self._inverse_transform_columns(arr, columns)
         return return_like_input(result, X, columns, self.preserve_dataframe)
 
     def lookup_bin_widths(self, bin_indices: Any) -> Any:
@@ -305,31 +311,25 @@ class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)
 
-    def get_params(self, deep: bool = True) -> Dict[str, Any]:
-        """Get parameters for this estimator."""
-        params = super().get_params(deep=deep)
+    def _get_binning_params(self) -> Dict[str, Any]:
+        """Get flexible binning specific parameters."""
+        return {
+            "preserve_dataframe": self.preserve_dataframe,
+            "fit_jointly": self.fit_jointly,
+            "guidance_columns": self.guidance_columns,
+            "bin_spec": self.bin_spec,
+            "bin_representatives": self.bin_representatives,
+        }
+    
+    def _get_fitted_params(self) -> Dict[str, Any]:
+        """Get fitted parameter values.""" 
+        return {
+            "bin_spec": self._bin_spec,
+            "bin_representatives": self._bin_reps,
+        }
 
-        # Always include these parameters
-        params.update(
-            {
-                "preserve_dataframe": self.preserve_dataframe,
-                "fit_jointly": self.fit_jointly,
-                "guidance_columns": self.guidance_columns,
-                "bin_spec": self.bin_spec,
-                "bin_representatives": self.bin_representatives,
-            }
-        )
-
-        # Override with fitted values if fitted, otherwise keep constructor values
-        if self._fitted:
-            params["bin_spec"] = self._bin_spec
-            params["bin_representatives"] = self._bin_reps
-
-        return params
-
-    def set_params(self, **params) -> "FlexibleBinningBase":
-        """Set parameters and reset fitted state if bin specs change."""
-        # Handle bin specifications first (before calling super)
+    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
+        """Handle flexible bin-specific parameter changes."""
         reset_fitted = False
 
         if "bin_spec" in params:
@@ -349,9 +349,5 @@ class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
         if "guidance_columns" in params:
             self.guidance_columns = params["guidance_columns"]
             reset_fitted = True
-
-        if reset_fitted:
-            self._fitted = False
-
-        super().set_params(**params)
-        return self
+            
+        return reset_fitted

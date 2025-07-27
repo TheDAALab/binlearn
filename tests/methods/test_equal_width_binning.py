@@ -172,7 +172,7 @@ class TestEdgeCases:
         X = np.array([]).reshape(0, 1)
         
         # Should raise error for empty data
-        with pytest.raises(ValueError, match="min and max must be finite"):
+        with pytest.raises(ValueError, match="no valid.*values found"):
             binner.fit(X)
     
     def test_constant_values(self):
@@ -201,16 +201,28 @@ class TestEdgeCases:
         binner = EqualWidthBinning(n_bins=3)
         X = np.array([[1.0], [np.inf], [3.0]])
         
-        # Should raise error for infinite values
-        with pytest.raises(ValueError, match="min and max must be finite"):
-            binner.fit(X)
+        # Should handle infinite values gracefully
+        binner.fit(X)
+        result = binner.transform(X)
+        
+        # Verify the transformation works
+        assert result.shape == (3, 1)
+        # inf should be clipped to highest bin if clip=True (default)
+        assert result[1, 0] == 2  # inf maps to highest bin
+        
+        # Test inverse transform
+        inv_result = binner.inverse_transform(result)
+        assert inv_result.shape == (3, 1)
+        # Should restore finite values, inf becomes representative of highest bin
+        assert inv_result[0, 0] == binner._bin_reps[0][0]  # finite value
+        assert inv_result[2, 0] == binner._bin_reps[0][1]  # finite value
     
     def test_all_nan_column(self):
         """Test with column of all NaN values."""
         binner = EqualWidthBinning()
         X = np.array([[np.nan, 1.0], [np.nan, 2.0]])
         
-        with pytest.raises(ValueError, match="min and max must be finite"):
+        with pytest.raises(ValueError, match="no valid.*values found"):
             binner.fit(X)
     
     def test_clipping_behavior(self):

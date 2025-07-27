@@ -5,10 +5,9 @@ OneHotBinning transformer - creates a singleton bin for each unique value in the
 from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from ..base._flexible_binning_base import FlexibleBinningBase
-from ..base._repr_mixin import ReprMixin
 
 
-class OneHotBinning(FlexibleBinningBase, ReprMixin):
+class OneHotBinning(FlexibleBinningBase):
     def __repr__(self):
         defaults = dict(
             preserve_dataframe=False,
@@ -43,6 +42,9 @@ class OneHotBinning(FlexibleBinningBase, ReprMixin):
     This is NOT one-hot encoding that expands columns. Instead, it's a binning
     method that creates one bin per unique value, where each bin is defined as
     {"singleton": value}. The output has the same shape as the input.
+    
+    **Important**: This method only supports numeric data. Non-numeric data will 
+    raise a ValueError during fitting.
 
     For example:
     - Input: [[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]]
@@ -101,9 +103,11 @@ class OneHotBinning(FlexibleBinningBase, ReprMixin):
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """
         Calculate singleton bins for each unique value in the column.
+        
+        Note: This method only supports numeric data. Non-numeric data will raise an error.
 
         Args:
-            x_col: Data for a single column.
+            x_col: Numeric data for a single column.
             col_id: Column identifier.
             guidance_data: Optional guidance data (not used in one-hot binning).
 
@@ -112,8 +116,15 @@ class OneHotBinning(FlexibleBinningBase, ReprMixin):
             - List of singleton bin definitions: [{"singleton": val1}, {"singleton": val2}, ...]
             - List of representative values: [val1, val2, ...]
         """
-        # Convert to numeric array and handle NaNs/infinites
-        x_col = np.asarray(x_col, dtype=float)
+        # Convert to numeric array - this will raise an error for non-numeric data
+        try:
+            x_col = np.asarray(x_col, dtype=float)
+        except (ValueError, TypeError) as e:
+            raise ValueError(
+                f"OneHotBinning only supports numeric data. "
+                f"Column {col_id} contains non-numeric values. "
+                f"Original error: {str(e)}"
+            )
 
         # Remove NaN/inf values for finding unique values
         finite_mask = np.isfinite(x_col)
