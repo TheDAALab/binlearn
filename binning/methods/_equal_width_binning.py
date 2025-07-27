@@ -8,38 +8,6 @@ from ..errors import ConfigurationError
 
 
 class EqualWidthBinning(IntervalBinningBase, ReprMixin):
-    def __repr__(self):
-        defaults = dict(
-            n_bins=10,
-            bin_range=None,
-            clip=True,
-            preserve_dataframe=False,
-            bin_edges=None,
-            bin_representatives=None,
-            fit_jointly=False,
-            joint_range_method="global",
-        )
-        params = {
-            "n_bins": self.n_bins,
-            "bin_range": self.bin_range,
-            "clip": self.clip,
-            "preserve_dataframe": self.preserve_dataframe,
-            "bin_edges": self.bin_edges,
-            "bin_representatives": self.bin_representatives,
-            "fit_jointly": self.fit_jointly,
-            "joint_range_method": self.joint_range_method,
-        }
-        show = []
-        for k, v in params.items():
-            if v != defaults[k]:
-                if k in {"bin_edges", "bin_representatives"} and v is not None:
-                    show.append(f"{k}=...")
-                else:
-                    show.append(f"{k}={repr(v)}")
-        if not show:
-            return f"{self.__class__.__name__}()"
-        return f"{self.__class__.__name__}(" + ", ".join(show) + ")"
-
     """Classic equal-width binning transformer.
 
     Creates bins of equal width across the range of each feature.
@@ -201,8 +169,10 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
         try:
             min_val = np.nanmin(x_col)
             max_val = np.nanmax(x_col)
-        except ValueError:
-            raise ValueError(f"Cannot create bins for column {col_id}: min and max must be finite.")
+        except ValueError as exc:
+            raise ValueError(
+                f"Cannot create bins for column {col_id}: min and max must be finite."
+            ) from exc
 
         if not (np.isfinite(min_val) and np.isfinite(max_val)):
             raise ValueError(f"Cannot create bins for column {col_id}: min and max must be finite.")

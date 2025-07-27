@@ -5,37 +5,10 @@ OneHotBinning transformer - creates a singleton bin for each unique value in the
 from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from ..base._flexible_binning_base import FlexibleBinningBase
+from ..base._repr_mixin import ReprMixin
 
 
-class OneHotBinning(FlexibleBinningBase):
-    def __repr__(self):
-        defaults = dict(
-            preserve_dataframe=False,
-            bin_spec=None,
-            guidance_columns=None,
-            fit_jointly=False,
-            max_unique_values=100,
-            bin_representatives=None,
-        )
-        params = {
-            "preserve_dataframe": self.preserve_dataframe,
-            "bin_spec": self.bin_spec,
-            "guidance_columns": self.guidance_columns,
-            "fit_jointly": self.fit_jointly,
-            "max_unique_values": self.max_unique_values,
-            "bin_representatives": self.bin_representatives,
-        }
-        show = []
-        for k, v in params.items():
-            if v != defaults[k]:
-                if k in {"bin_spec", "bin_representatives"} and v is not None:
-                    show.append(f"{k}=...")
-                else:
-                    show.append(f"{k}={repr(v)}")
-        if not show:
-            return f"{self.__class__.__name__}()"
-        return f"{self.__class__.__name__}(" + ", ".join(show) + ")"
-
+class OneHotBinning(FlexibleBinningBase, ReprMixin):
     """
     Creates a singleton bin for each unique value in numeric data.
 
@@ -48,11 +21,6 @@ class OneHotBinning(FlexibleBinningBase):
 
     For example:
     - Input: [[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]]
-    - Bins created: {0: [{"singleton": 1.0}, {"singleton": 2.0}],
-                     1: [{"singleton": 10.0}, {"singleton": 20.0}]}
-    - Transform output: [[0, 0], [1, 1], [0, 0]]  # Same shape as input
-
-    Note: Only numeric data is supported. Input will be converted to float.
     """
 
     def __init__(
@@ -121,7 +89,7 @@ class OneHotBinning(FlexibleBinningBase):
                 f"OneHotBinning only supports numeric data. "
                 f"Column {col_id} contains non-numeric values. "
                 f"Original error: {str(e)}"
-            )
+            ) from e
 
         # Remove NaN/inf values for finding unique values
         finite_mask = np.isfinite(x_col)
