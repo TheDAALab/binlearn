@@ -4,7 +4,6 @@ SupervisedBinning transformer - creates bins using decision tree splits guided b
 
 from typing import Any, Dict, List, Tuple, Optional, Union
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.base import clone
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..config import get_config

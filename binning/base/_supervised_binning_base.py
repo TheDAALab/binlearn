@@ -1,40 +1,20 @@
 """
 Base class for supervised binning methods.
 
-This         # Store parameters exactly as received for sklearn clone compatibility
-        self.task_type = task_type
-        self.tree_params = tree_params  # Store exactly as received, don't convert None to {}
-
-        # Get default parameters from config
-        config = get_config()
-        default_tree_params = {
-            "max_depth": config.supervised_default_max_depth,
-            "min_samples_leaf": config.supervised_default_min_samples_leaf,
-            "min_samples_split": config.supervised_default_min_samples_split,
-            "random_state": None,
-        }
-
-        # Merge with defaults for internal use (use empty dict if tree_params is None)
-        actual_tree_params = tree_params or {}
-        self._merged_tree_params = {**default_tree_params, **actual_tree_params}the common infrastructure for all supervised binning methods,
+This module provides the common infrastructure for all supervised binning methods,
 including guidance data validation, decision tree integration, and feature-target
 pair handling.
 """
 
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.base import clone
 
 from ._interval_binning_base import IntervalBinningBase
 from ..config import get_config
 from ..errors import (
-    ValidationMixin,
-    InvalidDataError,
     ConfigurationError,
-    FittingError,
     DataQualityWarning,
-    validate_tree_params,
 )
 
 
@@ -298,7 +278,8 @@ class SupervisedBinningBase(IntervalBinningBase):
 
             if col_id is not None:
                 warnings.warn(
-                    f"Column {col_id} has no valid data points. Using default bin range [{min_val}, {max_val}]",
+                    f"Column {col_id} has no valid data points. "
+                    f"Using default bin range [{min_val}, {max_val}]",
                     DataQualityWarning,
                 )
 

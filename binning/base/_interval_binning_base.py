@@ -4,7 +4,7 @@ Interval binning base class with unified joint/per-column logic.
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 import warnings
 
 import numpy as np
@@ -15,11 +15,8 @@ from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 from ..config import get_config
 from ..errors import (
-    ValidationMixin,
     BinningError,
-    InvalidDataError,
     ConfigurationError,
-    FittingError,
     DataQualityWarning,
 )
 
