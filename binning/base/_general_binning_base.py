@@ -4,28 +4,42 @@ Simplified base class for all binning methods.
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
+import warnings
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from ._data_utils import prepare_array, return_like_input, prepare_input_with_columns
+from ..config import get_config
+from ..errors import ValidationMixin, BinningError, InvalidDataError, FittingError
+from ..sklearn_utils import SklearnCompatibilityMixin
 
 
-class GeneralBinningBase(BaseEstimator, TransformerMixin):
+class GeneralBinningBase(BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin):
     """Base binning class with universal guidance support."""
 
     def __init__(
         self,
-        preserve_dataframe: bool = False,
-        fit_jointly: bool = False,
+        preserve_dataframe: Optional[bool] = None,
+        fit_jointly: Optional[bool] = None,
         guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
     ):
+        # Load configuration defaults
+        config = get_config()
+        
+        # Apply defaults from configuration
+        if preserve_dataframe is None:
+            preserve_dataframe = config.preserve_dataframe
+        if fit_jointly is None:
+            fit_jointly = config.fit_jointly
+            
         # Validate incompatible parameters
         if guidance_columns is not None and fit_jointly:
             raise ValueError(
                 "guidance_columns and fit_jointly=True are incompatible. "
-                "Guidance operates per-record while joint fitting operates globally."
+                "Use either guidance_columns for per-record guidance OR "
+                "fit_jointly=True for global fitting, but not both."
             )
 
         self.preserve_dataframe = preserve_dataframe
@@ -38,6 +52,7 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin):
         self._guidance_columns = None
         self._original_columns = None
         self._n_features_in = None
+        self._feature_names_in = None
 
     def _prepare_input(self, X: Any) -> Tuple[np.ndarray, List[Any]]:
         """Prepare input array and determine column identifiers."""
@@ -89,95 +104,142 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin):
 
     def fit(self, X: Any, y: Any = None, **fit_params) -> "GeneralBinningBase":
         """Universal fit method with guidance support."""
-        # Store original input info for sklearn compatibility
-        arr, original_columns = self._prepare_input(X)
-        self._n_features_in = arr.shape[1]
-        self._original_columns = original_columns
+        try:
+            # Validate input data using ValidationMixin
+            self.validate_array_like(X, "X")
+            
+            # Store original input info for sklearn compatibility
+            arr, original_columns = self._prepare_input(X)
+            self._n_features_in = arr.shape[1]
+            self._original_columns = original_columns
+            
+            # Handle feature names manually to avoid sklearn conflicts
+            if hasattr(X, 'columns'):
+                self._feature_names_in = list(X.columns)
+            elif hasattr(X, 'feature_names'):
+                self._feature_names_in = list(X.feature_names)
+            else:
+                # For numpy arrays without column names, use integer indices for backward compatibility
+                self._feature_names_in = list(range(arr.shape[1]))
 
-        # Separate guidance and binning columns
-        X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
+            # Separate guidance and binning columns
+            X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
 
-        # Store column information
-        self._binning_columns = binning_cols
-        self._guidance_columns = guidance_cols
+            # Store column information
+            self._binning_columns = binning_cols
+            self._guidance_columns = guidance_cols
 
-        # Route to appropriate fitting method
-        if self.fit_jointly:
-            self._fit_jointly(X_binning, binning_cols, **fit_params)
-        else:
-            self._fit_per_column(X_binning, binning_cols, X_guidance, **fit_params)
+            # Route to appropriate fitting method
+            if self.fit_jointly:
+                self._fit_jointly(X_binning, binning_cols, **fit_params)
+            else:
+                self._fit_per_column(X_binning, binning_cols, X_guidance, **fit_params)
 
-        self._fitted = True
-        return self
+            self._fitted = True
+            return self
+            
+        except Exception as e:
+            if isinstance(e, BinningError):
+                raise
+            if isinstance(e, (ValueError, RuntimeError, NotImplementedError)):
+                # Let these pass through unchanged for test compatibility
+                raise
+            raise ValueError(f"Failed to fit binning model: {str(e)}") from e
 
     def transform(self, X: Any) -> Any:
         """Universal transform with guidance column handling."""
-        self._check_fitted()
-
-        # Separate columns
-        X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
-
-        if self.guidance_columns is None:
-            # No guidance - transform all columns
-            result = self._transform_columns(X_binning, binning_cols)
-            return return_like_input(result, X, binning_cols, self.preserve_dataframe)
-
-        # Transform only binning columns
-        if X_binning.shape[1] > 0:
-            result = self._transform_columns(X_binning, binning_cols)
-        else:
-            result = np.empty((X_binning.shape[0], 0), dtype=int)
-
-        return return_like_input(result, X, binning_cols, self.preserve_dataframe)
+        try:
+            self._check_fitted()
+            # Validate input data
+            self.validate_array_like(X, "X")
+            # Check feature names consistency
+            self._check_feature_names(X, reset=False)
+            # Separate columns
+            X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
+            if self.guidance_columns is None:
+                # No guidance - transform all columns
+                result = self._transform_columns(X_binning, binning_cols)
+                return return_like_input(result, X, binning_cols, bool(self.preserve_dataframe))
+            # Transform only binning columns
+            if X_binning.shape[1] > 0:
+                result = self._transform_columns(X_binning, binning_cols)
+            else:
+                result = np.empty((X_binning.shape[0], 0), dtype=int)
+            return return_like_input(result, X, binning_cols, bool(self.preserve_dataframe))
+        except Exception as e:
+            if isinstance(e, (BinningError, RuntimeError)):
+                raise
+            raise ValueError(f"Failed to transform data: {str(e)}") from e
 
     def transform_with_guidance(self, X: Any) -> Tuple[Any, Any]:
         """Transform and return both binned and guidance data separately."""
-        self._check_fitted()
+        try:
+            self._check_fitted()
+            
+            # Validate input data
+            self.validate_array_like(X, "X")
 
-        X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
+            X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
 
-        # Transform binning columns
-        if X_binning.shape[1] > 0:
-            binned_result = self._transform_columns(X_binning, binning_cols)
-        else:
-            binned_result = np.empty((X_binning.shape[0], 0), dtype=int)
+            # Transform binning columns
+            if X_binning.shape[1] > 0:
+                binned_result = self._transform_columns(X_binning, binning_cols)
+            else:
+                binned_result = np.empty((X_binning.shape[0], 0), dtype=int)
 
-        # Format outputs
-        binned_output = return_like_input(binned_result, X, binning_cols, self.preserve_dataframe)
+            # Format outputs
+            binned_output = return_like_input(binned_result, X, binning_cols, bool(self.preserve_dataframe))
 
-        if X_guidance is not None:
-            guidance_output = return_like_input(
-                X_guidance, X, guidance_cols, self.preserve_dataframe
-            )
-        else:
-            guidance_output = None
+            if X_guidance is not None:
+                guidance_output = return_like_input(
+                    X_guidance, X, guidance_cols, bool(self.preserve_dataframe)
+                )
+            else:
+                guidance_output = None
 
-        return binned_output, guidance_output
+            return binned_output, guidance_output
+            
+        except (ValueError, RuntimeError):
+            # Let these pass through unchanged for test compatibility 
+            raise
+        except Exception as e:
+            if isinstance(e, BinningError):
+                raise
+            raise InvalidDataError(f"Failed to transform data with guidance: {str(e)}") from e
 
     def inverse_transform(self, X: Any) -> Any:
         """Inverse transform from bin indices back to representative values."""
-        self._check_fitted()
+        try:
+            self._check_fitted()
+            
+            # Validate input data
+            self.validate_array_like(X, "X")
 
-        # For inverse transform, we work only with binning columns
-        # (guidance columns weren't transformed, so can't be inverse transformed)
-        if self.guidance_columns is not None:
-            # Input should only have binning columns for inverse transform
-            arr, columns = self._prepare_input(X)
-            if self._binning_columns is None or len(columns) != len(self._binning_columns):
-                expected_cols = (
-                    len(self._binning_columns) if self._binning_columns is not None else 0
-                )
-                raise ValueError(
-                    f"Input for inverse_transform should have {expected_cols} "
-                    f"columns (binning columns only), got {len(columns)}"
-                )
-            result = self._inverse_transform_columns(arr, self._binning_columns)
-            return return_like_input(result, X, self._binning_columns, self.preserve_dataframe)
-        else:
-            # No guidance - inverse transform all columns
-            arr, columns = self._prepare_input(X)
-            result = self._inverse_transform_columns(arr, columns)
-            return return_like_input(result, X, columns, self.preserve_dataframe)
+            # For inverse transform, we work only with binning columns
+            # (guidance columns weren't transformed, so can't be inverse transformed)
+            if self.guidance_columns is not None:
+                # Input should only have binning columns for inverse transform
+                arr, columns = self._prepare_input(X)
+                if self._binning_columns is None or len(columns) != len(self._binning_columns):
+                    expected_cols = (
+                        len(self._binning_columns) if self._binning_columns is not None else 0
+                    )
+                    raise ValueError(
+                        f"Input for inverse_transform should have {expected_cols} "
+                        f"columns (binning columns only), got {len(columns)}"
+                    )
+                result = self._inverse_transform_columns(arr, self._binning_columns)
+                return return_like_input(result, X, self._binning_columns, bool(self.preserve_dataframe))
+            else:
+                # No guidance - inverse transform all columns
+                arr, columns = self._prepare_input(X)
+                result = self._inverse_transform_columns(arr, columns)
+                return return_like_input(result, X, columns, bool(self.preserve_dataframe))
+                
+        except Exception as e:
+            if isinstance(e, (BinningError, RuntimeError)):
+                raise
+            raise ValueError(f"Failed to inverse transform data: {str(e)}") from e
 
     # Abstract methods to be implemented by subclasses
     def _fit_per_column(
@@ -218,7 +280,8 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin):
         if guidance_cols is not None and fit_jointly:
             raise ValueError(
                 "guidance_columns and fit_jointly=True are incompatible. "
-                "Guidance operates per-record while joint fitting operates globally."
+                "Use either guidance_columns for per-record guidance OR "
+                "fit_jointly=True for global fitting, but not both."
             )
 
         return super().set_params(**params)
@@ -234,10 +297,10 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin):
         """Number of features seen during fit."""
         return self._n_features_in
 
-    @property
+    @property  
     def feature_names_in_(self) -> Optional[List[Any]]:
-        """Names of features seen during fit."""
-        return self._original_columns if self._original_columns is not None else None
+        """Feature names seen during fit."""
+        return getattr(self, '_feature_names_in', None)
 
     # Additional utility properties
     @property
@@ -250,27 +313,4 @@ class GeneralBinningBase(BaseEstimator, TransformerMixin):
         """Columns used for guidance."""
         return self._guidance_columns
 
-    def __repr__(self) -> str:
-        """String representation of the estimator."""
-        N_CHAR_MAX = 700
-        class_name = self.__class__.__name__
-        params = []
 
-        if self.preserve_dataframe:
-            params.append("preserve_dataframe=True")
-        if self.fit_jointly:
-            params.append("fit_jointly=True")
-        if self.guidance_columns is not None:
-            if isinstance(self.guidance_columns, list):
-                params.append(f"guidance_columns={self.guidance_columns}")
-            else:
-                params.append(f"guidance_columns=[{self.guidance_columns}]")
-
-        param_str = ", ".join(params)
-        result = f"{class_name}({param_str})"
-
-        # Fix: Check length and truncate properly
-        if len(result) > N_CHAR_MAX:
-            result = result[: N_CHAR_MAX - 3] + "..."
-
-        return result

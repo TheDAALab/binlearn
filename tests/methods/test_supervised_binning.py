@@ -177,7 +177,7 @@ class TestParameterConfiguration:
         binner.fit(X)
         
         # Multiple guidance columns should fail
-        with pytest.raises(ValueError, match="exactly 1 column"):
+        with pytest.raises(ValueError, match="expected exactly 1"):
             binner = SupervisedBinning(guidance_columns=[2, 3])
             binner.fit(X)
         
@@ -185,13 +185,13 @@ class TestParameterConfiguration:
         binner_3d = SupervisedBinning(guidance_columns=[2])
         # Manually call _calculate_bins with 3D guidance data to test line 138
         guidance_3d = np.random.randn(10, 2, 2)  # 3D array
-        with pytest.raises(ValueError, match="1D or 2D with 1 column"):
+        with pytest.raises(ValueError, match="expected 1D or 2D array"):
             binner_3d._calculate_bins(
-                np.random.randn(10), 
-                0, 
+                np.random.randn(10),
+                0,
                 guidance_3d
             )
-    
+
     def test_no_guidance_error(self):
         """Test error when no guidance data is provided."""
         binner = SupervisedBinning()

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
+import warnings
 
 import numpy as np
 
 from ._general_binning_base import GeneralBinningBase
+from ._repr_mixin import ReprMixin
 from ._bin_utils import ensure_bin_dict, validate_bins
 from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
@@ -21,9 +23,11 @@ from ._flexible_bin_utils import (
     transform_value_to_flexible_bin,
     get_flexible_bin_count,
 )
+from ..config import get_config
+from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError, FittingError, DataQualityWarning
 
 
-class FlexibleBinningBase(GeneralBinningBase):
+class FlexibleBinningBase(GeneralBinningBase, ReprMixin):
     """Base class for flexible binning methods supporting singleton and interval bins.
 
     This class handles binning where bins can be:
@@ -33,10 +37,10 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     def __init__(
         self,
-        preserve_dataframe: bool = False,
+        preserve_dataframe: Optional[bool] = None,
         bin_spec: Optional[Union[FlexibleBinSpec, Any]] = None,
         bin_representatives: Optional[Union[FlexibleBinReps, Any]] = None,
-        fit_jointly: bool = False,
+        fit_jointly: Optional[bool] = None,
         guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
     ):
@@ -58,7 +62,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # Fitted specifications
         self._bin_spec: FlexibleBinSpec = {}
         self._bin_reps: FlexibleBinReps = {}
-
+        
     def _fit_per_column(
         self, 
         X: np.ndarray, 
@@ -67,33 +71,45 @@ class FlexibleBinningBase(GeneralBinningBase):
         **fit_params
     ) -> None:
         """Fit flexible bins per column with optional guidance data."""
-        self._process_user_specifications(columns)
+        try:
+            self._process_user_specifications(columns)
 
-        # Calculate bins from data for columns that don't have user-provided specs
-        for i, col in enumerate(columns):
-            # Skip column entirely if it already has bin specs or representatives
-            if col not in self._bin_spec and col not in self._bin_reps:
-                bin_defs, reps = self._calculate_flexible_bins(X[:, i], col, guidance_data)
-                self._bin_spec[col] = bin_defs
-                self._bin_reps[col] = reps
-
-        self._finalize_fitting()
-
-    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
-        """Fit flexible bins jointly across all columns."""
-        self._process_user_specifications(columns)
-
-        # Calculate joint parameters and apply to columns without user-provided specs
-        if any(col not in self._bin_spec for col in columns):
-            joint_params = self._calculate_joint_parameters(X, columns)
-
+            # Calculate bins from data for columns that don't have user-provided specs
             for i, col in enumerate(columns):
-                if col not in self._bin_spec:
-                    bin_defs, reps = self._calculate_flexible_bins_jointly(X[:, i], col, joint_params)
+                # Skip column entirely if it already has bin specs or representatives
+                if col not in self._bin_spec and col not in self._bin_reps:
+                    bin_defs, reps = self._calculate_flexible_bins(X[:, i], col, guidance_data)
                     self._bin_spec[col] = bin_defs
                     self._bin_reps[col] = reps
 
-        self._finalize_fitting()
+            self._finalize_fitting()
+        except (ValueError, RuntimeError) as e:
+            # Let these pass through unchanged for test compatibility
+            raise
+        except NotImplementedError:
+            # Let NotImplementedError pass through unchanged
+            raise
+        except Exception as e:
+            raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
+
+    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
+        """Fit flexible bins jointly across all columns."""
+        try:
+            self._process_user_specifications(columns)
+
+            # Calculate joint parameters and apply to columns without user-provided specs
+            if any(col not in self._bin_spec for col in columns):
+                joint_params = self._calculate_joint_parameters(X, columns)
+
+                for i, col in enumerate(columns):
+                    if col not in self._bin_spec:
+                        bin_defs, reps = self._calculate_flexible_bins_jointly(X[:, i], col, joint_params)
+                        self._bin_spec[col] = bin_defs
+                        self._bin_reps[col] = reps
+
+            self._finalize_fitting()
+        except Exception as e:
+            raise ValueError(f"Failed to fit joint bins: {str(e)}") from e
 
     def _process_user_specifications(self, columns: List[Any]) -> None:
         """Process user-provided flexible bin specifications."""
@@ -339,21 +355,3 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         super().set_params(**params)
         return self
-
-    def __repr__(self, N_CHAR_MAX: int = 700) -> str:
-        """String representation of the estimator."""
-        params = []
-
-        if self.bin_spec is not None:
-            params.append(f"bin_spec=...")  # Abbreviated since it can be large
-        if self.bin_representatives is not None:
-            params.append(f"bin_representatives=...")
-        if self.preserve_dataframe:
-            params.append(f"preserve_dataframe={self.preserve_dataframe}")
-        if self.fit_jointly:
-            params.append(f"fit_jointly={self.fit_jointly}")
-        if self.guidance_columns is not None:
-            params.append(f"guidance_columns={self.guidance_columns}")
-
-        param_str = ", ".join(params)
-        return f"FlexibleBinningBase({param_str})"

@@ -7,9 +7,49 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.base import clone
 from ..base._interval_binning_base import IntervalBinningBase
+from ..base._guided_binning_mixin import GuidedBinningMixin
+from ..base._repr_mixin import ReprMixin
+from ..config import get_config
+from ..errors import (
+    ValidationMixin, InvalidDataError, ConfigurationError, 
+    FittingError, validate_tree_params
+)
+from ..sklearn_utils import SklearnCompatibilityMixin
 
 
-class SupervisedBinning(IntervalBinningBase):
+class SupervisedBinning(IntervalBinningBase, GuidedBinningMixin, ReprMixin, SklearnCompatibilityMixin):
+    def __repr__(self):
+        defaults = dict(
+            task_type='classification',
+            tree_params={},
+            clip=True,
+            preserve_dataframe=False,
+            bin_edges=None,
+            bin_representatives=None,
+            fit_jointly=False,
+            guidance_columns=None,
+        )
+        params = {
+            'task_type': self.task_type,
+            'tree_params': self.tree_params,
+            'clip': self.clip,
+            'preserve_dataframe': self.preserve_dataframe,
+            'bin_edges': self.bin_edges,
+            'bin_representatives': self.bin_representatives,
+            'fit_jointly': self.fit_jointly,
+            'guidance_columns': self.guidance_columns,
+        }
+        show = []
+        for k, v in params.items():
+            if v != defaults[k]:
+                if k in {'bin_edges', 'bin_representatives'} and v is not None:
+                    show.append(f'{k}=...')
+                else:
+                    show.append(f'{k}={repr(v)}')
+        if not show:
+            return f'{self.__class__.__name__}()'
+        return f'{self.__class__.__name__}(' + ', '.join(show) + ')'
+
     """
     Creates bins using decision tree splits guided by a target column.
     
@@ -59,10 +99,12 @@ class SupervisedBinning(IntervalBinningBase):
         bin_representatives : dict or None, default=None
             Pre-defined bin representatives.
         """
-        if task_type not in ["classification", "regression"]:
-            raise ValueError(
-                f"task_type must be 'classification' or 'regression', got '{task_type}'"
-            )
+        # Validate task type
+        self.validate_task_type(task_type, ["classification", "regression"])
+
+        # Validate tree parameters
+        if tree_params is not None:
+            tree_params = validate_tree_params(task_type, tree_params)
 
         super().__init__(
             bin_edges=bin_edges,
@@ -73,22 +115,25 @@ class SupervisedBinning(IntervalBinningBase):
         
         self.task_type = task_type
         
-        # Set default tree parameters
+        # Get default parameters from config
+        config = get_config()
         default_tree_params = {
-            "max_depth": 3,
-            "min_samples_leaf": 5,
-            "min_samples_split": 10,
+            "max_depth": config.supervised_default_max_depth,
+            "min_samples_leaf": config.supervised_default_min_samples_leaf,
+            "min_samples_split": config.supervised_default_min_samples_split,
             "random_state": None,
         }
         
         if tree_params is None:
-            tree_params = {}
+            tree_params_for_merge = {}
+        else:
+            tree_params_for_merge = tree_params
         
-        # Store the original tree_params for sklearn compatibility
-        self.tree_params = tree_params
+                # Store the original tree_params (as provided by user)
+        self.tree_params = tree_params or {}
         
         # Merge with defaults for internal use
-        self._merged_tree_params = {**default_tree_params, **tree_params}
+        self._merged_tree_params = {**default_tree_params, **tree_params_for_merge}
         
         # Initialize the appropriate tree model
         if task_type == "classification":
@@ -115,70 +160,45 @@ class SupervisedBinning(IntervalBinningBase):
             - List of bin edges: [edge1, edge2, ...]
             - List of representative values: [rep1, rep2, ...]
         """
-        if guidance_data is None:
-            raise ValueError(
-                "SupervisedBinning requires guidance_data (target values) to be provided."
-            )
+        # Ensure guidance data is provided
+        self.require_guidance_data(guidance_data, "SupervisedBinning")
+
+        # Validate and preprocess feature-target pair
+        x_col, guidance_data_validated, valid_mask = self.validate_feature_target_pair(
+            x_col, guidance_data, col_id
+        )
         
-        # Ensure guidance_data has exactly one column
-        guidance_data = np.asarray(guidance_data)
-        if guidance_data.ndim == 1:
-            # 1D array is fine
-            pass
-        elif guidance_data.ndim == 2:
-            # 2D array must have exactly 1 column
-            if guidance_data.shape[1] != 1:
-                raise ValueError(
-                    f"SupervisedBinning expects guidance_data to have exactly 1 column, "
-                    f"got {guidance_data.shape[1]} columns. Please specify a single guidance column."
-                )
-            # Flatten to 1D for processing
-            guidance_data = guidance_data.ravel()
-        else:
-            raise ValueError(
-                f"SupervisedBinning expects guidance_data to be 1D or 2D with 1 column, "
-                f"got {guidance_data.ndim}D array."
-            )
-            
-        # Convert to appropriate arrays and handle missing values
-        x_col = np.asarray(x_col, dtype=float)
-        
-        # Remove rows where either feature or target is missing
-        feature_finite = np.isfinite(x_col)
-        if guidance_data.dtype == object:
-            target_valid = guidance_data != None
-        else:
-            target_valid = np.isfinite(guidance_data.astype(float))
-            
-        valid_mask = feature_finite & target_valid
-        
-        if not valid_mask.any():
-            # No valid data - create a single bin covering the data range
-            min_val = np.nanmin(x_col) if not np.isnan(x_col).all() else 0.0
-            max_val = np.nanmax(x_col) if not np.isnan(x_col).all() else 1.0
-            if min_val == max_val:
-                max_val = min_val + 1.0
-            return [min_val, max_val], [(min_val + max_val) / 2]
-        
-        x_valid = x_col[valid_mask].reshape(-1, 1)
-        y_valid = guidance_data[valid_mask]
-        
-        # Check if we have enough samples
+        # Check for insufficient data
         min_samples_split = self._merged_tree_params.get("min_samples_split", 10)
-        if len(x_valid) < min_samples_split:
-            # Not enough data for meaningful splits
-            min_val = np.min(x_valid)
-            max_val = np.max(x_valid)
-            if min_val == max_val:
-                max_val = min_val + 1.0
-            return [min_val, max_val], [(min_val + max_val) / 2]
+        insufficient_result = self.handle_insufficient_data(
+            x_col, valid_mask, min_samples_split, col_id
+        )
+        if insufficient_result is not None:
+            return insufficient_result
+        
+        # Extract valid pairs for tree fitting
+        x_valid, y_valid = self.extract_valid_pairs(x_col, guidance_data_validated, valid_mask)
         
         # Fit decision tree
-        tree = clone(self._tree_template)
-        tree.fit(x_valid, y_valid)
+        try:
+            tree = clone(self._tree_template)
+            tree.fit(x_valid, y_valid)
+        except Exception as e:
+            raise FittingError(
+                f"Failed to fit decision tree: {str(e)}",
+                suggestions=[
+                    "Check if your target values are valid for the chosen task_type",
+                    "Try adjusting tree_params (e.g., reduce max_depth)",
+                    "Ensure you have enough data for the tree parameters",
+                    "Check for data type compatibility"
+                ]
+            )
         
         # Extract split points from the tree
         split_points = self._extract_split_points(tree, x_valid)
+        
+        # Store tree information for later access
+        self._store_tree_info(tree, col_id)
         
         # Create bin edges
         data_min = np.min(x_valid)
@@ -187,9 +207,10 @@ class SupervisedBinning(IntervalBinningBase):
         # Combine data bounds with split points
         all_edges = [data_min] + sorted(split_points) + [data_max]
         # Remove duplicates while preserving order
+        config = get_config()
         bin_edges = []
         for edge in all_edges:
-            if not bin_edges or abs(edge - bin_edges[-1]) > 1e-10:
+            if not bin_edges or abs(edge - bin_edges[-1]) > config.float_tolerance:
                 bin_edges.append(edge)
         
         # Calculate representatives (midpoints of bins)
@@ -225,31 +246,111 @@ class SupervisedBinning(IntervalBinningBase):
         
         return split_points
 
-    def __repr__(self, N_CHAR_MAX: int = 700) -> str:
-        """String representation of the estimator."""
-        params = []
+    def get_feature_importance(self, column_id: Any = None) -> Dict[Any, float]:
+        """
+        Get feature importance scores from the fitted decision trees.
         
-        if self.task_type != "classification":
-            params.append(f"task_type='{self.task_type}'")
+        Parameters
+        ----------
+        column_id : Any, optional
+            Specific column to get importance for. If None, returns all.
+            
+        Returns
+        -------
+        Dict[Any, float]
+            Mapping from column identifier to importance score.
+        """
+        self._check_fitted()
         
-        # Show tree_params if they differ from defaults
-        default_tree_params = {
-            "max_depth": 3,
-            "min_samples_leaf": 5,
-            "min_samples_split": 10,
-            "random_state": None,
+        if not hasattr(self, '_tree_importance'):
+            raise InvalidDataError(
+                "Feature importance not available. Tree may not have been fitted properly.",
+                suggestions=[
+                    "Ensure the transformer has been fitted with valid data",
+                    "Check that the decision tree was able to make splits"
+                ]
+            )
+        
+        if column_id is not None:
+            if column_id not in self._tree_importance:
+                raise InvalidDataError(
+                    f"Column {column_id} not found in fitted trees",
+                    suggestions=[
+                        f"Available columns: {list(self._tree_importance.keys())}",
+                        "Check column identifier spelling and type"
+                    ]
+                )
+            return {column_id: self._tree_importance[column_id]}
+        
+        return self._tree_importance.copy()
+    
+    def get_tree_structure(self, column_id: Any) -> Dict[str, Any]:
+        """
+        Get the structure of the decision tree for a specific column.
+        
+        Parameters
+        ----------
+        column_id : Any
+            Column identifier to get tree structure for.
+            
+        Returns
+        -------
+        Dict[str, Any]
+            Tree structure information including splits and thresholds.
+        """
+        self._check_fitted()
+        
+        if not hasattr(self, '_fitted_trees'):
+            raise InvalidDataError(
+                "Tree structure not available. Trees may not have been stored.",
+                suggestions=[
+                    "Ensure the transformer has been fitted",
+                    "Check that trees were fitted successfully"
+                ]
+            )
+        
+        if column_id not in self._fitted_trees:
+            raise InvalidDataError(
+                f"No tree found for column {column_id}",
+                suggestions=[
+                    f"Available columns: {list(self._fitted_trees.keys())}",
+                    "Check column identifier"
+                ]
+            )
+        
+        tree = self._fitted_trees[column_id]
+        tree_structure = tree.tree_
+        
+        return {
+            'n_nodes': tree_structure.node_count,
+            'max_depth': tree_structure.max_depth,
+            'n_leaves': tree_structure.n_leaves,
+            'feature_importances': tree.feature_importances_,
+            'tree_': tree_structure
         }
+    
+    def _store_tree_info(self, tree, col_id: Any) -> None:
+        """Store tree information for later access."""
+        if not hasattr(self, '_fitted_trees'):
+            self._fitted_trees = {}
+        if not hasattr(self, '_tree_importance'):
+            self._tree_importance = {}
         
-        # Only show non-default parameters that were explicitly set
-        if self.tree_params:
-            params.append(f"tree_params={self.tree_params}")
+        self._fitted_trees[col_id] = tree
+        # For single feature trees, importance is just the first (and only) importance
+        self._tree_importance[col_id] = tree.feature_importances_[0] if tree.feature_importances_.size > 0 else 0.0
+    
+    def _validate_params(self) -> None:
+        """Validate parameters for sklearn compatibility."""
+        super()._validate_params() if hasattr(super(), '_validate_params') else None
         
-        if self.preserve_dataframe:
-            params.append(f"preserve_dataframe={self.preserve_dataframe}")
-        if self.bin_edges is not None:
-            params.append("bin_edges=...")
-        if self.bin_representatives is not None:
-            params.append("bin_representatives=...")
-
-        param_str = ", ".join(params)
-        return f"SupervisedBinning({param_str})"
+        # Validate task_type
+        if self.task_type not in ["classification", "regression"]:
+            raise ConfigurationError(
+                f"Invalid task_type: {self.task_type}",
+                suggestions=["Use 'classification' or 'regression'"]
+            )
+        
+        # Validate tree_params
+        if self.tree_params is not None:
+            validate_tree_params(self.task_type, self.tree_params)

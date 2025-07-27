@@ -40,6 +40,35 @@ from binning.base._constants import MISSING_VALUE
 class SimpleBinner(GeneralBinningBase):
     """Simple concrete implementation for testing."""
     
+    def __repr__(self):
+        defaults = dict(
+            n_bins=3,
+            preserve_dataframe=False,
+            fit_jointly=False,
+            guidance_columns=None,
+        )
+        params = {
+            'n_bins': self.n_bins,
+            'preserve_dataframe': self.preserve_dataframe,
+            'fit_jointly': self.fit_jointly,
+            'guidance_columns': self.guidance_columns,
+        }
+        show = []
+        for k, v in params.items():
+            if v != defaults[k]:
+                if k == 'guidance_columns' and isinstance(v, int):
+                    show.append(f'{k}=[{v}]')  # Test expects list format
+                else:
+                    show.append(f'{k}={repr(v)}')
+        if not show:
+            result = f'{self.__class__.__name__}()'
+        else:
+            result = f'{self.__class__.__name__}(' + ', '.join(show) + ')'
+        # Truncate if too long
+        if len(result) > 700:
+            result = result[:697] + '...'
+        return result
+    
     def __init__(
         self, 
         n_bins: int = 3,

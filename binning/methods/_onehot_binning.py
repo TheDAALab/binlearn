@@ -5,9 +5,38 @@ OneHotBinning transformer - creates a singleton bin for each unique value in the
 from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from ..base._flexible_binning_base import FlexibleBinningBase
+from ..base._repr_mixin import ReprMixin
 
 
-class OneHotBinning(FlexibleBinningBase):
+class OneHotBinning(FlexibleBinningBase, ReprMixin):
+    def __repr__(self):
+        defaults = dict(
+            preserve_dataframe=False,
+            bin_spec=None,
+            guidance_columns=None,
+            fit_jointly=False,
+            max_unique_values=100,
+            bin_representatives=None,
+        )
+        params = {
+            'preserve_dataframe': self.preserve_dataframe,
+            'bin_spec': self.bin_spec,
+            'guidance_columns': self.guidance_columns,
+            'fit_jointly': self.fit_jointly,
+            'max_unique_values': self.max_unique_values,
+            'bin_representatives': self.bin_representatives,
+        }
+        show = []
+        for k, v in params.items():
+            if v != defaults[k]:
+                if k in {'bin_spec', 'bin_representatives'} and v is not None:
+                    show.append(f'{k}=...')
+                else:
+                    show.append(f'{k}={repr(v)}')
+        if not show:
+            return f'{self.__class__.__name__}()'
+        return f'{self.__class__.__name__}(' + ', '.join(show) + ')'
+
     """
     Creates a singleton bin for each unique value in numeric data.
 
@@ -63,7 +92,7 @@ class OneHotBinning(FlexibleBinningBase):
             **kwargs,
         )
         self.max_unique_values = max_unique_values
-
+        
     def _calculate_flexible_bins(
         self, 
         x_col: np.ndarray, 
@@ -167,21 +196,3 @@ class OneHotBinning(FlexibleBinningBase):
             representatives.append(val)
 
         return bin_defs, representatives
-
-    def __repr__(self, N_CHAR_MAX: int = 700) -> str:
-        """String representation of the estimator."""
-        params = []
-
-        if self.max_unique_values != 100:
-            params.append(f"max_unique_values={self.max_unique_values}")
-        if self.preserve_dataframe:
-            params.append(f"preserve_dataframe={self.preserve_dataframe}")
-        if self.fit_jointly:
-            params.append(f"fit_jointly={self.fit_jointly}")
-        if self.bin_spec is not None:
-            params.append("bin_spec=...")
-        if self.bin_representatives is not None:
-            params.append("bin_representatives=...")
-
-        param_str = ", ".join(params)
-        return f"OneHotBinning({param_str})"

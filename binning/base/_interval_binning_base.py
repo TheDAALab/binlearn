@@ -5,6 +5,7 @@ Interval binning base class with unified joint/per-column logic.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
 from abc import ABC, abstractmethod
+import warnings
 
 import numpy as np
 
@@ -12,6 +13,8 @@ from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
 from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
+from ..config import get_config
+from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError, FittingError, DataQualityWarning
 
 
 class IntervalBinningBase(GeneralBinningBase):
@@ -19,11 +22,11 @@ class IntervalBinningBase(GeneralBinningBase):
 
     def __init__(
         self,
-        clip: bool = True,
-        preserve_dataframe: bool = False,
+        clip: Optional[bool] = None,
+        preserve_dataframe: Optional[bool] = None,
         bin_edges: Optional[Union[Dict[Any, List[float]], Any]] = None,
         bin_representatives: Optional[Union[Dict[Any, List[float]], Any]] = None,
-        fit_jointly: bool = False,
+        fit_jointly: Optional[bool] = None,
         guidance_columns: Optional[Union[List[Any], Any]] = None,
         **kwargs,
     ):
@@ -33,6 +36,14 @@ class IntervalBinningBase(GeneralBinningBase):
             guidance_columns=guidance_columns,
             **kwargs
         )
+        
+        # Load configuration defaults
+        config = get_config()
+        
+        # Apply defaults from configuration
+        if clip is None:
+            clip = config.default_clip
+            
         self.clip = clip
 
         # Store parameters as expected by sklearn
@@ -55,45 +66,91 @@ class IntervalBinningBase(GeneralBinningBase):
         **fit_params
     ) -> None:
         """Fit bins per column with optional guidance data."""
-        self._process_user_specifications(columns)
+        try:
+            self._process_user_specifications(columns)
 
-        if not self._user_bin_edges:
-            # Calculate bins from data
-            for i, col in enumerate(columns):
-                if col not in self._bin_edges:
-                    edges, reps = self._calculate_bins(X[:, i], col, guidance_data)
-                    self._bin_edges[col] = edges
-                    if col not in self._bin_reps:
-                        self._bin_reps[col] = reps
+            if not self._user_bin_edges:
+                # Calculate bins from data
+                for i, col in enumerate(columns):
+                    if col not in self._bin_edges:
+                        # Validate column data
+                        col_data = X[:, i]
+                        if np.all(np.isnan(col_data)):
+                            warnings.warn(f"Column {col} contains only NaN values", DataQualityWarning)
+                        
+                        edges, reps = self._calculate_bins(col_data, col, guidance_data)
+                        self._bin_edges[col] = edges
+                        if col not in self._bin_reps:
+                            self._bin_reps[col] = reps
 
-        self._finalize_fitting()
+            self._finalize_fitting()
+            
+        except Exception as e:
+            if isinstance(e, BinningError):
+                raise
+            raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
     def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
         """Fit bins jointly across all columns."""
-        self._process_user_specifications(columns)
+        try:
+            self._process_user_specifications(columns)
 
-        if not self._user_bin_edges:
-            # Calculate joint parameters and apply to each column
-            joint_params = self._calculate_joint_parameters(X, columns)
+            if not self._user_bin_edges:
+                # Calculate joint parameters and apply to each column
+                joint_params = self._calculate_joint_parameters(X, columns)
 
-            for i, col in enumerate(columns):
-                edges, reps = self._calculate_bins_jointly(X[:, i], col, joint_params)
-                self._bin_edges[col] = edges
-                self._bin_reps[col] = reps
+                for i, col in enumerate(columns):
+                    # Validate column data
+                    col_data = X[:, i]
+                    if np.all(np.isnan(col_data)):
+                        warnings.warn(f"Column {col} contains only NaN values", DataQualityWarning)
+                    
+                    edges, reps = self._calculate_bins_jointly(col_data, col, joint_params)
+                    self._bin_edges[col] = edges
+                    self._bin_reps[col] = reps
 
-        self._finalize_fitting()
+            self._finalize_fitting()
+            
+        except Exception as e:
+            if isinstance(e, BinningError):
+                raise
+            raise ValueError(f"Failed to fit joint bins: {str(e)}") from e
 
     def _process_user_specifications(self, columns: List[Any]) -> None:
         """Process user-provided bin specifications."""
-        if self._user_bin_edges is not None:
-            self._bin_edges = ensure_bin_dict(self._user_bin_edges)
-        else:
-            self._bin_edges = {}
+        try:
+            if self._user_bin_edges is not None:
+                self._bin_edges = ensure_bin_dict(self._user_bin_edges)
+                # Validate bin edges format
+                for col, edges in self._bin_edges.items():
+                    if not isinstance(edges, (list, tuple, np.ndarray)):
+                        raise ConfigurationError(
+                            f"Bin edges for column {col} must be array-like",
+                            suggestions=[
+                                "Provide bin edges as a list, tuple, or numpy array",
+                                "Example: bin_edges = {0: [0, 1, 2, 3]} for column 0"
+                            ]
+                        )
+                    if len(edges) < 2:
+                        raise ConfigurationError(
+                            f"Bin edges for column {col} must have at least 2 values",
+                            suggestions=[
+                                "Provide at least 2 bin edges to define 1 bin",
+                                "Example: [0, 1] creates one bin from 0 to 1"
+                            ]
+                        )
+            else:
+                self._bin_edges = {}
 
-        if self._user_bin_reps is not None:
-            self._bin_reps = ensure_bin_dict(self._user_bin_reps)
-        else:
-            self._bin_reps = {}
+            if self._user_bin_reps is not None:
+                self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+            else:
+                self._bin_reps = {}
+                
+        except Exception as e:
+            if isinstance(e, BinningError):
+                raise
+            raise ConfigurationError(f"Failed to process bin specifications: {str(e)}") from e
 
     def _finalize_fitting(self) -> None:
         """Finalize the fitting process."""

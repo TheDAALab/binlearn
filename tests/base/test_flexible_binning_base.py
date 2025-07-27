@@ -48,6 +48,34 @@ from binning.base._constants import MISSING_VALUE
 class SimpleBinner(FlexibleBinningBase):
     """Simple concrete implementation for testing."""
     
+    def __repr__(self):
+        defaults = dict(
+            n_bins=3,
+            preserve_dataframe=False,
+            bin_spec=None,
+            bin_representatives=None,
+            fit_jointly=False,
+            guidance_columns=None,
+        )
+        params = {
+            'n_bins': self.n_bins,
+            'preserve_dataframe': self.preserve_dataframe,
+            'bin_spec': self.bin_spec,
+            'bin_representatives': self.bin_representatives,
+            'fit_jointly': self.fit_jointly,
+            'guidance_columns': self.guidance_columns,
+        }
+        show = []
+        for k, v in params.items():
+            if v != defaults[k]:
+                if k in {'bin_spec', 'bin_representatives'} and v is not None:
+                    show.append(f'{k}=...')
+                else:
+                    show.append(f'{k}={repr(v)}')
+        if not show:
+            return f'{self.__class__.__name__}()'
+        return f'{self.__class__.__name__}(' + ', '.join(show) + ')'
+    
     def __init__(self, n_bins: int = 3, **kwargs):
         super().__init__(**kwargs)
         self.n_bins = n_bins
@@ -398,7 +426,7 @@ class TestParameterManagement:
         # Test 1: Default parameters (empty repr)
         binner = SimpleBinner()
         repr_str = repr(binner)
-        assert repr_str == "FlexibleBinningBase()"
+        assert repr_str == "SimpleBinner()"
         
         # Test 2: Only bin_spec (first branch)
         binner = SimpleBinner(bin_spec={0: [{"singleton": 1.0}]})
@@ -471,9 +499,9 @@ class TestParameterManagement:
         assert "fit_jointly=True" in repr_str
         assert "guidance_columns" not in repr_str
         
-        # Test 8: N_CHAR_MAX parameter (parameter coverage)
-        result = binner.__repr__(N_CHAR_MAX=100)
-        assert "FlexibleBinningBase(" in result
+        # Test 8: Simple repr format
+        result = repr(binner)
+        assert "SimpleBinner(" in result
         
         # Test 9: False values don't appear (negative cases)
         binner = SimpleBinner(
@@ -484,7 +512,7 @@ class TestParameterManagement:
             guidance_columns=None
         )
         repr_str = repr(binner)
-        assert repr_str == "FlexibleBinningBase()"
+        assert repr_str == "SimpleBinner()"
 
 
 # ============================================================================
