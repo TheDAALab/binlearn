@@ -5,18 +5,19 @@ Simplified base class for all binning methods.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
 from abc import ABC, abstractmethod
-import warnings
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from ._data_utils import prepare_array, return_like_input, prepare_input_with_columns
+from ._data_utils import return_like_input, prepare_input_with_columns
 from ..config import get_config
-from ..errors import ValidationMixin, BinningError, InvalidDataError, FittingError
+from ..errors import ValidationMixin, BinningError, InvalidDataError
 from ..sklearn_utils import SklearnCompatibilityMixin
 
 
-class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin):
+class GeneralBinningBase(
+    ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin
+):
     """Base binning class with universal guidance support."""
 
     def __init__(
@@ -28,13 +29,13 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
     ):
         # Load configuration defaults
         config = get_config()
-        
+
         # Apply defaults from configuration
         if preserve_dataframe is None:
             preserve_dataframe = config.preserve_dataframe
         if fit_jointly is None:
             fit_jointly = config.fit_jointly
-            
+
         # Validate incompatible parameters
         if guidance_columns is not None and fit_jointly:
             raise ValueError(
@@ -108,22 +109,23 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
         try:
             # Validate parameters first
             self._validate_params()
-            
+
             # Validate input data using ValidationMixin
             self.validate_array_like(X, "X")
-            
+
             # Store original input info for sklearn compatibility
             arr, original_columns = self._prepare_input(X)
             self._n_features_in = arr.shape[1]
             self._original_columns = original_columns
-            
+
             # Handle feature names manually to avoid sklearn conflicts
-            if hasattr(X, 'columns'):
+            if hasattr(X, "columns"):
                 self._feature_names_in = list(X.columns)
-            elif hasattr(X, 'feature_names'):
+            elif hasattr(X, "feature_names"):
                 self._feature_names_in = list(X.feature_names)
             else:
-                # For numpy arrays without column names, use integer indices for backward compatibility
+                # For numpy arrays without column names, use integer indices for
+                # backward compatibility
                 self._feature_names_in = list(range(arr.shape[1]))
 
             # Separate guidance and binning columns
@@ -141,7 +143,7 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
 
             self._fitted = True
             return self
-            
+
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
@@ -179,7 +181,7 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
         """Transform and return both binned and guidance data separately."""
         try:
             self._check_fitted()
-            
+
             # Validate input data
             self.validate_array_like(X, "X")
 
@@ -192,7 +194,9 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
                 binned_result = np.empty((X_binning.shape[0], 0), dtype=int)
 
             # Format outputs
-            binned_output = return_like_input(binned_result, X, binning_cols, bool(self.preserve_dataframe))
+            binned_output = return_like_input(
+                binned_result, X, binning_cols, bool(self.preserve_dataframe)
+            )
 
             if X_guidance is not None:
                 guidance_output = return_like_input(
@@ -202,9 +206,9 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
                 guidance_output = None
 
             return binned_output, guidance_output
-            
+
         except (ValueError, RuntimeError):
-            # Let these pass through unchanged for test compatibility 
+            # Let these pass through unchanged for test compatibility
             raise
         except Exception as e:
             if isinstance(e, BinningError):
@@ -215,7 +219,7 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
         """Inverse transform from bin indices back to representative values."""
         try:
             self._check_fitted()
-            
+
             # Validate input data
             self.validate_array_like(X, "X")
 
@@ -233,13 +237,15 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
                         f"columns (binning columns only), got {len(columns)}"
                     )
                 result = self._inverse_transform_columns(arr, self._binning_columns)
-                return return_like_input(result, X, self._binning_columns, bool(self.preserve_dataframe))
+                return return_like_input(
+                    result, X, self._binning_columns, bool(self.preserve_dataframe)
+                )
             else:
                 # No guidance - inverse transform all columns
                 arr, columns = self._prepare_input(X)
                 result = self._inverse_transform_columns(arr, columns)
                 return return_like_input(result, X, columns, bool(self.preserve_dataframe))
-                
+
         except Exception as e:
             if isinstance(e, (BinningError, RuntimeError)):
                 raise
@@ -277,21 +283,21 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
     def get_params(self, deep: bool = True) -> Dict[str, Any]:
         """Get parameters for this estimator with bin-specific handling."""
         params = super().get_params(deep=deep)
-        
+
         # Let subclasses add their specific parameters
         params.update(self._get_binning_params())
-        
+
         # Override with fitted values if fitted, otherwise keep constructor values
         if self._fitted:
             fitted_params = self._get_fitted_params()
             params.update(fitted_params)
-        
+
         return params
 
     def _get_binning_params(self) -> Dict[str, Any]:
         """Get binning-specific parameters. Override in subclasses."""
         return {}
-    
+
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameter values. Override in subclasses."""
         return {}
@@ -311,15 +317,15 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
 
         # Let subclasses handle bin-specific parameter changes
         reset_fitted = self._handle_bin_params(params)
-        
+
         if reset_fitted:
             self._fitted = False
-            
+
         return super().set_params(**params)
-    
+
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
         """Handle bin-specific parameter changes. Override in subclasses.
-        
+
         Returns:
             bool: True if fitted state should be reset
         """
@@ -330,11 +336,11 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
         # Validate preserve_dataframe
         if self.preserve_dataframe is not None and not isinstance(self.preserve_dataframe, bool):
             raise TypeError("preserve_dataframe must be a boolean or None")
-        
+
         # Validate fit_jointly
         if self.fit_jointly is not None and not isinstance(self.fit_jointly, bool):
             raise TypeError("fit_jointly must be a boolean or None")
-        
+
         # Validate guidance_columns
         if self.guidance_columns is not None:
             if not isinstance(self.guidance_columns, (list, tuple, int, str)):
@@ -351,10 +357,10 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
         """Number of features seen during fit."""
         return self._n_features_in
 
-    @property  
+    @property
     def feature_names_in_(self) -> Optional[List[Any]]:
         """Feature names seen during fit."""
-        return getattr(self, '_feature_names_in', None)
+        return getattr(self, "_feature_names_in", None)
 
     # Additional utility properties
     @property
@@ -366,5 +372,3 @@ class GeneralBinningBase(ABC, BaseEstimator, TransformerMixin, ValidationMixin, 
     def guidance_columns_(self) -> Optional[List[Any]]:
         """Columns used for guidance."""
         return self._guidance_columns
-
-

@@ -18,23 +18,23 @@ class OneHotBinning(FlexibleBinningBase):
             bin_representatives=None,
         )
         params = {
-            'preserve_dataframe': self.preserve_dataframe,
-            'bin_spec': self.bin_spec,
-            'guidance_columns': self.guidance_columns,
-            'fit_jointly': self.fit_jointly,
-            'max_unique_values': self.max_unique_values,
-            'bin_representatives': self.bin_representatives,
+            "preserve_dataframe": self.preserve_dataframe,
+            "bin_spec": self.bin_spec,
+            "guidance_columns": self.guidance_columns,
+            "fit_jointly": self.fit_jointly,
+            "max_unique_values": self.max_unique_values,
+            "bin_representatives": self.bin_representatives,
         }
         show = []
         for k, v in params.items():
             if v != defaults[k]:
-                if k in {'bin_spec', 'bin_representatives'} and v is not None:
-                    show.append(f'{k}=...')
+                if k in {"bin_spec", "bin_representatives"} and v is not None:
+                    show.append(f"{k}=...")
                 else:
-                    show.append(f'{k}={repr(v)}')
+                    show.append(f"{k}={repr(v)}")
         if not show:
-            return f'{self.__class__.__name__}()'
-        return f'{self.__class__.__name__}(' + ', '.join(show) + ')'
+            return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}(" + ", ".join(show) + ")"
 
     """
     Creates a singleton bin for each unique value in numeric data.
@@ -42,8 +42,8 @@ class OneHotBinning(FlexibleBinningBase):
     This is NOT one-hot encoding that expands columns. Instead, it's a binning
     method that creates one bin per unique value, where each bin is defined as
     {"singleton": value}. The output has the same shape as the input.
-    
-    **Important**: This method only supports numeric data. Non-numeric data will 
+
+    **Important**: This method only supports numeric data. Non-numeric data will
     raise a ValueError during fitting.
 
     For example:
@@ -51,7 +51,7 @@ class OneHotBinning(FlexibleBinningBase):
     - Bins created: {0: [{"singleton": 1.0}, {"singleton": 2.0}],
                      1: [{"singleton": 10.0}, {"singleton": 20.0}]}
     - Transform output: [[0, 0], [1, 1], [0, 0]]  # Same shape as input
-    
+
     Note: Only numeric data is supported. Input will be converted to float.
     """
 
@@ -94,16 +94,13 @@ class OneHotBinning(FlexibleBinningBase):
             **kwargs,
         )
         self.max_unique_values = max_unique_values
-        
+
     def _calculate_flexible_bins(
-        self, 
-        x_col: np.ndarray, 
-        col_id: Any, 
-        guidance_data: Optional[np.ndarray] = None
+        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """
         Calculate singleton bins for each unique value in the column.
-        
+
         Note: This method only supports numeric data. Non-numeric data will raise an error.
 
         Args:
@@ -131,7 +128,7 @@ class OneHotBinning(FlexibleBinningBase):
         if not finite_mask.any():
             # All values are NaN/inf - create a default bin
             return [{"singleton": 0.0}], [0.0]
-        
+
         finite_values = x_col[finite_mask]
         unique_values = np.unique(finite_values)
 

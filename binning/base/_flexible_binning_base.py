@@ -3,13 +3,12 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
 from abc import abstractmethod
-import warnings
 
 import numpy as np
 
 from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import (
-    ensure_bin_dict, validate_bins,
+    ensure_bin_dict,
     # Flexible bin utilities
     FlexibleBinSpec,
     FlexibleBinReps,
@@ -23,9 +22,7 @@ from ._bin_utils import (
     get_flexible_bin_count,
 )
 from ._data_utils import return_like_input
-from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-from ..config import get_config
-from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError, FittingError, DataQualityWarning
+from ._constants import MISSING_VALUE
 
 
 class FlexibleBinningBase(GeneralBinningBase):
@@ -46,10 +43,10 @@ class FlexibleBinningBase(GeneralBinningBase):
         **kwargs,
     ):
         super().__init__(
-            preserve_dataframe=preserve_dataframe, 
-            fit_jointly=fit_jointly, 
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
             guidance_columns=guidance_columns,
-            **kwargs
+            **kwargs,
         )
 
         # Store parameters as expected by sklearn
@@ -63,13 +60,13 @@ class FlexibleBinningBase(GeneralBinningBase):
         # Fitted specifications
         self._bin_spec: FlexibleBinSpec = {}
         self._bin_reps: FlexibleBinReps = {}
-        
+
     def _fit_per_column(
-        self, 
-        X: np.ndarray, 
-        columns: List[Any], 
+        self,
+        X: np.ndarray,
+        columns: List[Any],
         guidance_data: Optional[np.ndarray] = None,
-        **fit_params
+        **fit_params,
     ) -> None:
         """Fit flexible bins per column with optional guidance data."""
         try:
@@ -84,11 +81,8 @@ class FlexibleBinningBase(GeneralBinningBase):
                     self._bin_reps[col] = reps
 
             self._finalize_fitting()
-        except (ValueError, RuntimeError) as e:
+        except (ValueError, RuntimeError, NotImplementedError):
             # Let these pass through unchanged for test compatibility
-            raise
-        except NotImplementedError:
-            # Let NotImplementedError pass through unchanged
             raise
         except Exception as e:
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
@@ -104,7 +98,9 @@ class FlexibleBinningBase(GeneralBinningBase):
 
                 for i, col in enumerate(columns):
                     if col not in self._bin_spec:
-                        bin_defs, reps = self._calculate_flexible_bins_jointly(X[:, i], col, joint_params)
+                        bin_defs, reps = self._calculate_flexible_bins_jointly(
+                            X[:, i], col, joint_params
+                        )
                         self._bin_spec[col] = bin_defs
                         self._bin_reps[col] = reps
 
@@ -127,9 +123,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # Generate default representatives for any missing ones
         for col in self._bin_spec:
             if col not in self._bin_reps:
-                self._bin_reps[col] = generate_default_flexible_representatives(
-                    self._bin_spec[col]
-                )
+                self._bin_reps[col] = generate_default_flexible_representatives(self._bin_spec[col])
 
         # Validate the bins
         validate_flexible_bins(self._bin_spec, self._bin_reps)
@@ -142,10 +136,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         return {}
 
     def _calculate_flexible_bins_jointly(
-        self, 
-        x_col: np.ndarray, 
-        col_id: Any, 
-        joint_params: Dict[str, Any]
+        self, x_col: np.ndarray, col_id: Any, joint_params: Dict[str, Any]
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """Calculate flexible bins for a column using joint parameters.
 
@@ -155,7 +146,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
         """Ensure bin_spec is in the correct dictionary format.
-        
+
         DEPRECATED: Use ensure_flexible_bin_spec from _flexible_bin_utils instead.
         """
         return ensure_flexible_bin_spec(bin_spec)
@@ -164,38 +155,35 @@ class FlexibleBinningBase(GeneralBinningBase):
         self, bin_defs: List[Dict[str, Any]]
     ) -> List[float]:
         """Generate default representatives for flexible bins.
-        
+
         DEPRECATED: Use generate_default_flexible_representatives from _flexible_bin_utils instead.
         """
         return generate_default_flexible_representatives(bin_defs)
 
     def _validate_flexible_bins(self, bin_spec: FlexibleBinSpec, bin_reps: FlexibleBinReps) -> None:
         """Validate flexible bin specifications.
-        
+
         DEPRECATED: Use validate_flexible_bins from _flexible_bin_utils instead.
         """
         return validate_flexible_bins(bin_spec, bin_reps)
 
     def _is_missing_value(self, value: Any) -> bool:
         """Check if a value should be considered missing.
-        
+
         DEPRECATED: Use is_missing_value from _flexible_bin_utils instead.
         """
         return is_missing_value(value)
 
     def _find_bin_for_value(self, value: float, bin_defs: List[Dict[str, Any]]) -> int:
         """Find the bin index for a given value.
-        
+
         DEPRECATED: Use find_flexible_bin_for_value from _flexible_bin_utils instead.
         """
         return find_flexible_bin_for_value(value, bin_defs)
 
     @abstractmethod
     def _calculate_flexible_bins(
-        self, 
-        x_col: np.ndarray, 
-        col_id: Any, 
-        guidance_data: Optional[np.ndarray] = None
+        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[List[Dict[str, Any]], List[float]]:
         """Calculate flexible bin definitions and representatives for a column.
 
@@ -321,9 +309,9 @@ class FlexibleBinningBase(GeneralBinningBase):
             "bin_spec": self.bin_spec,
             "bin_representatives": self.bin_representatives,
         }
-    
+
     def _get_fitted_params(self) -> Dict[str, Any]:
-        """Get fitted parameter values.""" 
+        """Get fitted parameter values."""
         return {
             "bin_spec": self._bin_spec,
             "bin_representatives": self._bin_reps,
@@ -350,5 +338,5 @@ class FlexibleBinningBase(GeneralBinningBase):
         if "guidance_columns" in params:
             self.guidance_columns = params["guidance_columns"]
             reset_fitted = True
-            
+
         return reset_fitted

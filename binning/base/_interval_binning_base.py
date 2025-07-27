@@ -14,7 +14,14 @@ from ._bin_utils import ensure_bin_dict, validate_bins, default_representatives,
 from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 from ..config import get_config
-from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError, FittingError, DataQualityWarning
+from ..errors import (
+    ValidationMixin,
+    BinningError,
+    InvalidDataError,
+    ConfigurationError,
+    FittingError,
+    DataQualityWarning,
+)
 
 
 class IntervalBinningBase(GeneralBinningBase):
@@ -31,19 +38,19 @@ class IntervalBinningBase(GeneralBinningBase):
         **kwargs,
     ):
         super().__init__(
-            preserve_dataframe=preserve_dataframe, 
-            fit_jointly=fit_jointly, 
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
             guidance_columns=guidance_columns,
-            **kwargs
+            **kwargs,
         )
-        
+
         # Load configuration defaults
         config = get_config()
-        
+
         # Apply defaults from configuration
         if clip is None:
             clip = config.default_clip
-            
+
         self.clip = clip
 
         # Store parameters as expected by sklearn
@@ -59,11 +66,11 @@ class IntervalBinningBase(GeneralBinningBase):
         self._bin_reps: Dict[Any, List[float]] = {}
 
     def _fit_per_column(
-        self, 
-        X: np.ndarray, 
-        columns: List[Any], 
+        self,
+        X: np.ndarray,
+        columns: List[Any],
         guidance_data: Optional[np.ndarray] = None,
-        **fit_params
+        **fit_params,
     ) -> None:
         """Fit bins per column with optional guidance data."""
         try:
@@ -76,15 +83,17 @@ class IntervalBinningBase(GeneralBinningBase):
                         # Validate column data
                         col_data = X[:, i]
                         if np.all(np.isnan(col_data)):
-                            warnings.warn(f"Column {col} contains only NaN values", DataQualityWarning)
-                        
+                            warnings.warn(
+                                f"Column {col} contains only NaN values", DataQualityWarning
+                            )
+
                         edges, reps = self._calculate_bins(col_data, col, guidance_data)
                         self._bin_edges[col] = edges
                         if col not in self._bin_reps:
                             self._bin_reps[col] = reps
 
             self._finalize_fitting()
-            
+
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
@@ -104,13 +113,13 @@ class IntervalBinningBase(GeneralBinningBase):
                     col_data = X[:, i]
                     if np.all(np.isnan(col_data)):
                         warnings.warn(f"Column {col} contains only NaN values", DataQualityWarning)
-                    
+
                     edges, reps = self._calculate_bins_jointly(col_data, col, joint_params)
                     self._bin_edges[col] = edges
                     self._bin_reps[col] = reps
 
             self._finalize_fitting()
-            
+
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
@@ -128,16 +137,16 @@ class IntervalBinningBase(GeneralBinningBase):
                             f"Bin edges for column {col} must be array-like",
                             suggestions=[
                                 "Provide bin edges as a list, tuple, or numpy array",
-                                "Example: bin_edges = {0: [0, 1, 2, 3]} for column 0"
-                            ]
+                                "Example: bin_edges = {0: [0, 1, 2, 3]} for column 0",
+                            ],
                         )
                     if len(edges) < 2:
                         raise ConfigurationError(
                             f"Bin edges for column {col} must have at least 2 values",
                             suggestions=[
                                 "Provide at least 2 bin edges to define 1 bin",
-                                "Example: [0, 1] creates one bin from 0 to 1"
-                            ]
+                                "Example: [0, 1] creates one bin from 0 to 1",
+                            ],
                         )
             else:
                 self._bin_edges = {}
@@ -146,7 +155,7 @@ class IntervalBinningBase(GeneralBinningBase):
                 self._bin_reps = ensure_bin_dict(self._user_bin_reps)
             else:
                 self._bin_reps = {}
-                
+
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
@@ -181,10 +190,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_bins(
-        self, 
-        x_col: np.ndarray, 
-        col_id: Any, 
-        guidance_data: Optional[np.ndarray] = None
+        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[List[float], List[float]]:
         """Calculate bin edges and representatives for a column.
 
@@ -320,7 +326,7 @@ class IntervalBinningBase(GeneralBinningBase):
             "fit_jointly": self.fit_jointly,
             "guidance_columns": self.guidance_columns,
         }
-    
+
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameter values."""
         return {
@@ -352,5 +358,5 @@ class IntervalBinningBase(GeneralBinningBase):
         if "guidance_columns" in params:
             self.guidance_columns = params["guidance_columns"]
             reset_fitted = True
-            
+
         return reset_fitted

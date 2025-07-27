@@ -3,14 +3,10 @@ Simplified data handling utilities for binning operations.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 from binning import _pandas_config, _polars_config
-
-if TYPE_CHECKING:  # pragma: no cover
-    import pandas as pd
-    import polars as pl
 
 
 def is_pandas_df(obj: Any) -> bool:

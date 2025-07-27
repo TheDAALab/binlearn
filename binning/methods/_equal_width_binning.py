@@ -4,8 +4,7 @@ from typing import Any, Dict, Optional, Tuple, Union, List
 import numpy as np
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
-from ..config import get_config
-from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError
+from ..errors import ConfigurationError
 
 
 class EqualWidthBinning(IntervalBinningBase, ReprMixin):
@@ -18,28 +17,29 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
             bin_edges=None,
             bin_representatives=None,
             fit_jointly=False,
-            joint_range_method='global',
+            joint_range_method="global",
         )
         params = {
-            'n_bins': self.n_bins,
-            'bin_range': self.bin_range,
-            'clip': self.clip,
-            'preserve_dataframe': self.preserve_dataframe,
-            'bin_edges': self.bin_edges,
-            'bin_representatives': self.bin_representatives,
-            'fit_jointly': self.fit_jointly,
-            'joint_range_method': self.joint_range_method,
+            "n_bins": self.n_bins,
+            "bin_range": self.bin_range,
+            "clip": self.clip,
+            "preserve_dataframe": self.preserve_dataframe,
+            "bin_edges": self.bin_edges,
+            "bin_representatives": self.bin_representatives,
+            "fit_jointly": self.fit_jointly,
+            "joint_range_method": self.joint_range_method,
         }
         show = []
         for k, v in params.items():
             if v != defaults[k]:
-                if k in {'bin_edges', 'bin_representatives'} and v is not None:
-                    show.append(f'{k}=...')
+                if k in {"bin_edges", "bin_representatives"} and v is not None:
+                    show.append(f"{k}=...")
                 else:
-                    show.append(f'{k}={repr(v)}')
+                    show.append(f"{k}={repr(v)}")
         if not show:
-            return f'{self.__class__.__name__}()'
-        return f'{self.__class__.__name__}(' + ', '.join(show) + ')'
+            return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}(" + ", ".join(show) + ")"
+
     """Classic equal-width binning transformer.
 
     Creates bins of equal width across the range of each feature.
@@ -84,7 +84,6 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
         self.n_bins = n_bins
         self.bin_range = bin_range
         self.joint_range_method = joint_range_method
-        
 
     def _calculate_joint_parameters(self, X: np.ndarray, columns: List[Any]) -> Dict[str, Any]:
         """Calculate joint parameters for equal-width binning."""
@@ -152,13 +151,10 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
         return self._create_equal_width_bins(min_val, max_val, n_bins)
 
     def _calculate_bins(
-        self, 
-        x_col: np.ndarray, 
-        col_id: Any, 
-        guidance_data: Optional[np.ndarray] = None
+        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[List[float], List[float]]:
         """Calculate equal-width bins for a column (per-column logic).
-        
+
         Args:
             x_col: Column data to bin.
             col_id: Column identifier.
@@ -268,7 +264,7 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
 
         super().set_params(**params)
         return self
-    
+
     def _validate_params(self) -> None:
         """Validate parameters for sklearn compatibility."""
         # Validate n_bins
@@ -276,33 +272,37 @@ class EqualWidthBinning(IntervalBinningBase, ReprMixin):
             if self.n_bins < 1:
                 raise ConfigurationError(
                     "n_bins must be positive",
-                    suggestions=["Set n_bins to a positive integer (e.g., n_bins=10)"]
+                    suggestions=["Set n_bins to a positive integer (e.g., n_bins=10)"],
                 )
         elif isinstance(self.n_bins, dict):
             for col, n in self.n_bins.items():
                 if not isinstance(n, int) or n < 1:
                     raise ConfigurationError(
                         f"n_bins for column {col} must be a positive integer",
-                        suggestions=[f"Set n_bins[{col}] to a positive integer"]
+                        suggestions=[f"Set n_bins[{col}] to a positive integer"],
                     )
         else:
             raise ConfigurationError(
                 "n_bins must be int or dict",
-                suggestions=["Use int for same bins across columns or dict for per-column bins"]
+                suggestions=["Use int for same bins across columns or dict for per-column bins"],
             )
-        
+
         # Validate bin_range if provided
         if self.bin_range is not None:
             if isinstance(self.bin_range, tuple):
                 if len(self.bin_range) != 2 or self.bin_range[0] >= self.bin_range[1]:
                     raise ConfigurationError(
                         "bin_range must be a tuple (min, max) with min < max",
-                        suggestions=["Example: bin_range=(0, 100)"]
+                        suggestions=["Example: bin_range=(0, 100)"],
                     )
             elif isinstance(self.bin_range, dict):
                 for col, range_val in self.bin_range.items():
-                    if not isinstance(range_val, tuple) or len(range_val) != 2 or range_val[0] >= range_val[1]:
+                    if (
+                        not isinstance(range_val, tuple)
+                        or len(range_val) != 2
+                        or range_val[0] >= range_val[1]
+                    ):
                         raise ConfigurationError(
                             f"bin_range for column {col} must be a tuple (min, max) with min < max",
-                            suggestions=[f"Set bin_range[{col}] = (min_val, max_val)"]
+                            suggestions=[f"Set bin_range[{col}] = (min_val, max_val)"],
                         )
