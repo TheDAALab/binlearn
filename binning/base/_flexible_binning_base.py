@@ -8,10 +8,9 @@ import warnings
 import numpy as np
 
 from ._general_binning_base import GeneralBinningBase
-from ._bin_utils import ensure_bin_dict, validate_bins
-from ._data_utils import return_like_input
-from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-from ._flexible_bin_utils import (
+from ._bin_utils import (
+    ensure_bin_dict, validate_bins,
+    # Flexible bin utilities
     FlexibleBinSpec,
     FlexibleBinReps,
     ensure_flexible_bin_spec,
@@ -23,6 +22,8 @@ from ._flexible_bin_utils import (
     transform_value_to_flexible_bin,
     get_flexible_bin_count,
 )
+from ._data_utils import return_like_input
+from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 from ..config import get_config
 from ..errors import ValidationMixin, BinningError, InvalidDataError, ConfigurationError, FittingError, DataQualityWarning
 

@@ -9,7 +9,7 @@ import pytest
 import numpy as np
 from typing import Any, Dict, List
 
-from binning.base._flexible_bin_utils import (
+from binning.base._bin_utils import (
     FlexibleBinSpec,
     FlexibleBinReps,
     ensure_flexible_bin_spec,
