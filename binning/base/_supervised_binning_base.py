@@ -10,13 +10,17 @@ from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-from ._types import (
+from ..utils.types import (
     BinEdges, BinEdgesDict, ColumnId, ColumnList, 
     OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ._interval_binning_base import IntervalBinningBase
-from ..errors import (
+from ..utils.errors import (
+    BinningError,
     ConfigurationError,
+    FittingError,
+    InvalidDataError,
+    ValidationError,
     DataQualityWarning,
 )
 

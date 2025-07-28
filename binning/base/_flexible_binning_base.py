@@ -6,14 +6,13 @@ from abc import abstractmethod
 
 import numpy as np
 
-from ._types import (
+from ..utils.types import (
     BinEdges, BinEdgesDict, FlexibleBinSpec, FlexibleBinDefs,
     ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ._general_binning_base import GeneralBinningBase
-from ._bin_utils import (
-    ensure_bin_dict,
-    # Flexible bin utilities
+from ..utils.bin_operations import ensure_bin_dict
+from ..utils.flexible_binning import (
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
@@ -23,8 +22,8 @@ from ._bin_utils import (
     transform_value_to_flexible_bin,
     get_flexible_bin_count,
 )
-from ._data_utils import return_like_input
-from ._constants import MISSING_VALUE
+from ..utils.data_handling import return_like_input
+from ..utils.constants import MISSING_VALUE
 
 
 class FlexibleBinningBase(GeneralBinningBase):

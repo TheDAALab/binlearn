@@ -6,7 +6,7 @@ This module brings together all tools.
 from .config import get_config, set_config, load_config, reset_config
 
 # Error handling
-from .errors import (
+from .utils.errors import (
     BinningError,
     InvalidDataError,
     ConfigurationError,
@@ -16,7 +16,7 @@ from .errors import (
 )
 
 # Sklearn utilities
-from .sklearn_utils import BinningFeatureSelector, BinningPipeline
+from .utils.sklearn_integration import BinningFeatureSelector, BinningPipeline
 
 # Base classes and utilities
 from .base import (

@@ -3,10 +3,10 @@ The module brings together the foundations.
 """
 
 # Core types and constants
-from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
+from ..utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 
 # Type aliases
-from ._types import (
+from ..utils.types import (
     # Column and data types
     ColumnId,
     ColumnList,
@@ -40,18 +40,18 @@ from ._types import (
 )
 
 # Utility functions
-from ._data_utils import (
+from ..utils.data_handling import (
     prepare_array,
     return_like_input,
     prepare_input_with_columns,
 )
-from ._bin_utils import (
-    # Interval binning utilities
+from ..utils.bin_operations import (
     ensure_bin_dict,
     validate_bins,
     default_representatives,
     create_bin_masks,
-    # Flexible binning utilities
+)
+from ..utils.flexible_binning import (
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,

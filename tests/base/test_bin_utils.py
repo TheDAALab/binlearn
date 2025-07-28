@@ -5,7 +5,7 @@ Comprehensive tests for simplified _bin_utils.py.
 import numpy as np
 import pytest
 
-from binning.base._bin_utils import (
+from binning.utils.bin_operations import (
     ensure_bin_dict,
     validate_bins,
     default_representatives,

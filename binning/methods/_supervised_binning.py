@@ -6,13 +6,13 @@ from typing import Any, Dict, List, Tuple, Optional, Union
 import numpy as np
 from sklearn.base import clone
 
-from ..base._types import (
+from ..utils.types import (
     BinEdges, BinEdgesDict, ColumnId, ColumnList, 
     OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
-from ..errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
+from ..utils.errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
 
 
 class SupervisedBinning(ReprMixin, SupervisedBinningBase):

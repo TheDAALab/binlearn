@@ -9,15 +9,15 @@ import warnings
 
 import numpy as np
 
-from ._types import (
+from ..utils.types import (
     BinEdges, BinEdgesDict, ColumnId, ColumnList, 
     OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ._general_binning_base import GeneralBinningBase
-from ._bin_utils import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
-from ._data_utils import return_like_input
-from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-from ..errors import (
+from ..utils.bin_operations import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
+from ..utils.data_handling import return_like_input
+from ..utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
+from ..utils.errors import (
     BinningError,
     ConfigurationError,
     DataQualityWarning,

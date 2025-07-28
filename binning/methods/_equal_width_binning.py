@@ -3,13 +3,13 @@
 from typing import Any, Dict, Optional, Tuple, Union, List
 import numpy as np
 
-from ..base._types import (
+from ..utils.types import (
     BinEdges, BinEdgesDict, ColumnId, ColumnList, 
     OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
-from ..errors import ConfigurationError
+from ..utils.errors import ConfigurationError
 
 
 class EqualWidthBinning(ReprMixin, IntervalBinningBase):

@@ -1,5 +1,8 @@
 """
-Simplified data handling utilities for binning operations.
+Data handling utilities for binning operations.
+
+This module provides utility functions for handling data inputs and outputs,
+with support for pandas and polars DataFrames.
 """
 
 from __future__ import annotations
@@ -7,7 +10,7 @@ from typing import Any, Optional, Tuple
 
 import numpy as np
 from binning import _pandas_config, _polars_config
-from ._types import ColumnList, OptionalColumnList, ArrayLike
+from .types import ColumnList, OptionalColumnList, ArrayLike
 
 
 def _is_pandas_df(obj: Any) -> bool:

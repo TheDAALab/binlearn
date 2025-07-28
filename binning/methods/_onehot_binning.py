@@ -5,8 +5,8 @@ OneHotBinning transformer - creates a singleton bin for each unique value in the
 from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 
-from ..base._types import (
-    BinEdges, BinEdgesDict, FlexibleBinSpec, FlexibleBinDefs,
+from ..utils.types import (
+    FlexibleBinSpec, FlexibleBinDefs, FlexibleBinDef, BinEdges,
     ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ..base._flexible_binning_base import FlexibleBinningBase

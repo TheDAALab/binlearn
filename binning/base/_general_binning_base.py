@@ -9,10 +9,10 @@ from abc import ABC, abstractmethod
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from ._data_utils import return_like_input, prepare_input_with_columns
-from ._types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
-from ..errors import ValidationMixin, BinningError, InvalidDataError
-from ..sklearn_utils import SklearnCompatibilityMixin
+from ..utils.data_handling import return_like_input, prepare_input_with_columns
+from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
+from ..utils.errors import ValidationMixin, BinningError, InvalidDataError
+from ..utils.sklearn_integration import SklearnCompatibilityMixin
 
 
 class GeneralBinningBase(
