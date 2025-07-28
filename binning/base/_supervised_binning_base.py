@@ -286,8 +286,13 @@ class SupervisedBinningBase(IntervalBinningBase):
                 max_val = min_val + 1.0
 
             if col_id is not None:
+                # Create a more descriptive column reference
+                if isinstance(col_id, (int, np.integer)):
+                    col_ref = f"column {col_id}"
+                else:
+                    col_ref = f"column '{col_id}'"
                 warnings.warn(
-                    f"Column {col_id} has no valid data points. "
+                    f"Data in {col_ref} has no valid data points. "
                     f"Using default bin range [{min_val}, {max_val}]",
                     DataQualityWarning,
                 )
@@ -304,8 +309,13 @@ class SupervisedBinningBase(IntervalBinningBase):
                 max_val = min_val + 1.0
 
             if col_id is not None:
+                # Create a more descriptive column reference
+                if isinstance(col_id, (int, np.integer)):
+                    col_ref = f"column {col_id}"
+                else:
+                    col_ref = f"column '{col_id}'"
                 warnings.warn(
-                    f"Column {col_id} has only {n_valid} valid samples "
+                    f"Data in {col_ref} has only {n_valid} valid samples "
                     f"(minimum {min_samples} required). Creating single bin.",
                     DataQualityWarning,
                 )

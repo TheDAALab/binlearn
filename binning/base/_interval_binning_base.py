@@ -134,8 +134,13 @@ class IntervalBinningBase(GeneralBinningBase):
                         # Validate column data
                         col_data = X[:, i]
                         if np.all(np.isnan(col_data)):
+                            # Create a more descriptive column reference
+                            if isinstance(col, (int, np.integer)):
+                                col_ref = f"column {col} (index {i})"
+                            else:
+                                col_ref = f"column '{col}'"
                             warnings.warn(
-                                f"Column {col} contains only NaN values", DataQualityWarning
+                                f"Data in {col_ref} contains only NaN values", DataQualityWarning
                             )
 
                         edges, reps = self._calculate_bins(col_data, col, guidance_data)
@@ -164,7 +169,12 @@ class IntervalBinningBase(GeneralBinningBase):
                     # Validate column data
                     col_data = X[:, i]
                     if np.all(np.isnan(col_data)):
-                        warnings.warn(f"Column {col} contains only NaN values", DataQualityWarning)
+                        # Create a more descriptive column reference
+                        if isinstance(col, (int, np.integer)):
+                            col_ref = f"column {col} (index {i})"
+                        else:
+                            col_ref = f"column '{col}'"
+                        warnings.warn(f"Data in {col_ref} contains only NaN values", DataQualityWarning)
 
                     edges, reps = self._calculate_bins_jointly(col_data, col, joint_params)
                     self._bin_edges[col] = edges

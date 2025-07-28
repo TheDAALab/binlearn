@@ -171,6 +171,11 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
 
     def _get_data_range(self, x_col: np.ndarray, col_id: Any) -> Tuple[float, float]:
         """Get the data range for a column."""
+        # Check if all values are NaN
+        if np.all(np.isnan(x_col)):
+            # Create a default range for all-NaN columns
+            return 0.0, 1.0
+        
         try:
             min_val = np.nanmin(x_col)
             max_val = np.nanmax(x_col)
@@ -180,6 +185,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             ) from exc
 
         if not (np.isfinite(min_val) and np.isfinite(max_val)):
+            # This can happen if there are inf values
             raise ValueError(f"Cannot create bins for column {col_id}: min and max must be finite.")
 
         return min_val, max_val
