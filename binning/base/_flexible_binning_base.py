@@ -124,15 +124,17 @@ class FlexibleBinningBase(GeneralBinningBase):
         try:
             self._process_user_specifications(columns)
 
-            # Calculate joint parameters and apply to columns without user-provided specs
+            # Calculate bins from all flattened data if needed
             if any(col not in self._bin_spec for col in columns):
-                joint_params = self._calculate_joint_parameters(X, columns)
-
-                for i, col in enumerate(columns):
+                # For true joint binning, flatten all data together
+                all_data = X.ravel()
+                
+                # Calculate bins once from all flattened data
+                bin_defs, reps = self._calculate_flexible_bins_jointly(all_data, columns)
+                
+                # Apply the same bins to all columns that don't have user-provided specs
+                for col in columns:
                     if col not in self._bin_spec:
-                        bin_defs, reps = self._calculate_flexible_bins_jointly(
-                            X[:, i], col, joint_params
-                        )
                         self._bin_spec[col] = bin_defs
                         self._bin_reps[col] = reps
 
@@ -160,21 +162,14 @@ class FlexibleBinningBase(GeneralBinningBase):
         # Validate the bins
         validate_flexible_bins(self._bin_spec, self._bin_reps)
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
-        """Calculate parameters shared across all columns for flexible binning.
-
-        Default implementation returns empty dict. Subclasses override for specific logic.
-        """
-        return {}
-
     def _calculate_flexible_bins_jointly(
-        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
+        self, all_data: np.ndarray, columns: ColumnList
     ) -> Tuple[FlexibleBinDefs, BinEdges]:
-        """Calculate flexible bins for a column using joint parameters.
+        """Calculate flexible bins from all flattened data for joint binning.
 
-        Default implementation falls back to regular _calculate_flexible_bins.
+        Default implementation falls back to regular _calculate_flexible_bins using first column.
         """
-        return self._calculate_flexible_bins(x_col, col_id)
+        return self._calculate_flexible_bins(all_data, columns[0] if columns else 0)
 
     def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
         """Ensure bin_spec is in the correct dictionary format.

@@ -75,24 +75,6 @@ class IntervalBinningBase(GeneralBinningBase):
         try:
             if self._user_bin_edges is not None:
                 self._bin_edges = ensure_bin_dict(self._user_bin_edges)
-                # Validate bin edges format
-                for col, edges in self._bin_edges.items():
-                    if not isinstance(edges, (list, tuple, np.ndarray)):
-                        raise ConfigurationError(
-                            f"Bin edges for column {col} must be array-like",
-                            suggestions=[
-                                "Provide bin edges as a list, tuple, or numpy array",
-                                "Example: bin_edges = {0: [0, 1, 2, 3]} for column 0",
-                            ],
-                        )
-                    if len(edges) < 2:
-                        raise ConfigurationError(
-                            f"Bin edges for column {col} must have at least 2 values",
-                            suggestions=[
-                                "Provide at least 2 bin edges to define 1 bin",
-                                "Example: [0, 1] creates one bin from 0 to 1",
-                            ],
-                        )
 
             if self._user_bin_reps is not None:
                 self._bin_reps = ensure_bin_dict(self._user_bin_reps)
@@ -162,21 +144,18 @@ class IntervalBinningBase(GeneralBinningBase):
             self._process_user_specifications(columns)
 
             if not self._user_bin_edges:
-                # Calculate joint parameters and apply to each column
-                joint_params = self._calculate_joint_parameters(X, columns)
-
-                for i, col in enumerate(columns):
-                    # Validate column data
-                    col_data = X[:, i]
-                    if np.all(np.isnan(col_data)):
-                        # Create a more descriptive column reference
-                        if isinstance(col, (int, np.integer)):
-                            col_ref = f"column {col} (index {i})"
-                        else:
-                            col_ref = f"column '{col}'"
-                        warnings.warn(f"Data in {col_ref} contains only NaN values", DataQualityWarning)
-
-                    edges, reps = self._calculate_bins_jointly(col_data, col, joint_params)
+                # For true joint binning, flatten all data together
+                all_data = X.ravel()
+                
+                # Check if all data is NaN
+                if np.all(np.isnan(all_data)):
+                    warnings.warn("All data contains only NaN values", DataQualityWarning)
+                
+                # Calculate bins once from all flattened data
+                edges, reps = self._calculate_bins_jointly(all_data, columns)
+                
+                # Apply the same bins to all columns
+                for col in columns:
                     self._bin_edges[col] = edges
                     self._bin_reps[col] = reps
 
@@ -192,24 +171,6 @@ class IntervalBinningBase(GeneralBinningBase):
         try:
             if self._user_bin_edges is not None:
                 self._bin_edges = ensure_bin_dict(self._user_bin_edges)
-                # Validate bin edges format
-                for col, edges in self._bin_edges.items():
-                    if not isinstance(edges, (list, tuple, np.ndarray)):
-                        raise ConfigurationError(
-                            f"Bin edges for column {col} must be array-like",
-                            suggestions=[
-                                "Provide bin edges as a list, tuple, or numpy array",
-                                "Example: bin_edges = {0: [0, 1, 2, 3]} for column 0",
-                            ],
-                        )
-                    if len(edges) < 2:
-                        raise ConfigurationError(
-                            f"Bin edges for column {col} must have at least 2 values",
-                            suggestions=[
-                                "Provide at least 2 bin edges to define 1 bin",
-                                "Example: [0, 1] creates one bin from 0 to 1",
-                            ],
-                        )
             else:
                 self._bin_edges = {}
 
@@ -234,21 +195,14 @@ class IntervalBinningBase(GeneralBinningBase):
         # Validate the bins
         validate_bins(self._bin_edges, self._bin_reps)
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
-        """Calculate parameters shared across all columns.
-
-        Default implementation returns empty dict. Subclasses override for specific logic.
-        """
-        return {}
-
     def _calculate_bins_jointly(
-        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
+        self, all_data: np.ndarray, columns: ColumnList
     ) -> Tuple[BinEdges, BinEdges]:
-        """Calculate bins for a column using joint parameters.
+        """Calculate bins from all flattened data for joint binning.
 
-        Default implementation falls back to regular _calculate_bins.
+        Default implementation falls back to regular _calculate_bins using first column.
         """
-        return self._calculate_bins(x_col, col_id)
+        return self._calculate_bins(all_data, columns[0] if columns else 0)
 
     @abstractmethod
     def _calculate_bins(

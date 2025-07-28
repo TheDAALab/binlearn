@@ -287,10 +287,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
             if col_id is not None:
                 # Create a more descriptive column reference
-                if isinstance(col_id, (int, np.integer)):
-                    col_ref = f"column {col_id}"
-                else:
-                    col_ref = f"column '{col_id}'"
+                col_ref = f"column {col_id}" if isinstance(col_id, (int, np.integer)) else f"column '{col_id}'"
                 warnings.warn(
                     f"Data in {col_ref} has no valid data points. "
                     f"Using default bin range [{min_val}, {max_val}]",
