@@ -10,6 +10,10 @@ from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
+from ._types import (
+    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
+    OptionalColumnList, GuidanceColumns, ArrayLike
+)
 from ._interval_binning_base import IntervalBinningBase
 from ..config import get_config
 from ..errors import (
@@ -223,7 +227,7 @@ class SupervisedBinningBase(IntervalBinningBase):
                 f"Please specify guidance_columns when creating the transformer."
             )
 
-    def validate_task_type(self, task_type: str, valid_types: List[str]) -> None:
+    def validate_task_type(self, task_type: str, valid_types: ColumnList) -> None:
         """
         Validate that task_type is one of the valid options.
 
@@ -231,7 +235,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         ----------
         task_type : str
             Task type to validate
-        valid_types : List[str]
+        valid_types : ColumnList
             List of valid task types
 
         Raises
@@ -246,7 +250,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     def handle_insufficient_data(
         self, x_col: np.ndarray, valid_mask: np.ndarray, min_samples: int, col_id: Any = None
-    ) -> Optional[Tuple[List[float], List[float]]]:
+    ) -> Optional[Tuple[BinEdges, BinEdges]]:
         """
         Handle cases with insufficient valid data for supervised binning.
 
@@ -263,7 +267,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         Returns
         -------
-        Optional[Tuple[List[float], List[float]]]
+        Optional[Tuple[BinEdges, BinEdges]]
             Fallback bin specification (edges, representatives) or None
         """
         import warnings
@@ -309,7 +313,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     def create_fallback_bins(
         self, x_col: np.ndarray, default_range: Optional[Tuple[float, float]] = None
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[BinEdges, BinEdges]:
         """
         Create fallback bins when supervised binning fails.
 
@@ -322,7 +326,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         Returns
         -------
-        Tuple[List[float], List[float]]
+        Tuple[BinEdges, BinEdges]
             Fallback bin specification (edges, representatives)
         """
         if default_range is not None:

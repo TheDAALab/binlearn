@@ -7,10 +7,23 @@ This module provides utility functions for working with both:
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Tuple
+from typing import Any, Tuple
 
 import numpy as np
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
+from ._types import (
+    ColumnId,
+    ColumnList,
+    BinEdges,
+    BinEdgesDict,
+    BinReps,
+    BinRepsDict,
+    FlexibleBinDef,
+    FlexibleBinDefs,
+    FlexibleBinSpec,
+    BinCountDict,
+    BooleanMask,
+)
 
 
 # =============================================================================
@@ -18,7 +31,7 @@ from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 # =============================================================================
 
 
-def ensure_bin_dict(data: Any) -> Dict[Any, List[float]]:
+def ensure_bin_dict(data: Any) -> BinEdgesDict:
     """Convert any input to a dictionary of bin edges/representatives.
 
     Args:
@@ -43,7 +56,7 @@ def ensure_bin_dict(data: Any) -> Dict[Any, List[float]]:
         return {i: arr[i].tolist() for i in range(arr.shape[0])}
 
 
-def validate_bins(bin_spec: Dict[Any, List[Any]], bin_reps: Dict[Any, List[Any]]) -> None:
+def validate_bins(bin_spec: BinEdgesDict, bin_reps: BinRepsDict) -> None:
     """Validate bin specifications and representatives.
 
     Args:
@@ -70,7 +83,7 @@ def validate_bins(bin_spec: Dict[Any, List[Any]], bin_reps: Dict[Any, List[Any]]
                 )
 
 
-def default_representatives(edges: List[Any]) -> List[float]:
+def default_representatives(edges: BinEdges) -> BinReps:
     """Compute default bin representatives (centers)."""
     reps = []
     for i in range(len(edges) - 1):
@@ -88,7 +101,7 @@ def default_representatives(edges: List[Any]) -> List[float]:
 
 def create_bin_masks(
     bin_indices: np.ndarray, n_bins: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[BooleanMask, BooleanMask, BooleanMask, BooleanMask]:
     """Create boolean masks for different bin index types.
 
     Args:
@@ -114,7 +127,7 @@ def create_bin_masks(
 # =============================================================================
 
 
-def ensure_flexible_bin_spec(bin_spec: Any) -> Dict[Any, List[Dict[str, Any]]]:
+def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
     """Ensure bin_spec is in the correct flexible bin format.
 
     Parameters
@@ -142,17 +155,17 @@ def ensure_flexible_bin_spec(bin_spec: Any) -> Dict[Any, List[Dict[str, Any]]]:
         raise ValueError("bin_spec must be a dictionary mapping columns to bin definitions")
 
 
-def generate_default_flexible_representatives(bin_defs: List[Dict[str, Any]]) -> List[float]:
+def generate_default_flexible_representatives(bin_defs: FlexibleBinDefs) -> BinReps:
     """Generate default representatives for flexible bins.
 
     Parameters
     ----------
-    bin_defs : List[Dict[str, Any]]
+    bin_defs : FlexibleBinDefs
         List of bin definitions, each containing either 'singleton' or 'interval' key.
 
     Returns
     -------
-    List[float]
+    BinReps
         List of representative values for each bin.
 
     Raises
@@ -172,14 +185,14 @@ def generate_default_flexible_representatives(bin_defs: List[Dict[str, Any]]) ->
     return reps
 
 
-def validate_flexible_bins(bin_spec: Dict[Any, List[Dict[str, Any]]], bin_reps: Dict[Any, List[float]]) -> None:
+def validate_flexible_bins(bin_spec: FlexibleBinSpec, bin_reps: BinRepsDict) -> None:
     """Validate flexible bin specifications and representatives.
 
     Parameters
     ----------
-    bin_spec : Dict[Any, List[Dict[str, Any]]]
+    bin_spec : FlexibleBinSpec
         Dictionary mapping columns to lists of bin definitions.
-    bin_reps : Dict[Any, List[float]]
+    bin_reps : BinRepsDict
         Dictionary mapping columns to lists of representatives.
 
     Raises
@@ -199,17 +212,17 @@ def validate_flexible_bins(bin_spec: Dict[Any, List[Dict[str, Any]]], bin_reps: 
 
         # Validate bin definition format
         for i, bin_def in enumerate(bin_defs):
-            validate_single_flexible_bin_def(bin_def, col, i)
+            _validate_single_flexible_bin_def(bin_def, col, i)
 
 
-def validate_single_flexible_bin_def(bin_def: Dict[str, Any], col: Any, bin_idx: int) -> None:
+def _validate_single_flexible_bin_def(bin_def: FlexibleBinDef, col: ColumnId, bin_idx: int) -> None:
     """Validate a single flexible bin definition.
 
     Parameters
     ----------
-    bin_def : Dict[str, Any]
+    bin_def : FlexibleBinDef
         Single bin definition to validate.
-    col : Any
+    col : ColumnId
         Column identifier for error messages.
     bin_idx : int
         Bin index for error messages.
@@ -271,14 +284,14 @@ def is_missing_value(value: Any) -> bool:
     return False
 
 
-def find_flexible_bin_for_value(value: float, bin_defs: List[Dict[str, Any]]) -> int:
+def find_flexible_bin_for_value(value: float, bin_defs: FlexibleBinDefs) -> int:
     """Find the bin index for a given value in flexible bin definitions.
 
     Parameters
     ----------
     value : float
         Value to find bin for.
-    bin_defs : List[Dict[str, Any]]
+    bin_defs : FlexibleBinDefs
         List of bin definitions to search through.
 
     Returns
@@ -299,12 +312,12 @@ def find_flexible_bin_for_value(value: float, bin_defs: List[Dict[str, Any]]) ->
     return MISSING_VALUE
 
 
-def calculate_flexible_bin_width(bin_def: Dict[str, Any]) -> float:
+def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     """Calculate width of a flexible bin definition.
 
     Parameters
     ----------
-    bin_def : Dict[str, Any]
+    bin_def : FlexibleBinDef
         Bin definition containing either 'singleton' or 'interval' key.
 
     Returns
@@ -326,14 +339,14 @@ def calculate_flexible_bin_width(bin_def: Dict[str, Any]) -> float:
         raise ValueError(f"Unknown bin definition: {bin_def}")
 
 
-def transform_value_to_flexible_bin(value: Any, bin_defs: List[Dict[str, Any]]) -> int:
+def transform_value_to_flexible_bin(value: Any, bin_defs: FlexibleBinDefs) -> int:
     """Transform a single value to its flexible bin index.
 
     Parameters
     ----------
     value : Any
         Value to transform.
-    bin_defs : List[Dict[str, Any]]
+    bin_defs : FlexibleBinDefs
         List of bin definitions.
 
     Returns
@@ -349,17 +362,17 @@ def transform_value_to_flexible_bin(value: Any, bin_defs: List[Dict[str, Any]]) 
     return find_flexible_bin_for_value(value, bin_defs)
 
 
-def get_flexible_bin_count(bin_spec: Dict[Any, List[Dict[str, Any]]]) -> Dict[Any, int]:
+def get_flexible_bin_count(bin_spec: FlexibleBinSpec) -> BinCountDict:
     """Get number of bins for each column in flexible bin specification.
 
     Parameters
     ----------
-    bin_spec : Dict[Any, List[Dict[str, Any]]]
+    bin_spec : FlexibleBinSpec
         Dictionary mapping columns to bin definitions.
 
     Returns
     -------
-    Dict[Any, int]
+    BinCountDict
         Dictionary mapping columns to number of bins.
     """
     return {col: len(bin_defs) for col, bin_defs in bin_spec.items()}

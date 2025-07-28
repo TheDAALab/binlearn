@@ -4,6 +4,11 @@ OneHotBinning transformer - creates a singleton bin for each unique value in the
 
 from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
+
+from ..base._types import (
+    BinEdges, BinEdgesDict, FlexibleBinSpec, FlexibleBinDefs,
+    ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
+)
 from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
 
@@ -64,8 +69,8 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         self.max_unique_values = max_unique_values
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[Dict[str, Any]], List[float]]:
+        self, x_col: np.ndarray, col_id: ColumnId, guidance_data: Optional[np.ndarray] = None
+    ) -> Tuple[FlexibleBinDefs, BinEdges]:
         """
         Calculate singleton bins for each unique value in the column.
 
@@ -119,7 +124,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
 
         return bin_defs, representatives
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: List[Any]) -> Dict[str, Any]:
+    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
         """
         Calculate joint parameters for one-hot binning.
 
@@ -152,8 +157,8 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         return {"global_unique_values": global_unique}
 
     def _calculate_flexible_bins_jointly(
-        self, x_col: np.ndarray, col_id: Any, joint_params: Dict[str, Any]
-    ) -> Tuple[List[Dict[str, Any]], List[float]]:
+        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
+    ) -> Tuple[FlexibleBinDefs, BinEdges]:
         """
         Calculate singleton bins using joint parameters.
 

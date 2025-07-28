@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from ._data_utils import return_like_input, prepare_input_with_columns
+from ._types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
 from ..config import get_config
 from ..errors import ValidationMixin, BinningError, InvalidDataError
 from ..sklearn_utils import SklearnCompatibilityMixin
@@ -24,7 +25,7 @@ class GeneralBinningBase(
         self,
         preserve_dataframe: Optional[bool] = None,
         fit_jointly: Optional[bool] = None,
-        guidance_columns: Optional[Union[List[Any], Any]] = None,
+        guidance_columns: GuidanceColumns = None,
         **kwargs,
     ):
         # Load configuration defaults
@@ -56,7 +57,7 @@ class GeneralBinningBase(
         self._n_features_in = None
         self._feature_names_in = None
 
-    def _prepare_input(self, X: Any) -> Tuple[np.ndarray, List[Any]]:
+    def _prepare_input(self, X: ArrayLike) -> Tuple[np.ndarray, ColumnList]:
         """Prepare input array and determine column identifiers."""
         return prepare_input_with_columns(
             X, fitted=self._fitted, original_columns=self._original_columns
@@ -68,8 +69,8 @@ class GeneralBinningBase(
             raise RuntimeError("This estimator is not fitted yet. Call 'fit' first.")
 
     def _separate_columns(
-        self, X: Any
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], List[Any], List[Any]]:
+        self, X: ArrayLike
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], ColumnList, ColumnList]:
         """Universal column separation logic."""
         arr, columns = self._prepare_input(X)
 
@@ -177,43 +178,6 @@ class GeneralBinningBase(
                 raise
             raise ValueError(f"Failed to transform data: {str(e)}") from e
 
-    def transform_with_guidance(self, X: Any) -> Tuple[Any, Any]:
-        """Transform and return both binned and guidance data separately."""
-        try:
-            self._check_fitted()
-
-            # Validate input data
-            self.validate_array_like(X, "X")
-
-            X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
-
-            # Transform binning columns
-            if X_binning.shape[1] > 0:
-                binned_result = self._transform_columns(X_binning, binning_cols)
-            else:
-                binned_result = np.empty((X_binning.shape[0], 0), dtype=int)
-
-            # Format outputs
-            binned_output = return_like_input(
-                binned_result, X, binning_cols, bool(self.preserve_dataframe)
-            )
-
-            if X_guidance is not None:
-                guidance_output = return_like_input(
-                    X_guidance, X, guidance_cols, bool(self.preserve_dataframe)
-                )
-            else:
-                guidance_output = None
-
-            return binned_output, guidance_output
-
-        except (ValueError, RuntimeError):
-            # Let these pass through unchanged for test compatibility
-            raise
-        except Exception as e:
-            if isinstance(e, BinningError):
-                raise
-            raise InvalidDataError(f"Failed to transform data with guidance: {str(e)}") from e
 
     def inverse_transform(self, X: Any) -> Any:
         """Inverse transform from bin indices back to representative values."""
@@ -255,28 +219,28 @@ class GeneralBinningBase(
     @abstractmethod
     def _fit_per_column(
         self,
-        X: np.ndarray,
-        columns: List[Any],
-        guidance_data: Optional[np.ndarray] = None,
-        **fit_params,
-    ) -> None:
+        X: Any,
+        columns: ColumnList,
+        guidance_data: Optional[ArrayLike] = None,
+        **fit_params
+    ) -> 'GeneralBinningBase':
         """Fit bins per column with optional guidance."""
         raise NotImplementedError("Subclasses must implement _fit_per_column method.")
 
     @abstractmethod
-    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
         """Fit bins jointly (guidance incompatible, so no guidance_data parameter)."""
         raise NotImplementedError(
             "Joint fitting not implemented. Subclasses should override this method."
         )
 
     @abstractmethod
-    def _transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Transform columns to bin indices."""
         raise NotImplementedError("Subclasses must implement _transform_columns method.")
 
     @abstractmethod
-    def _inverse_transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Inverse transform from bin indices to representative values."""
         raise NotImplementedError("Subclasses must implement _inverse_transform_columns method.")
 
@@ -358,17 +322,17 @@ class GeneralBinningBase(
         return self._n_features_in
 
     @property
-    def feature_names_in_(self) -> Optional[List[Any]]:
+    def feature_names_in_(self) -> OptionalColumnList:
         """Feature names seen during fit."""
         return getattr(self, "_feature_names_in", None)
 
     # Additional utility properties
     @property
-    def binning_columns_(self) -> Optional[List[Any]]:
+    def binning_columns_(self) -> OptionalColumnList:
         """Columns that are being binned (excludes guidance columns)."""
         return self._binning_columns
 
     @property
-    def guidance_columns_(self) -> Optional[List[Any]]:
+    def guidance_columns_(self) -> OptionalColumnList:
         """Columns used for guidance."""
         return self._guidance_columns

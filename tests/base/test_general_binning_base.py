@@ -235,18 +235,6 @@ class TestCoreFunctionality:
         assert inverse.dtype == float
         assert np.all(np.isfinite(inverse))
     
-    def test_transform_with_guidance(self):
-        """Test transform_with_guidance method."""
-        binner = SimpleBinner(guidance_columns=[1])
-        X = np.array([[1.0, 0.1], [2.0, 0.2], [3.0, 0.3]])
-        
-        binner.fit(X)
-        binned, guidance = binner.transform_with_guidance(X)
-        
-        assert binned.shape == (3, 1)  # Only column 0 gets binned
-        assert guidance.shape == (3, 1)  # Column 1 is guidance
-        assert guidance is not None
-    
     @pytest.mark.parametrize("fit_jointly", [True, False])
     def test_fit_jointly_vs_per_column(self, fit_jointly):
         """Test fitting jointly vs per column."""

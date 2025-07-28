@@ -6,6 +6,10 @@ from abc import abstractmethod
 
 import numpy as np
 
+from ._types import (
+    BinEdges, BinEdgesDict, FlexibleBinSpec, FlexibleBinDefs,
+    ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
+)
 from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import (
     ensure_bin_dict,
@@ -34,10 +38,10 @@ class FlexibleBinningBase(GeneralBinningBase):
     def __init__(
         self,
         preserve_dataframe: Optional[bool] = None,
-        bin_spec: Optional[Union[Dict[Any, List[Dict[str, Any]]], Any]] = None,
-        bin_representatives: Optional[Union[Dict[Any, List[float]], Any]] = None,
+        bin_spec: Optional[FlexibleBinSpec] = None,
+        bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
-        guidance_columns: Optional[Union[List[Any], Any]] = None,
+        guidance_columns: Optional[GuidanceColumns] = None,
         **kwargs,
     ):
         super().__init__(
@@ -56,8 +60,8 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._user_bin_reps = bin_representatives
 
         # Fitted specifications
-        self._bin_spec: Dict[Any, List[Dict[str, Any]]] = {}
-        self._bin_reps: Dict[Any, List[float]] = {}
+        self._bin_spec: FlexibleBinSpec = {}
+        self._bin_reps: BinEdgesDict = {}
 
         # If bin_spec is provided, process it immediately to enable transform without fit
         if bin_spec is not None:
@@ -92,10 +96,10 @@ class FlexibleBinningBase(GeneralBinningBase):
     def _fit_per_column(
         self,
         X: np.ndarray,
-        columns: List[Any],
+        columns: ColumnList,
         guidance_data: Optional[np.ndarray] = None,
         **fit_params,
-    ) -> None:
+    ) -> 'FlexibleBinningBase':
         """Fit flexible bins per column with optional guidance data."""
         try:
             self._process_user_specifications(columns)
@@ -109,13 +113,14 @@ class FlexibleBinningBase(GeneralBinningBase):
                     self._bin_reps[col] = reps
 
             self._finalize_fitting()
+            return self
         except (ValueError, RuntimeError, NotImplementedError):
             # Let these pass through unchanged for test compatibility
             raise
         except Exception as e:
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
-    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
         """Fit flexible bins jointly across all columns."""
         try:
             self._process_user_specifications(columns)
@@ -136,7 +141,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         except Exception as e:
             raise ValueError(f"Failed to fit joint bins: {str(e)}") from e
 
-    def _process_user_specifications(self, columns: List[Any]) -> None:
+    def _process_user_specifications(self, columns: ColumnList) -> None:
         """Process user-provided flexible bin specifications."""
         if self._user_bin_spec is not None:
             self._bin_spec = ensure_flexible_bin_spec(self._user_bin_spec)
@@ -156,7 +161,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # Validate the bins
         validate_flexible_bins(self._bin_spec, self._bin_reps)
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: List[Any]) -> Dict[str, Any]:
+    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
         """Calculate parameters shared across all columns for flexible binning.
 
         Default implementation returns empty dict. Subclasses override for specific logic.
@@ -164,15 +169,15 @@ class FlexibleBinningBase(GeneralBinningBase):
         return {}
 
     def _calculate_flexible_bins_jointly(
-        self, x_col: np.ndarray, col_id: Any, joint_params: Dict[str, Any]
-    ) -> Tuple[List[Dict[str, Any]], List[float]]:
+        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
+    ) -> Tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bins for a column using joint parameters.
 
         Default implementation falls back to regular _calculate_flexible_bins.
         """
         return self._calculate_flexible_bins(x_col, col_id)
 
-    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> Dict[Any, List[Dict[str, Any]]]:
+    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
         """Ensure bin_spec is in the correct dictionary format.
 
         DEPRECATED: Use ensure_flexible_bin_spec from _flexible_bin_utils instead.
@@ -180,15 +185,15 @@ class FlexibleBinningBase(GeneralBinningBase):
         return ensure_flexible_bin_spec(bin_spec)
 
     def _generate_default_flexible_representatives(
-        self, bin_defs: List[Dict[str, Any]]
-    ) -> List[float]:
+        self, bin_defs: FlexibleBinDefs
+    ) -> BinEdges:
         """Generate default representatives for flexible bins.
 
         DEPRECATED: Use generate_default_flexible_representatives from _flexible_bin_utils instead.
         """
         return generate_default_flexible_representatives(bin_defs)
 
-    def _validate_flexible_bins(self, bin_spec: Dict[Any, List[Dict[str, Any]]], bin_reps: Dict[Any, List[float]]) -> None:
+    def _validate_flexible_bins(self, bin_spec: FlexibleBinSpec, bin_reps: BinEdgesDict) -> None:
         """Validate flexible bin specifications.
 
         DEPRECATED: Use validate_flexible_bins from _flexible_bin_utils instead.
@@ -202,7 +207,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         return is_missing_value(value)
 
-    def _find_bin_for_value(self, value: float, bin_defs: List[Dict[str, Any]]) -> int:
+    def _find_bin_for_value(self, value: float, bin_defs: FlexibleBinDefs) -> int:
         """Find the bin index for a given value.
 
         DEPRECATED: Use find_flexible_bin_for_value from _flexible_bin_utils instead.
@@ -212,7 +217,7 @@ class FlexibleBinningBase(GeneralBinningBase):
     @abstractmethod
     def _calculate_flexible_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[Dict[str, Any]], List[float]]:
+    ) -> Tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bin definitions and representatives for a column.
 
         Parameters
@@ -226,7 +231,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         Returns
         -------
-        Tuple[List[Dict[str, Any]], List[float]]
+        Tuple[FlexibleBinDefs, BinEdges]
             A tuple of (bin_definitions, bin_representatives).
             Bin definitions are dicts with 'singleton' or 'interval' keys.
 
@@ -234,7 +239,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         raise NotImplementedError("Must be implemented by subclasses.")
 
-    def _get_column_key(self, target_col: Any, available_keys: List[Any], col_index: int) -> Any:
+    def _get_column_key(self, target_col: ColumnId, available_keys: ColumnList, col_index: int) -> ColumnId:
         """Find the right key for a column, handling mismatches between fit and transform."""
         # Direct match
         if target_col in available_keys:
@@ -247,7 +252,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Transform columns to bin indices using flexible bins."""
         result = np.full(X.shape, MISSING_VALUE, dtype=int)
         available_keys = list(self._bin_spec.keys())
@@ -266,7 +271,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Transform bin indices back to representative values for flexible bins."""
         result = np.full(X.shape, np.nan, dtype=float)
         available_keys = list(self._bin_reps.keys())
@@ -323,7 +328,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         return return_like_input(result, bin_indices, columns, self.preserve_dataframe)
 
-    def lookup_bin_ranges(self) -> Dict[Any, int]:
+    def lookup_bin_ranges(self) -> Dict[ColumnId, int]:
         """Return number of bins for each column."""
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)

@@ -2,6 +2,11 @@
 
 from typing import Any, Dict, Optional, Tuple, Union, List
 import numpy as np
+
+from ..base._types import (
+    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
+    OptionalColumnList, GuidanceColumns, ArrayLike
+)
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..errors import ConfigurationError
@@ -16,12 +21,12 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
 
     def __init__(
         self,
-        n_bins: Union[int, Dict[Any, int]] = 10,
-        bin_range: Optional[Union[Tuple[float, float], Dict[Any, Tuple[float, float]]]] = None,
+        n_bins: Union[int, Dict[ColumnId, int]] = 10,
+        bin_range: Optional[Union[Tuple[float, float], Dict[ColumnId, Tuple[float, float]]]] = None,
         clip: Optional[bool] = None,
         preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[Dict[Any, List[float]]] = None,
-        bin_representatives: Optional[Dict[Any, List[float]]] = None,
+        bin_edges: Optional[BinEdgesDict] = None,
+        bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
         joint_range_method: str = "global",
         **kwargs,
@@ -53,7 +58,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         self.bin_range = bin_range
         self.joint_range_method = joint_range_method
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: List[Any]) -> Dict[str, Any]:
+    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
         """Calculate joint parameters for equal-width binning."""
         joint_params = {}
 
@@ -91,8 +96,8 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         return joint_params
 
     def _calculate_bins_jointly(
-        self, x_col: np.ndarray, col_id: Any, joint_params: Dict[str, Any]
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
+    ) -> Tuple[BinEdges, BinEdges]:
         """Calculate equal-width bins using joint parameters."""
         # Get n_bins (prefer per-column if available)
         if isinstance(self.n_bins, dict) and col_id in self.n_bins:

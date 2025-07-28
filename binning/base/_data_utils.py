@@ -3,25 +3,26 @@ Simplified data handling utilities for binning operations.
 """
 
 from __future__ import annotations
-from typing import Any, List, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
 from binning import _pandas_config, _polars_config
+from ._types import ColumnList, OptionalColumnList, ArrayLike
 
 
-def is_pandas_df(obj: Any) -> bool:
+def _is_pandas_df(obj: Any) -> bool:
     """Check if object is a pandas DataFrame."""
     pd = _pandas_config.pd
     return pd is not None and isinstance(obj, pd.DataFrame)
 
 
-def is_polars_df(obj: Any) -> bool:
+def _is_polars_df(obj: Any) -> bool:
     """Check if object is a polars DataFrame."""
     pl = _polars_config.pl
     return pl is not None and isinstance(obj, pl.DataFrame)
 
 
-def prepare_array(X: Any) -> Tuple[np.ndarray, Optional[List[Any]], Any]:
+def prepare_array(X: ArrayLike) -> Tuple[np.ndarray, OptionalColumnList, Any]:
     """Convert input to numpy array and extract metadata.
 
     Args:
@@ -30,9 +31,9 @@ def prepare_array(X: Any) -> Tuple[np.ndarray, Optional[List[Any]], Any]:
     Returns:
         Tuple of (numpy_array, column_names, index).
     """
-    if is_pandas_df(X):
+    if _is_pandas_df(X):
         return np.asarray(X), list(X.columns), X.index
-    elif is_polars_df(X):
+    elif _is_polars_df(X):
         return X.to_numpy(), list(X.columns), None
     else:
         arr = np.asarray(X)
@@ -46,10 +47,10 @@ def prepare_array(X: Any) -> Tuple[np.ndarray, Optional[List[Any]], Any]:
 
 def return_like_input(
     arr: np.ndarray,
-    original_input: Any,
-    columns: Optional[List[Any]] = None,
+    original_input: ArrayLike,
+    columns: OptionalColumnList = None,
     preserve_dataframe: bool = False,
-) -> Any:
+) -> ArrayLike:
     """Return array in same format as original input if requested.
 
     Args:
@@ -64,12 +65,12 @@ def return_like_input(
     if not preserve_dataframe:
         return arr
 
-    if is_pandas_df(original_input):
+    if _is_pandas_df(original_input):
         pd = _pandas_config.pd
         if pd is not None:
             cols = columns if columns is not None else list(original_input.columns)
             return pd.DataFrame(arr, columns=cols, index=original_input.index)
-    elif is_polars_df(original_input):
+    elif _is_polars_df(original_input):
         pl = _polars_config.pl
         if pl is not None:
             cols = columns if columns is not None else list(original_input.columns)
@@ -79,8 +80,8 @@ def return_like_input(
 
 
 def prepare_input_with_columns(
-    X: Any, fitted: bool = False, original_columns: Optional[List[Any]] = None
-) -> Tuple[np.ndarray, List[Any]]:
+    X: ArrayLike, fitted: bool = False, original_columns: OptionalColumnList = None
+) -> Tuple[np.ndarray, ColumnList]:
     """
     Prepare input array and determine column identifiers.
 

@@ -5,13 +5,45 @@ The module brings together the foundations.
 # Core types and constants
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 
+# Type aliases
+from ._types import (
+    # Column and data types
+    ColumnId,
+    ColumnList,
+    OptionalColumnList,
+    GuidanceColumns,
+    ArrayLike,
+    # Interval binning types
+    BinEdges,
+    BinEdgesDict,
+    BinReps,
+    BinRepsDict,
+    OptionalBinEdgesDict,
+    OptionalBinRepsDict,
+    # Flexible binning types
+    FlexibleBinDef,
+    FlexibleBinDefs,
+    FlexibleBinSpec,
+    OptionalFlexibleBinSpec,
+    # Return types
+    IntervalBinCalculationResult,
+    FlexibleBinCalculationResult,
+    # Count and validation types
+    BinCountDict,
+    # Array types
+    Array1D,
+    Array2D,
+    BooleanMask,
+    # Parameter types
+    FitParams,
+    JointParams,
+)
+
 # Utility functions
 from ._data_utils import (
     prepare_array,
     return_like_input,
     prepare_input_with_columns,
-    is_pandas_df,
-    is_polars_df,
 )
 from ._bin_utils import (
     # Interval binning utilities
@@ -28,7 +60,6 @@ from ._bin_utils import (
     calculate_flexible_bin_width,
     transform_value_to_flexible_bin,
     get_flexible_bin_count,
-    validate_single_flexible_bin_def,
 )
 
 # Base classes
@@ -45,12 +76,34 @@ __all__ = [
     "MISSING_VALUE",
     "ABOVE_RANGE",
     "BELOW_RANGE",
+    # Type aliases
+    "ColumnId",
+    "ColumnList", 
+    "OptionalColumnList",
+    "GuidanceColumns",
+    "ArrayLike",
+    "BinEdges",
+    "BinEdgesDict",
+    "BinReps", 
+    "BinRepsDict",
+    "OptionalBinEdgesDict",
+    "OptionalBinRepsDict",
+    "FlexibleBinDef",
+    "FlexibleBinDefs",
+    "FlexibleBinSpec",
+    "OptionalFlexibleBinSpec",
+    "IntervalBinCalculationResult",
+    "FlexibleBinCalculationResult", 
+    "BinCountDict",
+    "Array1D",
+    "Array2D", 
+    "BooleanMask",
+    "FitParams",
+    "JointParams",
     # Utility functions
     "prepare_array",
     "return_like_input",
     "prepare_input_with_columns",
-    "is_pandas_df",
-    "is_polars_df",
     # Interval binning utilities
     "ensure_bin_dict",
     "validate_bins",
@@ -65,7 +118,6 @@ __all__ = [
     "calculate_flexible_bin_width",
     "transform_value_to_flexible_bin",
     "get_flexible_bin_count",
-    "validate_single_flexible_bin_def",
     # Base classes
     "GeneralBinningBase",
     "IntervalBinningBase",

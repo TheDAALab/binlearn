@@ -5,6 +5,11 @@ SupervisedBinning transformer - creates bins using decision tree splits guided b
 from typing import Any, Dict, List, Tuple, Optional, Union
 import numpy as np
 from sklearn.base import clone
+
+from ..base._types import (
+    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
+    OptionalColumnList, GuidanceColumns, ArrayLike
+)
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..config import get_config
@@ -30,7 +35,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         preserve_dataframe: bool = False,
         bin_edges: Any = None,
         bin_representatives: Any = None,
-        guidance_columns: Optional[Union[List[Any], Any]] = None,
+        guidance_columns: Optional[GuidanceColumns] = None,
         **kwargs,
     ):
         """
@@ -83,12 +88,12 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         )
 
         # Initialize tree storage attributes
-        self._fitted_trees: Dict[Any, Any] = {}
-        self._tree_importance: Dict[Any, float] = {}
+        self._fitted_trees: Dict[ColumnId, Any] = {}
+        self._tree_importance: Dict[ColumnId, float] = {}
 
     def _calculate_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[BinEdges, BinEdges]:
         """
         Calculate bins using decision tree splits for a single column.
 
@@ -168,7 +173,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return bin_edges, representatives
 
-    def _extract_split_points(self, tree, _X: np.ndarray) -> List[float]:
+    def _extract_split_points(self, tree, _X: np.ndarray) -> BinEdges:
         """
         Extract split points from a fitted decision tree.
 
@@ -193,7 +198,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return split_points
 
-    def get_feature_importance(self, column_id: Any = None) -> Dict[Any, float]:
+    def get_feature_importance(self, column_id: Optional[ColumnId] = None) -> Dict[ColumnId, float]:
         """
         Get feature importance scores from the fitted decision trees.
 
@@ -204,7 +209,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         Returns
         -------
-        Dict[Any, float]
+        Dict[ColumnId, float]
             Mapping from column identifier to importance score.
         """
         self._check_fitted()
@@ -231,7 +236,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return self._tree_importance.copy()
 
-    def get_tree_structure(self, column_id: Any) -> Dict[str, Any]:
+    def get_tree_structure(self, column_id: ColumnId) -> Dict[str, Any]:
         """
         Get the structure of the decision tree for a specific column.
 

@@ -9,6 +9,10 @@ import warnings
 
 import numpy as np
 
+from ._types import (
+    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
+    OptionalColumnList, GuidanceColumns, ArrayLike
+)
 from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
 from ._data_utils import return_like_input
@@ -28,10 +32,10 @@ class IntervalBinningBase(GeneralBinningBase):
         self,
         clip: Optional[bool] = None,
         preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[Union[Dict[Any, List[float]], Any]] = None,
-        bin_representatives: Optional[Union[Dict[Any, List[float]], Any]] = None,
+        bin_edges: Optional[BinEdgesDict] = None,
+        bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
-        guidance_columns: Optional[Union[List[Any], Any]] = None,
+        guidance_columns: Optional[GuidanceColumns] = None,
         **kwargs,
     ):
         super().__init__(
@@ -59,8 +63,8 @@ class IntervalBinningBase(GeneralBinningBase):
         self._user_bin_reps = bin_representatives
 
         # Fitted specifications
-        self._bin_edges: Dict[Any, List[float]] = {}
-        self._bin_reps: Dict[Any, List[float]] = {}
+        self._bin_edges: BinEdgesDict = {}
+        self._bin_reps: BinEdgesDict = {}
 
         # If bin_edges are provided, process them immediately to enable transform without fit
         if bin_edges is not None:
@@ -115,10 +119,10 @@ class IntervalBinningBase(GeneralBinningBase):
     def _fit_per_column(
         self,
         X: np.ndarray,
-        columns: List[Any],
+        columns: ColumnList,
         guidance_data: Optional[np.ndarray] = None,
         **fit_params,
-    ) -> None:
+    ) -> 'IntervalBinningBase':
         """Fit bins per column with optional guidance data."""
         try:
             self._process_user_specifications(columns)
@@ -140,13 +144,14 @@ class IntervalBinningBase(GeneralBinningBase):
                             self._bin_reps[col] = reps
 
             self._finalize_fitting()
+            return self
 
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
-    def _fit_jointly(self, X: np.ndarray, columns: List[Any], **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
         """Fit bins jointly across all columns."""
         try:
             self._process_user_specifications(columns)
@@ -172,7 +177,7 @@ class IntervalBinningBase(GeneralBinningBase):
                 raise
             raise ValueError(f"Failed to fit joint bins: {str(e)}") from e
 
-    def _process_user_specifications(self, columns: List[Any]) -> None:
+    def _process_user_specifications(self, columns: ColumnList) -> None:
         """Process user-provided bin specifications."""
         try:
             if self._user_bin_edges is not None:
@@ -219,7 +224,7 @@ class IntervalBinningBase(GeneralBinningBase):
         # Validate the bins
         validate_bins(self._bin_edges, self._bin_reps)
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: List[Any]) -> Dict[str, Any]:
+    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
         """Calculate parameters shared across all columns.
 
         Default implementation returns empty dict. Subclasses override for specific logic.
@@ -227,8 +232,8 @@ class IntervalBinningBase(GeneralBinningBase):
         return {}
 
     def _calculate_bins_jointly(
-        self, x_col: np.ndarray, col_id: Any, joint_params: Dict[str, Any]
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
+    ) -> Tuple[BinEdges, BinEdges]:
         """Calculate bins for a column using joint parameters.
 
         Default implementation falls back to regular _calculate_bins.
@@ -238,7 +243,7 @@ class IntervalBinningBase(GeneralBinningBase):
     @abstractmethod
     def _calculate_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[BinEdges, BinEdges]:
         """Calculate bin edges and representatives for a column.
 
         Parameters
@@ -252,14 +257,14 @@ class IntervalBinningBase(GeneralBinningBase):
 
         Returns
         -------
-        Tuple[List[float], List[float]]
+        Tuple[BinEdges, BinEdges]
             A tuple of (bin_edges, bin_representatives).
 
         Must be implemented by subclasses.
         """
         raise NotImplementedError("Must be implemented by subclasses.")
 
-    def _get_column_key(self, target_col: Any, available_keys: List[Any], col_index: int) -> Any:
+    def _get_column_key(self, target_col: ColumnId, available_keys: ColumnList, col_index: int) -> ColumnId:
         """Find the right key for a column, handling mismatches between fit and transform."""
         # Direct match
         if target_col in available_keys:
@@ -272,7 +277,7 @@ class IntervalBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Transform columns to bin indices."""
         result = np.zeros(X.shape, dtype=int)
         available_keys = list(self._bin_edges.keys())
@@ -302,7 +307,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray, columns: List[Any]) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Inverse transform from bin indices to representative values."""
         result = np.zeros(X.shape, dtype=float)
         available_keys = list(self._bin_reps.keys())
@@ -359,7 +364,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return return_like_input(result, bin_indices, columns, self.preserve_dataframe)
 
-    def lookup_bin_ranges(self) -> Dict[Any, int]:
+    def lookup_bin_ranges(self) -> Dict[ColumnId, int]:
         """Return number of bins for each column."""
         self._check_fitted()
         return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}

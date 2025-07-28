@@ -1,0 +1,94 @@
+"""
+Type aliases for the binning framework.
+
+This module provides standardized type aliases used throughout the binning package
+to improve code readability and maintainability.
+"""
+
+from __future__ import annotations
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+
+# =============================================================================
+# COLUMN AND DATA TYPES
+# =============================================================================
+
+# Column identifiers can be any type (int, str, etc.)
+ColumnId = Any
+ColumnList = List[ColumnId]
+OptionalColumnList = Optional[ColumnList]
+
+# Flexible guidance columns - can be single value or list
+GuidanceColumns = Optional[Union[ColumnList, ColumnId]]
+
+# Array-like data types
+ArrayLike = Any  # Could be np.ndarray, pandas.DataFrame, polars.DataFrame, list, etc.
+
+# =============================================================================
+# INTERVAL BINNING TYPES  
+# =============================================================================
+
+# Bin edges for interval binning (e.g., [0, 1, 2, 3] for 3 bins)
+BinEdges = List[float]
+BinEdgesDict = Dict[ColumnId, BinEdges]
+
+# Bin representatives for interval binning (e.g., [0.5, 1.5, 2.5] for 3 bins)
+BinReps = List[float] 
+BinRepsDict = Dict[ColumnId, BinReps]
+
+# Optional versions for parameters
+OptionalBinEdgesDict = Optional[Union[BinEdgesDict, Any]]
+OptionalBinRepsDict = Optional[Union[BinRepsDict, Any]]
+
+# =============================================================================
+# FLEXIBLE BINNING TYPES
+# =============================================================================
+
+# Single flexible bin definition - either {"singleton": value} or {"interval": [min, max]}
+FlexibleBinDef = Dict[str, Any]
+
+# List of flexible bin definitions for a column
+FlexibleBinDefs = List[FlexibleBinDef]
+
+# Dictionary mapping columns to their flexible bin definitions
+FlexibleBinSpec = Dict[ColumnId, FlexibleBinDefs]
+
+# Optional versions for parameters
+OptionalFlexibleBinSpec = Optional[Union[FlexibleBinSpec, Any]]
+
+# =============================================================================
+# CALCULATION RETURN TYPES
+# =============================================================================
+
+# Return type for bin calculation methods in interval binning
+IntervalBinCalculationResult = Tuple[BinEdges, BinReps]
+
+# Return type for bin calculation methods in flexible binning  
+FlexibleBinCalculationResult = Tuple[FlexibleBinDefs, BinReps]
+
+# =============================================================================
+# COUNT AND VALIDATION TYPES
+# =============================================================================
+
+# Dictionary mapping columns to number of bins
+BinCountDict = Dict[ColumnId, int]
+
+# =============================================================================
+# NUMPY ARRAY TYPES (for better clarity)
+# =============================================================================
+
+# Common numpy array shapes used in binning
+Array1D = np.ndarray  # 1D array
+Array2D = np.ndarray  # 2D array
+BooleanMask = np.ndarray  # Boolean array for masking
+
+# =============================================================================
+# PARAMETER TYPES FOR FUNCTIONS
+# =============================================================================
+
+# Common fit_params type
+FitParams = Dict[str, Any]
+
+# Common joint parameters type  
+JointParams = Dict[str, Any]
