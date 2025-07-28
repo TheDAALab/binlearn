@@ -17,7 +17,6 @@ from ._general_binning_base import GeneralBinningBase
 from ._bin_utils import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
 from ._data_utils import return_like_input
 from ._constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
-from ..config import get_config
 from ..errors import (
     BinningError,
     ConfigurationError,
@@ -46,6 +45,7 @@ class IntervalBinningBase(GeneralBinningBase):
         )
 
         # Load configuration defaults
+        from ..config import get_config
         config = get_config()
 
         # Apply defaults from configuration

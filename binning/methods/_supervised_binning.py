@@ -12,7 +12,6 @@ from ..base._types import (
 )
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
-from ..config import get_config
 from ..errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
 
 
@@ -159,6 +158,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         # Combine data bounds with split points
         all_edges = [data_min] + sorted(split_points) + [data_max]
         # Remove duplicates while preserving order
+        from ..config import get_config
         config = get_config()
         bin_edges = []
         for edge in all_edges:

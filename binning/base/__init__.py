@@ -120,6 +120,4 @@ __all__ = [
     "IntervalBinningBase",
     "FlexibleBinningBase",
     "SupervisedBinningBase",
-    # Legacy mixins
-    "GuidedBinningMixin",
 ]

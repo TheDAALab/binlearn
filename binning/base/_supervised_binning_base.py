@@ -15,7 +15,6 @@ from ._types import (
     OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ._interval_binning_base import IntervalBinningBase
-from ..config import get_config
 from ..errors import (
     ConfigurationError,
     DataQualityWarning,
@@ -60,6 +59,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         self.tree_params = tree_params  # Store exactly as received, don't convert None to {}
 
         # Get default parameters from config
+        from ..config import get_config
         config = get_config()
         default_tree_params = {
             "max_depth": config.supervised_default_max_depth,

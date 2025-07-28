@@ -11,7 +11,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from ._data_utils import return_like_input, prepare_input_with_columns
 from ._types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
-from ..config import get_config
 from ..errors import ValidationMixin, BinningError, InvalidDataError
 from ..sklearn_utils import SklearnCompatibilityMixin
 
@@ -29,6 +28,7 @@ class GeneralBinningBase(
         **kwargs,
     ):
         # Load configuration defaults
+        from ..config import get_config
         config = get_config()
 
         # Apply defaults from configuration
