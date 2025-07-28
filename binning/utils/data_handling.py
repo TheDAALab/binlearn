@@ -6,7 +6,7 @@ with support for pandas and polars DataFrames.
 """
 
 from __future__ import annotations
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, List
 
 import numpy as np
 from binning import _pandas_config, _polars_config
@@ -82,20 +82,53 @@ def return_like_input(
     return arr
 
 
+def _determine_columns(X, col_names, fitted, original_columns, arr_shape):
+    """Helper function to determine column identifiers.
+    
+    Parameters
+    ----------
+    X : ArrayLike
+        Input data
+    col_names : List or None
+        Column names from prepare_array
+    fitted : bool
+        Whether this is for a fitted estimator
+    original_columns : List or None
+        Original column identifiers
+    arr_shape : tuple
+        Shape of the prepared array
+        
+    Returns
+    -------
+    columns : List[Any]
+        Column identifiers
+    """
+    if col_names is not None:
+        return col_names
+    elif hasattr(X, "shape") and len(X.shape) == 2:
+        # For numpy arrays, use the actual number of columns
+        return list(range(X.shape[1]))
+    elif fitted and original_columns is not None:
+        # Use stored columns from fitting
+        return original_columns
+    else:
+        # Fallback
+        return list(range(arr_shape[1]))
+
+
 def prepare_input_with_columns(
     X: ArrayLike, fitted: bool = False, original_columns: OptionalColumnList = None
-) -> Tuple[np.ndarray, ColumnList]:
-    """
-    Prepare input array and determine column identifiers.
+) -> Tuple[np.ndarray, List[Any]]:
+    """Prepare input data and determine column identifiers.
 
     Parameters
     ----------
-    X : Any
-        Input data (numpy array, pandas DataFrame, etc.)
+    X : ArrayLike
+        Input data (pandas DataFrame, numpy array, etc.)
     fitted : bool, default=False
-        Whether the estimator is fitted
-    original_columns : List[Any], optional
-        Original column names from fitting
+        Whether this is being called on a fitted estimator
+    original_columns : List[Any] or None, default=None
+        Original column identifiers from fitting
 
     Returns
     -------
@@ -106,20 +139,7 @@ def prepare_input_with_columns(
     """
     arr, col_names, _ = prepare_array(X)
 
-    # Determine column identifiers
-    if col_names is not None:
-        columns = col_names
-    elif hasattr(X, "shape") and len(X.shape) == 2:
-        # For numpy arrays, use the actual number of columns
-        columns = list(range(X.shape[1]))
-    elif fitted and original_columns is not None:
-        # Use stored columns from fitting, but only if dimensions match
-        if hasattr(X, "shape") and len(X.shape) == 2 and X.shape[1] <= len(original_columns):
-            columns = list(range(X.shape[1]))
-        else:
-            columns = original_columns
-    else:
-        # Fallback
-        columns = list(range(arr.shape[1]))
+    # Determine column identifiers using helper function
+    columns = _determine_columns(X, col_names, fitted, original_columns, arr.shape)
 
     return arr, columns

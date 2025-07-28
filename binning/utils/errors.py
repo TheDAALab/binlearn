@@ -176,7 +176,7 @@ class ValidationMixin:
     @staticmethod
     def check_data_quality(data: np.ndarray, name: str = "data") -> None:
         """Check data quality and issue warnings if needed."""
-        from .config import get_config
+        from binning.config import get_config
 
         config = get_config()
 
@@ -184,30 +184,26 @@ class ValidationMixin:
             return
 
         # Check for missing values - handle different dtypes
-        try:
-            # For numeric data, use np.isnan
-            if np.issubdtype(data.dtype, np.number):
-                missing_mask = np.isnan(data)
-            else:
-                # For object/string data, check for None and 'nan' strings
-                missing_mask = np.array(
-                    [
-                        x is None or (isinstance(x, str) and x.lower() in ["nan", "na", "null", ""])
-                        for x in data.flat
-                    ]
-                ).reshape(data.shape)
+        # For numeric data, use np.isnan
+        if np.issubdtype(data.dtype, np.number):
+            missing_mask = np.isnan(data)
+        else:
+            # For object/string data, check for None and 'nan' strings
+            missing_mask = np.array(
+                [
+                    x is None or (isinstance(x, str) and x.lower() in ["nan", "na", "null", ""])
+                    for x in data.flat
+                ]
+            ).reshape(data.shape)
 
-            if missing_mask.any():
-                missing_pct = missing_mask.mean() * 100
-                if missing_pct > 50:
-                    warnings.warn(
-                        f"{name} contains {missing_pct:.1f}% missing values. "
-                        "This may significantly impact binning quality.",
-                        DataQualityWarning,
-                    )
-        except (TypeError, ValueError):
-            # Skip data quality checks for complex dtypes
-            pass
+        if missing_mask.any():
+            missing_pct = missing_mask.mean() * 100
+            if missing_pct > 50:
+                warnings.warn(
+                    f"{name} contains {missing_pct:.1f}% missing values. "
+                    "This may significantly impact binning quality.",
+                    DataQualityWarning,
+                )
 
         # Check for infinite values only for numeric types
         try:

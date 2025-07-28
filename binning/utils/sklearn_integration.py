@@ -178,24 +178,30 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         return self.selector_.get_support(indices=indices)
 
 
+def _import_supervised_binning():
+    """Import SupervisedBinning with error handling."""
+    try:
+        from binning.methods._supervised_binning import SupervisedBinning
+        return SupervisedBinning
+    except ImportError:
+        raise ImportError("SupervisedBinning not available")
+
+
 class BinningPipeline:
-    """Utility class to create common binning pipelines."""
+    """Pipeline utilities for binning operations."""
 
     @staticmethod
     def create_supervised_binning_pipeline(
         guidance_column: Union[str, int],
         task_type: str = "classification",
         tree_params: Optional[Dict] = None,
-        final_estimator: Optional[BaseEstimator] = None,
+        final_estimator=None,
     ):
         """Create a pipeline with supervised binning."""
         from sklearn.pipeline import Pipeline
 
         # Import locally to avoid issues
-        try:
-            from binning.methods._supervised_binning import SupervisedBinning
-        except ImportError:
-            raise ImportError("SupervisedBinning not available")
+        SupervisedBinning = _import_supervised_binning()
 
         binner = SupervisedBinning(
             task_type=task_type, tree_params=tree_params, guidance_columns=[guidance_column]

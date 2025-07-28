@@ -58,10 +58,8 @@ disallow_untyped_defs = true
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["binning"]
+source = ["binning", "tests"]
 omit = [
-    "*/tests/*",
-    "*/test_*.py",
     "setup.py",
 ]
 
