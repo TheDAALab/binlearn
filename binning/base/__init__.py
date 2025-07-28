@@ -68,9 +68,6 @@ from ._interval_binning_base import IntervalBinningBase
 from ._flexible_binning_base import FlexibleBinningBase
 from ._supervised_binning_base import SupervisedBinningBase
 
-# Mixins (legacy - kept for backward compatibility)
-from ._guided_binning_mixin import GuidedBinningMixin
-
 __all__ = [
     # Constants
     "MISSING_VALUE",
