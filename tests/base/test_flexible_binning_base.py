@@ -26,27 +26,24 @@ def test_init_default():
     obj = DummyFlexibleBinning()
     assert obj.bin_spec is None
     assert obj.bin_representatives is None
-    assert obj._user_bin_spec is None
-    assert obj._user_bin_reps is None
     assert obj._bin_spec == {}
     assert obj._bin_reps == {}
 
 def test_init_with_bin_spec():
     """Test initialization with bin_spec provided."""
     bin_spec = {0: [{'singleton': 1}]}
-    
+
     with patch.object(DummyFlexibleBinning, '_process_provided_flexible_bins') as mock_process:
         obj = DummyFlexibleBinning(bin_spec=bin_spec)
         assert obj.bin_spec == bin_spec
-        assert obj._user_bin_spec == bin_spec
         mock_process.assert_called_once()
+
 
 def test_init_with_bin_representatives():
     """Test initialization with bin_representatives provided."""
     bin_reps = {0: [1.0]}
     obj = DummyFlexibleBinning(bin_representatives=bin_reps)
     assert obj.bin_representatives == bin_reps
-    assert obj._user_bin_reps == bin_reps
 
 @patch('binning.base._flexible_binning_base.ensure_flexible_bin_spec')
 @patch('binning.base._flexible_binning_base.validate_flexible_bins')
@@ -55,8 +52,8 @@ def test_process_provided_flexible_bins_spec_only(mock_validate, mock_ensure_spe
     mock_ensure_spec.return_value = {0: [{'singleton': 1}]}
     
     obj = DummyFlexibleBinning()
-    obj._user_bin_spec = {0: [{'singleton': 1}]}
-    obj._user_bin_reps = None
+    obj.bin_spec = {0: [{'singleton': 1}]}
+    obj.bin_representatives = None
     
     with patch('binning.base._flexible_binning_base.generate_default_flexible_representatives') as mock_gen:
         mock_gen.return_value = [1.0]
@@ -76,8 +73,8 @@ def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mo
     mock_ensure_dict.return_value = {0: [1.0]}
     
     obj = DummyFlexibleBinning()
-    obj._user_bin_spec = {0: [{'singleton': 1}]}
-    obj._user_bin_reps = {0: [1.0]}
+    obj.bin_spec = {0: [{'singleton': 1}]}
+    obj.bin_representatives = {0: [1.0]}
     
     obj._process_provided_flexible_bins()
     
@@ -89,7 +86,7 @@ def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mo
 def test_process_provided_flexible_bins_error():
     """Test _process_provided_flexible_bins error handling."""
     obj = DummyFlexibleBinning()
-    obj._user_bin_spec = {0: [{'singleton': 1}]}
+    obj.bin_spec = {0: [{'singleton': 1}]}
     
     with patch('binning.base._flexible_binning_base.ensure_flexible_bin_spec') as mock_ensure:
         mock_ensure.side_effect = Exception("Test error")
@@ -100,8 +97,8 @@ def test_process_provided_flexible_bins_error():
 def test_process_provided_flexible_bins_no_spec():
     """Test _process_provided_flexible_bins with no spec."""
     obj = DummyFlexibleBinning()
-    obj._user_bin_spec = None
-    obj._user_bin_reps = None
+    obj.bin_spec = None
+    obj.bin_representatives = None
     
     obj._process_provided_flexible_bins()
     # Should not raise any errors
@@ -298,8 +295,8 @@ def test_finalize_fitting_error():
 def test_process_user_specifications():
     """Test _process_user_specifications method."""
     obj = DummyFlexibleBinning()
-    obj._user_bin_spec = {0: [{'singleton': 1}]}
-    obj._user_bin_reps = {0: [1.0]}
+    obj.bin_spec = {0: [{'singleton': 1}]}
+    obj.bin_representatives = {0: [1.0]}
     
     with patch('binning.base._flexible_binning_base.ensure_flexible_bin_spec') as mock_spec:
         with patch('binning.base._flexible_binning_base.ensure_bin_dict') as mock_dict:
@@ -314,8 +311,8 @@ def test_process_user_specifications():
 def test_process_user_specifications_no_user_specs():
     """Test _process_user_specifications with no user specs."""
     obj = DummyFlexibleBinning()
-    obj._user_bin_spec = None
-    obj._user_bin_reps = None
+    obj.bin_spec = None
+    obj.bin_representatives = None
     
     with patch.object(obj, '_process_provided_flexible_bins') as mock_process:
         obj._process_user_specifications([0, 1])
@@ -646,7 +643,7 @@ def test_fit_jointly_covers_missing_lines():
     # Ensure no existing specs so it will call joint methods
     obj._bin_spec = {}
     obj._bin_reps = {}
-    obj._user_bin_spec = None  # No user specifications
+    obj.bin_spec = None  # No user specifications
     
     # Don't patch anything - let the real methods run
     obj._fit_jointly(X, columns)
@@ -674,7 +671,7 @@ def test_fit_jointly_enabled_through_handle_bin_params():
     # Ensure no existing specs
     obj._bin_spec = {}
     obj._bin_reps = {}
-    obj._user_bin_spec = None
+    obj.bin_spec = None
     
     # Fit should use _fit_jointly which calls our target methods
     obj.fit(X)

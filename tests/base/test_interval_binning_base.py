@@ -19,8 +19,6 @@ def test_init_default():
     assert obj.clip is not None  # Should get from config
     assert obj.bin_edges is None
     assert obj.bin_representatives is None
-    assert obj._user_bin_edges is None
-    assert obj._user_bin_reps is None
     assert obj._bin_edges == {}
     assert obj._bin_reps == {}
 
@@ -32,11 +30,11 @@ def test_init_with_clip():
 def test_init_with_bin_edges():
     """Test initialization with bin_edges provided."""
     bin_edges = {0: [0, 1, 2]}
-    
+
     with patch.object(DummyIntervalBinning, '_process_provided_bins') as mock_process:
         obj = DummyIntervalBinning(bin_edges=bin_edges)
         assert obj.bin_edges == bin_edges
-        assert obj._user_bin_edges == bin_edges
+        mock_process.assert_called_once()
         mock_process.assert_called_once()
 
 def test_init_with_bin_representatives():
@@ -44,22 +42,21 @@ def test_init_with_bin_representatives():
     bin_reps = {0: [0.5, 1.5]}
     obj = DummyIntervalBinning(bin_representatives=bin_reps)
     assert obj.bin_representatives == bin_reps
-    assert obj._user_bin_reps == bin_reps
 
 @patch('binning.base._interval_binning_base.ensure_bin_dict')
 @patch('binning.base._interval_binning_base.validate_bins')
 def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
     """Test _process_provided_bins with edges only."""
     mock_ensure.side_effect = lambda x: x  # Return input unchanged
-    
+
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
-    obj._user_bin_reps = None
-    
+    obj.bin_edges = {0: [0, 1, 2]}
+    obj.bin_representatives = None
+
     with patch('binning.base._interval_binning_base.default_representatives') as mock_default:
         mock_default.return_value = [0.5, 1.5]
         obj._process_provided_bins()
-        
+
         mock_ensure.assert_called()
         mock_default.assert_called_once()
         mock_validate.assert_called_once()
@@ -70,13 +67,13 @@ def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
 def test_process_provided_bins_both(mock_validate, mock_ensure):
     """Test _process_provided_bins with both edges and reps."""
     mock_ensure.side_effect = lambda x: x
-    
+
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
-    obj._user_bin_reps = {0: [0.5, 1.5]}
-    
+    obj.bin_edges = {0: [0, 1, 2]}
+    obj.bin_representatives = {0: [0.5, 1.5]}
+
     obj._process_provided_bins()
-    
+
     assert mock_ensure.call_count == 2
     mock_validate.assert_called_once()
     assert obj._fitted is True
@@ -84,18 +81,19 @@ def test_process_provided_bins_both(mock_validate, mock_ensure):
 def test_process_provided_bins_invalid_edges_type():
     """Test _process_provided_bins with invalid edge types."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: "invalid"}  # String instead of array-like
-    
+    obj.bin_edges = {0: "invalid"}  # String instead of array-like
+
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.return_value = {0: "invalid"}
-        
+
         with pytest.raises(Exception):  # Should raise ConfigurationError
             obj._process_provided_bins()
+
 
 def test_process_provided_bins_too_few_edges():
     """Test _process_provided_bins with too few edges."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [1]}  # Only one edge
+    obj.bin_edges = {0: [1]}  # Only one edge
     
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.return_value = {0: [1]}
@@ -106,7 +104,7 @@ def test_process_provided_bins_too_few_edges():
 def test_process_provided_bins_error():
     """Test _process_provided_bins error handling."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [0, 1, 2]}
     
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.side_effect = Exception("Test error")
@@ -329,8 +327,8 @@ def test_finalize_fitting_error():
 def test_process_user_specifications():
     """Test _process_user_specifications method."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
-    obj._user_bin_reps = {0: [0.5, 1.5]}
+    obj.bin_edges = {0: [0, 1, 2]}
+    obj.bin_representatives = {0: [0.5, 1.5]}
     
     obj._process_user_specifications([0, 1])
     
@@ -341,8 +339,8 @@ def test_process_user_specifications():
 def test_process_user_specifications_no_user_specs():
     """Test _process_user_specifications with no user specs."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = None
-    obj._user_bin_reps = None
+    obj.bin_edges = None
+    obj.bin_representatives = None
     
     obj._process_user_specifications([0, 1])
     
@@ -409,12 +407,10 @@ def test_bin_params_property_setters():
     # Test bin_edges setter
     obj.bin_edges = {0: [0, 1, 2]}
     assert obj.bin_edges == {0: [0, 1, 2]}
-    assert obj._user_bin_edges == {0: [0, 1, 2]}
     
     # Test bin_representatives setter
     obj.bin_representatives = {0: [0.5, 1.5]}
     assert obj.bin_representatives == {0: [0.5, 1.5]}
-    assert obj._user_bin_reps == {0: [0.5, 1.5]}
     
     # Test that setting parameters resets fitted state
     obj._fitted = True
@@ -450,10 +446,10 @@ def test_handle_bin_params_direct_access():
     
     # Test that property setters work correctly
     minimal_obj.bin_edges = {0: [0, 1, 2]}
-    assert minimal_obj._user_bin_edges == {0: [0, 1, 2]}
+    assert minimal_obj.bin_edges == {0: [0, 1, 2]}
     
     minimal_obj.bin_representatives = {0: [0.5, 1.5]}
-    assert minimal_obj._user_bin_reps == {0: [0.5, 1.5]}
+    assert minimal_obj.bin_representatives == {0: [0.5, 1.5]}
     
     # Test the _calculate_bins method to cover line 425
     import numpy as np
@@ -575,7 +571,7 @@ def test_fit_per_column_binning_error():
 def test_process_provided_bins_binning_error():
     """Test _process_provided_bins re-raises BinningError unchanged."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [0, 1, 2]}
     
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.side_effect = BinningError("Bins validation error")
@@ -588,7 +584,7 @@ def test_process_provided_bins_binning_error():
 def test_process_provided_bins_configuration_error():
     """Test _process_provided_bins wraps generic exceptions in ConfigurationError."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [0, 1, 2]}
     
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.side_effect = ValueError("Generic validation error")
@@ -645,7 +641,7 @@ def test_fit_jointly_binning_error():
 def test_process_user_specifications_binning_error():
     """Test _process_user_specifications re-raises BinningError unchanged."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [0, 1, 2]}
     
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.side_effect = BinningError("User specs validation error")
@@ -729,7 +725,7 @@ def test_fit_jointly_with_string_columns_and_nan():
 def test_process_user_specifications_generic_error():
     """Test _process_user_specifications wraps generic errors to cover line 188."""
     obj = DummyIntervalBinning()
-    obj._user_bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [0, 1, 2]}
     
     with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
         mock_ensure.side_effect = ValueError("Generic user specs error")

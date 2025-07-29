@@ -54,11 +54,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         self.bin_spec = bin_spec
         self.bin_representatives = bin_representatives
 
-        # Store user-provided specs (for internal use)
-        self._user_bin_spec = bin_spec
-        self._user_bin_reps = bin_representatives
-
-        # Fitted specifications
+        # Working specifications (fitted or user-provided)
         self._bin_spec: FlexibleBinSpec = {}
         self._bin_reps: BinEdgesDict = {}
 
@@ -69,11 +65,11 @@ class FlexibleBinningBase(GeneralBinningBase):
     def _process_provided_flexible_bins(self) -> None:
         """Process user-provided flexible bin specifications and mark as fitted if complete."""
         try:
-            if self._user_bin_spec is not None:
-                self._bin_spec = ensure_flexible_bin_spec(self._user_bin_spec)
+            if self.bin_spec is not None:
+                self._bin_spec = ensure_flexible_bin_spec(self.bin_spec)
 
-            if self._user_bin_reps is not None:
-                self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+            if self.bin_representatives is not None:
+                self._bin_reps = ensure_bin_dict(self.bin_representatives)
             else:
                 # Generate default representatives for provided specs
                 for col in self._bin_spec:
@@ -91,6 +87,30 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         except Exception as e:
             raise ValueError(f"Failed to process provided flexible bin specifications: {str(e)}") from e
+
+    @property
+    def bin_spec(self):
+        """Bin specification property."""
+        return getattr(self, '_bin_spec_param', None)
+
+    @bin_spec.setter
+    def bin_spec(self, value):
+        """Set bin specification and update internal state."""
+        self._bin_spec_param = value
+        if hasattr(self, '_fitted') and self._fitted:
+            self._fitted = False  # Reset fitted state when bin_spec changes
+
+    @property
+    def bin_representatives(self):
+        """Bin representatives property."""
+        return getattr(self, '_bin_representatives_param', None)
+
+    @bin_representatives.setter
+    def bin_representatives(self, value):
+        """Set bin representatives and update internal state."""
+        self._bin_representatives_param = value
+        if hasattr(self, '_fitted') and self._fitted:
+            self._fitted = False  # Reset fitted state when bin_representatives change
 
     def _fit_per_column(
         self,
@@ -144,14 +164,14 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     def _process_user_specifications(self, columns: ColumnList) -> None:
         """Process user-provided flexible bin specifications."""
-        if self._user_bin_spec is not None:
-            self._bin_spec = ensure_flexible_bin_spec(self._user_bin_spec)
+        if self.bin_spec is not None:
+            self._bin_spec = ensure_flexible_bin_spec(self.bin_spec)
         else:
             # Reset _bin_spec if no user specs provided to allow refitting
             self._bin_spec = {}
 
-        if self._user_bin_reps is not None:
-            self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+        if self.bin_representatives is not None:
+            self._bin_reps = ensure_bin_dict(self.bin_representatives)
         else:
             # Reset _bin_reps if no user reps provided to allow refitting
             self._bin_reps = {}
@@ -330,6 +350,13 @@ class FlexibleBinningBase(GeneralBinningBase):
         """Return number of bins for each column."""
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)
+
+    def _get_fitted_params(self) -> Dict[str, Any]:
+        """Get fitted parameter values for FlexibleBinningBase."""
+        return {
+            "bin_spec": self._bin_spec,
+            "bin_representatives": self._bin_reps,
+        }
 
     # Properties for sklearn compatibility
     @property

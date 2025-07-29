@@ -58,11 +58,7 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_edges = bin_edges
         self.bin_representatives = bin_representatives
 
-        # Store user-provided specs (for internal use)
-        self._user_bin_edges = bin_edges
-        self._user_bin_reps = bin_representatives
-
-        # Fitted specifications
+        # Working specifications (fitted or user-provided)
         self._bin_edges: BinEdgesDict = {}
         self._bin_reps: BinEdgesDict = {}
 
@@ -73,11 +69,11 @@ class IntervalBinningBase(GeneralBinningBase):
     def _process_provided_bins(self) -> None:
         """Process user-provided bin specifications and mark as fitted if complete."""
         try:
-            if self._user_bin_edges is not None:
-                self._bin_edges = ensure_bin_dict(self._user_bin_edges)
+            if self.bin_edges is not None:
+                self._bin_edges = ensure_bin_dict(self.bin_edges)
 
-            if self._user_bin_reps is not None:
-                self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+            if self.bin_representatives is not None:
+                self._bin_reps = ensure_bin_dict(self.bin_representatives)
             else:
                 # Generate default representatives for provided edges
                 for col in self._bin_edges:
@@ -107,7 +103,6 @@ class IntervalBinningBase(GeneralBinningBase):
     def bin_edges(self, value):
         """Set bin edges and update internal state."""
         self._bin_edges_param = value
-        self._user_bin_edges = value
         if hasattr(self, '_fitted') and self._fitted:
             self._fitted = False  # Reset fitted state when bin_edges change
 
@@ -120,7 +115,6 @@ class IntervalBinningBase(GeneralBinningBase):
     def bin_representatives(self, value):
         """Set bin representatives and update internal state."""
         self._bin_representatives_param = value
-        self._user_bin_reps = value
         if hasattr(self, '_fitted') and self._fitted:
             self._fitted = False  # Reset fitted state when bin_representatives change
 
@@ -135,7 +129,7 @@ class IntervalBinningBase(GeneralBinningBase):
         try:
             self._process_user_specifications(columns)
 
-            if not self._user_bin_edges:
+            if not self.bin_edges:
                 # Calculate bins from data
                 for i, col in enumerate(columns):
                     if col not in self._bin_edges:
@@ -169,7 +163,7 @@ class IntervalBinningBase(GeneralBinningBase):
         try:
             self._process_user_specifications(columns)
 
-            if not self._user_bin_edges:
+            if not self.bin_edges:
                 # For true joint binning, flatten all data together
                 all_data = X.ravel()
                 
@@ -195,13 +189,13 @@ class IntervalBinningBase(GeneralBinningBase):
     def _process_user_specifications(self, columns: ColumnList) -> None:
         """Process user-provided bin specifications."""
         try:
-            if self._user_bin_edges is not None:
-                self._bin_edges = ensure_bin_dict(self._user_bin_edges)
+            if self.bin_edges is not None:
+                self._bin_edges = ensure_bin_dict(self.bin_edges)
             else:
                 self._bin_edges = {}
 
-            if self._user_bin_reps is not None:
-                self._bin_reps = ensure_bin_dict(self._user_bin_reps)
+            if self.bin_representatives is not None:
+                self._bin_reps = ensure_bin_dict(self.bin_representatives)
             else:
                 self._bin_reps = {}
 
