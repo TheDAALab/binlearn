@@ -382,16 +382,8 @@ def test_get_fitted_params():
     assert params['bin_representatives'] == {0: [0.5, 1.5]}
 
 def test_handle_bin_params():
-    """Test _handle_bin_params method."""
+    """Test _handle_bin_params method with automatic parameter discovery."""
     obj = DummyIntervalBinning()
-    
-    # Test with bin_edges change
-    reset = obj._handle_bin_params({'bin_edges': {0: [0, 1, 2]}})
-    assert reset is True
-    
-    # Test with bin_representatives change  
-    reset = obj._handle_bin_params({'bin_representatives': {0: [0.5, 1.5]}})
-    assert reset is True
     
     # Test with clip change (automatic discovery handles this)
     reset = obj._handle_bin_params({'clip': True})
@@ -410,6 +402,30 @@ def test_handle_bin_params():
     assert reset is False
 
 
+def test_bin_params_property_setters():
+    """Test that property setters properly update internal state."""
+    obj = DummyIntervalBinning()
+    
+    # Test bin_edges setter
+    obj.bin_edges = {0: [0, 1, 2]}
+    assert obj.bin_edges == {0: [0, 1, 2]}
+    assert obj._user_bin_edges == {0: [0, 1, 2]}
+    
+    # Test bin_representatives setter
+    obj.bin_representatives = {0: [0.5, 1.5]}
+    assert obj.bin_representatives == {0: [0.5, 1.5]}
+    assert obj._user_bin_reps == {0: [0.5, 1.5]}
+    
+    # Test that setting parameters resets fitted state
+    obj._fitted = True
+    obj.bin_edges = {0: [0, 1, 2, 3]}
+    assert obj._fitted is False
+    
+    obj._fitted = True
+    obj.bin_representatives = {0: [0.5, 1.5, 2.5]}
+    assert obj._fitted is False
+
+
 def test_handle_bin_params_direct_access():
     """Test _handle_bin_params with parameters that bypass automatic discovery."""
     obj = DummyIntervalBinning()
@@ -417,27 +433,26 @@ def test_handle_bin_params_direct_access():
     # Test with parameters that won't be in the auto-discovery list 
     # by creating a custom class that doesn't have these in its signature
     class MinimalIntervalBinning(IntervalBinningBase):
-        def __init__(self, **kwargs):
-            # Don't include bin_edges or bin_representatives in signature
-            super().__init__(**kwargs)
+        def __init__(self, clip=None, **kwargs):
+            # Include clip in signature for testing
+            super().__init__(clip=clip, **kwargs)
         
         def _calculate_bins(self, x_col, col_id, guidance_data=None):
             return [0.0, 1.0, 2.0], [0.5, 1.5]
     
     minimal_obj = MinimalIntervalBinning()
     
-    # Test bin_edges handling - should hit the specific lines now
-    params = {'bin_edges': {0: [0, 1, 2]}}
+    # Test bin_edges and bin_representatives are handled through setters now,
+    # so test automatic parameter discovery with other parameters
+    params = {'clip': True}
     reset = minimal_obj._handle_bin_params(params)
-    assert reset is True
-    assert minimal_obj.bin_edges == {0: [0, 1, 2]}
+    assert reset is True  # Should be handled by automatic discovery
+    
+    # Test that property setters work correctly
+    minimal_obj.bin_edges = {0: [0, 1, 2]}
     assert minimal_obj._user_bin_edges == {0: [0, 1, 2]}
     
-    # Test bin_representatives handling - should hit the specific lines now
-    params = {'bin_representatives': {0: [0.5, 1.5]}}
-    reset = minimal_obj._handle_bin_params(params)
-    assert reset is True
-    assert minimal_obj.bin_representatives == {0: [0.5, 1.5]}
+    minimal_obj.bin_representatives = {0: [0.5, 1.5]}
     assert minimal_obj._user_bin_reps == {0: [0.5, 1.5]}
     
     # Test the _calculate_bins method to cover line 425

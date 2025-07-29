@@ -98,6 +98,32 @@ class IntervalBinningBase(GeneralBinningBase):
                 raise
             raise ConfigurationError(f"Failed to process provided bin specifications: {str(e)}") from e
 
+    @property
+    def bin_edges(self):
+        """Bin edges property."""
+        return getattr(self, '_bin_edges_param', None)
+
+    @bin_edges.setter
+    def bin_edges(self, value):
+        """Set bin edges and update internal state."""
+        self._bin_edges_param = value
+        self._user_bin_edges = value
+        if hasattr(self, '_fitted') and self._fitted:
+            self._fitted = False  # Reset fitted state when bin_edges change
+
+    @property
+    def bin_representatives(self):
+        """Bin representatives property."""
+        return getattr(self, '_bin_representatives_param', None)
+
+    @bin_representatives.setter
+    def bin_representatives(self, value):
+        """Set bin representatives and update internal state."""
+        self._bin_representatives_param = value
+        self._user_bin_reps = value
+        if hasattr(self, '_fitted') and self._fitted:
+            self._fitted = False  # Reset fitted state when bin_representatives change
+
     def _fit_per_column(
         self,
         X: np.ndarray,
@@ -334,26 +360,8 @@ class IntervalBinningBase(GeneralBinningBase):
         return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}
 
     def _get_fitted_params(self) -> Dict[str, Any]:
-        """Get fitted parameter values."""
+        """Get fitted parameter values for IntervalBinningBase."""
         return {
             "bin_edges": self._bin_edges,
             "bin_representatives": self._bin_reps,
         }
-
-    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle interval bin-specific parameter changes with special logic."""
-        # Use automatic discovery for standard parameters
-        reset_fitted = super()._handle_bin_params(params)
-
-        # Handle special cases that need custom logic
-        if "bin_edges" in params:
-            self.bin_edges = params.pop("bin_edges")
-            self._user_bin_edges = self.bin_edges
-            reset_fitted = True
-
-        if "bin_representatives" in params:
-            self.bin_representatives = params.pop("bin_representatives")
-            self._user_bin_reps = self.bin_representatives
-            reset_fitted = True
-
-        return reset_fitted
