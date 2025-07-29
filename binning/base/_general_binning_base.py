@@ -246,13 +246,39 @@ class GeneralBinningBase(
         raise NotImplementedError("Subclasses must implement _inverse_transform_columns method.")
 
     def get_params(self, deep: bool = True) -> Dict[str, Any]:
-        """Get parameters for this estimator with bin-specific handling."""
+        """Get parameters for this estimator with automatic parameter discovery."""
         params = super().get_params(deep=deep)
-
-        # Let subclasses add their specific parameters
-        params.update(self._get_binning_params())
-
-        # Override with fitted values if fitted, otherwise keep constructor values
+        
+        # Add all class-specific parameters automatically
+        current_class = self.__class__
+        
+        # Get current class parameters
+        try:
+            current_sig = inspect.signature(current_class.__init__)
+            current_params = set(current_sig.parameters.keys()) - {'self', 'kwargs'}
+        except (ValueError, TypeError):
+            return params
+        
+        # Get GeneralBinningBase parameters to exclude
+        for base_class in current_class.__mro__:
+            if base_class.__name__ == 'GeneralBinningBase':
+                try:
+                    base_sig = inspect.signature(base_class.__init__)
+                    base_params = set(base_sig.parameters.keys()) - {'self', 'kwargs'}
+                    class_specific_params = list(current_params - base_params)
+                    break
+                except (ValueError, TypeError):
+                    class_specific_params = list(current_params)
+                    break
+        else:
+            class_specific_params = list(current_params)
+        
+        # Add class-specific parameters to result
+        for param_name in class_specific_params:
+            if hasattr(self, param_name):
+                params[param_name] = getattr(self, param_name)
+        
+        # Add fitted parameters if fitted
         if self._fitted:
             fitted_params = self._get_fitted_params()
             params.update(fitted_params)
@@ -260,50 +286,58 @@ class GeneralBinningBase(
         return params
 
     def _get_binning_params(self) -> Dict[str, Any]:
-        """Get binning-specific parameters using automatic discovery."""
-        params = {}
-        
-        # Get class-specific parameters automatically
-        class_specific_params = self._get_class_specific_params()
-        for param_name in class_specific_params:
-            if hasattr(self, param_name):
-                params[param_name] = getattr(self, param_name)
-        
-        return params
-    
-    def _get_class_specific_params(self) -> List[str]:
-        """Get parameters specific to this class and its inheritance chain."""
+        """Get class-specific binning parameters (for backwards compatibility)."""
         current_class = self.__class__
         
-        # Get all parameters from current class
+        # Get current class parameters
         try:
-            current_signature = inspect.signature(current_class.__init__)
-            current_params = set(current_signature.parameters.keys()) - {'self', 'kwargs'}
+            current_sig = inspect.signature(current_class.__init__)
+            current_params = set(current_sig.parameters.keys()) - {'self', 'kwargs'}
         except (ValueError, TypeError):
-            return []
+            return {}
         
-        # Find GeneralBinningBase as the base reference
-        general_binning_params = set()
+        # Get GeneralBinningBase parameters to exclude
         for base_class in current_class.__mro__:
             if base_class.__name__ == 'GeneralBinningBase':
                 try:
-                    base_signature = inspect.signature(base_class.__init__)
-                    general_binning_params = set(base_signature.parameters.keys()) - {'self', 'kwargs'}
+                    base_sig = inspect.signature(base_class.__init__)
+                    base_params = set(base_sig.parameters.keys()) - {'self', 'kwargs'}
+                    class_specific_params = list(current_params - base_params)
                     break
                 except (ValueError, TypeError):
-                    continue
+                    class_specific_params = list(current_params)
+                    break
+        else:
+            class_specific_params = list(current_params)
         
-        # Return parameters that are NOT in GeneralBinningBase
-        class_specific = current_params - general_binning_params
-        return list(class_specific)
+        # Build result dictionary
+        result = {}
+        for param_name in class_specific_params:
+            if hasattr(self, param_name):
+                result[param_name] = getattr(self, param_name)
+        
+        return result
 
     def _get_fitted_params(self) -> Dict[str, Any]:
-        """Get fitted parameter values. Override in subclasses."""
-        return {}
+        """Get fitted parameters that should be transferred to new instances."""
+        fitted_params = {}
+        
+        # Common fitted attributes to transfer
+        fitted_attrs = ['bin_spec_', 'bin_representatives_', 'bin_edges_']
+        
+        for attr in fitted_attrs:
+            if hasattr(self, attr):
+                value = getattr(self, attr)
+                if value is not None:
+                    # Map to parameter names (remove trailing underscore)
+                    param_name = attr.rstrip('_')
+                    fitted_params[param_name] = value
+        
+        return fitted_params
 
     def set_params(self, **params) -> "GeneralBinningBase":
-        """Set parameters for this estimator with bin-specific handling."""
-        # Validate guidance + joint fitting before setting
+        """Set parameters with automatic handling and validation."""
+        # Validate guidance + joint fitting compatibility
         guidance_cols = params.get("guidance_columns", self.guidance_columns)
         fit_jointly = params.get("fit_jointly", self.fit_jointly)
 
@@ -314,35 +348,43 @@ class GeneralBinningBase(
                 "fit_jointly=True for global fitting, but not both."
             )
 
-        # Let subclasses handle bin-specific parameter changes
-        reset_fitted = self._handle_bin_params(params)
-
-        if reset_fitted:
+        # Handle parameter changes and reset fitted state if needed
+        if self._handle_bin_params(params):
             self._fitted = False
 
         return super().set_params(**params)
 
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle bin-specific parameter changes using automatic discovery.
-
-        Returns:
-            bool: True if fitted state should be reset
-        """
+        """Handle all parameter changes automatically."""
         reset_fitted = False
         
-        # Handle critical parameters that always require refitting
-        critical_params = ['fit_jointly', 'guidance_columns']
-        for param_name in critical_params:
-            if param_name in params:
-                setattr(self, param_name, params.pop(param_name))
-                reset_fitted = True
+        # Get class-specific parameters
+        current_class = self.__class__
+        try:
+            current_sig = inspect.signature(current_class.__init__)
+            current_params = set(current_sig.parameters.keys()) - {'self', 'kwargs'}
+        except (ValueError, TypeError):
+            class_specific_params = []
+        else:
+            # Get GeneralBinningBase parameters to exclude
+            for base_class in current_class.__mro__:
+                if base_class.__name__ == 'GeneralBinningBase':
+                    try:
+                        base_sig = inspect.signature(base_class.__init__)
+                        base_params = set(base_sig.parameters.keys()) - {'self', 'kwargs'}
+                        class_specific_params = list(current_params - base_params)
+                        break
+                    except (ValueError, TypeError):
+                        class_specific_params = list(current_params)
+                        break
+            else:
+                class_specific_params = list(current_params)
         
-        # Get class-specific parameters automatically
-        class_specific_params = self._get_class_specific_params()
+        # Parameters that always trigger refitting
+        refit_params = ['fit_jointly', 'guidance_columns'] + class_specific_params
         
-        for param_name in class_specific_params:
+        for param_name in refit_params:
             if param_name in params:
-                # Set the attribute and mark for reset
                 setattr(self, param_name, params.pop(param_name))
                 reset_fitted = True
         
