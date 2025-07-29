@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple, Optional
 import numpy as np
 
 from ..utils.types import (
-    FlexibleBinSpec, FlexibleBinDefs, FlexibleBinDef, BinEdges,
+    FlexibleBinSpec, FlexibleBinDefs, FlexibleBinDef, BinEdges, BinEdgesDict,
     ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
 )
 from ..base._flexible_binning_base import FlexibleBinningBase
@@ -30,24 +30,23 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
 
     def __init__(
         self,
-        preserve_dataframe: bool = False,
-        fit_jointly: bool = False,
-        bin_spec: Any = None,
-        bin_representatives: Any = None,
+        preserve_dataframe: Optional[bool] = None,
+        bin_spec: Optional[FlexibleBinSpec] = None,
+        bin_representatives: Optional[BinEdgesDict] = None,
         max_unique_values: int = 100,
         **kwargs,
     ):
         """
-        Initialize the OneHotBinning transformer.
+        Initialize OneHotBinning.
+
+        Creates singleton bins for each unique value in the data.
+        This is NOT traditional one-hot encoding - instead, it creates
+        bins where each bin contains exactly one unique value.
 
         Parameters
         ----------
-        preserve_dataframe : bool, default=False
-            If True, preserve DataFrame structure in output.
-
-        fit_jointly : bool, default=False
-            If True, find unique values across all columns and create
-            the same singleton bins for each column.
+        preserve_dataframe : bool, optional
+            Whether to preserve pandas DataFrame structure in output.
 
         bin_spec : dict or None, default=None
             Pre-defined bin specification.
@@ -59,14 +58,24 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
             Maximum number of unique values per column to prevent
             memory issues with high-cardinality data.
         """
+        # Remove fit_jointly from kwargs if present to avoid conflicts
+        kwargs.pop('fit_jointly', None)
+        
         super().__init__(
             bin_spec=bin_spec,
             bin_representatives=bin_representatives,
             preserve_dataframe=preserve_dataframe,
-            fit_jointly=fit_jointly,
+            fit_jointly=False,  # Always use per-column fitting
             **kwargs,
         )
         self.max_unique_values = max_unique_values
+
+    def _validate_params(self) -> None:
+        """Validate OneHotBinning specific parameters."""
+        super()._validate_params()
+        
+        if not isinstance(self.max_unique_values, int) or self.max_unique_values <= 0:
+            raise ValueError("max_unique_values must be a positive integer")
 
     def _calculate_flexible_bins(
         self, x_col: np.ndarray, col_id: ColumnId, guidance_data: Optional[np.ndarray] = None
@@ -124,74 +133,6 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
 
         return bin_defs, representatives
 
-    def _calculate_joint_parameters(self, X: np.ndarray, columns: ColumnList) -> Dict[str, Any]:
-        """
-        Calculate joint parameters for one-hot binning.
 
-        For joint fitting, we find all unique values across all columns
-        and use the same set of singleton bins for each column.
-        """
-        # Collect all finite values from all columns
-        all_finite_values = []
 
-        for i in range(X.shape[1]):
-            col_data = np.asarray(X[:, i], dtype=float)
-            finite_mask = np.isfinite(col_data)
-            if finite_mask.any():
-                all_finite_values.extend(col_data[finite_mask])
 
-        if not all_finite_values:
-            # No valid values across any column
-            global_unique = np.array([0.0])
-        else:
-            global_unique = np.unique(all_finite_values)
-
-        # Check global unique value limit
-        if len(global_unique) > self.max_unique_values:
-            raise ValueError(
-                f"Joint fitting found {len(global_unique)} unique values across all columns, "
-                f"which exceeds max_unique_values={self.max_unique_values}. "
-                f"Consider using fit_jointly=False or increasing max_unique_values."
-            )
-
-        return {"global_unique_values": global_unique}
-
-    def _calculate_flexible_bins_jointly(
-        self, x_col: np.ndarray, col_id: ColumnId, joint_params: Dict[str, Any]
-    ) -> Tuple[FlexibleBinDefs, BinEdges]:
-        """
-        Calculate singleton bins using joint parameters.
-
-        In joint mode, all columns get the same set of singleton bins based on
-        the unique values found across all columns.
-        """
-        global_unique = joint_params["global_unique_values"]
-
-        # Create singleton bins for all global unique values
-        bin_defs = []
-        representatives = []
-
-        for val in global_unique:
-            val = float(val)  # Convert to Python float
-            bin_defs.append({"singleton": val})
-            representatives.append(val)
-
-        return bin_defs, representatives
-
-    def _get_binning_params(self) -> Dict[str, Any]:
-        """Get one-hot binning specific parameters."""
-        params = super()._get_binning_params()
-        params.update({
-            "max_unique_values": self.max_unique_values,
-        })
-        return params
-
-    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle one-hot binning specific parameter changes."""
-        reset_fitted = super()._handle_bin_params(params)
-
-        if "max_unique_values" in params:
-            self.max_unique_values = params.pop("max_unique_values")
-            reset_fitted = True
-
-        return reset_fitted

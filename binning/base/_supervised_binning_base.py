@@ -60,27 +60,42 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         # Store parameters exactly as received for sklearn clone compatibility
         self.task_type = task_type
-        self.tree_params = tree_params  # Store exactly as received, don't convert None to {}
+        self.tree_params = tree_params
 
-        # Get default parameters from config
-        from ..config import get_config
-        config = get_config()
-        default_tree_params = {
-            "max_depth": config.supervised_default_max_depth,
-            "min_samples_leaf": config.supervised_default_min_samples_leaf,
-            "min_samples_split": config.supervised_default_min_samples_split,
+        # Note: Tree template creation is deferred to fit time to allow invalid parameters
+        # during initialization (for sklearn compatibility)
+        self._tree_template = None
+
+    def _create_tree_template(self):
+        """Create tree template with merged parameters."""
+        if self._tree_template is not None:
+            return
+            
+        # Create simple tree template with default parameters
+        default_params = {
+            "max_depth": 3,
+            "min_samples_leaf": 1,
+            "min_samples_split": 2,
             "random_state": None,
         }
-
-        # Merge with defaults for internal use (use empty dict if tree_params is None)
-        actual_tree_params = tree_params or {}
-        self._merged_tree_params = {**default_tree_params, **actual_tree_params}
-
+        
+        # Merge user params with defaults
+        merged_params = {**default_params, **(self.tree_params or {})}
+        
         # Initialize the appropriate tree model template
-        if task_type == "classification":
-            self._tree_template = DecisionTreeClassifier(**self._merged_tree_params)
-        else:  # regression
-            self._tree_template = DecisionTreeRegressor(**self._merged_tree_params)
+        try:
+            if self.task_type == "classification":
+                self._tree_template = DecisionTreeClassifier(**merged_params)
+            else:  # regression
+                self._tree_template = DecisionTreeRegressor(**merged_params)
+        except TypeError as e:
+            raise ConfigurationError(
+                f"Invalid tree_params: {str(e)}",
+                suggestions=[
+                    "Check that all tree_params are valid DecisionTree parameters",
+                    "Common parameters: max_depth, min_samples_split, min_samples_leaf, random_state",
+                ]
+            ) from e
 
     def validate_guidance_data(
         self, guidance_data: np.ndarray, name: str = "guidance_data"
@@ -355,28 +370,3 @@ class SupervisedBinningBase(IntervalBinningBase):
             max_val = min_val + 1.0
 
         return [min_val, max_val], [(min_val + max_val) / 2]
-
-    def _get_binning_params(self) -> Dict[str, Any]:
-        """Get supervised binning specific parameters."""
-        params = super()._get_binning_params()
-        params.update(
-            {
-                "task_type": self.task_type,
-                "tree_params": self.tree_params,
-            }
-        )
-        return params
-
-    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle supervised binning specific parameter changes."""
-        reset_fitted = super()._handle_bin_params(params)
-
-        if "task_type" in params:
-            self.task_type = params.pop("task_type")
-            reset_fitted = True
-
-        if "tree_params" in params:
-            self.tree_params = params.pop("tree_params")
-            reset_fitted = True
-
-        return reset_fitted

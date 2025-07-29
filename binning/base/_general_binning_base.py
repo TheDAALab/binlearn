@@ -5,6 +5,7 @@ Simplified base class for all binning methods.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
 from abc import ABC, abstractmethod
+import inspect
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -259,8 +260,42 @@ class GeneralBinningBase(
         return params
 
     def _get_binning_params(self) -> Dict[str, Any]:
-        """Get binning-specific parameters. Override in subclasses."""
-        return {}
+        """Get binning-specific parameters using automatic discovery."""
+        params = {}
+        
+        # Get class-specific parameters automatically
+        class_specific_params = self._get_class_specific_params()
+        for param_name in class_specific_params:
+            if hasattr(self, param_name):
+                params[param_name] = getattr(self, param_name)
+        
+        return params
+    
+    def _get_class_specific_params(self) -> List[str]:
+        """Get parameters specific to this class and its inheritance chain."""
+        current_class = self.__class__
+        
+        # Get all parameters from current class
+        try:
+            current_signature = inspect.signature(current_class.__init__)
+            current_params = set(current_signature.parameters.keys()) - {'self', 'kwargs'}
+        except (ValueError, TypeError):
+            return []
+        
+        # Find GeneralBinningBase as the base reference
+        general_binning_params = set()
+        for base_class in current_class.__mro__:
+            if base_class.__name__ == 'GeneralBinningBase':
+                try:
+                    base_signature = inspect.signature(base_class.__init__)
+                    general_binning_params = set(base_signature.parameters.keys()) - {'self', 'kwargs'}
+                    break
+                except (ValueError, TypeError):
+                    continue
+        
+        # Return parameters that are NOT in GeneralBinningBase
+        class_specific = current_params - general_binning_params
+        return list(class_specific)
 
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameter values. Override in subclasses."""
@@ -288,12 +323,30 @@ class GeneralBinningBase(
         return super().set_params(**params)
 
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle bin-specific parameter changes. Override in subclasses.
+        """Handle bin-specific parameter changes using automatic discovery.
 
         Returns:
             bool: True if fitted state should be reset
         """
-        return False
+        reset_fitted = False
+        
+        # Handle critical parameters that always require refitting
+        critical_params = ['fit_jointly', 'guidance_columns']
+        for param_name in critical_params:
+            if param_name in params:
+                setattr(self, param_name, params.pop(param_name))
+                reset_fitted = True
+        
+        # Get class-specific parameters automatically
+        class_specific_params = self._get_class_specific_params()
+        
+        for param_name in class_specific_params:
+            if param_name in params:
+                # Set the attribute and mark for reset
+                setattr(self, param_name, params.pop(param_name))
+                reset_fitted = True
+        
+        return reset_fitted
 
     def _validate_params(self) -> None:
         """Validate parameters for sklearn compatibility."""

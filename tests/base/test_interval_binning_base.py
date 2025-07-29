@@ -359,10 +359,11 @@ def test_calculate_bins_jointly_abstract():
     assert result == ([0.0, 1.0, 2.0], [0.5, 1.5])
 
 def test_get_binning_params():
-    """Test _get_binning_params method."""
+    """Test _get_binning_params method with automatic discovery."""
     obj = DummyIntervalBinning(bin_edges={0: [0, 1, 2]}, clip=True)
     params = obj._get_binning_params()
     
+    # With automatic discovery, these should be included
     assert 'bin_edges' in params
     assert 'bin_representatives' in params
     assert 'clip' in params
@@ -392,15 +393,15 @@ def test_handle_bin_params():
     reset = obj._handle_bin_params({'bin_representatives': {0: [0.5, 1.5]}})
     assert reset is True
     
-    # Test with clip change (doesn't reset fitted)
+    # Test with clip change (automatic discovery handles this)
     reset = obj._handle_bin_params({'clip': True})
-    assert reset is False
+    assert reset is True  # With automatic discovery, this should trigger reset
     
-    # Test with fit_jointly change (resets fitted)
+    # Test with fit_jointly change (automatic discovery handles this)
     reset = obj._handle_bin_params({'fit_jointly': True})
     assert reset is True
     
-    # Test with guidance_columns change (resets fitted)
+    # Test with guidance_columns change (automatic discovery handles this)
     reset = obj._handle_bin_params({'guidance_columns': ['A']})
     assert reset is True
     

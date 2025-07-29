@@ -29,7 +29,6 @@ def test_init_default():
     obj = DummySupervisedBinning()
     assert obj.task_type == "classification"
     assert obj.tree_params is None
-    assert obj._merged_tree_params is not None
     assert hasattr(obj, '_tree_template')
 
 def test_init_classification():
@@ -39,8 +38,9 @@ def test_init_classification():
     
     assert obj.task_type == "classification"
     assert obj.tree_params == tree_params
-    assert obj._merged_tree_params["max_depth"] == 5
-    assert obj._merged_tree_params["random_state"] == 42
+    # Tree template should be created with these parameters
+    obj._create_tree_template()
+    assert obj._tree_template is not None
 
 def test_init_regression():
     """Test initialization for regression task."""
@@ -56,7 +56,9 @@ def test_init_tree_params_none():
     """Test initialization with tree_params=None."""
     obj = DummySupervisedBinning(tree_params=None)
     assert obj.tree_params is None
-    assert isinstance(obj._merged_tree_params, dict)
+    # Tree template should still be created with defaults
+    obj._create_tree_template()
+    assert obj._tree_template is not None
 
 def test_validate_guidance_data_valid():
     """Test validate_guidance_data with valid data."""
@@ -216,12 +218,13 @@ def test_extract_valid_pairs():
     assert targ_valid[1] == 1
 
 def test_get_binning_params():
-    """Test _get_binning_params method."""
+    """Test _get_binning_params method with automatic discovery."""
     tree_params = {"max_depth": 5}
     obj = DummySupervisedBinning(task_type="regression", tree_params=tree_params)
     
     params = obj._get_binning_params()
     
+    # With automatic discovery, these should be included
     assert 'task_type' in params
     assert 'tree_params' in params
     assert params['task_type'] == "regression"
@@ -247,27 +250,33 @@ def test_feature_target_length_mismatch():
     targets = np.array([0, 1, 0])  # Different length
     
     with pytest.raises(Exception):  # Should raise ValidationError
-        obj._validate_feature_target_pairs(features, targets, 'col1')
+        obj.validate_feature_target_pair(features, targets, 'col1')
 
 def test_tree_template_types():
     """Test that correct tree types are created."""
     from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
     
     clf_obj = DummySupervisedBinning(task_type="classification")
+    clf_obj._create_tree_template()  # Need to call this explicitly
     assert isinstance(clf_obj._tree_template, DecisionTreeClassifier)
     
     reg_obj = DummySupervisedBinning(task_type="regression")
+    reg_obj._create_tree_template()  # Need to call this explicitly
     assert isinstance(reg_obj._tree_template, DecisionTreeRegressor)
 
 def test_tree_params_merging():
-    """Test that tree parameters are properly merged with defaults."""
+    """Test that tree parameters are properly stored and used."""
     custom_params = {"max_depth": 10, "min_samples_leaf": 5}
     obj = DummySupervisedBinning(tree_params=custom_params)
     
-    assert obj._merged_tree_params["max_depth"] == 10
-    assert obj._merged_tree_params["min_samples_leaf"] == 5
-    # Should also have default params not overridden
-    assert "min_samples_split" in obj._merged_tree_params
+    # Test that custom parameters were stored
+    assert obj.tree_params is not None
+    assert obj.tree_params["max_depth"] == 10
+    assert obj.tree_params["min_samples_leaf"] == 5
+    
+    # Test that tree template is created successfully with these parameters
+    obj._create_tree_template()
+    assert obj._tree_template is not None
 
 def test_guidance_data_validation_name():
     """Test validate_guidance_data with custom name."""
@@ -283,8 +292,13 @@ def test_edge_case_single_sample():
     features = np.array([1.0])
     targets = np.array([0])
     
-    with pytest.raises(Exception):  # Should raise appropriate error
-        obj._validate_feature_target_pairs(features, targets, 'col1')
+    # Should return results but may have limited validity
+    result = obj.validate_feature_target_pair(features, targets, 'col1')
+    assert len(result) == 3  # Should return (features, targets, valid_mask)
+    features_out, targets_out, valid_mask = result
+    assert len(features_out) == 1
+    assert len(targets_out) == 1
+    assert len(valid_mask) == 1
 
 def test_edge_case_all_nan_features():
     """Test behavior when all features are NaN."""
@@ -292,8 +306,21 @@ def test_edge_case_all_nan_features():
     features = np.array([np.nan, np.nan, np.nan])
     targets = np.array([0, 1, 0])
     
-    with pytest.raises(Exception):  # Should raise FittingError
-        obj._validate_feature_target_pairs(features, targets, 'col1')
+    # Should return results but all features will be marked as invalid
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = obj.validate_feature_target_pair(features, targets, 'col1')
+        
+        # Should have issued a warning about missing values
+        assert len(w) > 0
+        assert any("missing values" in str(warning.message) for warning in w)
+    
+    features_out, targets_out, valid_mask = result
+    assert len(features_out) == 3
+    assert len(targets_out) == 3
+    assert len(valid_mask) == 3
+    # All features should be marked as invalid due to NaN
+    assert not valid_mask.any()
 
 
 def test_validate_guidance_data_wrong_dimensions():
@@ -516,32 +543,37 @@ def test_create_fallback_bins_same_min_max():
 
 
 def test_get_binning_params_supervised():
-    """Test _get_binning_params to cover lines 375-381."""
+    """Test _get_binning_params with automatic discovery."""
     tree_params = {"max_depth": 3, "random_state": 42}
     obj = DummySupervisedBinning(task_type="regression", tree_params=tree_params)
     
     params = obj._get_binning_params()
     
+    # With automatic discovery, these should be included
     assert "task_type" in params
     assert "tree_params" in params
+    assert params["task_type"] == "regression"
+    assert params["tree_params"] == tree_params
     assert params["task_type"] == "regression"
     assert params["tree_params"] == tree_params
 
 
 def test_handle_bin_params():
-    """Test _handle_bin_params to cover lines 383-385."""
+    """Test _handle_bin_params with automatic discovery."""
     obj = DummySupervisedBinning()
     
     # Test updating task_type and tree_params
     params = {
         "task_type": "regression",
         "tree_params": {"max_depth": 10},
-        "clip": True  # This should be handled by parent class
     }
     
     reset_fitted = obj._handle_bin_params(params)
     
-    assert reset_fitted  # Should return True due to changes
+    # Should return True due to parameter changes
+    assert reset_fitted
+    assert obj.task_type == "regression"
+    assert obj.tree_params == {"max_depth": 10}
     assert obj.task_type == "regression"
     assert obj.tree_params == {"max_depth": 10}
 

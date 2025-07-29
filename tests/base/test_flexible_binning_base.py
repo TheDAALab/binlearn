@@ -358,10 +358,11 @@ def test_inverse_transform_columns_missing_key():
         obj._inverse_transform_columns(X, columns)
 
 def test_get_binning_params():
-    """Test _get_binning_params method."""
+    """Test _get_binning_params method with automatic discovery."""
     obj = DummyFlexibleBinning(bin_spec={0: [{'singleton': 1}]})
     params = obj._get_binning_params()
     
+    # With automatic discovery, these should be included
     assert 'bin_spec' in params
     assert 'bin_representatives' in params
 

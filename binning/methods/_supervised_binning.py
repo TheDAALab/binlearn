@@ -64,31 +64,30 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         guidance_columns : list or int or None, default=None
             Column(s) to use as guidance/target for supervised binning.
         """
-        # Validate tree parameters without modifying the original
-        if tree_params is not None:
-            # Just validate, don't store the result
-            validate_tree_params(task_type, tree_params)
-
+        # Remove fit_jointly from kwargs if present to avoid conflicts
+        kwargs.pop('fit_jointly', None)
+        
         super().__init__(
             task_type=task_type,
-            tree_params=tree_params,  # Pass original unchanged
+            tree_params=tree_params,
             clip=kwargs.get("clip"),
             preserve_dataframe=preserve_dataframe,
             bin_edges=bin_edges,
             bin_representatives=bin_representatives,
-            fit_jointly=kwargs.get("fit_jointly"),
+            fit_jointly=False,  # Always use per-column fitting for supervised binning
             guidance_columns=guidance_columns,
         )
 
         # Store original parameters for sklearn clone compatibility (after super call)
         self.task_type = task_type
-        self.tree_params = (
-            tree_params  # Store exactly as received, overriding any parent modification
-        )
+        self.tree_params = tree_params
 
         # Initialize tree storage attributes
         self._fitted_trees: Dict[ColumnId, Any] = {}
         self._tree_importance: Dict[ColumnId, float] = {}
+
+        # Create tree template for cloning during fitting
+        self._create_tree_template()
 
     def _calculate_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
@@ -120,7 +119,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         )
 
         # Check for insufficient data
-        min_samples_split = self._merged_tree_params.get("min_samples_split", 10)
+        min_samples_split = (self.tree_params or {}).get("min_samples_split", 2)
         insufficient_result = self.handle_insufficient_data(
             x_col, valid_mask, min_samples_split, col_id
         )
@@ -133,7 +132,9 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         # Fit decision tree
         try:
             tree = clone(self._tree_template)
-            tree.fit(x_valid, y_valid)
+            # Reshape x_valid to 2D for sklearn compatibility
+            x_valid_2d = x_valid.reshape(-1, 1)
+            tree.fit(x_valid_2d, y_valid)
         except Exception as e:
             raise FittingError(
                 f"Failed to fit decision tree: {str(e)}",

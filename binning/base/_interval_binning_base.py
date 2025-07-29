@@ -333,16 +333,6 @@ class IntervalBinningBase(GeneralBinningBase):
         self._check_fitted()
         return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}
 
-    def _get_binning_params(self) -> Dict[str, Any]:
-        """Get interval binning specific parameters."""
-        return {
-            "clip": self.clip,
-            "bin_edges": self.bin_edges,
-            "bin_representatives": self.bin_representatives,
-            "fit_jointly": self.fit_jointly,
-            "guidance_columns": self.guidance_columns,
-        }
-
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameter values."""
         return {
@@ -351,28 +341,19 @@ class IntervalBinningBase(GeneralBinningBase):
         }
 
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle interval bin-specific parameter changes."""
-        reset_fitted = False
+        """Handle interval bin-specific parameter changes with special logic."""
+        # Use automatic discovery for standard parameters
+        reset_fitted = super()._handle_bin_params(params)
 
+        # Handle special cases that need custom logic
         if "bin_edges" in params:
-            self.bin_edges = params["bin_edges"]
-            self._user_bin_edges = params["bin_edges"]
+            self.bin_edges = params.pop("bin_edges")
+            self._user_bin_edges = self.bin_edges
             reset_fitted = True
 
         if "bin_representatives" in params:
-            self.bin_representatives = params["bin_representatives"]
-            self._user_bin_reps = params["bin_representatives"]
-            reset_fitted = True
-
-        if "clip" in params:
-            self.clip = params["clip"]
-
-        if "fit_jointly" in params:
-            self.fit_jointly = params["fit_jointly"]
-            reset_fitted = True
-
-        if "guidance_columns" in params:
-            self.guidance_columns = params["guidance_columns"]
+            self.bin_representatives = params.pop("bin_representatives")
+            self._user_bin_reps = self.bin_representatives
             reset_fitted = True
 
         return reset_fitted

@@ -146,11 +146,15 @@ class FlexibleBinningBase(GeneralBinningBase):
         """Process user-provided flexible bin specifications."""
         if self._user_bin_spec is not None:
             self._bin_spec = ensure_flexible_bin_spec(self._user_bin_spec)
-        # If no user specs provided, keep existing _bin_spec (don't reset to {})
+        else:
+            # Reset _bin_spec if no user specs provided to allow refitting
+            self._bin_spec = {}
 
         if self._user_bin_reps is not None:
             self._bin_reps = ensure_bin_dict(self._user_bin_reps)
-        # If no user reps provided, keep existing _bin_reps (don't reset to {})
+        else:
+            # Reset _bin_reps if no user reps provided to allow refitting
+            self._bin_reps = {}
 
     def _finalize_fitting(self) -> None:
         """Finalize the fitting process."""
@@ -327,16 +331,6 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)
 
-    def _get_binning_params(self) -> Dict[str, Any]:
-        """Get flexible binning specific parameters."""
-        return {
-            "preserve_dataframe": self.preserve_dataframe,
-            "fit_jointly": self.fit_jointly,
-            "guidance_columns": self.guidance_columns,
-            "bin_spec": self.bin_spec,
-            "bin_representatives": self.bin_representatives,
-        }
-
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameter values."""
         return {
@@ -345,25 +339,30 @@ class FlexibleBinningBase(GeneralBinningBase):
         }
 
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle flexible bin-specific parameter changes."""
-        reset_fitted = False
+        """Handle flexible bin-specific parameter changes with special logic."""
+        # Use automatic discovery for standard parameters
+        reset_fitted = super()._handle_bin_params(params)
 
+        # Handle special cases that need custom logic
         if "bin_spec" in params:
-            self.bin_spec = params["bin_spec"]
-            self._user_bin_spec = params["bin_spec"]
+            self.bin_spec = params.pop("bin_spec")
+            self._user_bin_spec = self.bin_spec
             reset_fitted = True
 
         if "bin_representatives" in params:
-            self.bin_representatives = params["bin_representatives"]
-            self._user_bin_reps = params["bin_representatives"]
-            reset_fitted = True
-
-        if "fit_jointly" in params:
-            self.fit_jointly = params["fit_jointly"]
-            reset_fitted = True
-
-        if "guidance_columns" in params:
-            self.guidance_columns = params["guidance_columns"]
+            self.bin_representatives = params.pop("bin_representatives")
+            self._user_bin_reps = self.bin_representatives
             reset_fitted = True
 
         return reset_fitted
+
+    # Properties for sklearn compatibility
+    @property
+    def bin_spec_(self) -> FlexibleBinSpec:
+        """Fitted bin specifications (sklearn style)."""
+        return self._bin_spec
+
+    @property
+    def bin_representatives_(self) -> BinEdgesDict:
+        """Fitted bin representatives (sklearn style)."""
+        return self._bin_reps
