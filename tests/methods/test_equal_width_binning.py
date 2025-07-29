@@ -680,6 +680,35 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         pd.testing.assert_frame_equal(result_original, result_new)
 
 
+    def test_user_provided_bin_edges(self):
+        """Test EqualWidthBinning with user-provided bin_edges."""
+        # Test data
+        X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+        
+        # Test with user-provided bin_edges
+        ewb = EqualWidthBinning(bin_edges={0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]})
+        
+        # Should be able to transform without fitting
+        result = ewb.transform(X)
+        assert result.shape == (4, 2)
+        
+        # Check that the binning used the provided edges
+        assert ewb._fitted is True  # Should be marked as fitted
+        assert ewb._bin_edges[0] == [0, 2, 4, 6, 8]
+        assert ewb._bin_edges[1] == [1, 3, 5, 7, 9]
+        
+        # Test with both bin_edges and bin_representatives
+        ewb2 = EqualWidthBinning(
+            bin_edges={0: [0, 2, 4], 1: [0, 3, 6]},
+            bin_representatives={0: [1, 3], 1: [1.5, 4.5]}
+        )
+        
+        result2 = ewb2.transform(X)
+        assert result2.shape == (4, 2)
+        assert ewb2._bin_reps[0] == [1, 3]
+        assert ewb2._bin_reps[1] == [1.5, 4.5]
+
+
 def test_import_availability():
     """Test import availability flags."""
     assert isinstance(SKLEARN_AVAILABLE, bool)

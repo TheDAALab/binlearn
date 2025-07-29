@@ -679,3 +679,35 @@ def test_fit_jointly_enabled_through_handle_bin_params():
     # Verify bins were created through the joint fitting process
     assert 0 in obj._bin_spec
     assert 1 in obj._bin_spec
+
+
+def test_property_setters_reset_fitted_state():
+    """Test that property setters reset fitted state when object is fitted."""
+    obj = DummyFlexibleBinning()
+    
+    # First, mark the object as fitted
+    obj._fitted = True
+    
+    # Test bin_spec setter resets fitted state
+    obj.bin_spec = {0: [{'singleton': 1}]}
+    assert obj._fitted is False
+    
+    # Mark as fitted again
+    obj._fitted = True
+    
+    # Test bin_representatives setter resets fitted state  
+    obj.bin_representatives = {0: [1.0]}
+    assert obj._fitted is False
+
+
+def test_property_setters_no_fitted_attribute():
+    """Test that property setters work when _fitted attribute doesn't exist yet."""
+    obj = DummyFlexibleBinning()
+    
+    # Remove _fitted attribute if it exists
+    if hasattr(obj, '_fitted'):
+        delattr(obj, '_fitted')
+    
+    # These should not raise errors
+    obj.bin_spec = {0: [{'singleton': 1}]}
+    obj.bin_representatives = {0: [1.0]}

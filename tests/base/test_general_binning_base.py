@@ -429,3 +429,47 @@ def test_set_params_resets_fitted():
     with patch.object(binning, '_handle_bin_params', return_value=True):
         binning.set_params(fit_jointly=True)  # Use valid parameter
         assert binning._fitted is False
+
+
+def test_get_params_with_fitted_attributes():
+    """Test get_params method includes fitted attributes when they exist."""
+    obj = DummyGeneralBinning()
+    
+    # Mark object as fitted so _get_fitted_params() is called
+    obj._fitted = True
+    
+    # Add some fitted attributes to test lines 294-298
+    setattr(obj, 'bin_spec_', {0: [{'singleton': 1}]})
+    setattr(obj, 'bin_representatives_', {0: [1.0]})
+    setattr(obj, 'bin_edges_', {0: [0, 1, 2]})
+    
+    params = obj.get_params()
+    
+    # Should include fitted parameters without trailing underscores
+    assert 'bin_spec' in params
+    assert 'bin_representatives' in params
+    assert 'bin_edges' in params
+    assert params['bin_spec'] == {0: [{'singleton': 1}]}
+    assert params['bin_representatives'] == {0: [1.0]}
+    assert params['bin_edges'] == {0: [0, 1, 2]}
+
+
+def test_get_params_with_none_fitted_attributes():
+    """Test get_params method skips None fitted attributes."""
+    obj = DummyGeneralBinning()
+    
+    # Mark object as fitted so _get_fitted_params() is called
+    obj._fitted = True
+    
+    # Add fitted attributes with None values
+    setattr(obj, 'bin_spec_', None)
+    setattr(obj, 'bin_representatives_', {0: [1.0]})  # This one is not None
+    
+    params = obj.get_params()
+    
+    # Should include non-None fitted parameters
+    assert 'bin_representatives' in params
+    assert params['bin_representatives'] == {0: [1.0]}
+    
+    # Should not include None fitted parameters
+    assert 'bin_spec' not in params or params.get('bin_spec') is None
