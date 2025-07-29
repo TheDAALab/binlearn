@@ -14,14 +14,14 @@ from binning.utils.constants import MISSING_VALUE
 try:
     import polars as pl
     POLARS_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     POLARS_AVAILABLE = False
 
 try:
     from sklearn.compose import ColumnTransformer
     from sklearn.preprocessing import StandardScaler
     SKLEARN_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     SKLEARN_AVAILABLE = False
 
 
@@ -1021,3 +1021,9 @@ class TestSupervisedBinningParameterRoundtrip:
         original_output = original.transform(X_test)
         reconstructed_output = reconstructed.transform(X_test)
         np.testing.assert_array_equal(original_output, reconstructed_output)
+
+
+def test_import_availability():
+    """Test import availability flags."""
+    assert isinstance(POLARS_AVAILABLE, bool)
+    assert isinstance(SKLEARN_AVAILABLE, bool)

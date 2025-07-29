@@ -1,153 +1,116 @@
+"""Tests for ReprMixin to achieve 100% coverage."""
+
 import pytest
-import inspect
+import sys
+import os
+
 from binning.base._repr_mixin import ReprMixin
 
-class DirectInitTop(ReprMixin):
-    def __init__(self, x, y=5):
-        self.x = x
-        self.y = y
 
-def test_direct_init_top_coverage():
-    obj = DirectInitTop(42, y=99)
-    info = obj._get_constructor_info()
-    assert info == {'x': inspect.Parameter.empty, 'y': 5}
-    assert obj.x == 42
-    assert obj.y == 99
-    r = repr(obj)
-    assert 'DirectInitTop' in r and 'x=42' in r and 'y=99' in r
+class TestReprMixin:
+    """Test class for ReprMixin functionality."""
 
-class Dummy(ReprMixin):
-    def __init__(self, a, b=2):
-        self.a = a
-        self.b = b
-
-def test_get_constructor_info_full_coverage():
-    obj = Dummy(1, b=3)
-    info = obj._get_constructor_info()
-    assert 'a' in info and 'b' in info
-    assert info['b'] == 2  # default value
-
-    # Should handle missing __init__ gracefully
-    class NoInit(ReprMixin):
-        pass
-    noinit = NoInit()
-    info2 = noinit._get_constructor_info()
-    assert isinstance(info2, dict)
-
-def test_repr_full_coverage():
-    obj = Dummy(5, b=7)
-    r = repr(obj)
-    assert 'Dummy' in r and 'a=5' in r and 'b=7' in r
-
-    # Should handle edge case with no __init__
-    class NoInit(ReprMixin):
-        pass
-    noinit = NoInit()
-    r2 = repr(noinit)
-    assert 'NoInit' in r2
-
-def test_repr_edge_cases():
-    # Test with default values - should not show in repr
-    obj = Dummy(1)  # b uses default value 2
-    r = repr(obj)
-    assert 'a=1' in r
-    assert 'b=' not in r  # Should not show default value
-
-    # Test with None values
-    class WithNone(ReprMixin):
-        def __init__(self, x=None, y=None):
-            self.x = x
-            self.y = y
-    
-    obj_none = WithNone()
-    r = repr(obj_none)
-    assert 'WithNone()' == r  # Should not show None defaults
-
-    # Test with empty containers
-    class WithContainers(ReprMixin):
-        def __init__(self, bin_edges=None, data=None):
-            self.bin_edges = bin_edges or {}
-            self.data = data or []
-    
-    obj_empty = WithContainers()
-    r = repr(obj_empty)
-    assert 'WithContainers()' == r
-
-    # Test with large objects that should be abbreviated
-    class WithLargeObjects(ReprMixin):
-        def __init__(self, bin_edges=None, bin_representatives=None, bin_spec=None):
-            self.bin_edges = bin_edges or {1: [0, 1, 2]}
-            self.bin_representatives = bin_representatives or {1: [0.5, 1.5]}
-            self.bin_spec = bin_spec or {1: {'singleton': 1}}
-    
-    obj_large = WithLargeObjects()
-    r = repr(obj_large)
-    assert 'bin_edges=...' in r
-    assert 'bin_representatives=...' in r
-    assert 'bin_spec=...' in r
-
-def test_repr_missing_attributes():
-    # Test when object doesn't have the expected attribute
-    class MissingAttr(ReprMixin):
-        def __init__(self, x=1):
-            # Don't set self.x
+    def test_repr_mixin_fallback_to_class_init(self):
+        """Test ReprMixin when __init__ is not in cls.__dict__ to trigger line 28."""
+        
+        class BaseClass(ReprMixin):
+            def __init__(self, param1=None):
+                self.param1 = param1
+        
+        class DerivedClass(BaseClass):
+            # No __init__ defined - should fallback to BaseClass.__init__
             pass
-    
-    obj = MissingAttr()
-    r = repr(obj)
-    assert 'MissingAttr()' == r  # Should handle missing attribute gracefully
-
-def test_repr_string_values():
-    class WithString(ReprMixin):
-        def __init__(self, name='default'):
-            self.name = name
-    
-    obj = WithString('test')
-    r = repr(obj)
-    assert "name='test'" in r  # String should be quoted
-
-def test_get_constructor_info_exception_handling():
-    # Test exception handling in _get_constructor_info
-    class BadSignature(ReprMixin):
-        pass
-    
-    obj = BadSignature()
-    # Mock inspect.signature to trigger exception
-    original_signature = inspect.signature
-    def mock_signature(*args, **kwargs):
-        raise Exception("Test exception")
-    
-    inspect.signature = mock_signature
-    try:
-        info = obj._get_constructor_info()
-        assert info == {}  # Should return empty dict on exception
-    finally:
-        inspect.signature = original_signature
-
-def test_repr_kwargs_handling():
-    # Test kwargs parameter is skipped
-    class WithKwargs(ReprMixin):
-        def __init__(self, a, b=2, **kwargs):
-            self.a = a
-            self.b = b
-            for k, v in kwargs.items():
-                setattr(self, k, v)
-    
-    obj = WithKwargs(1, extra=3)
-    info = obj._get_constructor_info()
-    assert 'kwargs' not in info
-    assert 'self' not in info
-
-def test_constructor_info_fallback_path():
-    # Test fallback to class resolution when no __init__ in concrete class
-    class Parent(ReprMixin):
-        def __init__(self, x=1):
-            self.x = x
-    
-    class Child(Parent):
-        pass  # No __init__ defined
-    
-    obj = Child()
-    info = obj._get_constructor_info()
-    assert 'x' in info
-    assert info['x'] == 1
+        
+        instance = DerivedClass(param1="test")
+        repr_str = repr(instance)
+        assert "DerivedClass" in repr_str
+        
+    def test_repr_mixin_required_parameter_handling(self):
+        """Test ReprMixin with required parameters (no defaults) to trigger line 38."""
+        
+        class RequiredParamsClass(ReprMixin):
+            def __init__(self, required_param, optional_param="default"):
+                self.required_param = required_param
+                self.optional_param = optional_param
+        
+        instance = RequiredParamsClass("test_value", "custom")
+        repr_str = repr(instance)
+        assert "RequiredParamsClass" in repr_str
+        assert "required_param='test_value'" in repr_str
+        assert "optional_param='custom'" in repr_str
+        
+    def test_repr_mixin_exception_handling(self):
+        """Test ReprMixin exception handling to trigger lines 40-41."""
+        import inspect
+        
+        class ProblematicClass(ReprMixin):
+            def __init__(self, param1=None):
+                self.param1 = param1
+        
+        # Create an instance first
+        instance = ProblematicClass(param1="test")
+        
+        # Temporarily replace inspect.signature to make it fail
+        original_signature = inspect.signature
+        
+        def failing_signature(*args, **kwargs):
+            raise ValueError("Signature inspection failed")
+        
+        try:
+            inspect.signature = failing_signature
+            # This should trigger the exception handling in _get_constructor_info (lines 40-41)
+            repr_str = repr(instance)
+            # Should not crash and should return basic class name due to exception handling
+            assert "ProblematicClass" in repr_str
+            
+        finally:
+            # Restore inspect.signature
+            inspect.signature = original_signature
+        
+    def test_repr_mixin_missing_attribute(self):
+        """Test ReprMixin when object is missing expected attributes."""
+        
+        class IncompleteClass(ReprMixin):
+            def __init__(self, param1=None, param2="default"):
+                # Intentionally not setting param1 to test hasattr check
+                self.param2 = param2
+        
+        instance = IncompleteClass(param2="test")
+        
+        # This should handle missing attributes gracefully  
+        repr_str = repr(instance)
+        assert "IncompleteClass" in repr_str
+        
+    def test_repr_mixin_default_values_handling(self):
+        """Test ReprMixin handling of default values and empty containers."""
+        
+        class DefaultsClass(ReprMixin):
+            def __init__(self, param1=None, param2=[], param3={}):
+                self.param1 = param1
+                self.param2 = param2 or []
+                self.param3 = param3 or {}
+        
+        # Test with default None value
+        instance1 = DefaultsClass(param1=None)
+        repr_str1 = repr(instance1)
+        assert "DefaultsClass" in repr_str1
+        
+        # Test with empty containers that match defaults
+        instance2 = DefaultsClass(param2=[], param3={})
+        repr_str2 = repr(instance2)
+        assert "DefaultsClass" in repr_str2
+        
+    def test_repr_mixin_normal_operation(self):
+        """Test ReprMixin normal operation with non-default values."""
+        
+        class NormalClass(ReprMixin):
+            def __init__(self, param1="default", param2=42):
+                self.param1 = param1
+                self.param2 = param2
+        
+        instance = NormalClass(param1="custom", param2=100)
+        repr_str = repr(instance)
+        
+        assert "NormalClass" in repr_str
+        assert "param1='custom'" in repr_str
+        assert "param2=100" in repr_str

@@ -72,6 +72,13 @@ from .data_handling import (
     prepare_input_with_columns,
 )
 
+from .inspection import (
+    get_class_parameters,
+    get_constructor_info,
+    safe_get_class_parameters,
+    safe_get_constructor_info,
+)
+
 __all__ = [
     # Constants
     "MISSING_VALUE",
@@ -116,4 +123,9 @@ __all__ = [
     "prepare_array",
     "return_like_input", 
     "prepare_input_with_columns",
+    # Inspection utilities
+    "get_class_parameters",
+    "get_constructor_info", 
+    "safe_get_class_parameters",
+    "safe_get_constructor_info",
 ]

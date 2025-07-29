@@ -14,14 +14,14 @@ from binning.utils.constants import MISSING_VALUE
 try:
     import polars as pl
     POLARS_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     POLARS_AVAILABLE = False
 
 try:
     from sklearn.compose import ColumnTransformer
     from sklearn.preprocessing import StandardScaler
     SKLEARN_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     SKLEARN_AVAILABLE = False
 
 
@@ -606,3 +606,9 @@ class TestOneHotBinningErrorHandling:
         binning.fit(X)
         X_binned = binning.transform(X)
         assert X_binned.shape == X.shape
+
+
+def test_import_availability():
+    """Test import availability flags."""
+    assert isinstance(POLARS_AVAILABLE, bool)
+    assert isinstance(SKLEARN_AVAILABLE, bool)

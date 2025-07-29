@@ -60,6 +60,19 @@ def test_init_tree_params_none():
     obj._create_tree_template()
     assert obj._tree_template is not None
 
+def test_create_tree_template_early_return():
+    """Test _create_tree_template early return when template already exists (line 72)."""
+    obj = DummySupervisedBinning()
+    
+    # First call should create the template
+    obj._create_tree_template()
+    first_template = obj._tree_template
+    assert first_template is not None
+    
+    # Second call should return early (line 72) without changing the template
+    obj._create_tree_template()
+    assert obj._tree_template is first_template  # Should be the same object
+
 def test_validate_guidance_data_valid():
     """Test validate_guidance_data with valid data."""
     obj = DummySupervisedBinning()

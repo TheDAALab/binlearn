@@ -409,6 +409,45 @@ def test_handle_bin_params():
     reset = obj._handle_bin_params({'other_param': 'value'})
     assert reset is False
 
+
+def test_handle_bin_params_direct_access():
+    """Test _handle_bin_params with parameters that bypass automatic discovery."""
+    obj = DummyIntervalBinning()
+    
+    # Test with parameters that won't be in the auto-discovery list 
+    # by creating a custom class that doesn't have these in its signature
+    class MinimalIntervalBinning(IntervalBinningBase):
+        def __init__(self, **kwargs):
+            # Don't include bin_edges or bin_representatives in signature
+            super().__init__(**kwargs)
+        
+        def _calculate_bins(self, x_col, col_id, guidance_data=None):
+            return [0.0, 1.0, 2.0], [0.5, 1.5]
+    
+    minimal_obj = MinimalIntervalBinning()
+    
+    # Test bin_edges handling - should hit the specific lines now
+    params = {'bin_edges': {0: [0, 1, 2]}}
+    reset = minimal_obj._handle_bin_params(params)
+    assert reset is True
+    assert minimal_obj.bin_edges == {0: [0, 1, 2]}
+    assert minimal_obj._user_bin_edges == {0: [0, 1, 2]}
+    
+    # Test bin_representatives handling - should hit the specific lines now
+    params = {'bin_representatives': {0: [0.5, 1.5]}}
+    reset = minimal_obj._handle_bin_params(params)
+    assert reset is True
+    assert minimal_obj.bin_representatives == {0: [0.5, 1.5]}
+    assert minimal_obj._user_bin_reps == {0: [0.5, 1.5]}
+    
+    # Test the _calculate_bins method to cover line 425
+    import numpy as np
+    x_col = np.array([1, 2, 3])
+    edges, reps = minimal_obj._calculate_bins(x_col, 0, None)
+    assert edges == [0.0, 1.0, 2.0]
+    assert reps == [0.5, 1.5]
+
+
 def test_data_quality_warnings():
     """Test data quality warning generation."""
     obj = DummyIntervalBinning()

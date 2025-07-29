@@ -128,6 +128,10 @@ class TestUtilsImports:
             
             # Data handling utilities
             "prepare_array", "return_like_input", "prepare_input_with_columns",
+            
+            # Inspection utilities  
+            "get_class_parameters", "get_constructor_info", 
+            "safe_get_class_parameters", "safe_get_constructor_info",
         }
         
         # Check that all expected exports are in __all__

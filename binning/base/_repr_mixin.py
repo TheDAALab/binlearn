@@ -2,8 +2,8 @@
 Simple representation mixin for binning classes.
 """
 
-import inspect
 from typing import Dict, Any
+from ..utils.inspection import safe_get_constructor_info
 
 
 class ReprMixin:
@@ -16,29 +16,7 @@ class ReprMixin:
 
     def _get_constructor_info(self) -> Dict[str, Any]:
         """Get constructor parameter names and their default values."""
-        try:
-            # Get the constructor signature from the EXACT concrete class only
-            cls = self.__class__
-            
-            # Check if the concrete class defines its own __init__
-            if '__init__' in cls.__dict__:
-                sig = inspect.signature(cls.__dict__['__init__'])
-            else:
-                # If no __init__ in concrete class, fall back to class resolution
-                sig = inspect.signature(cls.__init__)
-                
-            params = {}
-            for name, param in sig.parameters.items():
-                if name in {'self', 'kwargs'}:
-                    continue
-                # Get default value if it exists
-                if param.default is not inspect.Parameter.empty:
-                    params[name] = param.default
-                else:
-                    params[name] = inspect.Parameter.empty  # Mark as required parameter
-            return params
-        except Exception:
-            return {}
+        return safe_get_constructor_info(self.__class__, concrete_only=True)
 
     def __repr__(self) -> str:
         """Clean string representation showing only relevant parameters."""

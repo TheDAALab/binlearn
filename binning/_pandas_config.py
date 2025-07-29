@@ -7,6 +7,6 @@ try:
     import pandas as pd
 
     PANDAS_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     PANDAS_AVAILABLE = False
     pd = None

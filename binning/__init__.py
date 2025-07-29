@@ -2,6 +2,9 @@
 This module brings together all tools.
 """
 
+# Version information
+from ._version import __version__
+
 # Configuration management
 from .config import get_config, set_config, load_config, reset_config
 
@@ -69,17 +72,19 @@ from .methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
 # Optional pandas/polars configurations (if available)
 try:
     from ._pandas_config import PANDAS_AVAILABLE, pd
-except ImportError:
+except ImportError:  # pragma: no cover
     PANDAS_AVAILABLE = False
     pd = None
 
 try:
     from ._polars_config import POLARS_AVAILABLE, pl
-except ImportError:
+except ImportError:  # pragma: no cover
     POLARS_AVAILABLE = False
     pl = None
 
 __all__ = [
+    # Version
+    "__version__",
     # Configuration
     "get_config",
     "set_config",

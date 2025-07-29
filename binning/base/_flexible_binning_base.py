@@ -331,31 +331,6 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)
 
-    def _get_fitted_params(self) -> Dict[str, Any]:
-        """Get fitted parameter values."""
-        return {
-            "bin_spec": self._bin_spec,
-            "bin_representatives": self._bin_reps,
-        }
-
-    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
-        """Handle flexible bin-specific parameter changes with special logic."""
-        # Use automatic discovery for standard parameters
-        reset_fitted = super()._handle_bin_params(params)
-
-        # Handle special cases that need custom logic
-        if "bin_spec" in params:
-            self.bin_spec = params.pop("bin_spec")
-            self._user_bin_spec = self.bin_spec
-            reset_fitted = True
-
-        if "bin_representatives" in params:
-            self.bin_representatives = params.pop("bin_representatives")
-            self._user_bin_reps = self.bin_representatives
-            reset_fitted = True
-
-        return reset_fitted
-
     # Properties for sklearn compatibility
     @property
     def bin_spec_(self) -> FlexibleBinSpec:

@@ -5,7 +5,6 @@ Simplified base class for all binning methods.
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple, Union
 from abc import ABC, abstractmethod
-import inspect
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -14,6 +13,7 @@ from ..utils.data_handling import return_like_input, prepare_input_with_columns
 from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
 from ..utils.errors import ValidationMixin, BinningError, InvalidDataError
 from ..utils.sklearn_integration import SklearnCompatibilityMixin
+from ..utils.inspection import safe_get_class_parameters
 
 
 class GeneralBinningBase(
@@ -250,28 +250,10 @@ class GeneralBinningBase(
         params = super().get_params(deep=deep)
         
         # Add all class-specific parameters automatically
-        current_class = self.__class__
-        
-        # Get current class parameters
-        try:
-            current_sig = inspect.signature(current_class.__init__)
-            current_params = set(current_sig.parameters.keys()) - {'self', 'kwargs'}
-        except (ValueError, TypeError):
-            return params
-        
-        # Get GeneralBinningBase parameters to exclude
-        for base_class in current_class.__mro__:
-            if base_class.__name__ == 'GeneralBinningBase':
-                try:
-                    base_sig = inspect.signature(base_class.__init__)
-                    base_params = set(base_sig.parameters.keys()) - {'self', 'kwargs'}
-                    class_specific_params = list(current_params - base_params)
-                    break
-                except (ValueError, TypeError):
-                    class_specific_params = list(current_params)
-                    break
-        else:
-            class_specific_params = list(current_params)
+        class_specific_params = safe_get_class_parameters(
+            self.__class__, 
+            exclude_base_class='GeneralBinningBase'
+        )
         
         # Add class-specific parameters to result
         for param_name in class_specific_params:
@@ -287,28 +269,10 @@ class GeneralBinningBase(
 
     def _get_binning_params(self) -> Dict[str, Any]:
         """Get class-specific binning parameters (for backwards compatibility)."""
-        current_class = self.__class__
-        
-        # Get current class parameters
-        try:
-            current_sig = inspect.signature(current_class.__init__)
-            current_params = set(current_sig.parameters.keys()) - {'self', 'kwargs'}
-        except (ValueError, TypeError):
-            return {}
-        
-        # Get GeneralBinningBase parameters to exclude
-        for base_class in current_class.__mro__:
-            if base_class.__name__ == 'GeneralBinningBase':
-                try:
-                    base_sig = inspect.signature(base_class.__init__)
-                    base_params = set(base_sig.parameters.keys()) - {'self', 'kwargs'}
-                    class_specific_params = list(current_params - base_params)
-                    break
-                except (ValueError, TypeError):
-                    class_specific_params = list(current_params)
-                    break
-        else:
-            class_specific_params = list(current_params)
+        class_specific_params = safe_get_class_parameters(
+            self.__class__,
+            exclude_base_class='GeneralBinningBase'
+        )
         
         # Build result dictionary
         result = {}
@@ -359,26 +323,10 @@ class GeneralBinningBase(
         reset_fitted = False
         
         # Get class-specific parameters
-        current_class = self.__class__
-        try:
-            current_sig = inspect.signature(current_class.__init__)
-            current_params = set(current_sig.parameters.keys()) - {'self', 'kwargs'}
-        except (ValueError, TypeError):
-            class_specific_params = []
-        else:
-            # Get GeneralBinningBase parameters to exclude
-            for base_class in current_class.__mro__:
-                if base_class.__name__ == 'GeneralBinningBase':
-                    try:
-                        base_sig = inspect.signature(base_class.__init__)
-                        base_params = set(base_sig.parameters.keys()) - {'self', 'kwargs'}
-                        class_specific_params = list(current_params - base_params)
-                        break
-                    except (ValueError, TypeError):
-                        class_specific_params = list(current_params)
-                        break
-            else:
-                class_specific_params = list(current_params)
+        class_specific_params = safe_get_class_parameters(
+            self.__class__,
+            exclude_base_class='GeneralBinningBase'
+        )
         
         # Parameters that always trigger refitting
         refit_params = ['fit_jointly', 'guidance_columns'] + class_specific_params

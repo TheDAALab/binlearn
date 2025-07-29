@@ -13,10 +13,10 @@ try:
     from sklearn.preprocessing import StandardScaler
     try:
         from scipy import sparse
-    except ImportError:
+    except ImportError:  # pragma: no cover
         sparse = None
     SKLEARN_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     SKLEARN_AVAILABLE = False
     sparse = None
 
@@ -24,7 +24,7 @@ except ImportError:
 try:
     import polars as pl
     POLARS_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     POLARS_AVAILABLE = False
 
 
@@ -503,7 +503,7 @@ class TestEqualWidthBinningSklearnIntegration:
         
         # Convert to dense array if sparse
         if sparse is not None and sparse.issparse(result):
-            result = result.toarray()
+            result = result.toarray()  # pragma: no cover
         
         # All columns should be numeric (ColumnTransformer typically converts to float64)
         assert np.issubdtype(result[:, 0].dtype, np.number)
@@ -678,3 +678,14 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         assert isinstance(result_original, pd.DataFrame)
         assert isinstance(result_new, pd.DataFrame)
         pd.testing.assert_frame_equal(result_original, result_new)
+
+
+def test_import_availability():
+    """Test import availability flags."""
+    assert isinstance(SKLEARN_AVAILABLE, bool)
+    assert isinstance(POLARS_AVAILABLE, bool)
+    
+    # Test sparse availability when sklearn is available
+    if SKLEARN_AVAILABLE:
+        # sparse can be None or the actual module
+        assert sparse is None or hasattr(sparse, 'csr_matrix')
