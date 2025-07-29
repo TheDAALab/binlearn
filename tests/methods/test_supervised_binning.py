@@ -62,6 +62,7 @@ class TestSupervisedBinningInitialization:
         """Test tree parameter validation."""
         # Valid tree params should work
         binning = SupervisedBinning(tree_params={"max_depth": 5})
+        assert binning.tree_params is not None
         assert binning.tree_params["max_depth"] == 5
 
     def test_get_binning_params(self):
@@ -89,6 +90,7 @@ class TestSupervisedBinningInitialization:
         params = {"tree_params": {"max_depth": 10}}
         reset_fitted = binning._handle_bin_params(params)
         assert reset_fitted is True
+        assert binning.tree_params is not None
         assert binning.tree_params["max_depth"] == 10
         assert params == {}  # Should be popped
 
@@ -133,6 +135,7 @@ class TestSupervisedBinningInitialization:
         # Test setting both parameters via set_params to ensure _handle_bin_params is called
         binning.set_params(task_type="regression", tree_params={"max_depth": 10})
         assert binning.task_type == "regression"
+        assert binning.tree_params is not None
         assert binning.tree_params["max_depth"] == 10
 
     def test_validate_params(self):
@@ -498,7 +501,7 @@ class TestSupervisedBinningPolarsIntegration:
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame({
+        df = pl.DataFrame({  # type: ignore[name-defined]
             'A': [1, 2, 3, 4, 5, 6],
             'B': [10, 20, 30, 40, 50, 60],
             'target': [0, 0, 0, 1, 1, 1]
@@ -511,13 +514,13 @@ class TestSupervisedBinningPolarsIntegration:
         df_binned = binning.transform(df)
         
         # Should return Polars DataFrame with only feature columns
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
         assert df_binned.columns == ['A', 'B']
         assert df_binned.shape == (6, 2)
 
     def test_polars_dataframe_without_preserve(self):
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame({
+        df = pl.DataFrame({  # type: ignore[name-defined]
             'A': [1, 2, 3, 4, 5, 6],
             'B': [10, 20, 30, 40, 50, 60],
             'target': [0, 0, 0, 1, 1, 1]
@@ -715,6 +718,7 @@ class TestSupervisedBinningWorkflows:
         # Update parameters
         binning.set_params(task_type="regression", tree_params={"max_depth": 5})
         assert binning.task_type == "regression"
+        assert binning.tree_params is not None
         assert binning.tree_params["max_depth"] == 5
 
     def test_inverse_transform(self):

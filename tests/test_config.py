@@ -203,13 +203,15 @@ class TestConfigManager:
             json.dump(config_data, f)
             temp_path = f.name
         
+        manager = None
         try:
             manager = ConfigManager()
             manager.load_config(temp_path)
             assert manager.config.preserve_dataframe is True
         finally:
             os.unlink(temp_path)
-            manager.reset_to_defaults()  # Clean up
+            if manager is not None:
+                manager.reset_to_defaults()  # Clean up
     
     def test_reset_to_defaults(self):
         """Test reset_to_defaults method."""

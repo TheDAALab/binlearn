@@ -136,7 +136,7 @@ class TestOneHotBinningBasicFunctionality:
     def test_max_unique_values_limit(self):
         """Test max_unique_values parameter."""
         # Create data with many unique values
-        X = np.arange(200).reshape(-1, 1)
+        X = np.arange(0, 200).reshape(-1, 1)
         binning = OneHotBinning(max_unique_values=10)
         
         with pytest.raises(ValueError, match="exceeds max_unique_values"):
@@ -251,7 +251,7 @@ class TestOneHotBinningPolarsIntegration:
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame({
+        df = pl.DataFrame({  # type: ignore[name-defined]
             'A': [1, 2, 1, 3],
             'B': [2, 3, 2, 1]
         })
@@ -263,13 +263,13 @@ class TestOneHotBinningPolarsIntegration:
         df_binned = binning.transform(df)
         
         # Should return Polars DataFrame
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
         assert df_binned.columns == ['A', 'B']
         assert df_binned.shape == df.shape
 
     def test_polars_dataframe_without_preserve(self):
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame({
+        df = pl.DataFrame({  # type: ignore[name-defined]
             'A': [1, 2, 1, 3],
             'B': [2, 3, 2, 1]
         })
@@ -285,7 +285,7 @@ class TestOneHotBinningPolarsIntegration:
 
     def test_polars_with_column_names(self):
         """Test that column names are preserved in bin specifications."""
-        df = pl.DataFrame({
+        df = pl.DataFrame({  # type: ignore[name-defined]
             'feature1': [1, 2, 3],
             'feature2': [4, 5, 6]
         })
@@ -310,9 +310,9 @@ class TestOneHotBinningSklearnIntegration:
         X = np.array([[1, 2], [2, 3], [1, 2], [3, 1]])
         
         # Create pipeline
-        pipeline = Pipeline([
+        pipeline = Pipeline([  # type: ignore[name-defined]
             ('binning', OneHotBinning()),
-            ('scaler', StandardScaler())
+            ('scaler', StandardScaler())  # type: ignore[name-defined]
         ])
         
         # Should work without errors
@@ -324,14 +324,14 @@ class TestOneHotBinningSklearnIntegration:
         X = np.array([[1, 2, 3], [2, 3, 4], [1, 2, 3]])
         
         # Create ColumnTransformer
-        ct = ColumnTransformer([
+        ct = ColumnTransformer([  # type: ignore[name-defined]
             ('binning', OneHotBinning(), [0, 1]),
-            ('scaler', StandardScaler(), [2])
+            ('scaler', StandardScaler(), [2])  # type: ignore[name-defined]
         ])
         
         X_transformed = ct.fit_transform(X)
         # Note: ColumnTransformer typically returns float64
-        assert X_transformed.dtype in [np.float64, np.int64]
+        assert X_transformed.dtype in [np.float64, np.int64]  # type: ignore[attr-defined]
         assert X_transformed.shape[1] == 3  # Same number of features
 
     def test_sklearn_feature_names_out(self):
@@ -433,7 +433,7 @@ class TestOneHotBinningWorkflows:
         assert binning.max_unique_values == 200
         
         # Should work with new parameters
-        X = np.arange(100).reshape(-1, 1)
+        X = np.arange(0, 100).reshape(-1, 1)
         binning.fit(X)  # Should not raise max_unique_values error
 
     def test_bin_representatives_consistency(self):

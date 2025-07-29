@@ -94,6 +94,7 @@ def test_separate_columns_with_guidance():
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
     
     assert X_bin.shape == (2, 2)  # Columns 0 and 2
+    assert X_guide is not None
     assert X_guide.shape == (2, 1)  # Column 1
     assert bin_cols == [0, 2]
     assert guide_cols == [1]
@@ -108,6 +109,7 @@ def test_separate_columns_guidance_list():
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
     
     assert X_bin.shape == (2, 1)  # Column 1
+    assert X_guide is not None
     assert X_guide.shape == (2, 2)  # Columns 0 and 2
     assert bin_cols == [1]
     assert guide_cols == [0, 2]
@@ -327,13 +329,13 @@ def test_validate_params():
     obj._validate_params()  # Should not raise
     
     # Test invalid preserve_dataframe
-    obj.preserve_dataframe = "invalid"
+    setattr(obj, 'preserve_dataframe', "invalid")  # Bypass type checking for test
     with pytest.raises(TypeError, match="preserve_dataframe must be a boolean"):
         obj._validate_params()
     
     # Test invalid fit_jointly
     obj.preserve_dataframe = True
-    obj.fit_jointly = "invalid"
+    setattr(obj, 'fit_jointly', "invalid")  # Bypass type checking for test
     with pytest.raises(TypeError, match="fit_jointly must be a boolean"):
         obj._validate_params()
     
@@ -371,6 +373,7 @@ def test_empty_binning_columns():
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
     
     assert X_bin.shape == (2, 0)  # No binning columns
+    assert X_guide is not None
     assert X_guide.shape == (2, 2)  # All guidance
     assert bin_cols == []
     assert guide_cols == [0, 1]

@@ -131,6 +131,8 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         # Fit decision tree
         try:
+            if self._tree_template is None:
+                raise FittingError("Tree template not initialized")
             tree = clone(self._tree_template)
             # Reshape x_valid to 2D for sklearn compatibility
             x_valid_2d = x_valid.reshape(-1, 1)
