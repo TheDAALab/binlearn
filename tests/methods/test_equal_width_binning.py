@@ -19,7 +19,7 @@ Test Classes:
 import pytest
 import numpy as np
 from binning.methods._equal_width_binning import EqualWidthBinning
-from binning.utils.errors import ConfigurationError
+from binning.utils.errors import ConfigurationError, DataQualityWarning
 from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
 
 # Import sklearn components
@@ -171,7 +171,9 @@ class TestEqualWidthBinning:
         X = np.array([[1, np.nan], [2, np.nan], [3, np.nan]])
         ewb = EqualWidthBinning(n_bins=3)
 
-        ewb.fit(X)
+        # Second column has all NaN values, which will trigger a warning
+        with pytest.warns(DataQualityWarning, match="contains only NaN values"):
+            ewb.fit(X)
         X_transformed = ewb.transform(X)
 
         # First column should be binned normally, second column should handle NaN
@@ -370,14 +372,14 @@ class TestEqualWidthBinning:
         assert min_val == 0.0
         assert max_val == 1.0
 
-    def test_direct_calculate_bins_jointly_invalid_n_bins(self):
-        """Test _calculate_bins_jointly directly with invalid n_bins."""
+    def test_direct_calculate_bins_invalid_n_bins_joint_fitting(self):
+        """Test _calculate_bins with joint fitting data and invalid n_bins."""
         ewb = EqualWidthBinning()
         ewb.n_bins = 0  # Set invalid value directly
 
-        X = np.array([1, 2, 3, 4])
+        X = np.array([1, 2, 3, 4])  # Flattened data as would be passed for joint fitting
         with pytest.raises(ValueError, match="n_bins must be >= 1"):
-            ewb._calculate_bins_jointly(X, [0])
+            ewb._calculate_bins(X, 0)
 
     def test_direct_calculate_bins_invalid_n_bins(self):
         """Test _calculate_bins directly with invalid n_bins."""

@@ -137,6 +137,8 @@ class TestValidationMixin:
 
         # pylint: disable=too-few-public-methods
         class UnconvertibleType:
+            """Test class that cannot be converted to array."""
+
             def __array__(self):
                 raise ValueError("Cannot convert to array")
 

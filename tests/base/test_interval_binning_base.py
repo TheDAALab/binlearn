@@ -529,10 +529,12 @@ def test_empty_data_handling():
     X = np.array([]).reshape(0, 2)
     columns = [0, 1]
 
-    with patch.object(obj, "_calculate_bins") as mock_calc:
-        mock_calc.return_value = ([0, 1], [0.5])
-        with patch.object(obj, "_finalize_fitting"):
-            obj._fit_per_column(X, columns)
+    # Empty data may trigger warnings about NaN values in columns
+    with pytest.warns(DataQualityWarning, match="contains only NaN values"):
+        with patch.object(obj, "_calculate_bins") as mock_calc:
+            mock_calc.return_value = ([0, 1], [0.5])
+            with patch.object(obj, "_finalize_fitting"):
+                obj._fit_per_column(X, columns)
 
     # Should handle empty data gracefully
 

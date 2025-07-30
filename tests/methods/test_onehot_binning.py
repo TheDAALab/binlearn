@@ -60,7 +60,7 @@ class TestOneHotBinningInitialization:
         binning = OneHotBinning()
         assert binning.max_unique_values == 100
         assert binning.preserve_dataframe is False  # Default from config
-        assert binning.fit_jointly is False  # Always False for OneHotBinning
+        assert binning.fit_jointly is False  # Default from config
         assert binning.bin_spec is None
         assert binning.bin_representatives is None
 
@@ -79,7 +79,7 @@ class TestOneHotBinningInitialization:
         )
         assert binning.max_unique_values == 50
         assert binning.preserve_dataframe is True
-        assert binning.fit_jointly is False
+        assert binning.fit_jointly is False  # Default from config
         assert binning.bin_spec == {"col1": [{"singleton": 1.0}]}
         assert binning.bin_representatives == {"col1": [1.0]}
 
@@ -208,6 +208,60 @@ class TestOneHotBinningBasicFunctionality:
 
         # Specs should be different
         assert first_spec != second_spec
+
+    def test_joint_fitting_functionality(self):
+        """Test OneHotBinning with joint fitting enabled.
+
+        Verifies that joint fitting creates consistent bins across all columns
+        using unique values from all features combined.
+        """
+        # Create test data with different unique values in each column
+        X = np.array(
+            [
+                [1.0, 10.0],  # col0 has 1, 2, 3; col1 has 10, 20, 30
+                [2.0, 20.0],
+                [3.0, 30.0],
+                [1.0, 10.0],
+            ]
+        )
+
+        # Test per-column fitting (default)
+        binning_individual = OneHotBinning(fit_jointly=False)
+        binning_individual.fit(X)
+
+        # Test joint fitting
+        binning_joint = OneHotBinning(fit_jointly=True)
+        binning_joint.fit(X)
+
+        # Joint fitting should create bins from all unique values across all columns
+        # So both columns should have bins for values: 1, 2, 3, 10, 20, 30
+        joint_bins_col0 = binning_joint._bin_spec[0]
+        joint_bins_col1 = binning_joint._bin_spec[1]
+
+        # Both columns should have the same bin structure
+        assert len(joint_bins_col0) == len(joint_bins_col1)
+        assert len(joint_bins_col0) == 6  # 6 unique values total
+
+        # Extract the singleton values from each column's bins
+        joint_values_col0 = {bin_def["singleton"] for bin_def in joint_bins_col0}
+        joint_values_col1 = {bin_def["singleton"] for bin_def in joint_bins_col1}
+
+        # Both columns should have bins for all unique values
+        expected_values = {1.0, 2.0, 3.0, 10.0, 20.0, 30.0}
+        assert joint_values_col0 == expected_values
+        assert joint_values_col1 == expected_values
+
+        # Transform should work correctly
+        X_binned_joint = binning_joint.transform(X)
+        assert X_binned_joint.shape == X.shape
+
+    def test_joint_fitting_with_fit_jointly_parameter(self):
+        """Test explicit fit_jointly parameter setting."""
+        binning = OneHotBinning(fit_jointly=True)
+        assert binning.fit_jointly is True
+
+        binning = OneHotBinning(fit_jointly=False)
+        assert binning.fit_jointly is False
 
 
 @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")

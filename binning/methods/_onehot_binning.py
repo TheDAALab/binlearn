@@ -14,9 +14,7 @@ fine-grained binning based on actual data values.
 from typing import Tuple, Optional
 import numpy as np
 
-from ..utils.types import (
-    FlexibleBinDefs, ColumnId, FlexibleBinSpec, BinEdges, BinEdgesDict
-)
+from ..utils.types import FlexibleBinDefs, ColumnId, FlexibleBinSpec, BinEdges, BinEdgesDict
 from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
 
@@ -24,38 +22,46 @@ from ..base._repr_mixin import ReprMixin
 # pylint: disable=too-many-ancestors
 class OneHotBinning(ReprMixin, FlexibleBinningBase):
     """Creates a singleton bin for each unique value in numeric data.
-    
+
     This transformer creates one bin per unique value found in the data, where each
     bin is defined as {"singleton": value}. Unlike traditional one-hot encoding that
     expands columns, this maintains the original data shape while creating fine-grained
     bins based on actual data values.
-    
+
+    The method supports both per-column and joint fitting strategies:
+    - Per-column fitting: Each column gets bins based on its own unique values
+    - Joint fitting: All columns share the same bins based on all unique values across features
+
     The method is particularly useful for:
     - Categorical data represented as numbers
     - Fine-grained binning where each unique value should be its own bin
     - Preprocessing for models that benefit from value-specific binning
-    
+    - Ensuring consistent binning across multiple related features (joint fitting)
+
     **Important**: This method only supports numeric data. Non-numeric data will
     raise a ValueError during fitting.
-    
+
     Args:
         preserve_dataframe (bool, optional): Whether to preserve DataFrame format in output.
             If None, uses global configuration default.
         bin_spec (FlexibleBinSpec, optional): Pre-defined bin specifications for columns.
             If provided, skips automatic bin generation.
         bin_representatives (BinEdgesDict, optional): Pre-computed bin representatives.
+        fit_jointly (bool, optional): Whether to fit bins jointly across all columns.
+            If True, all columns will share the same bins based on unique values
+            found across all features. If None, uses global configuration default.
         max_unique_values (int): Maximum number of unique values allowed per column
             before raising an error. Prevents memory issues with high cardinality data.
         **kwargs: Additional arguments passed to the parent FlexibleBinningBase.
-        
+
     Attributes:
         max_unique_values (int): Maximum unique values allowed per column.
         bin_spec_ (FlexibleBinDefs): Generated bin specifications after fitting.
         bin_representatives_ (BinEdgesDict): Computed bin representatives after fitting.
-        
+
     Raises:
         ValueError: If non-numeric data is provided or if unique values exceed max_unique_values.
-        
+
     Example:
         >>> import numpy as np
         >>> from binning.methods import OneHotBinning
@@ -75,42 +81,74 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
     ):
         """Initialize OneHotBinning transformer.
 
-        Creates singleton bins for each unique value in the data. This is NOT 
-        traditional one-hot encoding - instead, it creates bins where each bin 
-        contains exactly one unique value, maintaining the original data shape.
+        Creates a specialized binning transformer that generates singleton bins for
+        each unique value in the data. This is NOT traditional one-hot encoding that
+        expands features into multiple columns. Instead, it maintains the original
+        data shape while creating fine-grained bins where each bin contains exactly
+        one unique value.
+
+        The transformer supports both per-column and joint fitting strategies:
+        - Per-column fitting (default): Each column gets bins based on its own unique values
+        - Joint fitting: All columns share the same bins based on all unique values across features
 
         Args:
-            preserve_dataframe (bool, optional): Whether to preserve pandas DataFrame 
-                structure in output. If None, uses global configuration default.
-            bin_spec (FlexibleBinSpec, optional): Pre-defined bin specification.
-                If provided, skips automatic bin generation during fitting.
-            bin_representatives (BinEdgesDict, optional): Pre-defined bin representatives.
-                Used for inverse transformation.
-            max_unique_values (int): Maximum number of unique values per column allowed.
-                Prevents memory issues with high-cardinality data. Default is 100.
-            **kwargs: Additional arguments passed to FlexibleBinningBase parent class.
-                
-        Note:
-            The fit_jointly parameter is automatically disabled for this transformer
-            as it's incompatible with the one-hot binning approach.
-        """
-        # Remove fit_jointly from kwargs if present to avoid conflicts
-        kwargs.pop('fit_jointly', None)
+            preserve_dataframe (Optional[bool], optional): Whether to preserve
+                pandas DataFrame structure in output. If None, uses global
+                configuration default. Defaults to None.
+            bin_spec (Optional[FlexibleBinSpec], optional): Pre-defined bin
+                specifications for columns. If provided, skips automatic bin
+                generation during fitting. Defaults to None.
+            bin_representatives (Optional[BinEdgesDict], optional): Pre-defined
+                bin representative values used for inverse transformation. Should
+                correspond to the bin_spec if provided. Defaults to None.
+            max_unique_values (int, optional): Maximum number of unique values
+                allowed per column (per-column fitting) or across all columns
+                (joint fitting) before raising an error. This prevents memory
+                issues with high-cardinality data. Defaults to 100.
+            **kwargs: Additional arguments passed to FlexibleBinningBase parent
+                class, including fit_jointly (bool, optional) to control fitting strategy.
 
+        Raises:
+            ValueError: If max_unique_values is not a positive integer.
+
+        Example:
+            >>> # Basic usage for low-cardinality numeric data
+            >>> binner = OneHotBinning(max_unique_values=50)
+
+            >>> # With pre-defined bin specifications
+            >>> spec = {0: [{"singleton": 1.0}, {"singleton": 2.0}]}
+            >>> binner = OneHotBinning(bin_spec=spec)
+
+        Note:
+            - Supports both per-column and joint fitting strategies
+            - Joint fitting creates consistent bins across all features using all unique values
+            - Only supports numeric data; non-numeric data will raise errors
+            - Each unique value becomes its own bin with definition {"singleton": value}
+        """
         super().__init__(
             bin_spec=bin_spec,
             bin_representatives=bin_representatives,
             preserve_dataframe=preserve_dataframe,
-            fit_jointly=False,  # Always use per-column fitting
             **kwargs,
         )
         self.max_unique_values = max_unique_values
 
     def _validate_params(self) -> None:
         """Validate OneHotBinning specific parameters.
-        
+
+        Performs validation of parameters specific to OneHotBinning in addition
+        to the base class parameter validation. Ensures that the max_unique_values
+        parameter is properly configured to prevent memory issues with high-cardinality data.
+
         Raises:
-            ValueError: If max_unique_values is not a positive integer.
+            ValueError: If max_unique_values is not a positive integer. This
+                parameter is critical for preventing memory exhaustion when
+                dealing with high-cardinality categorical data.
+
+        Note:
+            - Called automatically during initialization and parameter setting
+            - Supplements the base class _validate_params() method
+            - Focuses specifically on OneHotBinning parameter constraints
         """
         super()._validate_params()
 
@@ -129,7 +167,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         Args:
             x_col (np.ndarray): Numeric data for a single column to analyze.
             col_id (ColumnId): Column identifier for error reporting.
-            guidance_data (Optional[np.ndarray]): Optional guidance data, not used 
+            guidance_data (Optional[np.ndarray]): Optional guidance data, not used
                 in one-hot binning but kept for interface compatibility.
 
         Returns:
@@ -140,7 +178,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         Raises:
             ValueError: If the column contains non-numeric data or if the number of
                 unique values exceeds max_unique_values.
-                
+
         Note:
             NaN and infinite values are filtered out before determining unique values.
             If all values are NaN/inf, a default bin with value 0.0 is created.

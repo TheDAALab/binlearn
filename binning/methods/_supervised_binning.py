@@ -16,13 +16,12 @@ from typing import Any, Dict, Tuple, Optional
 import numpy as np
 from sklearn.base import clone
 
-from ..utils.types import (
-    BinEdges, ColumnId, GuidanceColumns
-)
+from ..utils.types import BinEdges, ColumnId, GuidanceColumns
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
 from ..config import get_config
+
 
 # pylint: disable=too-many-ancestors
 class SupervisedBinning(ReprMixin, SupervisedBinningBase):
@@ -31,7 +30,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
     Creates bins using decision tree splits guided by a target column. This method
     fits a decision tree to predict the guidance column from the features to be
     binned, then uses the tree's split thresholds to define bin boundaries.
-    
+
     The resulting bins are optimized for the prediction task, as they capture
     the most important feature ranges for distinguishing different target values.
     This often leads to better model performance compared to unsupervised binning.
@@ -69,35 +68,67 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         guidance_columns: Optional[GuidanceColumns] = None,
         **kwargs,
     ):
-        """
-        Initialize the SupervisedBinning transformer.
+        """Initialize the SupervisedBinning transformer.
 
-        Parameters
-        ----------
-        task_type : str, default="classification"
-            Type of supervised learning task. Either "classification" or "regression".
+        Creates a supervised binning transformer that uses decision tree splits
+        to determine optimal bin boundaries based on guidance/target data. The
+        transformer fits a decision tree to predict the guidance column from the
+        features, then extracts split thresholds to create informative bins.
 
-        tree_params : dict or None, default=None
-            Parameters for the decision tree. Common parameters include:
-            - max_depth : int or None, default=3
-            - min_samples_leaf : int, default=5
-            - min_samples_split : int, default=10
-            - random_state : int or None, default=None
+        Args:
+            task_type: Type of supervised learning task to perform. Must be either
+                "classification" or "regression". Classification uses decision tree
+                classifiers and is suitable for categorical targets, while regression
+                uses decision tree regressors for continuous targets. Defaults to
+                "classification".
+            tree_params: Parameters for the underlying decision tree model. Common
+                parameters include max_depth (int, default=3), min_samples_leaf
+                (int, default=5), min_samples_split (int, default=10), and
+                random_state (int or None). If None, default parameters optimized
+                for binning will be used. Defaults to None.
+            preserve_dataframe: Whether to preserve pandas/polars DataFrame format
+                in the output. If True, returns DataFrame with same structure as
+                input. If False, returns numpy arrays. Defaults to False.
+            bin_edges: Pre-computed bin edges for each feature. Dictionary mapping
+                column identifiers to bin edge arrays. Used for loading previously
+                fitted transformers. Should only be provided when recreating an
+                already fitted transformer. Defaults to None.
+            bin_representatives: Pre-computed bin representative values for each
+                feature. Dictionary mapping column identifiers to representative
+                value arrays. Used for loading previously fitted transformers.
+                Defaults to None.
+            guidance_columns: Column identifier(s) to use as guidance/target for
+                supervised binning. Can be a single column identifier (int, str)
+                or list of identifiers for multi-target scenarios. Must be provided
+                during fitting if not specified here. Defaults to None.
+            **kwargs: Additional keyword arguments passed to the parent class.
+                Common options include clip (bool) for handling out-of-range values.
 
-        preserve_dataframe : bool, default=False
-            If True, preserve DataFrame structure in output.
+        Raises:
+            ValueError: If task_type is not "classification" or "regression".
+            TypeError: If tree_params contains invalid parameter types.
+            ConfigurationError: If guidance_columns specification is invalid.
 
-        bin_edges : dict or None, default=None
-            Pre-defined bin edges.
+        Example:
+            >>> import numpy as np
+            >>> from binning.methods import SupervisedBinning
+            >>> X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 15.0], [4.0, 25.0]])
+            >>> y = np.array([0, 0, 1, 1])  # Target for guidance
+            >>> binner = SupervisedBinning(
+            ...     task_type="classification",
+            ...     tree_params={"max_depth": 2, "min_samples_leaf": 2}
+            ... )
+            >>> binner.fit(X, guidance_data=y)
+            >>> X_binned = binner.transform(X)
 
-        bin_representatives : dict or None, default=None
-            Pre-defined bin representatives.
-
-        guidance_columns : list or int or None, default=None
-            Column(s) to use as guidance/target for supervised binning.
+        Note:
+            - Always uses per-column fitting (fit_jointly=False) for optimal splits
+            - Stores fitted decision trees for inspection and feature importance
+            - Automatically handles both numeric and categorical guidance data
+            - Tree parameters are validated during initialization
         """
         # Remove fit_jointly from kwargs if present to avoid conflicts
-        kwargs.pop('fit_jointly', None)
+        kwargs.pop("fit_jointly", None)
 
         super().__init__(
             task_type=task_type,
@@ -125,26 +156,63 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
     def _calculate_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[BinEdges, BinEdges]:
-        """
-        Calculate bins using decision tree splits for a single column.
+        """Calculate bins using decision tree splits for a single column.
+
+        Fits a decision tree to predict the guidance data from the feature column,
+        then extracts the tree's split thresholds to create optimal bin boundaries.
+        This supervised approach creates bins that are most informative for the
+        prediction task, often leading to better downstream model performance.
 
         Args:
-            x_col: Data for a single column.
-            col_id: Column identifier.
-            guidance_data: Target values for supervised learning (must be 1D).
+            x_col: Input feature data for a single column as 1D numpy array.
+                Must contain numeric values that can be used as decision tree
+                features. Missing or infinite values are handled automatically.
+            col_id: Unique identifier for the column being processed. Used for
+                error reporting and storing tree information. Can be any hashable
+                type (int, str, etc.).
+            guidance_data: Target values for supervised learning as 1D numpy array.
+                Must have the same length as x_col. Should contain numeric values
+                for regression tasks or categorical labels for classification tasks.
+                Cannot be None for supervised binning.
 
         Returns:
-            Tuple containing:
-            - List of bin edges: [edge1, edge2, ...]
-            - List of representative values: [rep1, rep2, ...]
+            Tuple containing two lists:
+            - bin_edges: List of bin boundary values [edge1, edge2, ..., edgeN].
+              Always includes data minimum and maximum as first and last edges.
+              Split points from the decision tree are inserted between these bounds.
+            - representatives: List of bin representative values [rep1, rep2, ...].
+              Each representative is the midpoint of its corresponding bin interval.
+              Length is always len(bin_edges) - 1.
+
+        Raises:
+            FittingError: If guidance_data is None or if decision tree fitting fails.
+                Common causes include incompatible data types, insufficient data,
+                or invalid tree parameters.
+            InvalidDataError: If x_col and guidance_data have different lengths or
+                contain only invalid values (NaN/inf).
+            ConfigurationError: If tree template was not properly initialized.
+
+        Example:
+            >>> x_col = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+            >>> guidance = np.array([0, 0, 1, 1, 1])  # Classification targets
+            >>> binner = SupervisedBinning(task_type="classification")
+            >>> edges, reps = binner._calculate_bins(x_col, "feature_1", guidance)
+            >>> # Returns optimized bin edges based on tree splits
+
+        Note:
+            - Automatically handles missing values by filtering them out
+            - Requires minimum samples per split as defined in tree_params
+            - Stores fitted tree for later inspection and feature importance
+            - Split points are sorted and deduplicated using float tolerance
+            - Representatives are calculated as bin midpoints for consistency
         """
         # Ensure guidance data is provided
         self.require_guidance_data(guidance_data, "SupervisedBinning")
 
         # At this point guidance_data is guaranteed to be not None
-        assert guidance_data is not None, (
-            "guidance_data should not be None after require_guidance_data"
-        )
+        assert (
+            guidance_data is not None
+        ), "guidance_data should not be None after require_guidance_data"
 
         # Validate and preprocess feature-target pair
         x_col, guidance_data_validated, valid_mask = self.validate_feature_target_pair(
@@ -210,16 +278,40 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         return bin_edges, representatives
 
     def _extract_split_points(self, tree, _x_data: np.ndarray) -> BinEdges:
-        """
-        Extract split points from a fitted decision tree.
+        """Extract split points from a fitted decision tree.
+
+        Traverses the decision tree structure to extract all threshold values
+        where the tree splits on the single feature. These thresholds represent
+        the most informative cut points for separating different classes or
+        regression targets, making them optimal bin boundaries.
 
         Args:
-            tree: Fitted decision tree (classifier or regressor).
-            _x_data: Training data used to fit the tree (unused but kept for interface
-                compatibility).
+            tree: Fitted decision tree model (DecisionTreeClassifier or
+                DecisionTreeRegressor). Must have been fitted on single-feature
+                data with shape (n_samples, 1) to ensure all splits are on
+                feature index 0.
+            _x_data: Training data used to fit the tree. This parameter is
+                maintained for interface compatibility but is not used in the
+                extraction process. The tree structure contains all necessary
+                information.
 
         Returns:
-            List of split threshold values.
+            List of unique split threshold values extracted from the tree.
+            Values are in the order they appear in the tree traversal, not
+            necessarily sorted. Empty list if the tree has no splits (e.g.,
+            pure node or insufficient data for splitting).
+
+        Note:
+            - Only extracts splits on feature index 0 (single-feature assumption)
+            - Thresholds represent decision boundaries from the tree learning
+            - Each threshold optimally separates guidance data classes/values
+            - The extracted points will be sorted and deduplicated later
+            - Works with both classification and regression trees
+
+        Example:
+            >>> # For a tree that splits at values 2.5 and 4.1
+            >>> split_points = binner._extract_split_points(fitted_tree, X)
+            >>> # Returns: [2.5, 4.1] (or in tree traversal order)
         """
         split_points = []
 
@@ -236,18 +328,49 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         return split_points
 
     def get_feature_importance(self, column_id: Optional[ColumnId] = None) -> Dict[ColumnId, float]:
-        """
-        Get feature importance scores from the fitted decision trees.
+        """Get feature importance scores from the fitted decision trees.
 
-        Parameters
-        ----------
-        column_id : Any, optional
-            Specific column to get importance for. If None, returns all.
+        Returns the importance scores computed by the decision trees during
+        fitting. These scores indicate how much each feature contributes to
+        the prediction of the guidance data, providing insight into which
+        features are most informative for the supervised binning process.
 
-        Returns
-        -------
-        Dict[ColumnId, float]
-            Mapping from column identifier to importance score.
+        Args:
+            column_id: Specific column identifier to get importance score for.
+                If provided, returns importance only for that column. If None,
+                returns importance scores for all fitted columns. Must be a
+                column that was included in the fitting process.
+
+        Returns:
+            Dictionary mapping column identifiers to their importance scores.
+            Importance scores are non-negative floats that sum to 1.0 across
+            all features when considering the full tree. Higher values indicate
+            more important features for predicting the guidance data.
+
+        Raises:
+            RuntimeError: If the transformer has not been fitted yet. Must call
+                fit() before accessing feature importance scores.
+            InvalidDataError: If feature importance data is not available (e.g.,
+                trees failed to fit properly) or if the specified column_id
+                was not found in the fitted trees.
+
+        Example:
+            >>> binner = SupervisedBinning()
+            >>> binner.fit(X, guidance_data=y)
+            >>>
+            >>> # Get importance for all features
+            >>> all_importance = binner.get_feature_importance()
+            >>> # Returns: {0: 0.8, 1: 0.2} for 2-feature dataset
+            >>>
+            >>> # Get importance for specific feature
+            >>> feature_0_importance = binner.get_feature_importance(column_id=0)
+            >>> # Returns: {0: 0.8}
+
+        Note:
+            - Importance scores reflect how well each feature separates guidance data
+            - Scores are derived from the sklearn decision tree feature_importances_
+            - Only available after successful fitting with valid guidance data
+            - Useful for feature selection and understanding data relationships
         """
         self._check_fitted()
 
@@ -274,18 +397,46 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         return self._tree_importance.copy()
 
     def get_tree_structure(self, column_id: ColumnId) -> Dict[str, Any]:
-        """
-        Get the structure of the decision tree for a specific column.
+        """Get the structure of the decision tree for a specific column.
 
-        Parameters
-        ----------
-        column_id : Any
-            Column identifier to get tree structure for.
+        Provides detailed information about the decision tree that was fitted
+        for the specified column during supervised binning. This includes tree
+        statistics, structure details, and the actual tree object for advanced
+        analysis or visualization purposes.
 
-        Returns
-        -------
-        Dict[str, Any]
-            Tree structure information including splits and thresholds.
+        Args:
+            column_id: Column identifier for which to retrieve tree structure.
+                Must be a column that was included in the fitting process and
+                for which a decision tree was successfully created.
+
+        Returns:
+            Dictionary containing comprehensive tree structure information:
+            - "n_nodes": Total number of nodes in the tree (int)
+            - "max_depth": Maximum depth of the tree (int)
+            - "n_leaves": Number of leaf nodes in the tree (int)
+            - "feature_importances": Array of feature importance scores (np.ndarray)
+            - "tree_": The actual sklearn tree structure object for advanced access
+
+        Raises:
+            RuntimeError: If the transformer has not been fitted yet. Must call
+                fit() before accessing tree structure information.
+            InvalidDataError: If tree structure data is not available (trees
+                were not stored properly) or if the specified column_id was
+                not found in the fitted trees.
+
+        Example:
+            >>> binner = SupervisedBinning()
+            >>> binner.fit(X, guidance_data=y)
+            >>> tree_info = binner.get_tree_structure(column_id=0)
+            >>> print(f"Tree has {tree_info['n_nodes']} nodes")
+            >>> print(f"Max depth: {tree_info['max_depth']}")
+            >>> print(f"Number of leaves: {tree_info['n_leaves']}")
+
+        Note:
+            - Useful for understanding how the tree makes splitting decisions
+            - The tree_ object can be used with sklearn tree visualization tools
+            - Feature importances are specific to the single-feature tree
+            - Tree structure reflects the complexity of the guidance data relationship
         """
         self._check_fitted()
 
@@ -319,7 +470,28 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         }
 
     def _store_tree_info(self, tree, col_id: Any) -> None:
-        """Store tree information for later access."""
+        """Store tree information for later access and analysis.
+
+        Stores the fitted decision tree and extracts its feature importance
+        score for the specified column. This information is used by other
+        methods like get_feature_importance() and get_tree_structure() to
+        provide insights into the fitted models.
+
+        Args:
+            tree: Fitted decision tree model (DecisionTreeClassifier or
+                DecisionTreeRegressor). Must have been successfully fitted
+                on single-feature data with valid guidance data.
+            col_id: Column identifier for which this tree was fitted. Used
+                as the key for storing tree information in internal dictionaries.
+                Can be any hashable type (int, str, etc.).
+
+        Note:
+            - Called automatically during the _calculate_bins process
+            - Stores both the full tree object and extracted importance score
+            - For single-feature trees, importance is the first array element
+            - Importance defaults to 0.0 if tree has no feature importances
+            - Enables later inspection and analysis of fitted models
+        """
         self._fitted_trees[col_id] = tree
         # For single feature trees, importance is just the first (and only) importance
         self._tree_importance[col_id] = (
@@ -327,7 +499,39 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         )
 
     def _validate_params(self) -> None:
-        """Validate parameters for sklearn compatibility."""
+        """Validate parameters for sklearn compatibility and configuration correctness.
+
+        Performs comprehensive validation of SupervisedBinning parameters to ensure
+        they are compatible with sklearn conventions and internal requirements.
+        This includes validating the task type, tree parameters, and calling any
+        parent class validation methods.
+
+        Raises:
+            ConfigurationError: If task_type is not "classification" or "regression",
+                or if tree_params contains invalid parameter specifications that
+                are incompatible with the chosen task type.
+            ValueError: If tree_params contains parameter values that are out of
+                valid ranges or have incorrect types (e.g., negative max_depth,
+                non-integer min_samples_leaf).
+
+        Note:
+            - Called automatically during initialization and parameter updates
+            - Supplements parent class parameter validation when available
+            - Validates task_type against allowed values
+            - Uses utility function validate_tree_params for tree parameter checking
+            - Ensures consistency between task_type and tree_params settings
+
+        Example:
+            >>> # These will pass validation
+            >>> binner = SupervisedBinning(task_type="classification")
+            >>> binner = SupervisedBinning(
+            ...     task_type="regression",
+            ...     tree_params={"max_depth": 5, "min_samples_leaf": 3}
+            ... )
+            >>>
+            >>> # This will raise ConfigurationError
+            >>> binner = SupervisedBinning(task_type="invalid_task")
+        """
         if hasattr(super(), "_validate_params"):
             super()._validate_params()
 

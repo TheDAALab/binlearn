@@ -8,7 +8,13 @@ from unittest.mock import Mock, patch
 
 from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
 from binning.methods._supervised_binning import SupervisedBinning
-from binning.utils.errors import BinningError, ConfigurationError, FittingError, InvalidDataError
+from binning.utils.errors import (
+    BinningError,
+    ConfigurationError,
+    FittingError,
+    InvalidDataError,
+    DataQualityWarning,
+)
 from binning.utils.constants import MISSING_VALUE
 
 # Import sklearn components
@@ -313,8 +319,11 @@ class TestSupervisedBinningBasicFunctionality:
 
         binning = SupervisedBinning(tree_params={"min_samples_split": 10}, guidance_columns=[1])
 
-        # Should handle insufficient data gracefully
-        binning.fit(X)
+        # Should handle insufficient data gracefully but warn about it
+        with pytest.warns(
+            DataQualityWarning, match="has only 2 valid samples.*minimum 10 required"
+        ):
+            binning.fit(X)
         X_features = X[:, [0]]  # Only feature column
         X_binned = binning.transform(X_features)
         assert X_binned.shape == X_features.shape
@@ -661,8 +670,9 @@ class TestSupervisedBinningWorkflows:
         X = np.array([]).reshape(0, 2)
         binning = SupervisedBinning(guidance_columns=[1])
 
-        # Empty data should be handled gracefully
-        binning.fit(X)
+        # Empty data should be handled gracefully but may warn about NaN values
+        with pytest.warns(DataQualityWarning):
+            binning.fit(X)
         X_transformed = binning.transform(X)
         assert X_transformed.shape == (0, 1)  # Only feature column
 
@@ -672,8 +682,9 @@ class TestSupervisedBinningWorkflows:
 
         binning = SupervisedBinning(guidance_columns=[1])
 
-        # Should handle single class gracefully
-        binning.fit(X)
+        # Should handle single class gracefully but warn about constant guidance data
+        with pytest.warns(DataQualityWarning, match="appears to be constant"):
+            binning.fit(X)
         X_binned = binning.transform(X)
         assert X_binned.shape == (4, 1)  # Only feature column
 

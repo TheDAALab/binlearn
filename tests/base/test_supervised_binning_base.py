@@ -3,6 +3,8 @@ import warnings
 import numpy as np
 from unittest.mock import Mock, patch
 from binning.base._supervised_binning_base import SupervisedBinningBase
+from binning.utils.errors import DataQualityWarning
+
 
 class DummySupervisedBinning(SupervisedBinningBase):
     def __init__(self, task_type="classification", tree_params=None, **kwargs):
@@ -24,12 +26,14 @@ class DummySupervisedBinning(SupervisedBinningBase):
         # Return dummy bin edges and representatives
         return [0.0, 1.0, 2.0], [0.5, 1.5]
 
+
 def test_init_default():
     """Test initialization with default parameters."""
     obj = DummySupervisedBinning()
     assert obj.task_type == "classification"
     assert obj.tree_params is None
-    assert hasattr(obj, '_tree_template')
+    assert hasattr(obj, "_tree_template")
+
 
 def test_init_classification():
     """Test initialization for classification task."""
@@ -42,15 +46,18 @@ def test_init_classification():
     obj._create_tree_template()
     assert obj._tree_template is not None
 
+
 def test_init_regression():
     """Test initialization for regression task."""
     obj = DummySupervisedBinning(task_type="regression")
     assert obj.task_type == "regression"
 
+
 def test_init_invalid_task_type():
     """Test initialization with invalid task type."""
     with pytest.raises(Exception):  # Should raise ConfigurationError
         DummySupervisedBinning(task_type="invalid")
+
 
 def test_init_tree_params_none():
     """Test initialization with tree_params=None."""
@@ -59,6 +66,7 @@ def test_init_tree_params_none():
     # Tree template should still be created with defaults
     obj._create_tree_template()
     assert obj._tree_template is not None
+
 
 def test_create_tree_template_early_return():
     """Test _create_tree_template early return when template already exists (line 72)."""
@@ -73,6 +81,7 @@ def test_create_tree_template_early_return():
     obj._create_tree_template()
     assert obj._tree_template is first_template  # Should be the same object
 
+
 def test_validate_guidance_data_valid():
     """Test validate_guidance_data with valid data."""
     obj = DummySupervisedBinning()
@@ -80,6 +89,7 @@ def test_validate_guidance_data_valid():
 
     result = obj.validate_guidance_data(guidance_data)
     np.testing.assert_array_equal(result, guidance_data.flatten())
+
 
 def test_validate_guidance_data_1d():
     """Test validate_guidance_data with 1D data."""
@@ -89,6 +99,7 @@ def test_validate_guidance_data_1d():
     result = obj.validate_guidance_data(guidance_data)
     np.testing.assert_array_equal(result, guidance_data)
 
+
 def test_validate_guidance_data_multiple_columns():
     """Test validate_guidance_data with multiple columns."""
     obj = DummySupervisedBinning()
@@ -96,6 +107,7 @@ def test_validate_guidance_data_multiple_columns():
 
     with pytest.raises(Exception):  # Should raise ValidationError
         obj.validate_guidance_data(guidance_data)
+
 
 def test_validate_guidance_data_empty():
     """Test validate_guidance_data with empty data."""
@@ -106,14 +118,17 @@ def test_validate_guidance_data_empty():
     result = obj.validate_guidance_data(guidance_data)
     assert len(result) == 0
 
+
 def test_validate_guidance_data_all_missing():
     """Test validate_guidance_data with all missing values."""
     obj = DummySupervisedBinning()
     guidance_data = np.array([np.nan, np.nan, np.nan])
 
-    # Should validate but may trigger data quality warnings
-    result = obj.validate_guidance_data(guidance_data)
+    # Should validate but will trigger data quality warnings about missing values
+    with pytest.warns(DataQualityWarning, match="contains 100.0% missing values"):
+        result = obj.validate_guidance_data(guidance_data)
     assert len(result) == 3
+
 
 def test_validate_guidance_data_with_missing():
     """Test validate_guidance_data with some missing values."""
@@ -124,6 +139,7 @@ def test_validate_guidance_data_with_missing():
     # Should handle missing values appropriately
     assert len(result) == 3
 
+
 def test_validate_guidance_data_2d_single_column():
     """Test validate_guidance_data with 2D single column."""
     obj = DummySupervisedBinning()
@@ -133,17 +149,19 @@ def test_validate_guidance_data_2d_single_column():
     expected = np.array([1, 2, 3])
     np.testing.assert_array_equal(result, expected)
 
+
 def test_validate_feature_target_pairs_valid():
     """Test validate_feature_target_pair with valid data."""
     obj = DummySupervisedBinning()
     features = np.array([1.0, 2.0, 3.0])
     targets = np.array([0, 1, 0])
 
-    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, "col1")
 
     assert len(feat_clean) == 3
     assert len(targ_clean) == 3
     assert np.all(valid_mask)
+
 
 def test_validate_feature_target_pairs_with_missing():
     """Test validate_feature_target_pair with missing values."""
@@ -151,7 +169,7 @@ def test_validate_feature_target_pairs_with_missing():
     features = np.array([1.0, np.nan, 3.0])
     targets = np.array([0, 1, np.nan])
 
-    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, "col1")
 
     assert len(feat_clean) == 3
     assert len(targ_clean) == 3
@@ -160,6 +178,7 @@ def test_validate_feature_target_pairs_with_missing():
     assert valid_mask[1] == False  # features has NaN
     assert valid_mask[2] == False  # targets has NaN
 
+
 def test_validate_feature_target_pairs_insufficient_data():
     """Test validate_feature_target_pair with insufficient data after cleaning."""
     obj = DummySupervisedBinning()
@@ -167,8 +186,13 @@ def test_validate_feature_target_pairs_insufficient_data():
     targets = np.array([np.nan, np.nan])
 
     # Should not raise an error - validation just creates the mask
-    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    # But it will warn about the data quality issues
+    with pytest.warns(DataQualityWarning):
+        feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(
+            features, targets, "col1"
+        )
     assert not np.any(valid_mask)  # No valid pairs
+
 
 def test_validate_feature_target_pairs_single_class():
     """Test validate_feature_target_pair with single class."""
@@ -177,8 +201,9 @@ def test_validate_feature_target_pairs_single_class():
     targets = np.array([0, 0, 0])  # All same class
 
     # Should not raise an error during validation - that's handled elsewhere
-    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, "col1")
     assert np.all(valid_mask)
+
 
 def test_validate_feature_target_pairs_regression_constant():
     """Test validate_feature_target_pair with constant targets in regression."""
@@ -187,8 +212,9 @@ def test_validate_feature_target_pairs_regression_constant():
     targets = np.array([1.0, 1.0, 1.0])  # Constant targets
 
     # Should not raise an error during validation - that's handled elsewhere
-    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    feat_clean, targ_clean, valid_mask = obj.validate_feature_target_pair(features, targets, "col1")
     assert np.all(valid_mask)
+
 
 def test_create_fallback_bins_classification():
     """Test create_fallback_bins for classification."""
@@ -202,6 +228,7 @@ def test_create_fallback_bins_classification():
     assert len(edges) >= 2  # At least 2 edges for 1 bin
     assert len(reps) == len(edges) - 1  # Representatives for each bin
 
+
 def test_create_fallback_bins_regression():
     """Test create_fallback_bins for regression."""
     obj = DummySupervisedBinning(task_type="regression")
@@ -213,6 +240,7 @@ def test_create_fallback_bins_regression():
     assert isinstance(reps, list)
     assert len(edges) >= 2
     assert len(reps) == len(edges) - 1
+
 
 def test_extract_valid_pairs():
     """Test extract_valid_pairs method."""
@@ -230,6 +258,7 @@ def test_extract_valid_pairs():
     assert targ_valid[0] == 0
     assert targ_valid[1] == 1
 
+
 def test_get_binning_params():
     """Test _get_binning_params method with automatic discovery."""
     tree_params = {"max_depth": 5}
@@ -238,10 +267,11 @@ def test_get_binning_params():
     params = obj._get_binning_params()
 
     # With automatic discovery, these should be included
-    assert 'task_type' in params
-    assert 'tree_params' in params
-    assert params['task_type'] == "regression"
-    assert params['tree_params'] == tree_params
+    assert "task_type" in params
+    assert "tree_params" in params
+    assert params["task_type"] == "regression"
+    assert params["tree_params"] == tree_params
+
 
 def test_data_quality_warnings():
     """Test data quality warning generation."""
@@ -251,10 +281,11 @@ def test_data_quality_warnings():
     features = np.array([np.inf, 2.0, 3.0])
     targets = np.array([0, 1, 0])
 
-    with patch('warnings.warn') as mock_warn:
-        feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    with patch("warnings.warn") as mock_warn:
+        feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, "col1")
 
         # Should handle infinite values appropriately
+
 
 def test_feature_target_length_mismatch():
     """Test feature-target length mismatch handling."""
@@ -263,7 +294,8 @@ def test_feature_target_length_mismatch():
     targets = np.array([0, 1, 0])  # Different length
 
     with pytest.raises(Exception):  # Should raise ValidationError
-        obj.validate_feature_target_pair(features, targets, 'col1')
+        obj.validate_feature_target_pair(features, targets, "col1")
+
 
 def test_tree_template_types():
     """Test that correct tree types are created."""
@@ -276,6 +308,7 @@ def test_tree_template_types():
     reg_obj = DummySupervisedBinning(task_type="regression")
     reg_obj._create_tree_template()  # Need to call this explicitly
     assert isinstance(reg_obj._tree_template, DecisionTreeRegressor)
+
 
 def test_tree_params_merging():
     """Test that tree parameters are properly stored and used."""
@@ -291,6 +324,7 @@ def test_tree_params_merging():
     obj._create_tree_template()
     assert obj._tree_template is not None
 
+
 def test_guidance_data_validation_name():
     """Test validate_guidance_data with custom name."""
     obj = DummySupervisedBinning()
@@ -299,6 +333,7 @@ def test_guidance_data_validation_name():
     with pytest.raises(Exception):  # Should mention custom name in error
         obj.validate_guidance_data(guidance_data, name="custom_target")
 
+
 def test_edge_case_single_sample():
     """Test behavior with single sample."""
     obj = DummySupervisedBinning()
@@ -306,12 +341,13 @@ def test_edge_case_single_sample():
     targets = np.array([0])
 
     # Should return results but may have limited validity
-    result = obj.validate_feature_target_pair(features, targets, 'col1')
+    result = obj.validate_feature_target_pair(features, targets, "col1")
     assert len(result) == 3  # Should return (features, targets, valid_mask)
     features_out, targets_out, valid_mask = result
     assert len(features_out) == 1
     assert len(targets_out) == 1
     assert len(valid_mask) == 1
+
 
 def test_edge_case_all_nan_features():
     """Test behavior when all features are NaN."""
@@ -322,7 +358,7 @@ def test_edge_case_all_nan_features():
     # Should return results but all features will be marked as invalid
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        result = obj.validate_feature_target_pair(features, targets, 'col1')
+        result = obj.validate_feature_target_pair(features, targets, "col1")
 
         # Should have issued a warning about missing values
         assert len(w) > 0
@@ -390,9 +426,10 @@ def test_handle_insufficient_data():
     valid_mask = np.array([False, False])  # No valid data
     min_samples = 5
 
-    result = obj.handle_insufficient_data(x_col, valid_mask, min_samples, col_id="test_col")
+    with pytest.warns(DataQualityWarning, match="has no valid data points"):
+        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples, col_id="test_col")
     # Should return some fallback bins
-    assert result is not None or result is None  # Method might return None or fallback
+    assert result is not None
 
 
 def test_create_fallback_bins():
@@ -417,7 +454,7 @@ def test_validate_feature_target_pairs_length_mismatch():
     targets = np.array([0, 1, 0])  # Different length
 
     with pytest.raises(ValueError, match="operands could not be broadcast"):
-        obj.validate_feature_target_pair(features, targets, 'col1')
+        obj.validate_feature_target_pair(features, targets, "col1")
 
 
 def test_validate_feature_target_pairs_insufficient_finite_data():
@@ -428,8 +465,9 @@ def test_validate_feature_target_pairs_insufficient_finite_data():
     features = np.array([np.nan, np.inf, 1.0])
     targets = np.array([0, 1, 0])
 
-    # Should raise an error or warning about insufficient data
-    feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    # Should warn about infinite values
+    with pytest.warns(DataQualityWarning, match="contains infinite values"):
+        feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, "col1")
     # At least we get some output, the exact behavior depends on implementation
 
 
@@ -439,9 +477,9 @@ def test_validate_feature_target_pair_object_dtype():
 
     # Create guidance data with object dtype (mixed types)
     features = np.array([1.0, 2.0, 3.0, 4.0])
-    targets = np.array(['A', 'B', None, 'A'], dtype=object)  # Object dtype with None
+    targets = np.array(["A", "B", None, "A"], dtype=object)  # Object dtype with None
 
-    feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, 'col1')
+    feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, "col1")
 
     # Should handle object dtype correctly
     assert len(feat_clean) == len(features)
@@ -457,7 +495,8 @@ def test_handle_insufficient_data_string_column():
     x_col = np.array([np.nan, np.nan, np.nan])
     valid_mask = np.array([False, False, False])
 
-    result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=2, col_id='string_col')
+    with pytest.warns(DataQualityWarning, match="has no valid data points"):
+        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=2, col_id="string_col")
 
     # Should return fallback bins
     assert result is not None
@@ -474,7 +513,8 @@ def test_handle_insufficient_data_min_samples():
     x_col = np.array([1.0, 2.0, np.nan, np.nan, np.nan])
     valid_mask = np.array([True, True, False, False, False])
 
-    result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=5, col_id='test_col')
+    with pytest.warns(DataQualityWarning, match="has only 2 valid samples.*minimum 5 required"):
+        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=5, col_id="test_col")
 
     # Should return fallback bins due to insufficient samples
     assert result is not None
@@ -491,7 +531,8 @@ def test_handle_insufficient_data_integer_column():
     x_col = np.array([1.0, np.nan, np.nan])
     valid_mask = np.array([True, False, False])
 
-    result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=3, col_id=0)
+    with pytest.warns(DataQualityWarning, match="has only 1 valid samples.*minimum 3 required"):
+        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=3, col_id=0)
 
     # Should return fallback bins
     assert result is not None

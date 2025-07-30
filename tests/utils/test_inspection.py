@@ -7,12 +7,14 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from binning.utils.inspection import (
+from binning.utils import (
     get_class_parameters,
     get_constructor_info,
     safe_get_class_parameters,
     safe_get_constructor_info,
 )
+from binning.base import GeneralBinningBase
+from binning.methods import EqualWidthBinning
 
 
 # pylint: disable=too-few-public-methods
@@ -123,6 +125,8 @@ class TestGetConstructorInfo:
 
         # Create a test class with __init__ in its dict
         class TestConcreteClass:
+            """Test class with concrete parameters."""
+
             def __init__(self, concrete_param: str = "test"):
                 self.concrete_param = concrete_param
 
@@ -150,6 +154,8 @@ class TestGetConstructorInfo:
 
         # Create a test class with __init__ in its dict
         class TestConcreteErrorClass:
+            """Test class for signature error handling."""
+
             def __init__(self, param: str):
                 self.param = param
 
@@ -250,8 +256,6 @@ class TestIntegration:
 
     def test_with_general_binning_base(self):
         """Test inspection utilities with GeneralBinningBase."""
-        from binning.base._general_binning_base import GeneralBinningBase
-
         # This should work without errors using the safe versions
         params = safe_get_class_parameters(GeneralBinningBase)
         info = safe_get_constructor_info(GeneralBinningBase)
@@ -263,8 +267,6 @@ class TestIntegration:
 
     def test_exclude_general_binning_base(self):
         """Test excluding GeneralBinningBase parameters."""
-        from binning.methods._equal_width_binning import EqualWidthBinning
-
         params = safe_get_class_parameters(
             EqualWidthBinning, exclude_base_class="GeneralBinningBase"
         )

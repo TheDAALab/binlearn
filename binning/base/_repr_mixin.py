@@ -16,11 +16,51 @@ class ReprMixin:
     """
 
     def _get_constructor_info(self) -> Dict[str, Any]:
-        """Get constructor parameter names and their default values."""
+        """Get constructor parameter names and their default values.
+
+        Extracts parameter information from the class constructor signature,
+        focusing only on concrete class parameters to avoid inherited attributes
+        that may not be relevant for string representation.
+
+        Returns:
+            Dict[str, Any]: A dictionary mapping parameter names to their default
+                values as defined in the constructor signature. Parameters without
+                default values are included with inspect.Parameter.empty as the value.
+
+        Note:
+            Uses safe inspection utilities to handle edge cases in parameter
+            extraction across different Python versions and class hierarchies.
+        """
         return safe_get_constructor_info(self.__class__, concrete_only=True)
 
     def __repr__(self) -> str:
-        """Clean string representation showing only relevant parameters."""
+        """Clean string representation showing only relevant parameters.
+
+        Generates a concise string representation of the object that includes
+        only constructor parameters that differ from their default values.
+        This provides a clean, readable representation focused on the meaningful
+        configuration of the instance.
+
+        The method intelligently handles various parameter types:
+        - Skips parameters that match their default values
+        - Abbreviates large complex objects (bin_edges, bin_representatives, etc.)
+        - Properly quotes string values
+        - Excludes None values when they are the default
+        - Handles empty containers appropriately
+
+        Returns:
+            str: A string representation in the format "ClassName(param1=value1, param2=value2)"
+                or "ClassName()" if no parameters differ from defaults.
+
+        Example:
+            >>> binning = EqualWidthBinning(n_bins=5, clip=True)
+            >>> repr(binning)
+            'EqualWidthBinning(n_bins=5, clip=True)'
+
+            >>> default_binning = EqualWidthBinning()
+            >>> repr(default_binning)
+            'EqualWidthBinning()'
+        """
         class_name = self.__class__.__name__
 
         # Get constructor parameters and their defaults
