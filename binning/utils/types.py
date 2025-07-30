@@ -45,8 +45,8 @@ OptionalBinRepsDict = Optional[Union[BinRepsDict, Any]]
 # FLEXIBLE BINNING TYPES
 # =============================================================================
 
-# Single flexible bin definition - either {"singleton": value} or {"interval": [min, max]}
-FlexibleBinDef = Dict[str, Any]
+# Single flexible bin definition - either a scalar (singleton) or tuple (interval)
+FlexibleBinDef = Any  # Union[int, float, Tuple[Union[int, float], Union[int, float]]]
 
 # List of flexible bin definitions for a column
 FlexibleBinDefs = List[FlexibleBinDef]

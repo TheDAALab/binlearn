@@ -46,8 +46,8 @@ class FlexibleBinningBase(GeneralBinningBase):
     """Base class for flexible binning methods supporting singleton and interval bins.
 
     This abstract base class enables binning methods that can handle mixed bin types:
-    - Singleton bins: {"singleton": value} for exact value matches
-    - Interval bins: {"interval": [min, max]} for range matches
+    - Singleton bins: scalar values for exact value matches
+    - Interval bins: (min, max) tuples for range matches
 
     This flexibility is particularly useful for:
     - Mixed categorical and continuous data
@@ -438,7 +438,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         -------
         Tuple[FlexibleBinDefs, BinEdges]
             A tuple of (bin_definitions, bin_representatives).
-            Bin definitions are dicts with 'singleton' or 'interval' keys.
+            Bin definitions are scalars for singletons or tuples for intervals.
 
         Must be implemented by subclasses.
         """

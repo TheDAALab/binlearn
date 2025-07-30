@@ -4,7 +4,7 @@ OneHotBinning transformer for creating singleton bins from unique values.
 This module implements a specialized binning method that creates one bin per unique
 value in the data. Unlike traditional one-hot encoding that expands features into
 multiple columns, this transformer maintains the original data shape while creating
-singleton bins defined as {"singleton": value}.
+singleton bins using a simplified format (just the value itself).
 
 The transformer is designed for scenarios where you want to treat each unique value
 as its own bin, useful for categorical data represented as numbers or when you need
@@ -24,7 +24,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
     """Creates a singleton bin for each unique value in numeric data.
 
     This transformer creates one bin per unique value found in the data, where each
-    bin is defined as {"singleton": value}. Unlike traditional one-hot encoding that
+    bin is simply the value itself (simplified format). Unlike traditional one-hot encoding that
     expands columns, this maintains the original data shape while creating fine-grained
     bins based on actual data values.
 
@@ -115,15 +115,16 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
             >>> # Basic usage for low-cardinality numeric data
             >>> binner = OneHotBinning(max_unique_values=50)
 
-            >>> # With pre-defined bin specifications
-            >>> spec = {0: [{"singleton": 1.0}, {"singleton": 2.0}]}
+            >>> # With pre-defined bin specifications (simplified input format)
+            >>> spec = {0: [1.0, 2.0]}  # Input: just the values
             >>> binner = OneHotBinning(bin_spec=spec)
+            >>> # Internally stored as: {0: [1.0, 2.0]}
 
         Note:
             - Supports both per-column and joint fitting strategies
             - Joint fitting creates consistent bins across all features using all unique values
             - Only supports numeric data; non-numeric data will raise errors
-            - Each unique value becomes its own bin with definition {"singleton": value}
+            - Input format simplified: [1, 2, (3, 5)] but internally stored as dicts for compatibility
         """
         super().__init__(
             bin_spec=bin_spec,
@@ -161,7 +162,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         """Calculate singleton bins for each unique value in the column.
 
         Creates one bin per unique value found in the data. Each bin is defined as
-        {"singleton": value} and contains exactly one unique value. This method only
+        creates a bin containing exactly one unique value. This method only
         supports numeric data and will raise an error for non-numeric inputs.
 
         Args:
@@ -172,7 +173,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
 
         Returns:
             Tuple[FlexibleBinDefs, BinEdges]: A tuple containing:
-                - List of singleton bin definitions: [{"singleton": val1}, {"singleton": val2}, ...]
+                - List of singleton bin definitions: [val1, val2, ...]
                 - List of representative values: [val1, val2, ...]
 
         Raises:
@@ -197,7 +198,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         finite_mask = np.isfinite(x_col)
         if not finite_mask.any():
             # All values are NaN/inf - create a default bin
-            return [{"singleton": 0.0}], [0.0]
+            return [0.0], [0.0]
 
         finite_values = x_col[finite_mask]
         unique_values = np.unique(finite_values)
@@ -216,7 +217,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
 
         for val in unique_values:
             val = float(val)  # Convert to Python float
-            bin_defs.append({"singleton": val})
+            bin_defs.append(val)  # Simplified format: just the value
             representatives.append(val)
 
         return bin_defs, representatives

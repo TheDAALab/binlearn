@@ -24,8 +24,15 @@ class TestEnsureFlexibleBinSpec:
         assert result == {}
 
     def test_dict_input(self):
-        """Test with valid dictionary input."""
+        """Test with valid dictionary input - converts old format to new format."""
         bin_spec = {"col1": [{"singleton": 1}, {"interval": [2, 3]}], "col2": [{"singleton": 5}]}
+        result = ensure_flexible_bin_spec(bin_spec)
+        expected = {"col1": [1, (2, 3)], "col2": [5]}
+        assert result == expected
+
+    def test_dict_input_new_format(self):
+        """Test with new simplified format."""
+        bin_spec = {"col1": [1, (2, 3)], "col2": [5]}
         result = ensure_flexible_bin_spec(bin_spec)
         assert result == bin_spec
 
@@ -50,21 +57,21 @@ class TestGenerateDefaultFlexibleRepresentatives:
 
     def test_singleton_bins(self):
         """Test with singleton bins."""
-        bin_defs = [{"singleton": 1}, {"singleton": 2.5}, {"singleton": 10}]
+        bin_defs = [1, 2.5, 10]  # Simplified format: just the values
         result = generate_default_flexible_representatives(bin_defs)
         expected = [1.0, 2.5, 10.0]
         assert result == expected
 
     def test_interval_bins(self):
         """Test with interval bins."""
-        bin_defs = [{"interval": [0, 2]}, {"interval": [3, 5]}, {"interval": [-1, 1]}]
+        bin_defs = [(0, 2), (3, 5), (-1, 1)]  # Simplified format: tuples
         result = generate_default_flexible_representatives(bin_defs)
         expected = [1.0, 4.0, 0.0]  # Midpoints
         assert result == expected
 
     def test_mixed_bins(self):
         """Test with mixed singleton and interval bins."""
-        bin_defs = [{"singleton": 1}, {"interval": [2, 4]}, {"singleton": 5}, {"interval": [6, 8]}]
+        bin_defs = [1, (2, 4), 5, (6, 8)]  # Mixed format
         result = generate_default_flexible_representatives(bin_defs)
         expected = [1.0, 3.0, 5.0, 7.0]
         assert result == expected
@@ -76,13 +83,13 @@ class TestGenerateDefaultFlexibleRepresentatives:
 
     def test_invalid_bin_def(self):
         """Test with invalid bin definition."""
-        bin_defs = [{"unknown_key": 1}]
+        bin_defs = [{"unknown_key": 1}]  # Old format should fail
         with pytest.raises(ValueError, match="Unknown bin definition"):
             generate_default_flexible_representatives(bin_defs)
 
     def test_negative_interval(self):
         """Test with negative interval values."""
-        bin_defs = [{"interval": [-5, -2]}]
+        bin_defs = [(-5, -2)]  # Simplified format
         result = generate_default_flexible_representatives(bin_defs)
         expected = [-3.5]
         assert result == expected
@@ -93,65 +100,53 @@ class TestValidateFlexibleBins:
 
     def test_valid_bins(self):
         """Test with valid bin specifications."""
-        bin_spec = {"col1": [{"singleton": 1}, {"interval": [2, 3]}], "col2": [{"singleton": 5}]}
+        bin_spec = {"col1": [1, (2, 3)], "col2": [5]}  # New simplified format
         bin_reps = {"col1": [1.0, 2.5], "col2": [5.0]}
         # Should not raise any exception
         validate_flexible_bins(bin_spec, bin_reps)
 
     def test_mismatched_lengths(self):
         """Test with mismatched number of bins and representatives."""
-        bin_spec = {"col1": [{"singleton": 1}, {"interval": [2, 3]}]}
+        bin_spec = {"col1": [1, (2, 3)]}  # New format
         bin_reps = {"col1": [1.0]}  # Only one representative for two bins
         with pytest.raises(ValueError, match="Number of bin definitions.*must match"):
             validate_flexible_bins(bin_spec, bin_reps)
 
     def test_missing_column_in_reps(self):
         """Test with missing column in representatives."""
-        bin_spec = {"col1": [{"singleton": 1}]}
+        bin_spec = {"col1": [1]}  # New format
         bin_reps = {}  # Empty representatives
         with pytest.raises(ValueError, match="Number of bin definitions.*must match"):
             validate_flexible_bins(bin_spec, bin_reps)
 
     def test_invalid_bin_definition_format(self):
         """Test with invalid bin definition format."""
-        bin_spec = {"col1": [{"singleton": 1}, "invalid"]}
+        bin_spec = {"col1": [1, "invalid"]}  # Invalid string bin
         bin_reps = {"col1": [1.0, 2.0]}
-        with pytest.raises(ValueError, match="Bin definition must be a dictionary"):
-            validate_flexible_bins(bin_spec, bin_reps)
-
-    def test_singleton_with_extra_keys(self):
-        """Test singleton bin with extra keys."""
-        bin_spec = {"col1": [{"singleton": 1, "extra": "key"}]}
-        bin_reps = {"col1": [1.0]}
-        with pytest.raises(ValueError, match="Singleton bin must have only 'singleton' key"):
-            validate_flexible_bins(bin_spec, bin_reps)
-
-    def test_interval_with_extra_keys(self):
-        """Test interval bin with extra keys."""
-        bin_spec = {"col1": [{"interval": [1, 2], "extra": "key"}]}
-        bin_reps = {"col1": [1.5]}
-        with pytest.raises(ValueError, match="Interval bin must have only 'interval' key"):
+        with pytest.raises(
+            ValueError, match="Bin must be either a scalar \\(singleton\\) or tuple \\(interval\\)"
+        ):
             validate_flexible_bins(bin_spec, bin_reps)
 
     def test_invalid_interval_format(self):
         """Test with invalid interval format."""
-        bin_spec = {"col1": [{"interval": [1]}]}  # Single value instead of [min, max]
+        bin_spec = {"col1": [(1,)]}  # Single value tuple instead of (min, max)
         bin_reps = {"col1": [1.0]}
-        with pytest.raises(ValueError, match="Interval must be \\[min, max\\]"):
+        with pytest.raises(ValueError, match="Interval must be \\(min, max\\)"):
             validate_flexible_bins(bin_spec, bin_reps)
 
     def test_invalid_interval_order(self):
         """Test with invalid interval order (min > max)."""
-        bin_spec = {"col1": [{"interval": [3, 1]}]}  # min > max
+        bin_spec = {"col1": [(3, 1)]}  # min > max
         bin_reps = {"col1": [2.0]}
         with pytest.raises(ValueError, match="Interval min must be <= max"):
             validate_flexible_bins(bin_spec, bin_reps)
 
-    def test_unknown_bin_type(self):
-        """Test with unknown bin type."""
-        bin_spec = {"col1": [{"unknown_type": 1}]}
+    def test_invalid_interval_values(self):
+        """Test with non-numeric interval values."""
+        bin_spec = {"col1": [("a", "b")]}  # Non-numeric values
         bin_reps = {"col1": [1.0]}
-        with pytest.raises(ValueError, match="Bin must have 'singleton' or 'interval' key"):
+        with pytest.raises(ValueError, match="Interval values must be numeric"):
             validate_flexible_bins(bin_spec, bin_reps)
 
 
@@ -198,14 +193,14 @@ class TestFindFlexibleBinForValue:
 
     def test_singleton_match(self):
         """Test finding value in singleton bins."""
-        bin_defs = [{"singleton": 1}, {"singleton": 2}, {"singleton": 3}]
+        bin_defs = [1, 2, 3]  # New simplified format
         assert find_flexible_bin_for_value(1, bin_defs) == 0
         assert find_flexible_bin_for_value(2, bin_defs) == 1
         assert find_flexible_bin_for_value(3, bin_defs) == 2
 
     def test_interval_match(self):
         """Test finding value in interval bins."""
-        bin_defs = [{"interval": [0, 2]}, {"interval": [2, 4]}, {"interval": [4, 6]}]
+        bin_defs = [(0, 2), (2, 4), (4, 6)]  # New simplified format
         assert find_flexible_bin_for_value(1.0, bin_defs) == 0
         assert find_flexible_bin_for_value(2.0, bin_defs) == 0  # First interval at boundary
         assert find_flexible_bin_for_value(3.0, bin_defs) == 1
@@ -213,14 +208,14 @@ class TestFindFlexibleBinForValue:
 
     def test_mixed_bins(self):
         """Test with mixed singleton and interval bins."""
-        bin_defs = [{"singleton": 1}, {"interval": [2, 4]}, {"singleton": 5}]
+        bin_defs = [1, (2, 4), 5]  # New simplified format
         assert find_flexible_bin_for_value(1, bin_defs) == 0
         assert find_flexible_bin_for_value(3, bin_defs) == 1
         assert find_flexible_bin_for_value(5, bin_defs) == 2
 
     def test_no_match(self):
         """Test when value doesn't match any bin."""
-        bin_defs = [{"singleton": 1}, {"interval": [2, 4]}]
+        bin_defs = [1, (2, 4)]  # New simplified format
         assert find_flexible_bin_for_value(0, bin_defs) == MISSING_VALUE
         assert find_flexible_bin_for_value(1.5, bin_defs) == MISSING_VALUE
         assert find_flexible_bin_for_value(5, bin_defs) == MISSING_VALUE
@@ -231,7 +226,7 @@ class TestFindFlexibleBinForValue:
 
     def test_interval_boundaries(self):
         """Test interval boundary conditions."""
-        bin_defs = [{"interval": [1, 3]}]
+        bin_defs = [(1, 3)]  # New simplified format
         assert find_flexible_bin_for_value(1.0, bin_defs) == 0  # Left boundary
         assert find_flexible_bin_for_value(3.0, bin_defs) == 0  # Right boundary
         assert find_flexible_bin_for_value(0.9, bin_defs) == MISSING_VALUE  # Just outside left
@@ -243,33 +238,33 @@ class TestCalculateFlexibleBinWidth:
 
     def test_singleton_width(self):
         """Test width of singleton bins."""
-        bin_def = {"singleton": 5}
+        bin_def = 5  # New simplified format: just the scalar
         assert calculate_flexible_bin_width(bin_def) == 0.0
 
     def test_interval_width(self):
         """Test width of interval bins."""
-        bin_def = {"interval": [2, 5]}
+        bin_def = (2, 5)  # New simplified format: tuple
         assert calculate_flexible_bin_width(bin_def) == 3.0
 
     def test_zero_width_interval(self):
         """Test zero-width interval."""
-        bin_def = {"interval": [3, 3]}
+        bin_def = (3, 3)  # New simplified format: tuple
         assert calculate_flexible_bin_width(bin_def) == 0.0
 
     def test_negative_interval(self):
         """Test interval with negative values."""
-        bin_def = {"interval": [-5, -2]}
+        bin_def = (-5, -2)  # New simplified format: tuple
         assert calculate_flexible_bin_width(bin_def) == 3.0
 
     def test_invalid_bin_def(self):
         """Test with invalid bin definition."""
-        bin_def = {"unknown": 1}
+        bin_def = {"unknown": 1}  # Old dict format should fail
         with pytest.raises(ValueError, match="Unknown bin definition"):
             calculate_flexible_bin_width(bin_def)
 
     def test_large_interval(self):
         """Test with large interval."""
-        bin_def = {"interval": [0, 1000]}
+        bin_def = (0, 1000)  # New simplified format: tuple
         assert calculate_flexible_bin_width(bin_def) == 1000.0
 
 
@@ -278,30 +273,30 @@ class TestTransformValueToFlexibleBin:
 
     def test_valid_numeric_values(self):
         """Test with valid numeric values."""
-        bin_defs = [{"singleton": 1}, {"interval": [2, 4]}]
+        bin_defs = [1, (2, 4)]  # New simplified format
         assert transform_value_to_flexible_bin(1, bin_defs) == 0
         assert transform_value_to_flexible_bin(3, bin_defs) == 1
 
     def test_missing_values(self):
         """Test with missing values."""
-        bin_defs = [{"singleton": 1}]
+        bin_defs = [1]  # New simplified format
         assert transform_value_to_flexible_bin(float("nan"), bin_defs) == MISSING_VALUE
         assert transform_value_to_flexible_bin(None, bin_defs) == MISSING_VALUE
         assert transform_value_to_flexible_bin("string", bin_defs) == MISSING_VALUE
 
     def test_no_matching_bin(self):
         """Test when value doesn't match any bin."""
-        bin_defs = [{"singleton": 1}]
+        bin_defs = [1]  # New simplified format
         assert transform_value_to_flexible_bin(2, bin_defs) == MISSING_VALUE
 
     def test_string_numeric_conversion(self):
         """Test that string numbers are treated as missing."""
-        bin_defs = [{"singleton": 1}]
+        bin_defs = [1]  # New simplified format
         assert transform_value_to_flexible_bin("1", bin_defs) == MISSING_VALUE
 
     def test_boolean_conversion(self):
         """Test boolean value conversion."""
-        bin_defs = [{"singleton": 1}, {"singleton": 0}]
+        bin_defs = [1, 0]  # New simplified format
         assert transform_value_to_flexible_bin(True, bin_defs) == 0  # True -> 1.0
         assert transform_value_to_flexible_bin(False, bin_defs) == 1  # False -> 0.0
 
@@ -311,15 +306,15 @@ class TestGetFlexibleBinCount:
 
     def test_single_column(self):
         """Test with single column."""
-        bin_spec = {"col1": [{"singleton": 1}, {"interval": [2, 4]}]}
+        bin_spec = {"col1": [1, (2, 4)]}  # New simplified format
         result = get_flexible_bin_count(bin_spec)
         assert result == {"col1": 2}
 
     def test_multiple_columns(self):
         """Test with multiple columns."""
         bin_spec = {
-            "col1": [{"singleton": 1}],
-            "col2": [{"interval": [2, 4]}, {"singleton": 5}, {"interval": [6, 8]}],
+            "col1": [1],  # New simplified format
+            "col2": [(2, 4), 5, (6, 8)],  # New simplified format
             "col3": [],
         }
         result = get_flexible_bin_count(bin_spec)

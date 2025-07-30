@@ -10,7 +10,7 @@ class DummyFlexibleBinning(FlexibleBinningBase):
 
     def _calculate_flexible_bins(self, x_col, col_id, guidance_data=None):
         # Return dummy flexible bin definitions and representatives
-        return [{"singleton": 0}], [0.0]
+        return [0], [0.0]  # New simplified format
 
 
 class MinimalFlexibleBinning(FlexibleBinningBase):
@@ -21,7 +21,7 @@ class MinimalFlexibleBinning(FlexibleBinningBase):
 
     def _calculate_flexible_bins(self, x_col, col_id, guidance_data=None):
         # Return dummy flexible bin definitions and representatives
-        return [{"singleton": 0}], [0.0]
+        return [0], [0.0]  # New simplified format
 
 
 def test_init_default():
@@ -228,7 +228,7 @@ def test_calculate_flexible_bins_abstract():
     obj = DummyFlexibleBinning()
     # The dummy class implements it, so we can call it
     result = obj._calculate_flexible_bins(np.array([1, 2, 3]), 0)
-    assert result == ([{"singleton": 0}], [0.0])
+    assert result == ([0], [0.0])  # New simplified format
 
 
 @patch("binning.base._flexible_binning_base.find_flexible_bin_for_value")
@@ -360,7 +360,7 @@ def test_calculate_flexible_bins_jointly_abstract():
 
     # This should call the base implementation which falls back to _calculate_flexible_bins
     result = obj._calculate_flexible_bins_jointly(np.array([1, 2]), [0])
-    assert result == ([{"singleton": 0}], [0.0])
+    assert result == ([0], [0.0])  # New simplified format
 
 
 @patch("binning.base._flexible_binning_base.return_like_input")
@@ -458,7 +458,7 @@ def test_calculate_flexible_bins_jointly_fallback():
 
     # Should fall back to _calculate_flexible_bins
     result = obj._calculate_flexible_bins_jointly(all_data, [0])
-    assert result == ([{"singleton": 0}], [0.0])
+    assert result == ([0], [0.0])  # New simplified format
 
 
 def test_ensure_flexible_bin_dict_deprecated():
@@ -691,7 +691,7 @@ def test_calculate_flexible_bins_jointly_direct_call():
 
     # Call the method directly to ensure fallback behavior works
     result = obj._calculate_flexible_bins_jointly(all_data, columns)
-    assert result == ([{"singleton": 0}], [0.0])  # Should call _calculate_flexible_bins
+    assert result == ([0], [0.0])  # New simplified format - Should call _calculate_flexible_bins
 
 
 def test_fit_jointly_covers_missing_lines():
@@ -715,8 +715,8 @@ def test_fit_jointly_covers_missing_lines():
     assert 1 in obj._bin_reps
 
     # Verify the bins have expected structure
-    assert obj._bin_spec[0] == [{"singleton": 0}]
-    assert obj._bin_spec[1] == [{"singleton": 0}]
+    assert obj._bin_spec[0] == [0]  # New simplified format
+    assert obj._bin_spec[1] == [0]  # New simplified format
 
 
 def test_fit_jointly_enabled_through_handle_bin_params():

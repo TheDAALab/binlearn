@@ -31,8 +31,8 @@ def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
 
     Returns
     -------
-    Dict[Any, List[Dict[str, Any]]]
-        Dictionary mapping columns to lists of bin definitions.
+    Dict[Any, List[Any]]
+        Dictionary mapping columns to lists of bin definitions in simplified format.
 
     Raises
     ------
@@ -43,7 +43,30 @@ def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
         return {}
 
     if isinstance(bin_spec, dict):
-        return bin_spec
+        # Convert any old dict format to new simplified format
+        converted_spec = {}
+        for col, bin_defs in bin_spec.items():
+            converted_bin_defs = []
+            for bin_def in bin_defs:
+                if isinstance(bin_def, (int, float)):
+                    # Already in simplified format
+                    converted_bin_defs.append(bin_def)
+                elif isinstance(bin_def, tuple):
+                    # Already in simplified format
+                    converted_bin_defs.append(bin_def)
+                elif isinstance(bin_def, dict):
+                    # Convert old dict format to simplified format
+                    if "singleton" in bin_def:
+                        converted_bin_defs.append(bin_def["singleton"])
+                    elif "interval" in bin_def:
+                        interval = bin_def["interval"]
+                        converted_bin_defs.append(tuple(interval))
+                    else:
+                        raise ValueError(f"Invalid bin definition: {bin_def}")
+                else:
+                    raise ValueError(f"Invalid bin definition: {bin_def}")
+            converted_spec[col] = converted_bin_defs
+        return converted_spec
 
     # Handle other formats if needed
     raise ValueError("bin_spec must be a dictionary mapping columns to bin definitions")
@@ -55,7 +78,7 @@ def generate_default_flexible_representatives(bin_defs: FlexibleBinDefs) -> BinR
     Parameters
     ----------
     bin_defs : FlexibleBinDefs
-        List of bin definitions, each containing either 'singleton' or 'interval' key.
+        List of bin definitions, each being either a scalar (singleton) or tuple (interval).
 
     Returns
     -------
@@ -69,10 +92,12 @@ def generate_default_flexible_representatives(bin_defs: FlexibleBinDefs) -> BinR
     """
     reps = []
     for bin_def in bin_defs:
-        if "singleton" in bin_def:
-            reps.append(float(bin_def["singleton"]))
-        elif "interval" in bin_def:
-            left, right = bin_def["interval"]
+        if isinstance(bin_def, (int, float)):
+            # Singleton bin
+            reps.append(float(bin_def))
+        elif isinstance(bin_def, tuple) and len(bin_def) == 2:
+            # Interval bin
+            left, right = bin_def
             reps.append((left + right) / 2)  # Midpoint
         else:
             raise ValueError(f"Unknown bin definition: {bin_def}")
@@ -115,7 +140,7 @@ def _validate_single_flexible_bin_def(bin_def: FlexibleBinDef, col: ColumnId, bi
     Parameters
     ----------
     bin_def : FlexibleBinDef
-        Single bin definition to validate.
+        Single bin definition to validate - either scalar (singleton) or tuple (interval).
     col : ColumnId
         Column identifier for error messages.
     bin_idx : int
@@ -126,29 +151,22 @@ def _validate_single_flexible_bin_def(bin_def: FlexibleBinDef, col: ColumnId, bi
     ValueError
         If bin definition is invalid.
     """
-    if not isinstance(bin_def, dict):
-        raise ValueError(f"Column {col}, bin {bin_idx}: Bin definition must be a dictionary")
+    if isinstance(bin_def, (int, float)):
+        # Singleton bin - no additional validation needed
+        return
+    elif isinstance(bin_def, tuple):
+        if len(bin_def) != 2:
+            raise ValueError(f"Column {col}, bin {bin_idx}: Interval must be (min, max)")
 
-    if "singleton" in bin_def:
-        if len(bin_def) != 1:
-            raise ValueError(
-                f"Column {col}, bin {bin_idx}: Singleton bin must have only 'singleton' key"
-            )
-    elif "interval" in bin_def:
-        if len(bin_def) != 1:
-            raise ValueError(
-                f"Column {col}, bin {bin_idx}: Interval bin must have only 'interval' key"
-            )
+        left, right = bin_def
+        if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+            raise ValueError(f"Column {col}, bin {bin_idx}: Interval values must be numeric")
 
-        interval = bin_def["interval"]
-        if not isinstance(interval, (list, tuple)) or len(interval) != 2:
-            raise ValueError(f"Column {col}, bin {bin_idx}: Interval must be [min, max]")
-
-        if interval[0] > interval[1]:
+        if left > right:
             raise ValueError(f"Column {col}, bin {bin_idx}: Interval min must be <= max")
     else:
         raise ValueError(
-            f"Column {col}, bin {bin_idx}: Bin must have 'singleton' or 'interval' key"
+            f"Column {col}, bin {bin_idx}: Bin must be either a scalar (singleton) or tuple (interval)"
         )
 
 
@@ -194,11 +212,13 @@ def find_flexible_bin_for_value(value: float, bin_defs: FlexibleBinDefs) -> int:
         Bin index if found, MISSING_VALUE if no match.
     """
     for bin_idx, bin_def in enumerate(bin_defs):
-        if "singleton" in bin_def:
-            if value == bin_def["singleton"]:
+        if isinstance(bin_def, (int, float)):
+            # Singleton bin
+            if value == bin_def:
                 return bin_idx
-        elif "interval" in bin_def:
-            left, right = bin_def["interval"]
+        elif isinstance(bin_def, tuple) and len(bin_def) == 2:
+            # Interval bin
+            left, right = bin_def
             if left <= value <= right:
                 return bin_idx
 
@@ -212,7 +232,7 @@ def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     Parameters
     ----------
     bin_def : FlexibleBinDef
-        Bin definition containing either 'singleton' or 'interval' key.
+        Bin definition - either scalar (singleton) or tuple (interval).
 
     Returns
     -------
@@ -224,13 +244,15 @@ def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     ValueError
         If bin definition has unknown format.
     """
-    if "singleton" in bin_def:
-        return 0.0  # Singleton has zero width
-    if "interval" in bin_def:
-        left, right = bin_def["interval"]
+    if isinstance(bin_def, (int, float)):
+        # Singleton bin has zero width
+        return 0.0
+    elif isinstance(bin_def, tuple) and len(bin_def) == 2:
+        # Interval bin
+        left, right = bin_def
         return right - left
-
-    raise ValueError(f"Unknown bin definition: {bin_def}")
+    else:
+        raise ValueError(f"Unknown bin definition: {bin_def}")
 
 
 def transform_value_to_flexible_bin(value: Any, bin_defs: FlexibleBinDefs) -> int:

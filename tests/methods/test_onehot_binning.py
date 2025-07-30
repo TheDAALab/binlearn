@@ -136,7 +136,7 @@ class TestOneHotBinningBasicFunctionality:
         # Column 0 should have bins for values 1, 2, 3
         col0_bins = binning.bin_spec_[0]
         expected_values = {1.0, 2.0, 3.0}
-        actual_values = {bin_def["singleton"] for bin_def in col0_bins}
+        actual_values = set(col0_bins)  # New format: just the values directly
         assert actual_values == expected_values
 
         # Transform the data
@@ -243,8 +243,8 @@ class TestOneHotBinningBasicFunctionality:
         assert len(joint_bins_col0) == 6  # 6 unique values total
 
         # Extract the singleton values from each column's bins
-        joint_values_col0 = {bin_def["singleton"] for bin_def in joint_bins_col0}
-        joint_values_col1 = {bin_def["singleton"] for bin_def in joint_bins_col1}
+        joint_values_col0 = set(joint_bins_col0)  # New format: values directly
+        joint_values_col1 = set(joint_bins_col1)  # New format: values directly
 
         # Both columns should have bins for all unique values
         expected_values = {1.0, 2.0, 3.0, 10.0, 20.0, 30.0}
@@ -439,8 +439,8 @@ class TestOneHotBinningWorkflows:
         assert 1 in binning.bin_spec_
 
         # Each column should have appropriate bins
-        col0_values = {bin_def["singleton"] for bin_def in binning.bin_spec_[0]}
-        col1_values = {bin_def["singleton"] for bin_def in binning.bin_spec_[1]}
+        col0_values = set(binning.bin_spec_[0])  # New format: values directly
+        col1_values = set(binning.bin_spec_[1])  # New format: values directly
 
         assert col0_values == {1.0, 2.0, 3.0}
         assert col1_values == {10.0, 20.0, 30.0}
@@ -466,7 +466,7 @@ class TestOneHotBinningWorkflows:
 
         binning.fit(X)
         assert len(binning.bin_spec_[0]) == 1
-        assert binning.bin_spec_[0][0]["singleton"] == 5.0
+        assert binning.bin_spec_[0][0] == 5.0  # New format: value directly
 
         X_binned = binning.transform(X)
         assert X_binned.shape == X.shape
@@ -512,7 +512,7 @@ class TestOneHotBinningWorkflows:
 
             # Each representative should match the singleton value
             for i, bin_def in enumerate(bin_spec):
-                assert bin_repr[i] == bin_def["singleton"]
+                assert bin_repr[i] == bin_def  # New format: value directly
 
 
 class TestOneHotBinningFitGetParamsWorkflow:
