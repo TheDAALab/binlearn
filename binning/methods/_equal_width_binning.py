@@ -1,11 +1,10 @@
 """Equal-width binning transformer."""
 
-from typing import Any, Dict, Optional, Tuple, Union, List
+from typing import Any, Tuple, Optional, List
 import numpy as np
 
 from ..utils.types import (
-    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
-    OptionalColumnList, GuidanceColumns, ArrayLike
+    BinEdges, ColumnList, BinEdgesDict
 )
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
@@ -99,7 +98,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         if np.all(np.isnan(x_col)):
             # Create a default range for all-NaN columns
             return 0.0, 1.0
-        
+
         min_val = np.nanmin(x_col)
         max_val = np.nanmax(x_col)
 

@@ -82,9 +82,9 @@ from .inspection import (
 __all__ = [
     # Constants
     "MISSING_VALUE",
-    "ABOVE_RANGE", 
+    "ABOVE_RANGE",
     "BELOW_RANGE",
-    
+
     # Type aliases
     "ColumnId", "ColumnList", "OptionalColumnList", "GuidanceColumns", "ArrayLike",
     "BinEdges", "BinEdgesDict", "BinReps", "BinRepsDict",
@@ -93,22 +93,22 @@ __all__ = [
     "IntervalBinCalculationResult", "FlexibleBinCalculationResult",
     "BinCountDict", "Array1D", "Array2D", "BooleanMask",
     "FitParams", "JointParams",
-    
+
     # Error classes
     "BinningError", "InvalidDataError", "ConfigurationError",
     "FittingError", "TransformationError", "ValidationError",
     "ValidationMixin", "DataQualityWarning",
-    
+
     # Sklearn integration
     "SklearnCompatibilityMixin", "BinningPipeline", "BinningFeatureSelector",
     "make_binning_scorer",
-    
+
     # Interval binning utilities
     "ensure_bin_dict",
-    "validate_bins", 
+    "validate_bins",
     "default_representatives",
     "create_bin_masks",
-    
+
     # Flexible binning utilities
     "ensure_flexible_bin_spec",
     "generate_default_flexible_representatives",
@@ -118,14 +118,14 @@ __all__ = [
     "calculate_flexible_bin_width",
     "transform_value_to_flexible_bin",
     "get_flexible_bin_count",
-    
+
     # Data handling utilities
     "prepare_array",
-    "return_like_input", 
+    "return_like_input",
     "prepare_input_with_columns",
     # Inspection utilities
     "get_class_parameters",
-    "get_constructor_info", 
+    "get_constructor_info",
     "safe_get_class_parameters",
     "safe_get_constructor_info",
 ]

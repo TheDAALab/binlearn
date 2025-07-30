@@ -1,14 +1,14 @@
 """Flexible binning base class with unified joint/per-column logic."""
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 from abc import abstractmethod
 
 import numpy as np
 
 from ..utils.types import (
     BinEdges, BinEdgesDict, FlexibleBinSpec, FlexibleBinDefs,
-    ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
+    ColumnId, ColumnList, GuidanceColumns
 )
 from ._general_binning_base import GeneralBinningBase
 from ..utils.bin_operations import ensure_bin_dict
@@ -148,10 +148,10 @@ class FlexibleBinningBase(GeneralBinningBase):
             if any(col not in self._bin_spec for col in columns):
                 # For true joint binning, flatten all data together
                 all_data = X.ravel()
-                
+
                 # Calculate bins once from all flattened data
                 bin_defs, reps = self._calculate_flexible_bins_jointly(all_data, columns)
-                
+
                 # Apply the same bins to all columns that don't have user-provided specs
                 for col in columns:
                     if col not in self._bin_spec:

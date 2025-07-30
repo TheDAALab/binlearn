@@ -6,21 +6,16 @@ including guidance data validation, decision tree integration, and feature-targe
 pair handling.
 """
 
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from ..utils.types import (
-    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
-    OptionalColumnList, GuidanceColumns, ArrayLike
+    BinEdges, BinEdgesDict, ColumnId, ColumnList
 )
 from ._interval_binning_base import IntervalBinningBase
 from ..utils.errors import (
-    BinningError,
     ConfigurationError,
-    FittingError,
-    InvalidDataError,
-    ValidationError,
     DataQualityWarning,
 )
 
@@ -70,7 +65,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         """Create tree template with merged parameters."""
         if self._tree_template is not None:
             return
-            
+
         # Create simple tree template with default parameters
         default_params = {
             "max_depth": 3,
@@ -78,10 +73,10 @@ class SupervisedBinningBase(IntervalBinningBase):
             "min_samples_split": 2,
             "random_state": None,
         }
-        
+
         # Merge user params with defaults
         merged_params = {**default_params, **(self.tree_params or {})}
-        
+
         # Initialize the appropriate tree model template
         try:
             if self.task_type == "classification":
@@ -132,7 +127,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         # Handle dimensionality - supervised binning expects single column
         if guidance_validated.ndim == 1:
             return guidance_validated
-        elif guidance_validated.ndim == 2:
+        if guidance_validated.ndim == 2:
             if guidance_validated.shape[1] != 1:
                 raise ValueError(
                     f"{name} has {guidance_validated.shape[1]} columns, "
@@ -141,8 +136,7 @@ class SupervisedBinningBase(IntervalBinningBase):
                 )
             # Flatten to 1D for easier processing
             return guidance_validated.ravel()
-        else:
-            raise ValueError(
+        raise ValueError(
                 f"{name} has {guidance_validated.ndim} dimensions, "
                 f"expected 1D or 2D array with single column"
             )
@@ -311,7 +305,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
             return [min_val, max_val], [(min_val + max_val) / 2]
 
-        elif n_valid < min_samples:
+        if n_valid < min_samples:
             # Insufficient data for complex binning
             valid_data = x_col[valid_mask]
             min_val = np.min(valid_data)

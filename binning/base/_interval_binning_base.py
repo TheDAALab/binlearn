@@ -3,15 +3,15 @@ Interval binning base class with unified joint/per-column logic.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 from abc import abstractmethod
 import warnings
 
 import numpy as np
 
 from ..utils.types import (
-    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
-    OptionalColumnList, GuidanceColumns, ArrayLike
+    BinEdges, BinEdgesDict, ColumnId, ColumnList,
+    GuidanceColumns
 )
 from ._general_binning_base import GeneralBinningBase
 from ..utils.bin_operations import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
@@ -166,14 +166,14 @@ class IntervalBinningBase(GeneralBinningBase):
             if not self.bin_edges:
                 # For true joint binning, flatten all data together
                 all_data = X.ravel()
-                
+
                 # Check if all data is NaN
                 if np.all(np.isnan(all_data)):
                     warnings.warn("All data contains only NaN values", DataQualityWarning)
-                
+
                 # Calculate bins once from all flattened data
                 edges, reps = self._calculate_bins_jointly(all_data, columns)
-                
+
                 # Apply the same bins to all columns
                 for col in columns:
                     self._bin_edges[col] = edges

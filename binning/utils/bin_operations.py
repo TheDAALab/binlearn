@@ -10,7 +10,6 @@ from typing import Any, Tuple
 import numpy as np
 from .constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 from .types import (
-    ColumnId,
     BinEdges,
     BinEdgesDict,
     BinReps,
@@ -38,10 +37,10 @@ def ensure_bin_dict(data: Any) -> BinEdgesDict:
     arr = np.asarray(data, dtype=float)
     if arr.ndim == 0:
         return {0: [float(arr)]}
-    elif arr.ndim == 1:
+    if arr.ndim == 1:
         return {0: arr.tolist()}
-    else:
-        return {i: arr[i].tolist() for i in range(arr.shape[0])}
+
+    return {i: arr[i].tolist() for i in range(arr.shape[0])}
 
 
 def validate_bins(bin_spec: BinEdgesDict, bin_reps: BinRepsDict) -> None:

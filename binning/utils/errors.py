@@ -2,9 +2,9 @@
 Enhanced error handling for the binning framework.
 """
 
+import warnings
 from typing import Any, Optional, List, Dict
 import numpy as np
-import warnings
 
 
 class BinningError(Exception):
@@ -25,49 +25,33 @@ class BinningError(Exception):
 class InvalidDataError(BinningError):
     """Raised when input data is invalid or incompatible."""
 
-    pass
-
 
 class ConfigurationError(BinningError):
     """Raised when configuration parameters are invalid."""
-
-    pass
 
 
 class FittingError(BinningError):
     """Raised when fitting process fails."""
 
-    pass
-
 
 class TransformationError(BinningError):
     """Raised when transformation fails."""
-
-    pass
 
 
 class ValidationError(BinningError):
     """Raised when validation fails."""
 
-    pass
-
 
 class BinningWarning(UserWarning):
     """Base warning for binning operations."""
-
-    pass
 
 
 class DataQualityWarning(BinningWarning):
     """Warning about data quality issues."""
 
-    pass
-
 
 class PerformanceWarning(BinningWarning):
     """Warning about potential performance issues."""
-
-    pass
 
 
 class ValidationMixin:

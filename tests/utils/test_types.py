@@ -1,7 +1,5 @@
 """Tests for types module."""
-import pytest
 import numpy as np
-from typing import get_type_hints
 from binning.utils import types
 
 

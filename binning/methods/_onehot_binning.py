@@ -2,12 +2,11 @@
 OneHotBinning transformer - creates a singleton bin for each unique value in the data.
 """
 
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Tuple, Optional
 import numpy as np
 
 from ..utils.types import (
-    FlexibleBinSpec, FlexibleBinDefs, FlexibleBinDef, BinEdges, BinEdgesDict,
-    ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike
+    FlexibleBinDefs, ColumnId, FlexibleBinSpec, BinEdges, BinEdgesDict
 )
 from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
@@ -60,7 +59,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         """
         # Remove fit_jointly from kwargs if present to avoid conflicts
         kwargs.pop('fit_jointly', None)
-        
+
         super().__init__(
             bin_spec=bin_spec,
             bin_representatives=bin_representatives,
@@ -73,7 +72,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
     def _validate_params(self) -> None:
         """Validate OneHotBinning specific parameters."""
         super()._validate_params()
-        
+
         if not isinstance(self.max_unique_values, int) or self.max_unique_values <= 0:
             raise ValueError("max_unique_values must be a positive integer")
 
@@ -132,7 +131,3 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
             representatives.append(val)
 
         return bin_defs, representatives
-
-
-
-

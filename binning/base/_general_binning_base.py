@@ -3,7 +3,7 @@ Simplified base class for all binning methods.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from ..utils.data_handling import return_like_input, prepare_input_with_columns
 from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
-from ..utils.errors import ValidationMixin, BinningError, InvalidDataError
+from ..utils.errors import ValidationMixin, BinningError
 from ..utils.sklearn_integration import SklearnCompatibilityMixin
 from ..utils.inspection import safe_get_class_parameters
 
@@ -205,11 +205,10 @@ class GeneralBinningBase(
                 return return_like_input(
                     result, X, self._binning_columns, bool(self.preserve_dataframe)
                 )
-            else:
-                # No guidance - inverse transform all columns
-                arr, columns = self._prepare_input(X)
-                result = self._inverse_transform_columns(arr, columns)
-                return return_like_input(result, X, columns, bool(self.preserve_dataframe))
+            # No guidance - inverse transform all columns
+            arr, columns = self._prepare_input(X)
+            result = self._inverse_transform_columns(arr, columns)
+            return return_like_input(result, X, columns, bool(self.preserve_dataframe))
 
         except Exception as e:
             if isinstance(e, (BinningError, RuntimeError)):
@@ -248,18 +247,18 @@ class GeneralBinningBase(
     def get_params(self, deep: bool = True) -> Dict[str, Any]:
         """Get parameters for this estimator with automatic parameter discovery."""
         params = super().get_params(deep=deep)
-        
+
         # Add all class-specific parameters automatically
         class_specific_params = safe_get_class_parameters(
-            self.__class__, 
+            self.__class__,
             exclude_base_class='GeneralBinningBase'
         )
-        
+
         # Add class-specific parameters to result
         for param_name in class_specific_params:
             if hasattr(self, param_name):
                 params[param_name] = getattr(self, param_name)
-        
+
         # Add fitted parameters if fitted
         if self._fitted:
             fitted_params = self._get_fitted_params()
@@ -273,30 +272,32 @@ class GeneralBinningBase(
             self.__class__,
             exclude_base_class='GeneralBinningBase'
         )
-        
+
         # Build result dictionary
         result = {}
         for param_name in class_specific_params:
             if hasattr(self, param_name):
                 result[param_name] = getattr(self, param_name)
-        
+
         return result
 
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameters that should be transferred to new instances."""
         fitted_params = {}
-        
-        # Common fitted attributes to transfer
-        fitted_attrs = ['bin_spec_', 'bin_representatives_', 'bin_edges_']
-        
-        for attr in fitted_attrs:
-            if hasattr(self, attr):
-                value = getattr(self, attr)
+
+        # Automatically discover fitted attributes ending with underscore
+        for attr_name in dir(self):
+            if (attr_name.endswith('_') and
+                not attr_name.startswith('_') and  # Exclude private attributes
+                not attr_name.endswith('__') and  # Exclude dunder methods
+                hasattr(self, attr_name)):
+
+                value = getattr(self, attr_name)
                 if value is not None:
                     # Map to parameter names (remove trailing underscore)
-                    param_name = attr.rstrip('_')
+                    param_name = attr_name.rstrip('_')
                     fitted_params[param_name] = value
-        
+
         return fitted_params
 
     def set_params(self, **params) -> "GeneralBinningBase":
@@ -321,21 +322,21 @@ class GeneralBinningBase(
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
         """Handle all parameter changes automatically."""
         reset_fitted = False
-        
+
         # Get class-specific parameters
         class_specific_params = safe_get_class_parameters(
             self.__class__,
             exclude_base_class='GeneralBinningBase'
         )
-        
+
         # Parameters that always trigger refitting
         refit_params = ['fit_jointly', 'guidance_columns'] + class_specific_params
-        
+
         for param_name in refit_params:
             if param_name in params:
                 setattr(self, param_name, params.pop(param_name))
                 reset_fitted = True
-        
+
         return reset_fitted
 
     def _validate_params(self) -> None:

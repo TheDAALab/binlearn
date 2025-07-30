@@ -190,12 +190,12 @@ class TestCreateBinMasks:
         indices = np.array([0, 1, 2, 0, 1])
         n_bins = 3
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         expected_valid = np.array([True, True, True, True, True])
         expected_nan = np.array([False, False, False, False, False])
         expected_below = np.array([False, False, False, False, False])
         expected_above = np.array([False, False, False, False, False])
-        
+
         np.testing.assert_array_equal(valid, expected_valid)
         np.testing.assert_array_equal(nan_mask, expected_nan)
         np.testing.assert_array_equal(below_mask, expected_below)
@@ -206,12 +206,12 @@ class TestCreateBinMasks:
         indices = np.array([0, MISSING_VALUE, 1, MISSING_VALUE])
         n_bins = 2
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         expected_valid = np.array([True, False, True, False])
         expected_nan = np.array([False, True, False, True])
         expected_below = np.array([False, False, False, False])
         expected_above = np.array([False, False, False, False])
-        
+
         np.testing.assert_array_equal(valid, expected_valid)
         np.testing.assert_array_equal(nan_mask, expected_nan)
         np.testing.assert_array_equal(below_mask, expected_below)
@@ -222,12 +222,12 @@ class TestCreateBinMasks:
         indices = np.array([0, BELOW_RANGE, 1, BELOW_RANGE])
         n_bins = 2
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         expected_valid = np.array([True, False, True, False])
         expected_nan = np.array([False, False, False, False])
         expected_below = np.array([False, True, False, True])
         expected_above = np.array([False, False, False, False])
-        
+
         np.testing.assert_array_equal(valid, expected_valid)
         np.testing.assert_array_equal(nan_mask, expected_nan)
         np.testing.assert_array_equal(below_mask, expected_below)
@@ -238,12 +238,12 @@ class TestCreateBinMasks:
         indices = np.array([0, ABOVE_RANGE, 1, ABOVE_RANGE])
         n_bins = 2
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         expected_valid = np.array([True, False, True, False])
         expected_nan = np.array([False, False, False, False])
         expected_below = np.array([False, False, False, False])
         expected_above = np.array([False, True, False, True])
-        
+
         np.testing.assert_array_equal(valid, expected_valid)
         np.testing.assert_array_equal(nan_mask, expected_nan)
         np.testing.assert_array_equal(below_mask, expected_below)
@@ -254,12 +254,12 @@ class TestCreateBinMasks:
         indices = np.array([0, 1, MISSING_VALUE, BELOW_RANGE, ABOVE_RANGE, 0])
         n_bins = 2
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         expected_valid = np.array([True, True, False, False, False, True])
         expected_nan = np.array([False, False, True, False, False, False])
         expected_below = np.array([False, False, False, True, False, False])
         expected_above = np.array([False, False, False, False, True, False])
-        
+
         np.testing.assert_array_equal(valid, expected_valid)
         np.testing.assert_array_equal(nan_mask, expected_nan)
         np.testing.assert_array_equal(below_mask, expected_below)
@@ -270,12 +270,12 @@ class TestCreateBinMasks:
         indices = np.array([0, 1, 5, 2])  # 5 is >= n_bins
         n_bins = 2
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         expected_valid = np.array([True, True, False, False])  # 5 and 2 are invalid
         expected_nan = np.array([False, False, False, False])
         expected_below = np.array([False, False, False, False])
         expected_above = np.array([False, False, False, False])
-        
+
         np.testing.assert_array_equal(valid, expected_valid)
         np.testing.assert_array_equal(nan_mask, expected_nan)
         np.testing.assert_array_equal(below_mask, expected_below)
@@ -286,7 +286,7 @@ class TestCreateBinMasks:
         indices = np.array([])
         n_bins = 2
         valid, nan_mask, below_mask, above_mask = create_bin_masks(indices, n_bins)
-        
+
         assert len(valid) == 0
         assert len(nan_mask) == 0
         assert len(below_mask) == 0

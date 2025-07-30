@@ -1,5 +1,4 @@
 """Tests for constants module."""
-import pytest
 from binning.utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 
 

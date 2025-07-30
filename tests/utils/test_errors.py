@@ -1,8 +1,10 @@
 """Tests for errors module."""
-import pytest
 import warnings
-import numpy as np
 from unittest.mock import Mock, patch
+
+import pytest
+import numpy as np
+
 from binning.utils.errors import (
     BinningError,
     InvalidDataError,
@@ -32,7 +34,7 @@ class TestBinningError:
         """Test error with suggestions."""
         suggestions = ["Try this", "Or try that"]
         error = BinningError("Test error", suggestions=suggestions)
-        
+
         expected = "Test error\n\nSuggestions:\n  - Try this\n  - Or try that"
         assert str(error) == expected
         assert error.suggestions == suggestions
@@ -133,7 +135,7 @@ class TestValidationMixin:
         class UnconvertibleType:
             def __array__(self):
                 raise ValueError("Cannot convert to array")
-        
+
         data = UnconvertibleType()
         with pytest.raises(InvalidDataError, match="Could not convert test to array"):
             ValidationMixin.validate_array_like(data, "test")
@@ -206,9 +208,9 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = False
         mock_get_config.return_value = mock_config
-        
+
         data = np.array([1, 2, np.nan, 4])
-        
+
         # Should not raise any warnings
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -221,10 +223,10 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # More than 50% missing values
         data = np.array([1, np.nan, np.nan, np.nan])
-        
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             ValidationMixin.check_data_quality(data, "test")
@@ -238,9 +240,9 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         data = np.array([1, 2, np.inf, 4])
-        
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             ValidationMixin.check_data_quality(data, "test")
@@ -254,10 +256,10 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # 2D array with constant column
         data = np.array([[1, 5], [2, 5], [3, 5]])
-        
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             ValidationMixin.check_data_quality(data, "test")
@@ -272,10 +274,10 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # String data with missing values (>50% to trigger warning)
         data = np.array(["a", "nan", None, "", "b"], dtype=object)
-        
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             ValidationMixin.check_data_quality(data, "test")
@@ -289,10 +291,10 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # Create data that will trigger the exception handling
         complex_data = np.array([1+2j, 3+4j])  # Complex dtype
-        
+
         # Should not raise exception, just skip checks
         ValidationMixin.check_data_quality(complex_data, "test")
 
@@ -302,11 +304,11 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # Test with data that will trigger the except block
         # Use a dtype that will cause problems in the missing value check
         special_data = np.array([{'a': 1}, {'b': 2}], dtype=object)
-        
+
         # Should not raise exception, just skip checks
         ValidationMixin.check_data_quality(special_data, "test")
 
@@ -316,11 +318,11 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # Mock np.isinf to raise an exception
         with patch('numpy.isinf') as mock_isinf:
             mock_isinf.side_effect = Exception("Some error")
-            
+
             # Should not raise exception, just skip checks
             ValidationMixin.check_data_quality(np.array([1, 2, 3]), "test")
 
@@ -330,10 +332,10 @@ class TestValidationMixin:
         mock_config = Mock()
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
-        
+
         # Complex data type that should be skipped
         data = np.array([object(), object()])
-        
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             ValidationMixin.check_data_quality(data, "test")
@@ -464,6 +466,6 @@ class TestSuggestAlternatives:
         """Test case insensitive matching."""
         result = suggest_alternatives("SUPERVISED")
         assert "supervised" in result
-        
+
         result = suggest_alternatives("Tree")
         assert "supervised" in result

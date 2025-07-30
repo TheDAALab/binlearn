@@ -44,9 +44,9 @@ def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
 
     if isinstance(bin_spec, dict):
         return bin_spec
-    else:
-        # Handle other formats if needed
-        raise ValueError("bin_spec must be a dictionary mapping columns to bin definitions")
+
+    # Handle other formats if needed
+    raise ValueError("bin_spec must be a dictionary mapping columns to bin definitions")
 
 
 def generate_default_flexible_representatives(bin_defs: FlexibleBinDefs) -> BinReps:
@@ -72,8 +72,8 @@ def generate_default_flexible_representatives(bin_defs: FlexibleBinDefs) -> BinR
         if "singleton" in bin_def:
             reps.append(float(bin_def["singleton"]))
         elif "interval" in bin_def:
-            a, b = bin_def["interval"]
-            reps.append((a + b) / 2)  # Midpoint
+            left, right = bin_def["interval"]
+            reps.append((left + right) / 2)  # Midpoint
         else:
             raise ValueError(f"Unknown bin definition: {bin_def}")
     return reps
@@ -105,8 +105,8 @@ def validate_flexible_bins(bin_spec: FlexibleBinSpec, bin_reps: BinRepsDict) -> 
             )
 
         # Validate bin definition format
-        for i, bin_def in enumerate(bin_defs):
-            _validate_single_flexible_bin_def(bin_def, col, i)
+        for bin_idx, bin_def in enumerate(bin_defs):
+            _validate_single_flexible_bin_def(bin_def, col, bin_idx)
 
 
 def _validate_single_flexible_bin_def(bin_def: FlexibleBinDef, col: ColumnId, bin_idx: int) -> None:
@@ -198,8 +198,8 @@ def find_flexible_bin_for_value(value: float, bin_defs: FlexibleBinDefs) -> int:
             if value == bin_def["singleton"]:
                 return bin_idx
         elif "interval" in bin_def:
-            a, b = bin_def["interval"]
-            if a <= value <= b:
+            left, right = bin_def["interval"]
+            if left <= value <= right:
                 return bin_idx
 
     # Value doesn't match any bin - treat as missing
@@ -226,11 +226,11 @@ def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     """
     if "singleton" in bin_def:
         return 0.0  # Singleton has zero width
-    elif "interval" in bin_def:
-        a, b = bin_def["interval"]
-        return b - a
-    else:
-        raise ValueError(f"Unknown bin definition: {bin_def}")
+    if "interval" in bin_def:
+        left, right = bin_def["interval"]
+        return right - left
+
+    raise ValueError(f"Unknown bin definition: {bin_def}")
 
 
 def transform_value_to_flexible_bin(value: Any, bin_defs: FlexibleBinDefs) -> int:

@@ -26,7 +26,7 @@ GuidanceColumns = Optional[Union[ColumnList, ColumnId]]
 ArrayLike = Any  # Could be np.ndarray, pandas.DataFrame, polars.DataFrame, list, etc.
 
 # =============================================================================
-# INTERVAL BINNING TYPES  
+# INTERVAL BINNING TYPES
 # =============================================================================
 
 # Bin edges for interval binning (e.g., [0, 1, 2, 3] for 3 bins)
@@ -34,7 +34,7 @@ BinEdges = List[float]
 BinEdgesDict = Dict[ColumnId, BinEdges]
 
 # Bin representatives for interval binning (e.g., [0.5, 1.5, 2.5] for 3 bins)
-BinReps = List[float] 
+BinReps = List[float]
 BinRepsDict = Dict[ColumnId, BinReps]
 
 # Optional versions for parameters
@@ -64,7 +64,7 @@ OptionalFlexibleBinSpec = Optional[Union[FlexibleBinSpec, Any]]
 # Return type for bin calculation methods in interval binning
 IntervalBinCalculationResult = Tuple[BinEdges, BinReps]
 
-# Return type for bin calculation methods in flexible binning  
+# Return type for bin calculation methods in flexible binning
 FlexibleBinCalculationResult = Tuple[FlexibleBinDefs, BinReps]
 
 # =============================================================================
@@ -90,5 +90,5 @@ BooleanMask = np.ndarray  # Boolean array for masking
 # Common fit_params type
 FitParams = Dict[str, Any]
 
-# Common joint parameters type  
+# Common joint parameters type
 JointParams = Dict[str, Any]

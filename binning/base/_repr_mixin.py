@@ -21,7 +21,7 @@ class ReprMixin:
     def __repr__(self) -> str:
         """Clean string representation showing only relevant parameters."""
         class_name = self.__class__.__name__
-        
+
         # Get constructor parameters and their defaults
         constructor_info = self._get_constructor_info()
 
@@ -32,19 +32,19 @@ class ReprMixin:
             # This prevents showing inherited attributes that aren't in the concrete constructor
             if not hasattr(self, param_name):
                 continue
-                
+
             current_value = getattr(self, param_name)
-            
+
             # Skip if value matches default
             if current_value == default_value:
                 continue
-            
+
             # Skip None values that are defaults
             if current_value is None and default_value is None:
                 continue
-                
+
             # Skip empty containers unless they differ from default
-            if (current_value == {} or current_value == []) and default_value in (None, {}, []):
+            if current_value in ({}, []) and default_value in (None, {}, []):
                 continue
 
             # Abbreviate large objects
@@ -57,5 +57,4 @@ class ReprMixin:
 
         if parts:
             return f"{class_name}({', '.join(parts)})"
-        else:
-            return f"{class_name}()"
+        return f"{class_name}()"

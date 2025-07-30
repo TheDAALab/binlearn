@@ -1,1 +1,3 @@
-__version__ = "0.0.1"
+"""Version information for the binning package."""
+
+__version__ = "0.1.0"

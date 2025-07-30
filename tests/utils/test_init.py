@@ -1,5 +1,6 @@
-"""Tests for utils __init__.py module."""
-import pytest
+"""
+Tests for the utils/__init__.py module to achieve 100% coverage.
+"""
 from binning import utils
 
 
@@ -20,7 +21,7 @@ class TestUtilsImports:
         assert hasattr(utils, 'OptionalColumnList')
         assert hasattr(utils, 'GuidanceColumns')
         assert hasattr(utils, 'ArrayLike')
-        
+
         # Interval binning types
         assert hasattr(utils, 'BinEdges')
         assert hasattr(utils, 'BinEdgesDict')
@@ -28,25 +29,25 @@ class TestUtilsImports:
         assert hasattr(utils, 'BinRepsDict')
         assert hasattr(utils, 'OptionalBinEdgesDict')
         assert hasattr(utils, 'OptionalBinRepsDict')
-        
+
         # Flexible binning types
         assert hasattr(utils, 'FlexibleBinDef')
         assert hasattr(utils, 'FlexibleBinDefs')
         assert hasattr(utils, 'FlexibleBinSpec')
         assert hasattr(utils, 'OptionalFlexibleBinSpec')
-        
+
         # Calculation return types
         assert hasattr(utils, 'IntervalBinCalculationResult')
         assert hasattr(utils, 'FlexibleBinCalculationResult')
-        
+
         # Count and validation types
         assert hasattr(utils, 'BinCountDict')
-        
+
         # Numpy array types
         assert hasattr(utils, 'Array1D')
         assert hasattr(utils, 'Array2D')
         assert hasattr(utils, 'BooleanMask')
-        
+
         # Parameter types
         assert hasattr(utils, 'FitParams')
         assert hasattr(utils, 'JointParams')
@@ -98,7 +99,7 @@ class TestUtilsImports:
         expected_exports = {
             # Constants
             "MISSING_VALUE", "ABOVE_RANGE", "BELOW_RANGE",
-            
+
             # Type aliases
             "ColumnId", "ColumnList", "OptionalColumnList", "GuidanceColumns", "ArrayLike",
             "BinEdges", "BinEdgesDict", "BinReps", "BinRepsDict",
@@ -107,33 +108,33 @@ class TestUtilsImports:
             "IntervalBinCalculationResult", "FlexibleBinCalculationResult",
             "BinCountDict", "Array1D", "Array2D", "BooleanMask",
             "FitParams", "JointParams",
-            
+
             # Error classes
             "BinningError", "InvalidDataError", "ConfigurationError",
             "FittingError", "TransformationError", "ValidationError",
             "ValidationMixin", "DataQualityWarning",
-            
+
             # Sklearn integration
             "SklearnCompatibilityMixin", "BinningPipeline", "BinningFeatureSelector",
             "make_binning_scorer",
-            
+
             # Interval binning utilities
             "ensure_bin_dict", "validate_bins", "default_representatives", "create_bin_masks",
-            
+
             # Flexible binning utilities
             "ensure_flexible_bin_spec", "generate_default_flexible_representatives",
             "validate_flexible_bins", "is_missing_value", "find_flexible_bin_for_value",
             "calculate_flexible_bin_width", "transform_value_to_flexible_bin",
             "get_flexible_bin_count",
-            
+
             # Data handling utilities
             "prepare_array", "return_like_input", "prepare_input_with_columns",
-            
-            # Inspection utilities  
-            "get_class_parameters", "get_constructor_info", 
+
+            # Inspection utilities
+            "get_class_parameters", "get_constructor_info",
             "safe_get_class_parameters", "safe_get_constructor_info",
         }
-        
+
         # Check that all expected exports are in __all__
         actual_exports = set(utils.__all__)
         assert expected_exports == actual_exports
@@ -159,7 +160,7 @@ class TestUtilsImports:
         from binning.utils import ensure_bin_dict, validate_bins
         from binning.utils import MISSING_VALUE, ABOVE_RANGE
         from binning.utils import BinningError, InvalidDataError
-        
+
         # Test that they are callable/usable
         assert callable(ensure_bin_dict)
         assert callable(validate_bins)

@@ -78,8 +78,8 @@ class SklearnCompatibilityMixin:
 
             # Return only non-guidance column names
             output_features = []
-            for i, name in enumerate(input_features):
-                if name not in guidance_cols and i not in guidance_cols:
+            for idx, name in enumerate(input_features):
+                if name not in guidance_cols and idx not in guidance_cols:
                     output_features.append(name)
             return output_features
 
@@ -89,7 +89,7 @@ class SklearnCompatibilityMixin:
         """Validate parameters for sklearn compatibility."""
         # This method should be implemented by subclasses
         # to validate their specific parameters
-        pass
+        # Base implementation does nothing
 
 
 class BinningFeatureSelector(BaseEstimator, TransformerMixin):
@@ -209,8 +209,7 @@ class BinningPipeline:
 
         if final_estimator is not None:
             return Pipeline([("binning", binner), ("estimator", final_estimator)])
-        else:
-            return binner
+        return binner
 
 
 def make_binning_scorer(binning_method: str = "supervised", binning_params: Optional[Dict] = None):

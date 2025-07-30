@@ -2,13 +2,12 @@
 SupervisedBinning transformer - creates bins using decision tree splits guided by a target column.
 """
 
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, Tuple, Optional
 import numpy as np
 from sklearn.base import clone
 
 from ..utils.types import (
-    BinEdges, BinEdgesDict, ColumnId, ColumnList, 
-    OptionalColumnList, GuidanceColumns, ArrayLike
+    BinEdges, ColumnId, GuidanceColumns
 )
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
@@ -66,7 +65,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         """
         # Remove fit_jointly from kwargs if present to avoid conflicts
         kwargs.pop('fit_jointly', None)
-        
+
         super().__init__(
             task_type=task_type,
             tree_params=tree_params,
@@ -176,13 +175,13 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return bin_edges, representatives
 
-    def _extract_split_points(self, tree, _X: np.ndarray) -> BinEdges:
+    def _extract_split_points(self, tree, _x_data: np.ndarray) -> BinEdges:
         """
         Extract split points from a fitted decision tree.
 
         Args:
             tree: Fitted decision tree (classifier or regressor).
-            _X: Training data used to fit the tree (unused but kept for interface compatibility).
+            _x_data: Training data used to fit the tree (unused but kept for interface compatibility).
 
         Returns:
             List of split threshold values.
