@@ -139,7 +139,10 @@ def make_binning_scorer(binning_method: str = "supervised", binning_params: Opti
         params = binning_params or {}
 
         if binning_method == "supervised":
-            from binning.methods._supervised_binning import SupervisedBinning
+            try:
+                from binning.methods._supervised_binning import SupervisedBinning
+            except ImportError as e:
+                raise ImportError("SupervisedBinning not available") from e
 
             params.setdefault("guidance_columns", [-1])  # Assume last column is target
             binner = SupervisedBinning(**params)
@@ -147,7 +150,10 @@ def make_binning_scorer(binning_method: str = "supervised", binning_params: Opti
             X_with_target = np.column_stack([X, y])
             X_binned = binner.fit_transform(X_with_target)
         elif binning_method == "equal_width":
-            from binning.methods._equal_width_binning import EqualWidthBinning
+            try:
+                from binning.methods._equal_width_binning import EqualWidthBinning
+            except ImportError as e:
+                raise ImportError("EqualWidthBinning not available") from e
 
             binner = EqualWidthBinning(**params)
             X_binned = binner.fit_transform(X)

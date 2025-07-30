@@ -32,14 +32,6 @@ class DummyGeneralBinning(GeneralBinningBase):
     without requiring a full binning implementation.
     """
 
-    class DummyGeneralBinning(GeneralBinningBase):
-    """Concrete implementation of GeneralBinningBase for testing purposes.
-    
-    This dummy class implements all abstract methods of GeneralBinningBase
-    with minimal functionality to enable testing of the base class behavior
-    without requiring a full binning implementation.
-    """
-
     def __init__(self, preserve_dataframe=None, fit_jointly=None, guidance_columns=None, **kwargs):
         super().__init__(preserve_dataframe, fit_jointly, guidance_columns, **kwargs)
 
