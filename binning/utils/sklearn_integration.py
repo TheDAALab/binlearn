@@ -1,5 +1,4 @@
 """Sklearn integration utilities for binning methods."""
-# pylint: disable=too-few-public-methods
 
 from typing import Dict, List, Optional
 

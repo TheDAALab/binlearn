@@ -12,8 +12,6 @@ Functions:
     make_binning_scorer: Create a scorer that includes binning in evaluation.
     _import_supervised_binning: Helper function to import SupervisedBinning.
 """
-# pylint: disable=import-outside-toplevel,attribute-defined-outside-init,invalid-name
-# pylint: disable=raise-missing-from,too-few-public-methods
 
 from typing import Dict, Optional, Union
 
