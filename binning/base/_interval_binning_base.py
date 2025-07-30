@@ -16,13 +16,13 @@ import warnings
 
 import numpy as np
 
-from ..utils.types import (
-    BinEdges, BinEdgesDict, ColumnId, ColumnList,
-    GuidanceColumns
-)
+from ..utils.types import BinEdges, BinEdgesDict, ColumnId, ColumnList, GuidanceColumns
 from ._general_binning_base import GeneralBinningBase
 from ..utils.bin_operations import (
-    ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
+    ensure_bin_dict,
+    validate_bins,
+    default_representatives,
+    create_bin_masks,
 )
 from ..utils.data_handling import return_like_input
 from ..utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
@@ -31,20 +31,22 @@ from ..utils.errors import (
     ConfigurationError,
     DataQualityWarning,
 )
+from ..config import get_config
 
 
+# pylint: disable=too-many-ancestors,too-many-instance-attributes
 class IntervalBinningBase(GeneralBinningBase):
     """Base class for interval-based binning methods with edge and clipping support.
-    
+
     This abstract base class provides the foundation for all interval-based binning
     transformers such as equal-width, equal-frequency, and supervised binning methods.
     It handles bin edge computation, value clipping, and provides both joint and
     per-column fitting strategies.
-    
+
     The class supports comprehensive out-of-range value handling with configurable
     clipping behavior, robust bin validation, and automatic representative value
     computation for inverse transformations.
-    
+
     Args:
         clip (bool, optional): Whether to clip values outside bin ranges to nearest
             bin edges. If None, uses global configuration default.
@@ -59,12 +61,12 @@ class IntervalBinningBase(GeneralBinningBase):
         guidance_columns (GuidanceColumns, optional): Columns to use for guided binning.
             Cannot be used with fit_jointly=True.
         **kwargs: Additional arguments passed to GeneralBinningBase.
-        
+
     Attributes:
         clip (bool): Whether values outside bin ranges are clipped.
         bin_edges_ (BinEdgesDict): Computed bin edges after fitting.
         bin_representatives_ (BinEdgesDict): Computed bin representatives after fitting.
-        
+
     Example:
         >>> # This is an abstract class, use a concrete implementation
         >>> from binning.methods import EqualWidthBinning
@@ -72,6 +74,7 @@ class IntervalBinningBase(GeneralBinningBase):
         >>> X_binned = binner.fit_transform(X)
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         clip: Optional[bool] = None,
@@ -83,7 +86,7 @@ class IntervalBinningBase(GeneralBinningBase):
         **kwargs,
     ):
         """Initialize the interval binning base class.
-        
+
         Args:
             clip (bool, optional): Whether to clip values outside bin ranges to nearest
                 bin edges. If None, uses global configuration default.
@@ -107,7 +110,6 @@ class IntervalBinningBase(GeneralBinningBase):
         )
 
         # Load configuration defaults
-        from ..config import get_config
         config = get_config()
 
         # Apply defaults from configuration
@@ -130,11 +132,11 @@ class IntervalBinningBase(GeneralBinningBase):
 
     def _process_provided_bins(self) -> None:
         """Process user-provided bin specifications and mark as fitted if complete.
-        
+
         Validates and processes pre-provided bin edges and representatives. If both
         are provided and valid, marks the transformer as fitted to enable transform
         without requiring a separate fit call.
-        
+
         Raises:
             ConfigurationError: If provided bin specifications are invalid.
         """
@@ -168,26 +170,54 @@ class IntervalBinningBase(GeneralBinningBase):
 
     @property
     def bin_edges(self):
-        """Bin edges property."""
-        return getattr(self, '_bin_edges_param', None)
+        """Get the pre-provided bin edges parameter.
+
+        Returns:
+            BinEdgesDict or None: Pre-provided bin edges for each column, or None
+                if no bin edges were provided during initialization.
+        """
+        return getattr(self, "_bin_edges_param", None)
 
     @bin_edges.setter
     def bin_edges(self, value):
-        """Set bin edges and update internal state."""
+        """Set bin edges and update internal state.
+
+        Args:
+            value (BinEdgesDict or None): New bin edges to set. If None, clears
+                the current bin edges parameter.
+
+        Note:
+            Setting bin edges resets the fitted state if the transformer was
+            previously fitted, requiring a new fit call before transform.
+        """
         self._bin_edges_param = value
-        if hasattr(self, '_fitted') and self._fitted:
+        if hasattr(self, "_fitted") and self._fitted:
             self._fitted = False  # Reset fitted state when bin_edges change
 
     @property
     def bin_representatives(self):
-        """Bin representatives property."""
-        return getattr(self, '_bin_representatives_param', None)
+        """Get the pre-provided bin representatives parameter.
+
+        Returns:
+            BinEdgesDict or None: Pre-provided representative values for each bin,
+                or None if no representatives were provided during initialization.
+        """
+        return getattr(self, "_bin_representatives_param", None)
 
     @bin_representatives.setter
     def bin_representatives(self, value):
-        """Set bin representatives and update internal state."""
+        """Set bin representatives and update internal state.
+
+        Args:
+            value (BinEdgesDict or None): New bin representatives to set. If None,
+                clears the current bin representatives parameter.
+
+        Note:
+            Setting bin representatives resets the fitted state if the transformer
+            was previously fitted, requiring a new fit call before transform.
+        """
         self._bin_representatives_param = value
-        if hasattr(self, '_fitted') and self._fitted:
+        if hasattr(self, "_fitted") and self._fitted:
             self._fitted = False  # Reset fitted state when bin_representatives change
 
     def _fit_per_column(
@@ -196,32 +226,34 @@ class IntervalBinningBase(GeneralBinningBase):
         columns: ColumnList,
         guidance_data: Optional[np.ndarray] = None,
         **fit_params,
-    ) -> 'IntervalBinningBase':
-        """Fit bins per column with optional guidance data."""
+    ) -> "IntervalBinningBase":
+        """Fit bins per column with optional guidance data.
+
+        Processes each column independently to calculate bin edges and representatives.
+        Always performs fitting from the data, even if user-provided bin edges exist.
+        User-provided specifications serve as parameters or starting points but do not
+        skip the fitting process.
+
+        Args:
+            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            columns (ColumnList): List of column identifiers corresponding to X columns.
+            guidance_data (np.ndarray, optional): Optional guidance data that can
+                influence bin calculation. Defaults to None.
+            **fit_params: Additional parameters passed to fitting methods.
+
+        Returns:
+            IntervalBinningBase: Self, for method chaining.
+
+        Raises:
+            ValueError: If per-column bin fitting fails.
+            BinningError: If bin processing or validation fails.
+        """
         try:
             self._process_user_specifications(columns)
 
-            if not self.bin_edges:
-                # Calculate bins from data
-                for i, col in enumerate(columns):
-                    if col not in self._bin_edges:
-                        # Validate column data
-                        col_data = X[:, i]
-                        if np.all(np.isnan(col_data)):
-                            # Create a more descriptive column reference
-                            if isinstance(col, (int, np.integer)):
-                                col_ref = f"column {col} (index {i})"
-                            else:
-                                col_ref = f"column '{col}'"
-                            warnings.warn(
-                                f"Data in {col_ref} contains only NaN values", DataQualityWarning
-                            )
-
-                        edges, reps = self._calculate_bins(col_data, col, guidance_data)
-                        self._bin_edges[col] = edges
-                        if col not in self._bin_reps:
-                            self._bin_reps[col] = reps
-
+            # Always calculate bins from data for all columns
+            # User-provided specifications are used as starting points or defaults
+            self._calculate_bins_for_columns(X, columns, guidance_data)
             self._finalize_fitting()
             return self
 
@@ -230,26 +262,114 @@ class IntervalBinningBase(GeneralBinningBase):
                 raise
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
+    def _calculate_bins_for_columns(
+        self, X: np.ndarray, columns: ColumnList, guidance_data: Optional[np.ndarray]
+    ) -> None:
+        """Calculate bins for each column.
+
+        Iterates through all columns and calculates bin edges and representatives.
+        This method always calculates bins from the data, even if user-provided
+        specifications exist (user specs serve as starting points or validation).
+
+        Args:
+            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            columns (ColumnList): List of column identifiers corresponding to X columns.
+            guidance_data (np.ndarray, optional): Optional guidance data that can
+                influence bin calculation for each column.
+        """
+        for i, col in enumerate(columns):
+            self._calculate_bins_for_single_column(X, i, col, guidance_data)
+
+    def _calculate_bins_for_single_column(
+        self, X: np.ndarray, col_index: int, col: ColumnId, guidance_data: Optional[np.ndarray]
+    ) -> None:
+        """Calculate bins for a single column.
+
+        Extracts data for the specified column, validates it for quality issues,
+        and calls the abstract _calculate_bins method to compute bin edges and
+        representatives for this column. Always overwrites any existing bin
+        specifications for this column.
+
+        Args:
+            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            col_index (int): Index of the column in the data array.
+            col (ColumnId): Identifier for the column being processed.
+            guidance_data (np.ndarray, optional): Optional guidance data that can
+                influence bin calculation for this column.
+        """
+        col_data = X[:, col_index]
+
+        # Check for all-NaN data and warn if needed
+        self._validate_column_data(col_data, col, col_index)
+
+        # Always calculate bins from data, overwriting any user-provided specs
+        edges, reps = self._calculate_bins(col_data, col, guidance_data)
+        self._bin_edges[col] = edges
+        self._bin_reps[col] = reps
+
+    def _validate_column_data(self, col_data: np.ndarray, col: ColumnId, col_index: int) -> None:
+        """Validate column data and issue warnings for all-NaN columns.
+
+        Checks if the column contains only NaN values and issues a data quality
+        warning if so. This helps identify potential data quality issues early
+        in the binning process.
+
+        Args:
+            col_data (np.ndarray): Data array for the specific column being validated.
+            col (ColumnId): Identifier for the column (name or index).
+            col_index (int): Numeric index of the column in the data array.
+
+        Warns:
+            DataQualityWarning: If the column contains only NaN values.
+        """
+        if not np.all(np.isnan(col_data)):
+            return
+
+        # Create a more descriptive column reference
+        if isinstance(col, (int, np.integer)):
+            col_ref = f"column {col} (index {col_index})"
+        else:
+            col_ref = f"column '{col}'"
+
+        warnings.warn(f"Data in {col_ref} contains only NaN values", DataQualityWarning)
+
     def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
-        """Fit bins jointly across all columns."""
+        """Fit bins jointly across all columns.
+
+        Computes bins using all data across all columns simultaneously, creating
+        the same bin structure for every column. This is useful when you want
+        consistent binning across features.
+
+        Args:
+            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            columns (ColumnList): List of column identifiers corresponding to X columns.
+            **fit_params: Additional parameters passed to fitting methods.
+
+        Raises:
+            ValueError: If joint bin fitting fails.
+            BinningError: If bin processing or validation fails.
+
+        Warns:
+            DataQualityWarning: If all data contains only NaN values.
+        """
         try:
             self._process_user_specifications(columns)
 
-            if not self.bin_edges:
-                # For true joint binning, flatten all data together
-                all_data = X.ravel()
+            # Always perform joint binning calculation
+            # For true joint binning, flatten all data together
+            all_data = X.ravel()
 
-                # Check if all data is NaN
-                if np.all(np.isnan(all_data)):
-                    warnings.warn("All data contains only NaN values", DataQualityWarning)
+            # Check if all data is NaN
+            if np.all(np.isnan(all_data)):
+                warnings.warn("All data contains only NaN values", DataQualityWarning)
 
-                # Calculate bins once from all flattened data
-                edges, reps = self._calculate_bins_jointly(all_data, columns)
+            # Calculate bins once from all flattened data
+            edges, reps = self._calculate_bins_jointly(all_data, columns)
 
-                # Apply the same bins to all columns
-                for col in columns:
-                    self._bin_edges[col] = edges
-                    self._bin_reps[col] = reps
+            # Apply the same bins to all columns, overwriting any user-provided specs
+            for col in columns:
+                self._bin_edges[col] = edges
+                self._bin_reps[col] = reps
 
             self._finalize_fitting()
 
@@ -259,7 +379,23 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ValueError(f"Failed to fit joint bins: {str(e)}") from e
 
     def _process_user_specifications(self, columns: ColumnList) -> None:
-        """Process user-provided bin specifications."""
+        """Process user-provided bin specifications.
+
+        Validates and processes any pre-provided bin edges and representatives
+        from the user. Ensures they are in the correct dictionary format and
+        initializes internal storage structures.
+
+        Args:
+            columns (ColumnList): List of column identifiers, currently unused
+                but kept for interface compatibility.
+
+        Raises:
+            ConfigurationError: If provided bin specifications are invalid or
+                cannot be processed.
+            BinningError: If bin validation fails.
+        """
+        _ = columns
+
         try:
             if self.bin_edges is not None:
                 self._bin_edges = ensure_bin_dict(self.bin_edges)
@@ -277,7 +413,16 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ConfigurationError(f"Failed to process bin specifications: {str(e)}") from e
 
     def _finalize_fitting(self) -> None:
-        """Finalize the fitting process."""
+        """Finalize the fitting process.
+
+        Completes the fitting process by generating default representatives for
+        any bin edges that don't have explicit representatives, and validates
+        the final bin specifications to ensure they are consistent and valid.
+
+        Raises:
+            BinningError: If bin validation fails or if the final bin
+                specifications are inconsistent.
+        """
         # Generate default representatives for any missing ones
         for col in self._bin_edges:
             if col not in self._bin_reps:
@@ -292,7 +437,22 @@ class IntervalBinningBase(GeneralBinningBase):
     ) -> Tuple[BinEdges, BinEdges]:
         """Calculate bins from all flattened data for joint binning.
 
-        Default implementation falls back to regular _calculate_bins using first column.
+        This method provides a default implementation for joint binning that
+        falls back to the regular _calculate_bins method using the first column
+        identifier. Subclasses can override this for more sophisticated joint
+        binning strategies.
+
+        Args:
+            all_data (np.ndarray): Flattened data array containing all values
+                from all columns concatenated together.
+            columns (ColumnList): List of column identifiers for reference.
+
+        Returns:
+            Tuple[BinEdges, BinEdges]: A tuple containing (bin_edges, bin_representatives)
+                that will be applied to all columns.
+
+        Note:
+            Default implementation falls back to regular _calculate_bins using first column.
         """
         return self._calculate_bins(all_data, columns[0] if columns else 0)
 
@@ -323,7 +483,25 @@ class IntervalBinningBase(GeneralBinningBase):
     def _get_column_key(
         self, target_col: ColumnId, available_keys: ColumnList, col_index: int
     ) -> ColumnId:
-        """Find the right key for a column, handling mismatches between fit and transform."""
+        """Find the right key for a column, handling mismatches between fit and transform.
+
+        Resolves column identifiers when there are mismatches between the column
+        identifiers used during fit and transform. Tries direct matching first,
+        then falls back to index-based matching.
+
+        Args:
+            target_col (ColumnId): The column identifier we're looking for.
+            available_keys (ColumnList): List of available keys in the fitted bins.
+            col_index (int): The index position of the column in the current data.
+
+        Returns:
+            ColumnId: The matching key from available_keys that corresponds to
+                the target column.
+
+        Raises:
+            ValueError: If no matching bin specification can be found for the
+                target column.
+        """
         # Direct match
         if target_col in available_keys:
             return target_col
@@ -336,7 +514,22 @@ class IntervalBinningBase(GeneralBinningBase):
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
     def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
-        """Transform columns to bin indices."""
+        """Transform columns to bin indices.
+
+        Converts continuous values in each column to discrete bin indices using
+        the fitted bin edges. Handles special cases like NaN values, out-of-range
+        values (with optional clipping), and maintains consistent indexing.
+
+        Args:
+            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            columns (ColumnList): List of column identifiers corresponding to X columns.
+
+        Returns:
+            np.ndarray: Array of bin indices with same shape as input, where each
+                value represents the bin index for the corresponding input value.
+                Special values: MISSING_VALUE for NaN, BELOW_RANGE/ABOVE_RANGE
+                for out-of-range values when clipping is disabled.
+        """
         result = np.zeros(X.shape, dtype=int)
         available_keys = list(self._bin_edges.keys())
 
@@ -366,7 +559,22 @@ class IntervalBinningBase(GeneralBinningBase):
         return result
 
     def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
-        """Inverse transform from bin indices to representative values."""
+        """Inverse transform from bin indices to representative values.
+
+        Converts bin indices back to continuous values using the fitted bin
+        representatives. Handles special indices for missing values and
+        out-of-range conditions appropriately.
+
+        Args:
+            X (np.ndarray): Array of bin indices with shape (n_samples, n_features).
+            columns (ColumnList): List of column identifiers corresponding to X columns.
+
+        Returns:
+            np.ndarray: Array of representative values with same shape as input,
+                where each bin index is replaced by its corresponding representative
+                value. Special values: NaN for missing, -inf for below range,
+                +inf for above range.
+        """
         result = np.zeros(X.shape, dtype=float)
         available_keys = list(self._bin_reps.keys())
 
@@ -395,14 +603,60 @@ class IntervalBinningBase(GeneralBinningBase):
         return result
 
     def inverse_transform(self, X: Any) -> Any:
-        """Transform bin indices back to representative values."""
+        """Transform bin indices back to representative values.
+
+        Converts discrete bin indices back to continuous representative values
+        using the fitted bin representatives. This is the inverse operation of
+        the transform method.
+
+        Args:
+            X (array-like): Input array of bin indices with shape (n_samples, n_columns).
+                Can be numpy array, pandas DataFrame, or other array-like format.
+
+        Returns:
+            array-like: Array of representative values with the same shape and
+                format as input. Format preservation depends on preserve_dataframe
+                setting.
+
+        Raises:
+            NotFittedError: If the transformer has not been fitted yet.
+
+        Example:
+            >>> # Assuming a fitted transformer
+            >>> bin_indices = [[0, 1], [2, 0]]
+            >>> representatives = transformer.inverse_transform(bin_indices)
+            >>> print(representatives)  # Representative values for each bin
+        """
         self._check_fitted()
         arr, columns = self._prepare_input(X)
         result = self._inverse_transform_columns(arr, columns)
         return return_like_input(result, X, columns, self.preserve_dataframe)
 
     def lookup_bin_widths(self, bin_indices: Any) -> Any:
-        """Look up bin widths for given bin indices."""
+        """Look up bin widths for given bin indices.
+
+        Returns the width (difference between upper and lower edge) of each bin
+        corresponding to the provided bin indices. This is useful for understanding
+        the size of each bin in the original data space.
+
+        Args:
+            bin_indices (array-like): Array of bin indices with shape (n_samples, n_columns).
+                Can be numpy array, pandas DataFrame, or other array-like format.
+
+        Returns:
+            array-like: Array of bin widths with the same shape and format as input.
+                Each value represents the width of the corresponding bin. Invalid
+                bin indices result in zero width.
+
+        Raises:
+            NotFittedError: If the transformer has not been fitted yet.
+
+        Example:
+            >>> # Assuming a fitted transformer
+            >>> bin_indices = [[0, 1], [2, 0]]
+            >>> widths = transformer.lookup_bin_widths(bin_indices)
+            >>> print(widths)  # Width of each bin
+        """
         self._check_fitted()
         arr, columns = self._prepare_input(bin_indices)
         result = np.zeros(arr.shape, dtype=float)
@@ -423,12 +677,43 @@ class IntervalBinningBase(GeneralBinningBase):
         return return_like_input(result, bin_indices, columns, self.preserve_dataframe)
 
     def lookup_bin_ranges(self) -> Dict[ColumnId, int]:
-        """Return number of bins for each column."""
+        """Return number of bins for each column.
+
+        Provides the count of bins (ranges) created for each column after fitting.
+        This is useful for understanding the binning structure and for validation.
+
+        Returns:
+            Dict[ColumnId, int]: Dictionary mapping each column identifier to its
+                number of bins. The number of bins equals len(edges) - 1 for each
+                column.
+
+        Raises:
+            NotFittedError: If the transformer has not been fitted yet.
+
+        Example:
+            >>> # Assuming a fitted transformer
+            >>> bin_counts = transformer.lookup_bin_ranges()
+            >>> print(bin_counts)  # {'col1': 5, 'col2': 3}
+        """
         self._check_fitted()
         return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}
 
     def _get_fitted_params(self) -> Dict[str, Any]:
-        """Get fitted parameter values for IntervalBinningBase."""
+        """Get fitted parameter values for IntervalBinningBase.
+
+        Returns the internal fitted state as a dictionary, including bin edges
+        and representatives for all columns. This is used by sklearn's get_params
+        infrastructure and for debugging.
+
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - 'bin_edges': Dictionary of bin edges for each column
+                - 'bin_representatives': Dictionary of bin representatives for each column
+
+        Note:
+            This method is part of the sklearn parameter interface and is typically
+            not called directly by users.
+        """
         return {
             "bin_edges": self._bin_edges,
             "bin_representatives": self._bin_reps,

@@ -6,6 +6,7 @@ from typing import Dict, Any
 from ..utils.inspection import safe_get_constructor_info
 
 
+# pylint: disable=too-few-public-methods
 class ReprMixin:
     """
     Simple mixin providing a clean __repr__ method.

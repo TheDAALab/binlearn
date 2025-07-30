@@ -16,22 +16,19 @@ Test Classes:
         scorer creation, evaluation with different binning methods, and
         cross-validation integration.
 """
+
 # pylint: disable=protected-access
 from unittest.mock import Mock, patch
 
 import pytest
 import numpy as np
 
-from binning.tools.integration import (
-    BinningFeatureSelector,
-    BinningPipeline,
-    make_binning_scorer
-)
+from binning.tools.integration import BinningFeatureSelector, BinningPipeline, make_binning_scorer
 
 
 class TestBinningFeatureSelector:
     """Comprehensive test suite for BinningFeatureSelector class.
-    
+
     This test class verifies the functionality of the BinningFeatureSelector,
     which combines binning methods with mutual information-based feature
     selection. Tests cover initialization, fitting with different binning
@@ -40,7 +37,7 @@ class TestBinningFeatureSelector:
 
     def test_init_default_params(self):
         """Test initialization with default parameters.
-        
+
         Verifies that the BinningFeatureSelector initializes correctly
         with default parameter values for binning method, k features,
         score function, and binning parameters.
@@ -54,17 +51,17 @@ class TestBinningFeatureSelector:
 
     def test_init_custom_params(self):
         """Test initialization with custom parameters.
-        
+
         Verifies that the BinningFeatureSelector correctly accepts and
         stores custom parameters including binning method, number of features,
         score function, and binning-specific parameters.
         """
-        binning_params = {'n_bins': 5}
+        binning_params = {"n_bins": 5}
         selector = BinningFeatureSelector(
             binning_method="supervised",
             k=15,
             score_func="mutual_info_classif",
-            binning_params=binning_params
+            binning_params=binning_params,
         )
 
         assert selector.binning_method == "supervised"
@@ -72,12 +69,14 @@ class TestBinningFeatureSelector:
         assert selector.score_func == "mutual_info_classif"
         assert selector.binning_params == binning_params
 
-    @patch('binning.tools.integration.SelectKBest')
-    @patch('binning.tools.integration.EqualWidthBinning')
-    @patch('binning.tools.integration.mutual_info_classif')
-    def test_fit_equal_width_classification(self, mock_mutual_info, mock_binning_class, mock_select_k):
+    @patch("binning.tools.integration.SelectKBest")
+    @patch("binning.tools.integration.EqualWidthBinning")
+    @patch("binning.tools.integration.mutual_info_classif")
+    def test_fit_equal_width_classification(
+        self, mock_mutual_info, mock_binning_class, mock_select_k
+    ):
         """Test fitting with equal_width binning for classification tasks.
-        
+
         Verifies that the selector correctly uses EqualWidthBinning for
         classification tasks, applies the binning transformation, and
         sets up mutual information-based feature selection.
@@ -104,9 +103,9 @@ class TestBinningFeatureSelector:
         mock_select_k.assert_called_once_with(score_func=mock_mutual_info, k=10)
         mock_selector.fit.assert_called_once()
 
-    @patch('binning.tools.integration.SelectKBest')
-    @patch('binning.tools.integration.SupervisedBinning')
-    @patch('binning.tools.integration.mutual_info_regression')
+    @patch("binning.tools.integration.SelectKBest")
+    @patch("binning.tools.integration.SupervisedBinning")
+    @patch("binning.tools.integration.mutual_info_regression")
     def test_fit_supervised_regression(self, mock_mutual_info, mock_binning_class, mock_select_k):
         """Test fit with supervised binning for regression."""
         # Setup mocks
@@ -130,14 +129,14 @@ class TestBinningFeatureSelector:
         # Check that SelectKBest was called with regression function
         mock_select_k.assert_called_once_with(score_func=mock_mutual_info, k=10)
 
-    @patch('binning.tools.integration.OneHotBinning')
+    @patch("binning.tools.integration.OneHotBinning")
     def test_fit_onehot_binning(self, mock_binning_class):
         """Test fit with onehot binning."""
         mock_binner = Mock()
         mock_binner.fit_transform.return_value = np.array([[1, 2], [3, 4]])
         mock_binning_class.return_value = mock_binner
 
-        with patch('binning.tools.integration.SelectKBest') as mock_select_k:
+        with patch("binning.tools.integration.SelectKBest") as mock_select_k:
             mock_selector = Mock()
             mock_select_k.return_value = mock_selector
 
@@ -161,7 +160,7 @@ class TestBinningFeatureSelector:
 
     def test_fit_unknown_score_func(self):
         """Test fit with unknown score function."""
-        with patch('binning.tools.integration.EqualWidthBinning') as mock_binning_class:
+        with patch("binning.tools.integration.EqualWidthBinning") as mock_binning_class:
             mock_binner = Mock()
             mock_binner.fit_transform.return_value = np.array([[1, 2], [3, 4]])
             mock_binning_class.return_value = mock_binner
@@ -174,10 +173,12 @@ class TestBinningFeatureSelector:
             with pytest.raises(ValueError, match="Unknown score_func: unknown_func"):
                 selector.fit(X, y)
 
-    @patch('binning.tools.integration.SelectKBest')
-    @patch('binning.tools.integration.EqualWidthBinning')
-    @patch('binning.tools.integration.mutual_info_classif')
-    def test_fit_explicit_mutual_info_classif(self, mock_mutual_info, mock_binning_class, mock_select_k):
+    @patch("binning.tools.integration.SelectKBest")
+    @patch("binning.tools.integration.EqualWidthBinning")
+    @patch("binning.tools.integration.mutual_info_classif")
+    def test_fit_explicit_mutual_info_classif(
+        self, mock_mutual_info, mock_binning_class, mock_select_k
+    ):
         """Test fit with explicit mutual_info_classif score function."""
         # Setup mocks
         mock_binner = Mock()
@@ -196,10 +197,12 @@ class TestBinningFeatureSelector:
         # Check that SelectKBest was called with explicit classif function
         mock_select_k.assert_called_once_with(score_func=mock_mutual_info, k=10)
 
-    @patch('binning.tools.integration.SelectKBest')
-    @patch('binning.tools.integration.EqualWidthBinning')
-    @patch('binning.tools.integration.mutual_info_regression')
-    def test_fit_explicit_mutual_info_regression(self, mock_mutual_info, mock_binning_class, mock_select_k):
+    @patch("binning.tools.integration.SelectKBest")
+    @patch("binning.tools.integration.EqualWidthBinning")
+    @patch("binning.tools.integration.mutual_info_regression")
+    def test_fit_explicit_mutual_info_regression(
+        self, mock_mutual_info, mock_binning_class, mock_select_k
+    ):
         """Test fit with explicit mutual_info_regression score function."""
         # Setup mocks
         mock_binner = Mock()
@@ -218,7 +221,7 @@ class TestBinningFeatureSelector:
         # Check that SelectKBest was called with explicit regression function
         mock_select_k.assert_called_once_with(score_func=mock_mutual_info, k=10)
 
-    @patch('binning.tools.integration.check_is_fitted')
+    @patch("binning.tools.integration.check_is_fitted")
     def test_transform(self, mock_check_fitted):
         """Test transform method."""
         selector = BinningFeatureSelector()
@@ -246,7 +249,7 @@ class TestBinningFeatureSelector:
 
         np.testing.assert_array_equal(result, np.array([[1], [3]]))
 
-    @patch('binning.tools.integration.check_is_fitted')
+    @patch("binning.tools.integration.check_is_fitted")
     def test_get_support(self, mock_check_fitted):
         """Test get_support method."""
         selector = BinningFeatureSelector()
@@ -265,48 +268,47 @@ class TestBinningFeatureSelector:
 class TestBinningPipeline:
     """Test BinningPipeline."""
 
-    @patch('binning.tools.integration.Pipeline')
-    @patch('binning.tools.integration.SupervisedBinning')
-    def test_create_supervised_binning_pipeline_with_estimator(self, mock_binning_class, mock_pipeline):
+    @patch("binning.tools.integration.Pipeline")
+    @patch("binning.tools.integration.SupervisedBinning")
+    def test_create_supervised_binning_pipeline_with_estimator(
+        self, mock_binning_class, mock_pipeline
+    ):
         """Test creating supervised binning pipeline with final estimator."""
         mock_binner = Mock()
         mock_binning_class.return_value = mock_binner
 
         mock_estimator = Mock()
 
-        result = BinningPipeline.create_supervised_binning_pipeline(
+        _ = BinningPipeline.create_supervised_binning_pipeline(
             guidance_column="target",
             task_type="classification",
             tree_params={"max_depth": 5},
-            final_estimator=mock_estimator
+            final_estimator=mock_estimator,
         )
 
         # Check that SupervisedBinning was created correctly
         mock_binning_class.assert_called_once_with(
-            task_type="classification",
-            tree_params={"max_depth": 5},
-            guidance_columns=["target"]
+            task_type="classification", tree_params={"max_depth": 5}, guidance_columns=["target"]
         )
 
         # Check that Pipeline was created
-        mock_pipeline.assert_called_once_with([("binning", mock_binner), ("estimator", mock_estimator)])
+        mock_pipeline.assert_called_once_with(
+            [("binning", mock_binner), ("estimator", mock_estimator)]
+        )
 
-    @patch('binning.tools.integration.SupervisedBinning')
+    @patch("binning.tools.integration.SupervisedBinning")
     def test_create_supervised_binning_pipeline_without_estimator(self, mock_binning_class):
         """Test creating supervised binning pipeline without final estimator."""
         mock_binner = Mock()
         mock_binning_class.return_value = mock_binner
 
         result = BinningPipeline.create_supervised_binning_pipeline(
-            guidance_column=0,  # Integer column index
-            task_type="regression"
+            guidance_column=0, task_type="regression"  # Integer column index
         )
 
         # Check that SupervisedBinning was created correctly
         mock_binning_class.assert_called_once_with(
-            task_type="regression",
-            tree_params=None,
-            guidance_columns=[0]
+            task_type="regression", tree_params=None, guidance_columns=[0]
         )
 
         # Should return the binner directly
@@ -316,10 +318,12 @@ class TestBinningPipeline:
 class TestMakeBinningScorer:
     """Test make_binning_scorer function."""
 
-    @patch('binning.tools.integration.make_scorer')
-    @patch('binning.tools.integration.cross_val_score')
-    @patch('binning.tools.integration.SupervisedBinning')
-    def test_make_binning_scorer_supervised(self, mock_binning_class, mock_cv_score, mock_make_scorer):
+    @patch("binning.tools.integration.make_scorer")
+    @patch("binning.tools.integration.cross_val_score")
+    @patch("binning.tools.integration.SupervisedBinning")
+    def test_make_binning_scorer_supervised(
+        self, mock_binning_class, mock_cv_score, mock_make_scorer
+    ):
         """Test make_binning_scorer with supervised binning."""
         # Setup mocks
         mock_binner = Mock()
@@ -329,7 +333,7 @@ class TestMakeBinningScorer:
         mock_cv_score.return_value = np.array([0.8, 0.9, 0.85])
 
         # Create scorer
-        scorer = make_binning_scorer("supervised", {"guidance_columns": [2]})
+        _ = make_binning_scorer("supervised", {"guidance_columns": [2]})
 
         # Test the internal scoring function
         mock_estimator = Mock()
@@ -353,15 +357,19 @@ class TestMakeBinningScorer:
         np.testing.assert_array_equal(call_args, expected_X_with_target)
 
         # Check cross validation was called
-        mock_cv_score.assert_called_once_with(mock_estimator, mock_binner.fit_transform.return_value, y, cv=3)
+        mock_cv_score.assert_called_once_with(
+            mock_estimator, mock_binner.fit_transform.return_value, y, cv=3
+        )
 
         # Check return value - use approximate comparison for floating point
         assert abs(result - 0.85) < 1e-10  # mean of [0.8, 0.9, 0.85]
 
-    @patch('binning.tools.integration.make_scorer')
-    @patch('binning.tools.integration.cross_val_score')
-    @patch('binning.tools.integration.EqualWidthBinning')
-    def test_make_binning_scorer_equal_width(self, mock_binning_class, mock_cv_score, mock_make_scorer):
+    @patch("binning.tools.integration.make_scorer")
+    @patch("binning.tools.integration.cross_val_score")
+    @patch("binning.tools.integration.EqualWidthBinning")
+    def test_make_binning_scorer_equal_width(
+        self, mock_binning_class, mock_cv_score, mock_make_scorer
+    ):
         """Test make_binning_scorer with equal_width binning."""
         # Setup mocks
         mock_binner = Mock()
@@ -371,7 +379,7 @@ class TestMakeBinningScorer:
         mock_cv_score.return_value = np.array([0.7, 0.8, 0.75])
 
         # Create scorer
-        scorer = make_binning_scorer("equal_width", {"n_bins": 5})
+        _ = make_binning_scorer("equal_width", {"n_bins": 5})
 
         # Get the scoring function
         mock_make_scorer.assert_called_once()
@@ -385,16 +393,18 @@ class TestMakeBinningScorer:
 
         # Check that binning was applied correctly
         mock_binning_class.assert_called_once_with(n_bins=5)
-        mock_binner.fit_transform.assert_called_once_with(X)  # No target augmentation for equal_width
+        mock_binner.fit_transform.assert_called_once_with(
+            X
+        )  # No target augmentation for equal_width
 
         assert result == 0.75  # mean of [0.7, 0.8, 0.75]
 
     def test_make_binning_scorer_unknown_method(self):
         """Test make_binning_scorer with unknown method."""
-        scorer = make_binning_scorer("unknown_method")
+        _ = make_binning_scorer("unknown_method")
 
         # Get the scoring function
-        with patch('binning.tools.integration.make_scorer') as mock_make_scorer:
+        with patch("binning.tools.integration.make_scorer") as mock_make_scorer:
             make_binning_scorer("unknown_method")
             scoring_func = mock_make_scorer.call_args[0][0]
 
@@ -407,8 +417,8 @@ class TestMakeBinningScorer:
 
     def test_make_binning_scorer_default_params(self):
         """Test make_binning_scorer with default parameters."""
-        with patch('binning.tools.integration.make_scorer') as mock_make_scorer:
-            scorer = make_binning_scorer()
+        with patch("binning.tools.integration.make_scorer") as mock_make_scorer:
+            _ = make_binning_scorer()
 
             mock_make_scorer.assert_called_once()
             # Check that greater_is_better=True

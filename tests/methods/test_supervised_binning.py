@@ -3,24 +3,19 @@ Comprehensive tests for SupervisedBinning functionality.
 """
 
 import numpy as np
-import pandas as pd
 import pytest
 from unittest.mock import Mock, patch
 
+from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
 from binning.methods._supervised_binning import SupervisedBinning
 from binning.utils.errors import BinningError, ConfigurationError, FittingError, InvalidDataError
 from binning.utils.constants import MISSING_VALUE
-
-try:
-    import polars as pl
-    POLARS_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    POLARS_AVAILABLE = False
 
 # Import sklearn components
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+
 SKLEARN_AVAILABLE = True
 
 
@@ -44,7 +39,7 @@ class TestSupervisedBinningInitialization:
             task_type="regression",
             tree_params=tree_params,
             preserve_dataframe=True,
-            guidance_columns=[2]
+            guidance_columns=[2],
         )
         assert binning.task_type == "regression"
         assert binning.tree_params == tree_params
@@ -159,7 +154,9 @@ class TestSupervisedBinningInitialization:
         binning = SupervisedBinning()
 
         # Mock the base class to have _validate_params
-        with patch.object(binning.__class__.__bases__[0], '_validate_params', create=True) as mock_super_validate:
+        with patch.object(
+            binning.__class__.__bases__[0], "_validate_params", create=True
+        ) as mock_super_validate:
             binning._validate_params()
             # If super()._validate_params exists, it should be called
             # This will cover line 300 where hasattr(super(), "_validate_params") is checked
@@ -244,21 +241,17 @@ class TestSupervisedBinningBasicFunctionality:
     def test_simple_classification_data(self):
         """Test with simple classification data."""
         # Create simple data with target as a column
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],
-            [0, 0, 0, 1, 1, 1]  # target column
-        ])
+        X = np.column_stack([[1, 2, 3, 4, 5, 6], [0, 0, 0, 1, 1, 1]])  # target column
 
         binning = SupervisedBinning(
-            task_type="classification",
-            guidance_columns=[1]  # Target is in column 1
+            task_type="classification", guidance_columns=[1]  # Target is in column 1
         )
 
         # Fit the binning using only X
         binning.fit(X)
 
         # Check that it fitted successfully
-        assert hasattr(binning, '_fitted_trees')
+        assert hasattr(binning, "_fitted_trees")
         assert len(binning._fitted_trees) > 0
 
         # Transform only the feature column
@@ -270,21 +263,19 @@ class TestSupervisedBinningBasicFunctionality:
     def test_simple_regression_data(self):
         """Test with simple regression data."""
         # Create simple data with continuous target
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],
-            [1.0, 2.0, 3.0, 10.0, 11.0, 12.0]  # target column
-        ])
+        X = np.column_stack(
+            [[1, 2, 3, 4, 5, 6], [1.0, 2.0, 3.0, 10.0, 11.0, 12.0]]  # target column
+        )
 
         binning = SupervisedBinning(
-            task_type="regression",
-            guidance_columns=[1]  # Target is in column 1
+            task_type="regression", guidance_columns=[1]  # Target is in column 1
         )
 
         # Fit the binning using only X
         binning.fit(X)
 
         # Check that it fitted successfully
-        assert hasattr(binning, '_fitted_trees')
+        assert hasattr(binning, "_fitted_trees")
         assert len(binning._fitted_trees) > 0
 
         # Transform only the feature column
@@ -295,11 +286,13 @@ class TestSupervisedBinningBasicFunctionality:
     def test_multicolumn_data(self):
         """Test with multiple columns."""
         # Create data with two features and one target
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],  # feature 1
-            [10, 20, 30, 40, 50, 60],  # feature 2
-            [0, 0, 0, 1, 1, 1]  # target column
-        ])
+        X = np.column_stack(
+            [
+                [1, 2, 3, 4, 5, 6],  # feature 1
+                [10, 20, 30, 40, 50, 60],  # feature 2
+                [0, 0, 0, 1, 1, 1],  # target column
+            ]
+        )
 
         binning = SupervisedBinning(guidance_columns=[2])  # Target is in column 2
 
@@ -316,15 +309,9 @@ class TestSupervisedBinningBasicFunctionality:
 
     def test_insufficient_data_handling(self):
         """Test handling of insufficient data."""
-        X = np.column_stack([
-            [1, 2],  # Very little data
-            [0, 1]   # target
-        ])
+        X = np.column_stack([[1, 2], [0, 1]])  # Very little data  # target
 
-        binning = SupervisedBinning(
-            tree_params={"min_samples_split": 10},
-            guidance_columns=[1]
-        )
+        binning = SupervisedBinning(tree_params={"min_samples_split": 10}, guidance_columns=[1])
 
         # Should handle insufficient data gracefully
         binning.fit(X)
@@ -334,10 +321,9 @@ class TestSupervisedBinningBasicFunctionality:
 
     def test_missing_values_in_features(self):
         """Test handling of missing values in features."""
-        X = np.column_stack([
-            [1, np.nan, 3, 4, 5],  # feature with missing value
-            [0, 0, 0, 1, 1]        # target
-        ])
+        X = np.column_stack(
+            [[1, np.nan, 3, 4, 5], [0, 0, 0, 1, 1]]  # feature with missing value  # target
+        )
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -348,10 +334,9 @@ class TestSupervisedBinningBasicFunctionality:
 
     def test_missing_values_in_target(self):
         """Test handling of missing values in target."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5],       # feature
-            [0, np.nan, 0, 1, 1]   # target with missing value
-        ])
+        X = np.column_stack(
+            [[1, 2, 3, 4, 5], [0, np.nan, 0, 1, 1]]  # feature  # target with missing value
+        )
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -362,10 +347,7 @@ class TestSupervisedBinningBasicFunctionality:
 
     def test_fit_transform(self):
         """Test fit_transform method."""
-        X = np.column_stack([
-            [1, 2, 3, 4],  # feature
-            [0, 0, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -373,18 +355,12 @@ class TestSupervisedBinningBasicFunctionality:
         X_binned = binning.fit_transform(X)
         # Only feature columns are returned (target column excluded)
         assert X_binned.shape == (4, 1)  # 4 rows, 1 feature column
-        assert hasattr(binning, '_fitted_trees')
+        assert hasattr(binning, "_fitted_trees")
 
     def test_multiple_fits(self):
         """Test that multiple fits reset the state properly."""
-        X1 = np.column_stack([
-            [1, 2, 3, 4],      # feature
-            [0, 0, 1, 1]       # target
-        ])
-        X2 = np.column_stack([
-            [10, 20, 30, 40],  # feature
-            [1, 1, 0, 0]       # target
-        ])
+        X1 = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
+        X2 = np.column_stack([[10, 20, 30, 40], [1, 1, 0, 0]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -401,18 +377,17 @@ class TestSupervisedBinningBasicFunctionality:
         assert second_trees > 0
 
 
+@pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
 class TestSupervisedBinningPandasIntegration:
     """Test SupervisedBinning with pandas DataFrames."""
 
     def test_pandas_dataframe_basic(self):
         """Test basic functionality with pandas DataFrame."""
-        df = pd.DataFrame({
-            'A': [1, 2, 3, 4, 5, 6],
-            'B': [10, 20, 30, 40, 50, 60],
-            'target': [0, 0, 0, 1, 1, 1]
-        })
+        df = pd.DataFrame(
+            {"A": [1, 2, 3, 4, 5, 6], "B": [10, 20, 30, 40, 50, 60], "target": [0, 0, 0, 1, 1, 1]}
+        )
 
-        binning = SupervisedBinning(preserve_dataframe=True, guidance_columns=['target'])
+        binning = SupervisedBinning(preserve_dataframe=True, guidance_columns=["target"])
 
         # Fit and transform
         binning.fit(df)
@@ -420,18 +395,16 @@ class TestSupervisedBinningPandasIntegration:
 
         # Should return DataFrame with only feature columns
         assert isinstance(df_binned, pd.DataFrame)
-        assert list(df_binned.columns) == ['A', 'B']
+        assert list(df_binned.columns) == ["A", "B"]
         assert df_binned.shape == (6, 2)
 
     def test_pandas_dataframe_without_preserve(self):
         """Test pandas DataFrame without preserve_dataframe."""
-        df = pd.DataFrame({
-            'A': [1, 2, 3, 4, 5, 6],
-            'B': [10, 20, 30, 40, 50, 60],
-            'target': [0, 0, 0, 1, 1, 1]
-        })
+        df = pd.DataFrame(
+            {"A": [1, 2, 3, 4, 5, 6], "B": [10, 20, 30, 40, 50, 60], "target": [0, 0, 0, 1, 1, 1]}
+        )
 
-        binning = SupervisedBinning(preserve_dataframe=False, guidance_columns=['target'])
+        binning = SupervisedBinning(preserve_dataframe=False, guidance_columns=["target"])
 
         binning.fit(df)
         result = binning.transform(df)
@@ -442,18 +415,20 @@ class TestSupervisedBinningPandasIntegration:
 
     def test_pandas_with_column_names(self):
         """Test that column names are preserved in bin specifications."""
-        df = pd.DataFrame({
-            'feature1': [1, 2, 3, 4, 5, 6],
-            'feature2': [10, 20, 30, 40, 50, 60],
-            'target': [0, 0, 0, 1, 1, 1]
-        })
+        df = pd.DataFrame(
+            {
+                "feature1": [1, 2, 3, 4, 5, 6],
+                "feature2": [10, 20, 30, 40, 50, 60],
+                "target": [0, 0, 0, 1, 1, 1],
+            }
+        )
 
-        binning = SupervisedBinning(guidance_columns=['target'])
+        binning = SupervisedBinning(guidance_columns=["target"])
         binning.fit(df)
 
         # Column names should be in fitted trees
-        assert 'feature1' in binning._fitted_trees
-        assert 'feature2' in binning._fitted_trees
+        assert "feature1" in binning._fitted_trees
+        assert "feature2" in binning._fitted_trees
 
     def test_handle_bin_params_direct_call(self):
         """Test _handle_bin_params method directly to hit lines 323-324, 327-328."""
@@ -482,7 +457,7 @@ class TestSupervisedBinningPandasIntegration:
         both_params = {
             "task_type": "classification",
             "tree_params": {"min_samples_leaf": 10},
-            "keep_this": "unchanged"
+            "keep_this": "unchanged",
         }
         reset_fitted = binning._handle_bin_params(both_params)
 
@@ -500,13 +475,15 @@ class TestSupervisedBinningPolarsIntegration:
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame({  # type: ignore[name-defined]
-            'A': [1, 2, 3, 4, 5, 6],
-            'B': [10, 20, 30, 40, 50, 60],
-            'target': [0, 0, 0, 1, 1, 1]
-        })
+        df = pl.DataFrame(
+            {  # type: ignore[name-defined]
+                "A": [1, 2, 3, 4, 5, 6],
+                "B": [10, 20, 30, 40, 50, 60],
+                "target": [0, 0, 0, 1, 1, 1],
+            }
+        )
 
-        binning = SupervisedBinning(preserve_dataframe=True, guidance_columns=['target'])
+        binning = SupervisedBinning(preserve_dataframe=True, guidance_columns=["target"])
 
         # Fit and transform
         binning.fit(df)
@@ -514,18 +491,20 @@ class TestSupervisedBinningPolarsIntegration:
 
         # Should return Polars DataFrame with only feature columns
         assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
-        assert df_binned.columns == ['A', 'B']
+        assert df_binned.columns == ["A", "B"]
         assert df_binned.shape == (6, 2)
 
     def test_polars_dataframe_without_preserve(self):
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame({  # type: ignore[name-defined]
-            'A': [1, 2, 3, 4, 5, 6],
-            'B': [10, 20, 30, 40, 50, 60],
-            'target': [0, 0, 0, 1, 1, 1]
-        })
+        df = pl.DataFrame(
+            {  # type: ignore[name-defined]
+                "A": [1, 2, 3, 4, 5, 6],
+                "B": [10, 20, 30, 40, 50, 60],
+                "target": [0, 0, 0, 1, 1, 1],
+            }
+        )
 
-        binning = SupervisedBinning(preserve_dataframe=False, guidance_columns=['target'])
+        binning = SupervisedBinning(preserve_dataframe=False, guidance_columns=["target"])
 
         binning.fit(df)
         result = binning.transform(df)
@@ -540,17 +519,18 @@ class TestSupervisedBinningSklearnIntegration:
 
     def test_sklearn_pipeline_compatibility(self):
         """Test that SupervisedBinning works in sklearn pipelines."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],      # feature 1
-            [10, 20, 30, 40, 50, 60], # feature 2
-            [0, 0, 0, 1, 1, 1]       # target
-        ])
+        X = np.column_stack(
+            [
+                [1, 2, 3, 4, 5, 6],  # feature 1
+                [10, 20, 30, 40, 50, 60],  # feature 2
+                [0, 0, 0, 1, 1, 1],  # target
+            ]
+        )
 
         # Create pipeline
-        pipeline = Pipeline([
-            ('binning', SupervisedBinning(guidance_columns=[2])),
-            ('scaler', StandardScaler())
-        ])
+        pipeline = Pipeline(
+            [("binning", SupervisedBinning(guidance_columns=[2])), ("scaler", StandardScaler())]
+        )
 
         # Should work without errors
         X_transformed = pipeline.fit_transform(X)
@@ -559,11 +539,13 @@ class TestSupervisedBinningSklearnIntegration:
     def test_sklearn_column_transformer(self):
         """Test SupervisedBinning with ColumnTransformer using separate data."""
         # Create data where features and targets are already separated for sklearn compatibility
-        X_features = np.column_stack([
-            [1, 2, 3, 4],           # feature 1 for binning
-            [10, 20, 30, 40],       # feature 2 for binning
-            [100, 200, 300, 400],   # feature 3 for scaling
-        ])
+        X_features = np.column_stack(
+            [
+                [1, 2, 3, 4],  # feature 1 for binning
+                [10, 20, 30, 40],  # feature 2 for binning
+                [100, 200, 300, 400],  # feature 3 for scaling
+            ]
+        )
         y_targets = np.array([0, 0, 1, 1])  # targets
 
         # For SupervisedBinning, combine features with targets
@@ -584,11 +566,8 @@ class TestSupervisedBinningSklearnIntegration:
         binning = SupervisedBinning(guidance_columns=[1])
 
         # Check if method exists and works
-        if hasattr(binning, 'get_feature_names_out'):
-            X = np.column_stack([
-                [1, 2, 3, 4],    # feature
-                [0, 0, 1, 1]     # target
-            ])
+        if hasattr(binning, "get_feature_names_out"):
+            X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
             binning.fit(X)
             feature_names = binning.get_feature_names_out()
             assert len(feature_names) == 1  # Only one feature column
@@ -599,11 +578,13 @@ class TestSupervisedBinningAdvancedFeatures:
 
     def test_feature_importance(self):
         """Test feature importance extraction."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],      # feature 1
-            [10, 20, 30, 40, 50, 60], # feature 2
-            [0, 0, 0, 1, 1, 1]       # target
-        ])
+        X = np.column_stack(
+            [
+                [1, 2, 3, 4, 5, 6],  # feature 1
+                [10, 20, 30, 40, 50, 60],  # feature 2
+                [0, 0, 0, 1, 1, 1],  # target
+            ]
+        )
 
         binning = SupervisedBinning(guidance_columns=[2])
         binning.fit(X)
@@ -620,10 +601,7 @@ class TestSupervisedBinningAdvancedFeatures:
 
     def test_tree_structure(self):
         """Test tree structure extraction."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],  # feature
-            [0, 0, 0, 1, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4, 5, 6], [0, 0, 0, 1, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
         binning.fit(X)
@@ -637,10 +615,9 @@ class TestSupervisedBinningAdvancedFeatures:
 
     def test_different_tree_params(self):
         """Test different tree parameter configurations."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],  # feature
-            [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]     # target
-        ])
+        X = np.column_stack(
+            [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]]  # feature  # target
+        )
 
         # Test with different max_depth
         binning1 = SupervisedBinning(tree_params={"max_depth": 2}, guidance_columns=[1])
@@ -663,15 +640,12 @@ class TestSupervisedBinningWorkflows:
 
     def test_single_column_workflow(self):
         """Test complete workflow with single column."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5],  # feature
-            [0, 0, 1, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4, 5], [0, 0, 1, 1, 1]])  # feature  # target
         binning = SupervisedBinning(guidance_columns=[1])
 
         # Fit
         binning.fit(X)
-        assert hasattr(binning, '_fitted_trees')
+        assert hasattr(binning, "_fitted_trees")
         assert 0 in binning._fitted_trees
 
         # Transform
@@ -694,10 +668,7 @@ class TestSupervisedBinningWorkflows:
 
     def test_single_class_target(self):
         """Test with target having only one class."""
-        X = np.column_stack([
-            [1, 2, 3, 4],     # feature
-            [0, 0, 0, 0]      # target (all same class)
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 0, 0]])  # feature  # target (all same class)
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -718,10 +689,7 @@ class TestSupervisedBinningWorkflows:
 
     def test_inverse_transform(self):
         """Test inverse transformation."""
-        X = np.column_stack([
-            [1, 2, 3, 4, 5, 6],  # feature
-            [0, 0, 0, 1, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4, 5, 6], [0, 0, 0, 1, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
         binning.fit(X)
@@ -731,7 +699,9 @@ class TestSupervisedBinningWorkflows:
 
         # Should reconstruct to representative values
         assert X_reconstructed.shape == (6, 1)  # Only feature column
-        assert not np.array_equal(X[:, [0]], X_reconstructed)  # Should be different (representatives)
+        assert not np.array_equal(
+            X[:, [0]], X_reconstructed
+        )  # Should be different (representatives)
 
 
 class TestSupervisedBinningRepr:
@@ -752,10 +722,7 @@ class TestSupervisedBinningRepr:
 
     def test_fitted_representation(self):
         """Test representation after fitting."""
-        X = np.column_stack([
-            [1, 2, 3, 4],  # feature
-            [0, 0, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
         binning = SupervisedBinning(guidance_columns=[1])
         binning.fit(X)
 
@@ -763,7 +730,7 @@ class TestSupervisedBinningRepr:
         # After fitting, it should show fitted parameters or at least not crash
         assert "SupervisedBinning" in str_repr
         # Check that we can access fitted state
-        assert hasattr(binning, '_fitted_trees')
+        assert hasattr(binning, "_fitted_trees")
         assert len(binning._fitted_trees) > 0
 
 
@@ -788,10 +755,7 @@ class TestSupervisedBinningErrorHandling:
 
     def test_inconsistent_data_shapes(self):
         """Test error when guidance column is out of bounds."""
-        X = np.column_stack([
-            [1, 2, 3, 4],     # feature (column 0)
-            [0, 1, 1, 0]      # target (column 1)
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 1, 1, 0]])  # feature (column 0)  # target (column 1)
 
         binning = SupervisedBinning(guidance_columns=[5])  # Column 5 doesn't exist
 
@@ -806,10 +770,9 @@ class TestSupervisedBinningErrorHandling:
 
     def test_extreme_values_handling(self):
         """Test handling of extreme values."""
-        X = np.column_stack([
-            [1e10, -1e10, 0],  # feature with large but finite values
-            [0, 1, 0]          # target
-        ])
+        X = np.column_stack(
+            [[1e10, -1e10, 0], [0, 1, 0]]  # feature with large but finite values  # target
+        )
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -822,10 +785,7 @@ class TestSupervisedBinningErrorHandling:
         """Test handling of tree fitting failures."""
         # Create a scenario where tree fitting will fail
         # by mocking the tree's fit method to raise an exception
-        X = np.column_stack([
-            [1, 2, 3, 4],  # feature
-            [0, 0, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
 
@@ -833,21 +793,18 @@ class TestSupervisedBinningErrorHandling:
         mock_tree = Mock()
         mock_tree.fit.side_effect = ValueError("Mock tree fitting error")
 
-        with patch.object(binning, '_tree_template', mock_tree):
+        with patch.object(binning, "_tree_template", mock_tree):
             with pytest.raises(FittingError, match="Failed to fit decision tree"):
                 binning.fit(X)
 
     def test_tree_template_not_initialized_error(self):
         """Test error when tree template is None."""
-        X = np.column_stack([
-            np.random.rand(20),
-            np.random.choice([0, 1], 20)
-        ])
+        X = np.column_stack([np.random.rand(20), np.random.choice([0, 1], 20)])
 
         binning = SupervisedBinning(guidance_columns=[1])
 
         # Set tree template to None to trigger the error
-        with patch.object(binning, '_tree_template', None):
+        with patch.object(binning, "_tree_template", None):
             with pytest.raises(FittingError, match="Tree template not initialized"):
                 binning.fit(X)
 
@@ -859,17 +816,14 @@ class TestSupervisedBinningErrorHandling:
         binning._fitted = True
         binning._fitted_trees = {0: Mock()}  # Mock tree without importance
         # Delete the _tree_importance attribute to trigger the hasattr check
-        delattr(binning, '_tree_importance')
+        delattr(binning, "_tree_importance")
 
         with pytest.raises(InvalidDataError, match="Feature importance not available"):
             binning.get_feature_importance()
 
     def test_feature_importance_column_not_found(self):
         """Test feature importance for non-existent column."""
-        X = np.column_stack([
-            [1, 2, 3, 4],  # feature
-            [0, 0, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
         binning.fit(X)
@@ -880,10 +834,7 @@ class TestSupervisedBinningErrorHandling:
 
     def test_feature_importance_single_column(self):
         """Test feature importance for a single column (covers the return statement)."""
-        X = np.column_stack([
-            [1, 2, 3, 4],  # feature
-            [0, 0, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
         binning.fit(X)
@@ -901,18 +852,15 @@ class TestSupervisedBinningErrorHandling:
         # Mock a fitted state without fitted trees attribute
         binning._fitted = True
         # Remove the _fitted_trees attribute to trigger the hasattr check
-        if hasattr(binning, '_fitted_trees'):
-            delattr(binning, '_fitted_trees')
+        if hasattr(binning, "_fitted_trees"):
+            delattr(binning, "_fitted_trees")
 
         with pytest.raises(InvalidDataError, match="Tree structure not available"):
             binning.get_tree_structure(column_id=0)
 
     def test_tree_structure_column_not_found(self):
         """Test tree structure for non-existent column."""
-        X = np.column_stack([
-            [1, 2, 3, 4],  # feature
-            [0, 0, 1, 1]   # target
-        ])
+        X = np.column_stack([[1, 2, 3, 4], [0, 0, 1, 1]])  # feature  # target
 
         binning = SupervisedBinning(guidance_columns=[1])
         binning.fit(X)
@@ -928,20 +876,18 @@ class TestSupervisedBinningParameterRoundtrip:
     def test_fit_get_params_create_transform(self):
         """Test the workflow: fit -> get_params -> create new instance -> transform without fit."""
         # Create training data
-        X_train = np.column_stack([
-            [1, 2, 3, 4, 5, 6],  # feature
-            [0, 0, 0, 1, 1, 1]   # target
-        ])
+        X_train = np.column_stack([[1, 2, 3, 4, 5, 6], [0, 0, 0, 1, 1, 1]])  # feature  # target
 
         # Create and fit original binning
-        original_binning = SupervisedBinning(task_type="classification", tree_params={"max_depth": 3}, guidance_columns=[1])
+        original_binning = SupervisedBinning(
+            task_type="classification", tree_params={"max_depth": 3}, guidance_columns=[1]
+        )
         original_binning.fit(X_train)
 
         # Transform some data to verify it works
-        X_test = np.column_stack([
-            [1.5, 3.5, 5.5],  # feature
-            [0, 1, 1]          # target (for consistency)
-        ])
+        X_test = np.column_stack(
+            [[1.5, 3.5, 5.5], [0, 1, 1]]  # feature  # target (for consistency)
+        )
         original_result = original_binning.transform(X_test)
 
         # Get fitted parameters
@@ -963,24 +909,26 @@ class TestSupervisedBinningParameterRoundtrip:
         np.testing.assert_array_equal(original_result, new_result)
 
         # Test with different data
-        X_test2 = np.column_stack([
-            [0.5, 2.5, 4.5],  # feature
-            [0, 1, 1]         # target (for consistency)
-        ])
+        X_test2 = np.column_stack(
+            [[0.5, 2.5, 4.5], [0, 1, 1]]  # feature  # target (for consistency)
+        )
         original_result2 = original_binning.transform(X_test2)
         new_result2 = new_binning.transform(X_test2)
         np.testing.assert_array_equal(original_result2, new_result2)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_roundtrip_with_pandas(self):
         """Test parameter roundtrip with pandas DataFrames."""
-        df_train = pd.DataFrame({
-            'feature1': [1, 2, 3, 4, 5, 6],
-            'feature2': [10, 20, 30, 40, 50, 60],
-            'target': [0, 0, 0, 1, 1, 1]
-        })
+        df_train = pd.DataFrame(
+            {
+                "feature1": [1, 2, 3, 4, 5, 6],
+                "feature2": [10, 20, 30, 40, 50, 60],
+                "target": [0, 0, 0, 1, 1, 1],
+            }
+        )
 
         # Fit original
-        original_binning = SupervisedBinning(preserve_dataframe=True, guidance_columns=['target'])
+        original_binning = SupervisedBinning(preserve_dataframe=True, guidance_columns=["target"])
         original_binning.fit(df_train)
 
         # Get parameters and create new instance
@@ -988,11 +936,13 @@ class TestSupervisedBinningParameterRoundtrip:
         new_binning = SupervisedBinning(**params)
 
         # Test with new data
-        df_test = pd.DataFrame({
-            'feature1': [1.5, 3.5, 5.5],
-            'feature2': [15, 35, 55],
-            'target': [0, 1, 1]  # Need target for consistency
-        })
+        df_test = pd.DataFrame(
+            {
+                "feature1": [1.5, 3.5, 5.5],
+                "feature2": [15, 35, 55],
+                "target": [0, 1, 1],  # Need target for consistency
+            }
+        )
 
         original_result = original_binning.transform(df_test)
         new_result = new_binning.transform(df_test)
@@ -1002,17 +952,15 @@ class TestSupervisedBinningParameterRoundtrip:
 
     def test_roundtrip_preserves_structure(self):
         """Test that roundtrip preserves all important attributes."""
-        X = np.column_stack([
-            [1, 2, 3, 4],      # feature 1
-            [10, 20, 30, 40],  # feature 2
-            [0, 0, 1, 1]       # target
-        ])
+        X = np.column_stack(
+            [[1, 2, 3, 4], [10, 20, 30, 40], [0, 0, 1, 1]]  # feature 1  # feature 2  # target
+        )
 
         # Create and fit original
         original = SupervisedBinning(
             task_type="regression",
             tree_params={"max_depth": 5, "random_state": 42},
-            guidance_columns=[2]
+            guidance_columns=[2],
         )
         original.fit(X)
 
@@ -1026,11 +974,9 @@ class TestSupervisedBinningParameterRoundtrip:
         assert reconstructed.preserve_dataframe == original.preserve_dataframe
 
         # Test transform equivalence
-        X_test = np.column_stack([
-            [1.5, 3.5],   # feature 1
-            [15, 35],     # feature 2
-            [0, 1]        # target (for consistency)
-        ])
+        X_test = np.column_stack(
+            [[1.5, 3.5], [15, 35], [0, 1]]  # feature 1  # feature 2  # target (for consistency)
+        )
         original_output = original.transform(X_test)
         reconstructed_output = reconstructed.transform(X_test)
         np.testing.assert_array_equal(original_output, reconstructed_output)

@@ -177,4 +177,9 @@ __all__ = [
     "EqualWidthBinning",
     "OneHotBinning",
     "SupervisedBinning",
+    # Optional dependencies
+    "PANDAS_AVAILABLE",
+    "pd",
+    "POLARS_AVAILABLE",
+    "pl",
 ]

@@ -17,16 +17,16 @@ Functions:
 
 import pytest
 import numpy as np
-import pandas as pd
 import inspect
 from unittest.mock import Mock, patch
+from binning import PANDAS_AVAILABLE, pd
 from binning.base._general_binning_base import GeneralBinningBase
 from binning.utils.errors import BinningError
 
 
 class DummyGeneralBinning(GeneralBinningBase):
     """Concrete implementation of GeneralBinningBase for testing purposes.
-    
+
     This dummy class implements all abstract methods of GeneralBinningBase
     with minimal functionality to enable testing of the base class behavior
     without requiring a full binning implementation.
@@ -47,9 +47,10 @@ class DummyGeneralBinning(GeneralBinningBase):
     def _inverse_transform_columns(self, X, columns):
         return np.ones_like(X, dtype=float)
 
+
 def test_init_default_config():
     """Test initialization with default configuration values.
-    
+
     Verifies that the GeneralBinningBase correctly loads default values
     from the global configuration when no explicit parameters are provided.
     """
@@ -61,25 +62,28 @@ def test_init_default_config():
     assert obj._binning_columns is None
     assert obj._guidance_columns is None
 
+
 def test_init_explicit_params():
     """Test initialization with explicit parameters.
-    
+
     Verifies that explicitly provided parameters override default
     configuration values and are stored correctly in the instance.
     """
-    obj = DummyGeneralBinning(preserve_dataframe=True, fit_jointly=False, guidance_columns=['col1'])
+    obj = DummyGeneralBinning(preserve_dataframe=True, fit_jointly=False, guidance_columns=["col1"])
     assert obj.preserve_dataframe is True
     assert obj.fit_jointly is False
-    assert obj.guidance_columns == ['col1']
+    assert obj.guidance_columns == ["col1"]
+
 
 def test_init_incompatible_params():
     """Test initialization with incompatible parameter combinations.
-    
+
     Verifies that the base class correctly rejects incompatible parameter
     combinations like guidance_columns with fit_jointly=True.
     """
     with pytest.raises(ValueError, match="guidance_columns and fit_jointly=True are incompatible"):
-        DummyGeneralBinning(guidance_columns=['col1'], fit_jointly=True)
+        DummyGeneralBinning(guidance_columns=["col1"], fit_jointly=True)
+
 
 def test_properties():
     """Test all properties."""
@@ -90,6 +94,7 @@ def test_properties():
     assert obj.binning_columns_ is None
     assert obj.guidance_columns_ is None
 
+
 def test_prepare_input():
     """Test _prepare_input method."""
     obj = DummyGeneralBinning()
@@ -97,6 +102,7 @@ def test_prepare_input():
     arr, columns = obj._prepare_input(X)
     assert isinstance(arr, np.ndarray)
     assert isinstance(columns, list)
+
 
 def test_check_fitted():
     """Test _check_fitted method."""
@@ -106,6 +112,7 @@ def test_check_fitted():
 
     obj._fitted = True
     obj._check_fitted()  # Should not raise
+
 
 def test_separate_columns_no_guidance():
     """Test _separate_columns with no guidance columns."""
@@ -120,6 +127,7 @@ def test_separate_columns_no_guidance():
     assert X_guide is None
     assert bin_cols == [0, 1, 2]
     assert guide_cols == []
+
 
 def test_separate_columns_with_guidance():
     """Test _separate_columns with guidance columns."""
@@ -136,6 +144,7 @@ def test_separate_columns_with_guidance():
     assert bin_cols == [0, 2]
     assert guide_cols == [1]
 
+
 def test_separate_columns_guidance_list():
     """Test _separate_columns with guidance columns as list."""
     obj = DummyGeneralBinning(guidance_columns=[0, 2])
@@ -151,6 +160,7 @@ def test_separate_columns_guidance_list():
     assert bin_cols == [1]
     assert guide_cols == [0, 2]
 
+
 def test_fit_per_column():
     """Test fit method with per-column fitting."""
     obj = DummyGeneralBinning(fit_jointly=False)
@@ -162,6 +172,7 @@ def test_fit_per_column():
     assert obj._n_features_in == 2
     assert obj._binning_columns == [0, 1]
 
+
 def test_fit_jointly():
     """Test fit method with joint fitting."""
     obj = DummyGeneralBinning(fit_jointly=True)
@@ -171,13 +182,16 @@ def test_fit_jointly():
     assert result is obj
     assert obj._fitted is True
 
+
+@pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
 def test_fit_with_dataframe():
     """Test fit method with pandas DataFrame."""
     obj = DummyGeneralBinning()
-    df = pd.DataFrame([[1, 2], [3, 4]], columns=['A', 'B'])
+    df = pd.DataFrame([[1, 2], [3, 4]], columns=["A", "B"])
 
     result = obj.fit(df)
-    assert obj._feature_names_in == ['A', 'B']
+    assert obj._feature_names_in == ["A", "B"]
+
 
 def test_fit_with_feature_names():
     """Test fit with object having feature_names attribute."""
@@ -186,13 +200,15 @@ def test_fit_with_feature_names():
     class MockArray:
         def __init__(self):
             self.shape = (2, 2)
-            self.feature_names = ['feat1', 'feat2']
+            self.feature_names = ["feat1", "feat2"]
+
         def __array__(self):
             return np.array([[1, 2], [3, 4]])
 
     X = MockArray()
     obj.fit(X)
-    assert obj._feature_names_in == ['feat1', 'feat2']
+    assert obj._feature_names_in == ["feat1", "feat2"]
+
 
 def test_fit_numpy_array():
     """Test fit with numpy array (no column names)."""
@@ -202,8 +218,10 @@ def test_fit_numpy_array():
     obj.fit(X)
     assert obj._feature_names_in == [0, 1]
 
+
 def test_fit_error_handling():
     """Test fit method error handling."""
+
     class ErrorBinning(DummyGeneralBinning):
         def _fit_per_column(self, X, columns, guidance_data=None, **fit_params):
             raise ValueError("Test error")
@@ -214,8 +232,10 @@ def test_fit_error_handling():
     with pytest.raises(ValueError, match="Test error"):
         obj.fit(X)
 
+
 def test_fit_generic_error():
     """Test fit method with generic error handling."""
+
     class ErrorBinning(DummyGeneralBinning):
         def _fit_per_column(self, X, columns, guidance_data=None, **fit_params):
             # Throw a generic exception that should be wrapped
@@ -231,6 +251,7 @@ def test_fit_generic_error():
 
 def test_fit_binning_error():
     """Test fit method re-raises BinningError unchanged."""
+
     class BinningErrorBinning(DummyGeneralBinning):
         def _fit_per_column(self, X, columns, guidance_data=None, **fit_params):
             # Throw a BinningError that should be re-raised unchanged
@@ -243,6 +264,7 @@ def test_fit_binning_error():
     with pytest.raises(BinningError, match="Specific binning error"):
         obj.fit(X)
 
+
 def test_transform():
     """Test transform method."""
     obj = DummyGeneralBinning()
@@ -253,6 +275,7 @@ def test_transform():
     assert result.shape == (2, 2)
     assert (result == 0).all()
 
+
 def test_transform_with_guidance():
     """Test transform with guidance columns."""
     obj = DummyGeneralBinning(guidance_columns=[1])
@@ -262,6 +285,7 @@ def test_transform_with_guidance():
     result = obj.transform(X)
     assert result.shape == (2, 1)  # Only binning columns
 
+
 def test_transform_not_fitted():
     """Test transform when not fitted."""
     obj = DummyGeneralBinning()
@@ -270,8 +294,10 @@ def test_transform_not_fitted():
     with pytest.raises(RuntimeError):
         obj.transform(X)
 
+
 def test_transform_error_handling():
     """Test transform error handling."""
+
     class ErrorBinning(DummyGeneralBinning):
         def _transform_columns(self, X, columns):
             raise Exception("Transform error")
@@ -282,6 +308,7 @@ def test_transform_error_handling():
 
     with pytest.raises(ValueError, match="Failed to transform data"):
         obj.transform(X)
+
 
 def test_inverse_transform():
     """Test inverse_transform method."""
@@ -294,6 +321,7 @@ def test_inverse_transform():
     assert result.shape == (2, 2)
     assert (result == 1).all()
 
+
 def test_inverse_transform_with_guidance():
     """Test inverse_transform with guidance columns."""
     obj = DummyGeneralBinning(guidance_columns=[1])
@@ -303,6 +331,7 @@ def test_inverse_transform_with_guidance():
     X_binned = obj.transform(X)  # Shape (2, 1)
     result = obj.inverse_transform(X_binned)
     assert result.shape == (2, 1)
+
 
 def test_inverse_transform_wrong_columns():
     """Test inverse_transform with wrong number of columns."""
@@ -315,6 +344,7 @@ def test_inverse_transform_wrong_columns():
     with pytest.raises(ValueError, match="Input for inverse_transform should have"):
         obj.inverse_transform(wrong_X)
 
+
 def test_inverse_transform_not_fitted():
     """Test inverse_transform when not fitted."""
     obj = DummyGeneralBinning()
@@ -323,8 +353,10 @@ def test_inverse_transform_not_fitted():
     with pytest.raises(RuntimeError):
         obj.inverse_transform(X)
 
+
 def test_inverse_transform_error_handling():
     """Test inverse_transform error handling."""
+
     class ErrorBinning(DummyGeneralBinning):
         def _inverse_transform_columns(self, X, columns):
             raise Exception("Inverse transform error")
@@ -337,13 +369,15 @@ def test_inverse_transform_error_handling():
     with pytest.raises(ValueError, match="Failed to inverse transform data"):
         obj.inverse_transform(X_binned)
 
+
 def test_get_params():
     """Test get_params method."""
     obj = DummyGeneralBinning(preserve_dataframe=True)
     params = obj.get_params()
 
-    assert 'preserve_dataframe' in params
-    assert params['preserve_dataframe'] is True
+    assert "preserve_dataframe" in params
+    assert params["preserve_dataframe"] is True
+
 
 def test_set_params():
     """Test set_params method."""
@@ -353,12 +387,14 @@ def test_set_params():
     assert result is obj
     assert obj.preserve_dataframe is False
 
+
 def test_set_params_incompatible():
     """Test set_params with incompatible parameters."""
     obj = DummyGeneralBinning()
 
     with pytest.raises(ValueError, match="guidance_columns and fit_jointly=True are incompatible"):
-        obj.set_params(guidance_columns=['col1'], fit_jointly=True)
+        obj.set_params(guidance_columns=["col1"], fit_jointly=True)
+
 
 def test_validate_params():
     """Test _validate_params method."""
@@ -366,13 +402,13 @@ def test_validate_params():
     obj._validate_params()  # Should not raise
 
     # Test invalid preserve_dataframe
-    setattr(obj, 'preserve_dataframe', "invalid")  # Bypass type checking for test
+    setattr(obj, "preserve_dataframe", "invalid")  # Bypass type checking for test
     with pytest.raises(TypeError, match="preserve_dataframe must be a boolean"):
         obj._validate_params()
 
     # Test invalid fit_jointly
     obj.preserve_dataframe = True
-    setattr(obj, 'fit_jointly', "invalid")  # Bypass type checking for test
+    setattr(obj, "fit_jointly", "invalid")  # Bypass type checking for test
     with pytest.raises(TypeError, match="fit_jointly must be a boolean"):
         obj._validate_params()
 
@@ -382,11 +418,13 @@ def test_validate_params():
     with pytest.raises(TypeError, match="guidance_columns must be list, tuple, int, str"):
         obj._validate_params()
 
+
 def test_get_binning_params():
     """Test _get_binning_params method."""
     obj = DummyGeneralBinning()
     params = obj._get_binning_params()
     assert isinstance(params, dict)
+
 
 def test_get_fitted_params():
     """Test _get_fitted_params method."""
@@ -394,11 +432,13 @@ def test_get_fitted_params():
     params = obj._get_fitted_params()
     assert isinstance(params, dict)
 
+
 def test_handle_bin_params():
     """Test _handle_bin_params method."""
     obj = DummyGeneralBinning()
     reset = obj._handle_bin_params({})
     assert isinstance(reset, bool)
+
 
 def test_empty_binning_columns():
     """Test handling of empty binning columns."""
@@ -415,6 +455,7 @@ def test_empty_binning_columns():
     assert bin_cols == []
     assert guide_cols == [0, 1]
 
+
 def test_transform_empty_binning_columns():
     """Test transform with no binning columns."""
     obj = DummyGeneralBinning(guidance_columns=[0, 1])
@@ -424,7 +465,8 @@ def test_transform_empty_binning_columns():
     result = obj.transform(X)
     assert result.shape == (2, 0)  # No columns to transform
 
-@patch('binning.base._general_binning_base.prepare_input_with_columns')
+
+@patch("binning.base._general_binning_base.prepare_input_with_columns")
 def test_prepare_input_mock(mock_prepare):
     """Test _prepare_input calls correct function."""
     mock_prepare.return_value = (np.array([[1, 2]]), [0, 1])
@@ -445,15 +487,15 @@ def test_fitted_params_override():
     X = np.array([[1], [2], [3]])
 
     # Mock _get_fitted_params to return specific fitted values
-    fitted_params = {'some_fitted_param': 'fitted_value'}
-    with patch.object(binning, '_get_fitted_params', return_value=fitted_params):
+    fitted_params = {"some_fitted_param": "fitted_value"}
+    with patch.object(binning, "_get_fitted_params", return_value=fitted_params):
         # Fit the binning
         binning.fit(X)
 
         # Get params after fitting - should include fitted params
         params_after = binning.get_params()
-        assert 'some_fitted_param' in params_after
-        assert params_after['some_fitted_param'] == 'fitted_value'
+        assert "some_fitted_param" in params_after
+        assert params_after["some_fitted_param"] == "fitted_value"
 
 
 def test_set_params_resets_fitted():
@@ -466,7 +508,7 @@ def test_set_params_resets_fitted():
     assert binning._fitted is True
 
     # Mock _handle_bin_params to return True (indicating reset needed)
-    with patch.object(binning, '_handle_bin_params', return_value=True):
+    with patch.object(binning, "_handle_bin_params", return_value=True):
         binning.set_params(fit_jointly=True)  # Use valid parameter
         assert binning._fitted is False
 
@@ -479,19 +521,19 @@ def test_get_params_with_fitted_attributes():
     obj._fitted = True
 
     # Add some fitted attributes to test lines 294-298
-    setattr(obj, 'bin_spec_', {0: [{'singleton': 1}]})
-    setattr(obj, 'bin_representatives_', {0: [1.0]})
-    setattr(obj, 'bin_edges_', {0: [0, 1, 2]})
+    setattr(obj, "bin_spec_", {0: [{"singleton": 1}]})
+    setattr(obj, "bin_representatives_", {0: [1.0]})
+    setattr(obj, "bin_edges_", {0: [0, 1, 2]})
 
     params = obj.get_params()
 
     # Should include fitted parameters without trailing underscores
-    assert 'bin_spec' in params
-    assert 'bin_representatives' in params
-    assert 'bin_edges' in params
-    assert params['bin_spec'] == {0: [{'singleton': 1}]}
-    assert params['bin_representatives'] == {0: [1.0]}
-    assert params['bin_edges'] == {0: [0, 1, 2]}
+    assert "bin_spec" in params
+    assert "bin_representatives" in params
+    assert "bin_edges" in params
+    assert params["bin_spec"] == {0: [{"singleton": 1}]}
+    assert params["bin_representatives"] == {0: [1.0]}
+    assert params["bin_edges"] == {0: [0, 1, 2]}
 
 
 def test_get_params_with_none_fitted_attributes():
@@ -502,14 +544,14 @@ def test_get_params_with_none_fitted_attributes():
     obj._fitted = True
 
     # Add fitted attributes with None values
-    setattr(obj, 'bin_spec_', None)
-    setattr(obj, 'bin_representatives_', {0: [1.0]})  # This one is not None
+    setattr(obj, "bin_spec_", None)
+    setattr(obj, "bin_representatives_", {0: [1.0]})  # This one is not None
 
     params = obj.get_params()
 
     # Should include non-None fitted parameters
-    assert 'bin_representatives' in params
-    assert params['bin_representatives'] == {0: [1.0]}
+    assert "bin_representatives" in params
+    assert params["bin_representatives"] == {0: [1.0]}
 
     # Should not include None fitted parameters
-    assert 'bin_spec' not in params or params.get('bin_spec') is None
+    assert "bin_spec" not in params or params.get("bin_spec") is None

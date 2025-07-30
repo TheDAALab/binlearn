@@ -1,8 +1,8 @@
 [FORMAT]
-good-names=X,X2,X_df,X_df_1d,X_bins,Xt,X_np,X_pd,X_binned,X_with_target,X_binning,X_guidance
+good-names=X,X2,X_df,X_df_1d,X_bins,Xt,X_np,X_pd,X_binned,X_with_target,X_binning,X_guidance,_X_guidance,mock_X,expected_X_with_target,X_no_shape,X_1d,X_3d
 
 [SIMILARITIES]
-min-similarity-lines=15
+min-similarity-lines=30
 ignore-comments=yes
 ignore-docstrings=yes
 ignore-imports=yes

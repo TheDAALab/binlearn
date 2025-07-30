@@ -18,32 +18,26 @@ Test Classes:
 
 import pytest
 import numpy as np
-import pandas as pd
 from binning.methods._equal_width_binning import EqualWidthBinning
 from binning.utils.errors import ConfigurationError
+from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
 
 # Import sklearn components
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import clone
+
 try:
     from scipy import sparse
 except ImportError:  # pragma: no cover
     sparse = None
 SKLEARN_AVAILABLE = True
 
-# Try to import polars
-try:
-    import polars as pl
-    POLARS_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    POLARS_AVAILABLE = False
-
 
 class TestEqualWidthBinning:
     """Comprehensive test cases for EqualWidthBinning core functionality.
-    
+
     This test class covers the fundamental operations of the EqualWidthBinning
     transformer including initialization, parameter validation, fitting,
     transformation, edge cases, and basic data handling scenarios.
@@ -51,7 +45,7 @@ class TestEqualWidthBinning:
 
     def test_init_default(self):
         """Test initialization with default parameters.
-        
+
         Verifies that the transformer initializes correctly with default
         parameter values and that all attributes are set as expected.
         """
@@ -61,22 +55,18 @@ class TestEqualWidthBinning:
 
     def test_init_custom_params(self):
         """Test initialization with custom parameters.
-        
+
         Verifies that the transformer correctly accepts and stores custom
         parameter values including n_bins, bin_range, and fit_jointly options.
         """
-        ewb = EqualWidthBinning(
-            n_bins=5,
-            bin_range=(0, 100),
-            fit_jointly=True
-        )
+        ewb = EqualWidthBinning(n_bins=5, bin_range=(0, 100), fit_jointly=True)
         assert ewb.n_bins == 5
         assert ewb.bin_range == (0, 100)
         assert ewb.fit_jointly is True
 
     def test_validate_params_valid(self):
         """Test parameter validation with valid parameters.
-        
+
         Ensures that the _validate_params method accepts valid parameter
         combinations without raising exceptions.
         """
@@ -85,7 +75,7 @@ class TestEqualWidthBinning:
 
     def test_validate_params_invalid_n_bins(self):
         """Test parameter validation with invalid n_bins values.
-        
+
         Verifies that the validator correctly rejects invalid n_bins values
         such as zero, negative numbers, and non-integer types.
         """
@@ -99,7 +89,7 @@ class TestEqualWidthBinning:
 
     def test_validate_params_invalid_bin_range(self):
         """Test parameter validation with invalid bin_range values.
-        
+
         Verifies that the validator correctly rejects invalid bin_range
         specifications such as reversed ranges (min > max).
         """
@@ -118,7 +108,7 @@ class TestEqualWidthBinning:
 
         # Test fit
         ewb.fit(X)
-        assert hasattr(ewb, '_bin_edges')  # Check that fitting has occurred
+        assert hasattr(ewb, "_bin_edges")  # Check that fitting has occurred
         assert len(ewb._bin_edges) == 2  # Two columns
 
         # Test transform
@@ -199,6 +189,7 @@ class TestEqualWidthBinning:
         assert X_transformed.shape == (5, 1)
         assert len(ewb._bin_edges) == 1
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_dataframe(self):
         """Test with pandas DataFrame input."""
         df = pd.DataFrame({"col1": [1, 2, 3, 4, 5], "col2": [10, 20, 30, 40, 50]})
@@ -223,10 +214,7 @@ class TestEqualWidthBinning:
         """Test _handle_bin_params method."""
         ewb = EqualWidthBinning()
 
-        params = {
-            "n_bins": 7,
-            "bin_range": (0, 50)
-        }
+        params = {"n_bins": 7, "bin_range": (0, 50)}
 
         reset_fitted = ewb._handle_bin_params(params)
 
@@ -241,7 +229,7 @@ class TestEqualWidthBinning:
         edges, reps = ewb._create_equal_width_bins(0.0, 10.0, 5)
 
         assert len(edges) == 6  # n_bins + 1
-        assert len(reps) == 5   # n_bins
+        assert len(reps) == 5  # n_bins
         assert edges[0] == 0.0
         assert edges[-1] == 10.0
         assert np.allclose(np.diff(edges), 2.0)  # Equal width bins
@@ -335,7 +323,7 @@ class TestEqualWidthBinning:
 
         # Should add epsilon to create a valid range
         assert len(edges) == 4  # n_bins + 1
-        assert len(reps) == 3   # n_bins
+        assert len(reps) == 3  # n_bins
         assert edges[0] < edges[-1]  # Should have created a valid range
 
     def test_validate_params_non_integer_n_bins(self):
@@ -403,7 +391,7 @@ class TestEqualWidthBinning:
 
 class TestEqualWidthBinningDataTypes:
     """Comprehensive tests for EqualWidthBinning with various data types.
-    
+
     This test class verifies that the EqualWidthBinning transformer works
     correctly with different input data types including numpy arrays of
     various dtypes, pandas DataFrames, polars DataFrames, and scipy sparse
@@ -412,7 +400,7 @@ class TestEqualWidthBinningDataTypes:
 
     def test_numpy_arrays_2d(self):
         """Test functionality with 2D numpy arrays.
-        
+
         Verifies that the transformer correctly handles standard 2D numpy
         arrays and produces output of the expected shape and dtype.
         """
@@ -428,7 +416,7 @@ class TestEqualWidthBinningDataTypes:
 
     def test_numpy_arrays_1d(self):
         """Test functionality with 1D numpy arrays.
-        
+
         Ensures that 1D arrays are properly handled when reshaped to
         2D format and that the output maintains correct dimensionality.
         """
@@ -444,7 +432,7 @@ class TestEqualWidthBinningDataTypes:
 
     def test_numpy_different_dtypes(self):
         """Test compatibility with different numpy data types.
-        
+
         Verifies that the transformer works correctly with various numpy
         dtypes including int32, float32, and others, ensuring proper
         type handling and conversion.
@@ -463,18 +451,21 @@ class TestEqualWidthBinningDataTypes:
         result_float32 = ewb.transform(X_float32)
         assert isinstance(result_float32, np.ndarray)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_dataframe_input_output(self):
         """Test pandas DataFrame input and output handling.
-        
+
         Verifies that pandas DataFrames are processed correctly and that
         the preserve_dataframe option works as expected for maintaining
         DataFrame format in the output.
         """
-        df = pd.DataFrame({
-            'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
-            'feature2': [10.0, 20.0, 30.0, 40.0, 50.0],
-            'feature3': [100.0, 200.0, 300.0, 400.0, 500.0]
-        })
+        df = pd.DataFrame(
+            {
+                "feature1": [1.0, 2.0, 3.0, 4.0, 5.0],
+                "feature2": [10.0, 20.0, 30.0, 40.0, 50.0],
+                "feature3": [100.0, 200.0, 300.0, 400.0, 500.0],
+            }
+        )
 
         # Test with preserve_dataframe=True (default for DataFrame input)
         ewb = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
@@ -484,14 +475,12 @@ class TestEqualWidthBinningDataTypes:
         assert isinstance(result, pd.DataFrame)
         assert result.shape == df.shape
         assert list(result.columns) == list(df.columns)
-        assert result.dtypes.apply(lambda x: x.name).eq('int64').all()
+        assert result.dtypes.apply(lambda x: x.name).eq("int64").all()
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_dataframe_to_numpy(self):
         """Test DataFrame input with numpy output."""
-        df = pd.DataFrame({
-            'col1': [1.0, 2.0, 3.0, 4.0],
-            'col2': [10.0, 20.0, 30.0, 40.0]
-        })
+        df = pd.DataFrame({"col1": [1.0, 2.0, 3.0, 4.0], "col2": [10.0, 20.0, 30.0, 40.0]})
 
         ewb = EqualWidthBinning(n_bins=2, preserve_dataframe=False)
         ewb.fit(df)
@@ -503,10 +492,12 @@ class TestEqualWidthBinningDataTypes:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="Polars not available")
     def test_polars_dataframe(self):
         """Test with Polars DataFrame."""
-        df_polars = pl.DataFrame({  # type: ignore[name-defined]
-            'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
-            'feature2': [10.0, 20.0, 30.0, 40.0, 50.0]
-        })
+        df_polars = pl.DataFrame(
+            {  # type: ignore[name-defined]
+                "feature1": [1.0, 2.0, 3.0, 4.0, 5.0],
+                "feature2": [10.0, 20.0, 30.0, 40.0, 50.0],
+            }
+        )
 
         ewb = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
         ewb.fit(df_polars)
@@ -516,13 +507,16 @@ class TestEqualWidthBinningDataTypes:
         assert isinstance(result, pl.DataFrame)  # type: ignore[name-defined]
         assert result.shape == df_polars.shape
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_mixed_data_types_in_dataframe(self):
         """Test DataFrame with mixed numeric types."""
-        df = pd.DataFrame({
-            'int_col': [1, 2, 3, 4, 5],
-            'float_col': [1.1, 2.2, 3.3, 4.4, 5.5],
-            'int64_col': np.array([10, 20, 30, 40, 50], dtype=np.int64)
-        })
+        df = pd.DataFrame(
+            {
+                "int_col": [1, 2, 3, 4, 5],
+                "float_col": [1.1, 2.2, 3.3, 4.4, 5.5],
+                "int64_col": np.array([10, 20, 30, 40, 50], dtype=np.int64),
+            }
+        )
 
         ewb = EqualWidthBinning(n_bins=2)
         ewb.fit(df)
@@ -539,10 +533,12 @@ class TestEqualWidthBinningSklearnIntegration:
         X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0], [4.0, 40.0]])
         y = np.array([0, 1, 0, 1])
 
-        pipeline = Pipeline([  # type: ignore[name-defined]
-            ('binning', EqualWidthBinning(n_bins=2)),
-            ('scaler', StandardScaler())  # type: ignore[name-defined]
-        ])
+        pipeline = Pipeline(
+            [  # type: ignore[name-defined]
+                ("binning", EqualWidthBinning(n_bins=2)),
+                ("scaler", StandardScaler()),  # type: ignore[name-defined]
+            ]
+        )
 
         pipeline.fit(X, y)
         result = pipeline.transform(X)
@@ -555,10 +551,12 @@ class TestEqualWidthBinningSklearnIntegration:
         """Test EqualWidthBinning with ColumnTransformer."""
         X = np.array([[1.0, 10.0, 100.0], [2.0, 20.0, 200.0], [3.0, 30.0, 300.0]])
 
-        ct = ColumnTransformer([  # type: ignore[name-defined]
-            ('bin_first_two', EqualWidthBinning(n_bins=2), [0, 1]),
-            ('scale_third', StandardScaler(), [2])  # type: ignore[name-defined]
-        ])
+        ct = ColumnTransformer(
+            [  # type: ignore[name-defined]
+                ("bin_first_two", EqualWidthBinning(n_bins=2), [0, 1]),
+                ("scale_third", StandardScaler(), [2]),  # type: ignore[name-defined]
+            ]
+        )
 
         result = ct.fit_transform(X)
 
@@ -577,8 +575,8 @@ class TestEqualWidthBinningSklearnIntegration:
 
         # Test get_params
         params = ewb.get_params()
-        assert params['n_bins'] == 5
-        assert params['bin_range'] == (0, 100)
+        assert params["n_bins"] == 5
+        assert params["bin_range"] == (0, 100)
 
         # Test set_params
         ewb.set_params(n_bins=10, bin_range=(0, 200))
@@ -596,16 +594,18 @@ class TestEqualWidthBinningSklearnIntegration:
         # But should be different objects
         assert ewb_cloned is not ewb_original
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_sklearn_pipeline_with_dataframe(self):
         """Test pipeline with DataFrame input/output."""
-        df = pd.DataFrame({
-            'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
-            'feature2': [10.0, 20.0, 30.0, 40.0, 50.0]
-        })
+        df = pd.DataFrame(
+            {"feature1": [1.0, 2.0, 3.0, 4.0, 5.0], "feature2": [10.0, 20.0, 30.0, 40.0, 50.0]}
+        )
 
-        pipeline = Pipeline([  # type: ignore[name-defined]
-            ('binning', EqualWidthBinning(n_bins=3, preserve_dataframe=True))
-        ])
+        pipeline = Pipeline(
+            [  # type: ignore[name-defined]
+                ("binning", EqualWidthBinning(n_bins=3, preserve_dataframe=True))
+            ]
+        )
 
         result = pipeline.fit_transform(df)
 
@@ -643,23 +643,19 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
     def test_get_params_preserves_all_parameters(self):
         """Test that get_params preserves all necessary parameters."""
         ewb = EqualWidthBinning(
-            n_bins=7,
-            bin_range=(0, 100),
-            clip=False,
-            preserve_dataframe=True,
-            fit_jointly=True
+            n_bins=7, bin_range=(0, 100), clip=False, preserve_dataframe=True, fit_jointly=True
         )
 
         params = ewb.get_params()
 
         # Check that all EqualWidthBinning-specific params are preserved
-        assert params['n_bins'] == 7
-        assert params['bin_range'] == (0, 100)
+        assert params["n_bins"] == 7
+        assert params["bin_range"] == (0, 100)
 
         # Should also include parent class parameters
-        assert 'clip' in params
-        assert 'preserve_dataframe' in params
-        assert 'fit_jointly' in params
+        assert "clip" in params
+        assert "preserve_dataframe" in params
+        assert "fit_jointly" in params
 
     def test_parameter_changes_reset_fitted_state(self):
         """Test that parameter changes properly reset fitted state."""
@@ -669,11 +665,11 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         ewb.fit(X)
 
         # Should be fitted
-        assert hasattr(ewb, '_bin_edges')
-        assert hasattr(ewb, '_bin_reps')
+        assert hasattr(ewb, "_bin_edges")
+        assert hasattr(ewb, "_bin_reps")
 
         # Change parameters via _handle_bin_params
-        params = {'n_bins': 5, 'bin_range': (0, 10)}
+        params = {"n_bins": 5, "bin_range": (0, 10)}
         reset_fitted = ewb._handle_bin_params(params)
 
         # Should indicate that fitted state needs reset
@@ -710,16 +706,11 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         result_joint_new = ewb_new_joint.transform(X_test)
         np.testing.assert_array_equal(result_joint_original, result_joint_new)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_dataframe_preservation_in_workflow(self):
         """Test DataFrame preservation through the fit-params-reinstantiate workflow."""
-        df_train = pd.DataFrame({
-            'col1': [1.0, 2.0, 3.0, 4.0],
-            'col2': [10.0, 20.0, 30.0, 40.0]
-        })
-        df_test = pd.DataFrame({
-            'col1': [1.5, 3.5],
-            'col2': [15.0, 35.0]
-        })
+        df_train = pd.DataFrame({"col1": [1.0, 2.0, 3.0, 4.0], "col2": [10.0, 20.0, 30.0, 40.0]})
+        df_test = pd.DataFrame({"col1": [1.5, 3.5], "col2": [15.0, 35.0]})
 
         # Fit with DataFrame preservation
         ewb_original = EqualWidthBinning(n_bins=2, preserve_dataframe=True)
@@ -737,7 +728,6 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         assert isinstance(result_original, pd.DataFrame)
         assert isinstance(result_new, pd.DataFrame)
         pd.testing.assert_frame_equal(result_original, result_new)
-
 
     def test_user_provided_bin_edges(self):
         """Test EqualWidthBinning with user-provided bin_edges."""
@@ -758,14 +748,66 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
 
         # Test with both bin_edges and bin_representatives
         ewb2 = EqualWidthBinning(
-            bin_edges={0: [0, 2, 4], 1: [0, 3, 6]},
-            bin_representatives={0: [1, 3], 1: [1.5, 4.5]}
+            bin_edges={0: [0, 2, 4], 1: [0, 3, 6]}, bin_representatives={0: [1, 3], 1: [1.5, 4.5]}
         )
 
         result2 = ewb2.transform(X)
         assert result2.shape == (4, 2)
         assert ewb2._bin_reps[0] == [1, 3]
         assert ewb2._bin_reps[1] == [1.5, 4.5]
+
+    def test_fit_with_user_provided_bin_edges(self):
+        """Test calling fit() when bin_edges are already provided.
+
+        The fit() method should always calculate bin edges from the data,
+        even when user-provided bin edges exist. User-provided bin edges
+        serve as parameters for the binning algorithm but don't skip fitting.
+        """
+        # Test data
+        X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+
+        # Create binner with pre-provided bin_edges (these serve as algorithm parameters)
+        ewb = EqualWidthBinning(n_bins=5, bin_edges={0: [0, 2, 4, 6, 8], 1: [1, 3, 5, 7, 9]})
+
+        # Reset fitted state to test the fit path
+        ewb._fitted = False
+
+        # Call fit - this should calculate new bin edges from the data
+        ewb.fit(X)
+
+        # Should be fitted and have calculated new edges from the data
+        assert ewb._fitted is True
+
+        # The bin edges should be calculated from the actual data range (1-7)
+        # For equal width binning with 5 bins: [1.0, 2.2, 3.4, 4.6, 5.8, 7.0]
+        expected_edges_col0 = [1.0, 2.2, 3.4, 4.6, 5.8, 7.0]
+        expected_edges_col1 = [2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+
+        # Check that edges were calculated from data, not from user-provided values
+        assert len(ewb._bin_edges[0]) == 6  # 5 bins = 6 edges
+        assert len(ewb._bin_edges[1]) == 6  # 5 bins = 6 edges
+        assert (
+            abs(ewb._bin_edges[0][0] - expected_edges_col0[0]) < 0.01
+        )  # First edge should be close to min value
+        assert (
+            abs(ewb._bin_edges[0][-1] - expected_edges_col0[-1]) < 0.01
+        )  # Last edge should be close to max value
+
+        # Should be able to transform
+        result = ewb.transform(X)
+        assert result.shape == (4, 2)
+
+        # Test fit_transform as well
+        ewb3 = EqualWidthBinning(n_bins=3, bin_edges={0: [0, 3, 6], 1: [1, 4, 7]})
+        ewb3._fitted = False  # Reset to test fit path
+
+        result3 = ewb3.fit_transform(X)
+        assert result3.shape == (4, 2)
+        assert ewb3._fitted is True
+
+        # Should have 3 bins, so 4 edges (calculated from data, not user-provided)
+        assert len(ewb3._bin_edges[0]) == 4
+        assert len(ewb3._bin_edges[1]) == 4
 
 
 def test_import_availability():
@@ -776,4 +818,4 @@ def test_import_availability():
     # Test sparse availability when sklearn is available
     if SKLEARN_AVAILABLE:
         # sparse can be None or the actual module
-        assert sparse is None or hasattr(sparse, 'csr_matrix')
+        assert sparse is None or hasattr(sparse, "csr_matrix")

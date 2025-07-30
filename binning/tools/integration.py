@@ -13,7 +13,7 @@ Functions:
     _import_supervised_binning: Helper function to import SupervisedBinning.
 """
 
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Any
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -66,6 +66,10 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         self.k = k
         self.score_func = score_func
         self.binning_params = binning_params or {}
+
+        # Initialize attributes that will be set during fit
+        self.selector_: Optional[SelectKBest] = None
+        self.binner_: Optional[Any] = None
 
     def fit(self, X, y):
         """Fit the feature selector.
@@ -136,6 +140,8 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
             NotFittedError: If the selector has not been fitted yet.
         """
         check_is_fitted(self)
+        assert self.binner_ is not None, "Selector must be fitted before transform"
+        assert self.selector_ is not None, "Selector must be fitted before transform"
         X_binned = self.binner_.transform(X)
         return self.selector_.transform(X_binned)
 
@@ -153,9 +159,11 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
             NotFittedError: If the selector has not been fitted yet.
         """
         check_is_fitted(self)
+        assert self.selector_ is not None, "Selector must be fitted before get_support"
         return self.selector_.get_support(indices=indices)
 
 
+# pylint: disable=too-few-public-methods
 class BinningPipeline:
     """Pipeline utilities for binning operations.
     

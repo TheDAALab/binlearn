@@ -2,16 +2,21 @@ import pytest
 import numpy as np
 import warnings
 from unittest.mock import Mock, patch
+from binning import PANDAS_AVAILABLE, pd
 from binning.base._interval_binning_base import IntervalBinningBase
 from binning.utils.errors import ConfigurationError, DataQualityWarning, BinningError
 
+
 class DummyIntervalBinning(IntervalBinningBase):
     def __init__(self, clip=None, bin_edges=None, bin_representatives=None, **kwargs):
-        super().__init__(clip=clip, bin_edges=bin_edges, bin_representatives=bin_representatives, **kwargs)
+        super().__init__(
+            clip=clip, bin_edges=bin_edges, bin_representatives=bin_representatives, **kwargs
+        )
 
     def _calculate_bins(self, x_col, col_id, guidance_data=None):
         # Return dummy bin edges and representatives
         return [0.0, 1.0, 2.0], [0.5, 1.5]
+
 
 def test_init_default():
     """Test initialization with default parameters."""
@@ -22,20 +27,23 @@ def test_init_default():
     assert obj._bin_edges == {}
     assert obj._bin_reps == {}
 
+
 def test_init_with_clip():
     """Test initialization with explicit clip parameter."""
     obj = DummyIntervalBinning(clip=True)
     assert obj.clip is True
 
+
 def test_init_with_bin_edges():
     """Test initialization with bin_edges provided."""
     bin_edges = {0: [0, 1, 2]}
 
-    with patch.object(DummyIntervalBinning, '_process_provided_bins') as mock_process:
+    with patch.object(DummyIntervalBinning, "_process_provided_bins") as mock_process:
         obj = DummyIntervalBinning(bin_edges=bin_edges)
         assert obj.bin_edges == bin_edges
         mock_process.assert_called_once()
         mock_process.assert_called_once()
+
 
 def test_init_with_bin_representatives():
     """Test initialization with bin_representatives provided."""
@@ -43,8 +51,9 @@ def test_init_with_bin_representatives():
     obj = DummyIntervalBinning(bin_representatives=bin_reps)
     assert obj.bin_representatives == bin_reps
 
-@patch('binning.base._interval_binning_base.ensure_bin_dict')
-@patch('binning.base._interval_binning_base.validate_bins')
+
+@patch("binning.base._interval_binning_base.ensure_bin_dict")
+@patch("binning.base._interval_binning_base.validate_bins")
 def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
     """Test _process_provided_bins with edges only."""
     mock_ensure.side_effect = lambda x: x  # Return input unchanged
@@ -53,7 +62,7 @@ def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
     obj.bin_edges = {0: [0, 1, 2]}
     obj.bin_representatives = None
 
-    with patch('binning.base._interval_binning_base.default_representatives') as mock_default:
+    with patch("binning.base._interval_binning_base.default_representatives") as mock_default:
         mock_default.return_value = [0.5, 1.5]
         obj._process_provided_bins()
 
@@ -62,8 +71,9 @@ def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
         mock_validate.assert_called_once()
         assert obj._fitted is True
 
-@patch('binning.base._interval_binning_base.ensure_bin_dict')
-@patch('binning.base._interval_binning_base.validate_bins')
+
+@patch("binning.base._interval_binning_base.ensure_bin_dict")
+@patch("binning.base._interval_binning_base.validate_bins")
 def test_process_provided_bins_both(mock_validate, mock_ensure):
     """Test _process_provided_bins with both edges and reps."""
     mock_ensure.side_effect = lambda x: x
@@ -78,12 +88,13 @@ def test_process_provided_bins_both(mock_validate, mock_ensure):
     mock_validate.assert_called_once()
     assert obj._fitted is True
 
+
 def test_process_provided_bins_invalid_edges_type():
     """Test _process_provided_bins with invalid edge types."""
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: "invalid"}  # String instead of array-like
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.return_value = {0: "invalid"}
 
         with pytest.raises(Exception):  # Should raise ConfigurationError
@@ -95,25 +106,29 @@ def test_process_provided_bins_too_few_edges():
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [1]}  # Only one edge
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.return_value = {0: [1]}
 
         with pytest.raises(Exception):  # Should raise ConfigurationError
             obj._process_provided_bins()
+
 
 def test_process_provided_bins_error():
     """Test _process_provided_bins error handling."""
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.side_effect = Exception("Test error")
 
-        with pytest.raises(ConfigurationError, match="Failed to process provided bin specifications"):
+        with pytest.raises(
+            ConfigurationError, match="Failed to process provided bin specifications"
+        ):
             obj._process_provided_bins()
 
-@patch.object(DummyIntervalBinning, '_process_user_specifications')
-@patch.object(DummyIntervalBinning, '_finalize_fitting')
+
+@patch.object(DummyIntervalBinning, "_process_user_specifications")
+@patch.object(DummyIntervalBinning, "_finalize_fitting")
 def test_fit_per_column_success(mock_finalize, mock_process):
     """Test _fit_per_column successful execution."""
     obj = DummyIntervalBinning()
@@ -126,9 +141,14 @@ def test_fit_per_column_success(mock_finalize, mock_process):
     mock_process.assert_called_once_with(columns)
     mock_finalize.assert_called_once()
 
-@patch.object(DummyIntervalBinning, '_process_user_specifications')
+
+@patch.object(DummyIntervalBinning, "_process_user_specifications")
 def test_fit_per_column_with_existing_bins(mock_process):
-    """Test _fit_per_column with existing bin specs."""
+    """Test _fit_per_column with existing bin specs.
+
+    The fit method should always calculate bins for all columns,
+    even when existing bins are present.
+    """
     obj = DummyIntervalBinning()
     obj._bin_edges = {0: [0, 1, 2]}
     obj._bin_reps = {0: [0.5, 1.5]}
@@ -136,22 +156,26 @@ def test_fit_per_column_with_existing_bins(mock_process):
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
 
-    with patch.object(obj, '_calculate_bins') as mock_calc:
+    with patch.object(obj, "_calculate_bins") as mock_calc:
         mock_calc.return_value = ([0, 1, 2], [0.5, 1.5])
 
-        with patch.object(obj, '_finalize_fitting'):
+        with patch.object(obj, "_finalize_fitting"):
             obj._fit_per_column(X, columns)
 
-        # Should only call _calculate_bins for column 1
-        mock_calc.assert_called_once()
+        # Should call _calculate_bins for both columns now
+        assert mock_calc.call_count == 2
+        # Both columns should have bins calculated
+        assert 0 in obj._bin_edges
         assert 1 in obj._bin_edges
+        assert 0 in obj._bin_reps
         assert 1 in obj._bin_reps
+
 
 def test_fit_per_column_error_handling():
     """Test _fit_per_column error handling."""
     obj = DummyIntervalBinning()
 
-    with patch.object(obj, '_process_user_specifications') as mock_process:
+    with patch.object(obj, "_process_user_specifications") as mock_process:
         mock_process.side_effect = Exception("Test error")
 
         X = np.array([[1, 2], [3, 4]])
@@ -160,9 +184,10 @@ def test_fit_per_column_error_handling():
         with pytest.raises(ValueError, match="Failed to fit per-column bins"):
             obj._fit_per_column(X, columns)
 
-@patch.object(DummyIntervalBinning, '_process_user_specifications')
-@patch.object(DummyIntervalBinning, '_calculate_bins_jointly')
-@patch.object(DummyIntervalBinning, '_finalize_fitting')
+
+@patch.object(DummyIntervalBinning, "_process_user_specifications")
+@patch.object(DummyIntervalBinning, "_calculate_bins_jointly")
+@patch.object(DummyIntervalBinning, "_finalize_fitting")
 def test_fit_jointly_success(mock_finalize, mock_calc_jointly, mock_process):
     """Test _fit_jointly successful execution."""
     # Configure the mock to return the expected tuple
@@ -178,11 +203,12 @@ def test_fit_jointly_success(mock_finalize, mock_calc_jointly, mock_process):
     mock_calc_jointly.assert_called()  # Should be called for each column
     mock_finalize.assert_called_once()
 
+
 def test_fit_jointly_error_handling():
     """Test _fit_jointly error handling."""
     obj = DummyIntervalBinning()
 
-    with patch.object(obj, '_process_user_specifications') as mock_process:
+    with patch.object(obj, "_process_user_specifications") as mock_process:
         mock_process.side_effect = Exception("Test error")
 
         X = np.array([[1, 2], [3, 4]])
@@ -190,6 +216,7 @@ def test_fit_jointly_error_handling():
 
         with pytest.raises(ValueError, match="Failed to fit joint bins"):
             obj._fit_jointly(X, columns)
+
 
 def test_calculate_bins_abstract():
     """Test _calculate_bins is properly abstract."""
@@ -200,38 +227,42 @@ def test_calculate_bins_abstract():
     result = obj._calculate_bins(np.array([1, 2, 3]), 0)
     assert result == ([0.0, 1.0, 2.0], [0.5, 1.5])
 
+
 def test_get_column_key_direct_match():
     """Test _get_column_key with direct match."""
     obj = DummyIntervalBinning()
 
-    target_col = 'A'
-    available_keys = ['A', 'B', 'C']
+    target_col = "A"
+    available_keys = ["A", "B", "C"]
     col_index = 0
 
     result = obj._get_column_key(target_col, available_keys, col_index)
-    assert result == 'A'
+    assert result == "A"
+
 
 def test_get_column_key_index_fallback():
     """Test _get_column_key with index fallback."""
     obj = DummyIntervalBinning()
 
-    target_col = 'X'
-    available_keys = ['A', 'B', 'C']
+    target_col = "X"
+    available_keys = ["A", "B", "C"]
     col_index = 1
 
     result = obj._get_column_key(target_col, available_keys, col_index)
-    assert result == 'B'
+    assert result == "B"
+
 
 def test_get_column_key_no_match():
     """Test _get_column_key with no match."""
     obj = DummyIntervalBinning()
 
-    target_col = 'X'
-    available_keys = ['A', 'B']
+    target_col = "X"
+    available_keys = ["A", "B"]
     col_index = 5
 
     with pytest.raises(ValueError, match="No bin specification found for column X"):
         obj._get_column_key(target_col, available_keys, col_index)
+
 
 def test_transform_columns_with_clip():
     """Test _transform_columns method with clipping."""
@@ -250,7 +281,9 @@ def test_transform_columns_with_clip():
     assert result[1, 0] == 1  # 2.5 clipped to last bin (index 1)
     assert result[1, 1] == 0  # -0.5 clipped to first bin (index 0)
 
+
 from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE
+
 
 def test_transform_columns_without_clip():
     """Test _transform_columns method without clipping."""
@@ -266,6 +299,7 @@ def test_transform_columns_without_clip():
     assert result[0, 0] == 0  # 0.5 is in first bin
     assert result[1, 0] == ABOVE_RANGE  # 2.5 is above range
 
+
 def test_transform_columns_missing_key():
     """Test _transform_columns with missing column key."""
     obj = DummyIntervalBinning()
@@ -276,6 +310,7 @@ def test_transform_columns_missing_key():
 
     with pytest.raises(ValueError, match="No bin specification found"):
         obj._transform_columns(X, columns)
+
 
 def test_inverse_transform_columns():
     """Test _inverse_transform_columns method."""
@@ -290,6 +325,7 @@ def test_inverse_transform_columns():
     expected = np.array([[0.5, 3.5], [1.5, 2.5]])
     np.testing.assert_array_equal(result, expected)
 
+
 def test_inverse_transform_columns_missing_key():
     """Test _inverse_transform_columns with missing column key."""
     obj = DummyIntervalBinning()
@@ -301,7 +337,8 @@ def test_inverse_transform_columns_missing_key():
     with pytest.raises(ValueError, match="No bin specification found"):
         obj._inverse_transform_columns(X, columns)
 
-@patch('binning.base._interval_binning_base.validate_bins')
+
+@patch("binning.base._interval_binning_base.validate_bins")
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
     obj = DummyIntervalBinning()
@@ -312,17 +349,19 @@ def test_finalize_fitting(mock_validate):
 
     mock_validate.assert_called_once_with(obj._bin_edges, obj._bin_reps)
 
+
 def test_finalize_fitting_error():
     """Test _finalize_fitting error handling."""
     obj = DummyIntervalBinning()
     obj._bin_edges = {0: [0, 1, 2]}
     obj._bin_reps = {0: [0.5, 1.5]}
 
-    with patch('binning.base._interval_binning_base.validate_bins') as mock_validate:
+    with patch("binning.base._interval_binning_base.validate_bins") as mock_validate:
         mock_validate.side_effect = Exception("Validation error")
 
         with pytest.raises(Exception, match="Validation error"):
             obj._finalize_fitting()
+
 
 def test_process_user_specifications():
     """Test _process_user_specifications method."""
@@ -336,6 +375,7 @@ def test_process_user_specifications():
     assert obj._bin_edges == {0: [0, 1, 2]}
     assert obj._bin_reps == {0: [0.5, 1.5]}
 
+
 def test_process_user_specifications_no_user_specs():
     """Test _process_user_specifications with no user specs."""
     obj = DummyIntervalBinning()
@@ -348,6 +388,7 @@ def test_process_user_specifications_no_user_specs():
     assert obj._bin_edges == {}
     assert obj._bin_reps == {}
 
+
 def test_calculate_bins_jointly_abstract():
     """Test _calculate_bins_jointly default implementation."""
     obj = DummyIntervalBinning()
@@ -356,16 +397,18 @@ def test_calculate_bins_jointly_abstract():
     result = obj._calculate_bins_jointly(np.array([1, 2]), [0])
     assert result == ([0.0, 1.0, 2.0], [0.5, 1.5])
 
+
 def test_get_binning_params():
     """Test _get_binning_params method with automatic discovery."""
     obj = DummyIntervalBinning(bin_edges={0: [0, 1, 2]}, clip=True)
     params = obj._get_binning_params()
 
     # With automatic discovery, these should be included
-    assert 'bin_edges' in params
-    assert 'bin_representatives' in params
-    assert 'clip' in params
-    assert params['clip'] is True
+    assert "bin_edges" in params
+    assert "bin_representatives" in params
+    assert "clip" in params
+    assert params["clip"] is True
+
 
 def test_get_fitted_params():
     """Test _get_fitted_params method."""
@@ -376,27 +419,28 @@ def test_get_fitted_params():
 
     params = obj._get_fitted_params()
 
-    assert params['bin_edges'] == {0: [0, 1, 2]}
-    assert params['bin_representatives'] == {0: [0.5, 1.5]}
+    assert params["bin_edges"] == {0: [0, 1, 2]}
+    assert params["bin_representatives"] == {0: [0.5, 1.5]}
+
 
 def test_handle_bin_params():
     """Test _handle_bin_params method with automatic parameter discovery."""
     obj = DummyIntervalBinning()
 
     # Test with clip change (automatic discovery handles this)
-    reset = obj._handle_bin_params({'clip': True})
+    reset = obj._handle_bin_params({"clip": True})
     assert reset is True  # With automatic discovery, this should trigger reset
 
     # Test with fit_jointly change (automatic discovery handles this)
-    reset = obj._handle_bin_params({'fit_jointly': True})
+    reset = obj._handle_bin_params({"fit_jointly": True})
     assert reset is True
 
     # Test with guidance_columns change (automatic discovery handles this)
-    reset = obj._handle_bin_params({'guidance_columns': ['A']})
+    reset = obj._handle_bin_params({"guidance_columns": ["A"]})
     assert reset is True
 
     # Test with no relevant changes
-    reset = obj._handle_bin_params({'other_param': 'value'})
+    reset = obj._handle_bin_params({"other_param": "value"})
     assert reset is False
 
 
@@ -440,7 +484,7 @@ def test_handle_bin_params_direct_access():
 
     # Test bin_edges and bin_representatives are handled through setters now,
     # so test automatic parameter discovery with other parameters
-    params = {'clip': True}
+    params = {"clip": True}
     reset = minimal_obj._handle_bin_params(params)
     assert reset is True  # Should be handled by automatic discovery
 
@@ -453,6 +497,7 @@ def test_handle_bin_params_direct_access():
 
     # Test the _calculate_bins method to cover line 425
     import numpy as np
+
     x_col = np.array([1, 2, 3])
     edges, reps = minimal_obj._calculate_bins(x_col, 0, None)
     assert edges == [0.0, 1.0, 2.0]
@@ -467,14 +512,15 @@ def test_data_quality_warnings():
     X = np.array([[np.inf, 2], [3, np.nan]])
     columns = [0, 1]
 
-    with patch('warnings.warn') as mock_warn:
-        with patch.object(obj, '_calculate_bins') as mock_calc:
+    with patch("warnings.warn") as mock_warn:
+        with patch.object(obj, "_calculate_bins") as mock_calc:
             mock_calc.return_value = ([0, 1, 2], [0.5, 1.5])
-            with patch.object(obj, '_finalize_fitting'):
+            with patch.object(obj, "_finalize_fitting"):
                 obj._fit_per_column(X, columns)
 
         # Should call warnings for data quality issues
         # (Note: actual warning logic depends on implementation details)
+
 
 def test_empty_data_handling():
     """Test handling of empty data arrays."""
@@ -483,12 +529,13 @@ def test_empty_data_handling():
     X = np.array([]).reshape(0, 2)
     columns = [0, 1]
 
-    with patch.object(obj, '_calculate_bins') as mock_calc:
+    with patch.object(obj, "_calculate_bins") as mock_calc:
         mock_calc.return_value = ([0, 1], [0.5])
-        with patch.object(obj, '_finalize_fitting'):
+        with patch.object(obj, "_finalize_fitting"):
             obj._fit_per_column(X, columns)
 
     # Should handle empty data gracefully
+
 
 def test_fit_per_column_exception_handling():
     """Test _fit_per_column exception handling."""
@@ -496,11 +543,12 @@ def test_fit_per_column_exception_handling():
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
 
-    with patch.object(obj, '_process_user_specifications') as mock_process:
+    with patch.object(obj, "_process_user_specifications") as mock_process:
         mock_process.side_effect = Exception("Test error")
 
         with pytest.raises(ValueError, match="Failed to fit per-column bins"):
             obj._fit_per_column(X, columns)
+
 
 def test_fit_jointly_exception_handling():
     """Test _fit_jointly exception handling."""
@@ -508,35 +556,40 @@ def test_fit_jointly_exception_handling():
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
 
-    with patch.object(obj, '_process_user_specifications') as mock_process:
+    with patch.object(obj, "_process_user_specifications") as mock_process:
         mock_process.side_effect = Exception("Test error")
 
         with pytest.raises(ValueError, match="Failed to fit joint bins"):
             obj._fit_jointly(X, columns)
 
+
 def test_nan_data_warnings_string_column():
     """Test warnings for string column names with all NaN data."""
     obj = DummyIntervalBinning()
     X = np.array([[np.nan], [np.nan]])
-    columns = ['feature_a']  # String column name
+    columns = ["feature_a"]  # String column name
 
-    with pytest.warns(DataQualityWarning, match="Data in column 'feature_a' contains only NaN values"):
-        with patch.object(obj, '_calculate_bins') as mock_calc:
+    with pytest.warns(
+        DataQualityWarning, match="Data in column 'feature_a' contains only NaN values"
+    ):
+        with patch.object(obj, "_calculate_bins") as mock_calc:
             mock_calc.return_value = ([0, 1], [0.5])
-            with patch.object(obj, '_finalize_fitting'):
+            with patch.object(obj, "_finalize_fitting"):
                 obj._fit_per_column(X, columns)
+
 
 def test_nan_data_warnings_string_column_jointly():
     """Test warnings for all NaN data in joint fitting."""
     obj = DummyIntervalBinning()
     X = np.array([[np.nan], [np.nan]])
-    columns = ['feature_a']  # String column name
+    columns = ["feature_a"]  # String column name
 
     with pytest.warns(DataQualityWarning, match="All data contains only NaN values"):
-        with patch.object(obj, '_calculate_bins_jointly') as mock_calc:
+        with patch.object(obj, "_calculate_bins_jointly") as mock_calc:
             mock_calc.return_value = ([0, 1], [0.5])
-            with patch.object(obj, '_finalize_fitting'):
+            with patch.object(obj, "_finalize_fitting"):
                 obj._fit_jointly(X, columns)
+
 
 def test_calculate_bins_jointly_default():
     """Test _calculate_bins_jointly default implementation."""
@@ -544,7 +597,7 @@ def test_calculate_bins_jointly_default():
     all_data = np.array([1, 2, 3])
     columns = [0]
 
-    with patch.object(obj, '_calculate_bins') as mock_calc:
+    with patch.object(obj, "_calculate_bins") as mock_calc:
         mock_calc.return_value = ([0, 1, 2], [0.5, 1.5])
 
         result = obj._calculate_bins_jointly(all_data, columns)
@@ -555,6 +608,7 @@ def test_calculate_bins_jointly_default():
 
 def test_fit_per_column_binning_error():
     """Test _fit_per_column re-raises BinningError unchanged."""
+
     class BinningErrorInterval(DummyIntervalBinning):
         def _calculate_bins(self, x_col, col_id, guidance_data=None):
             raise BinningError("Specific binning error")
@@ -573,7 +627,7 @@ def test_process_provided_bins_binning_error():
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.side_effect = BinningError("Bins validation error")
 
         # BinningError should be re-raised unchanged
@@ -586,11 +640,13 @@ def test_process_provided_bins_configuration_error():
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.side_effect = ValueError("Generic validation error")
 
         # Generic exception should be wrapped in ConfigurationError
-        with pytest.raises(ConfigurationError, match="Failed to process provided bin specifications"):
+        with pytest.raises(
+            ConfigurationError, match="Failed to process provided bin specifications"
+        ):
             obj._process_provided_bins()
 
 
@@ -600,9 +656,9 @@ def test_finalize_fitting_default_representatives():
     obj._bin_edges = {0: [0, 1, 2], 1: [0, 1, 2]}
     obj._bin_reps = {0: [0.5, 1.5]}  # Missing reps for column 1
 
-    with patch('binning.base._interval_binning_base.default_representatives') as mock_default:
+    with patch("binning.base._interval_binning_base.default_representatives") as mock_default:
         mock_default.return_value = [0.5, 1.5]
-        with patch('binning.base._interval_binning_base.validate_bins'):
+        with patch("binning.base._interval_binning_base.validate_bins"):
             obj._finalize_fitting()
 
         # Should generate default reps for column 1
@@ -614,17 +670,18 @@ def test_fit_jointly_string_column_reference():
     """Test _fit_jointly with string column identifiers."""
     obj = DummyIntervalBinning()
     X = np.array([[1, 2], [3, 4]])
-    columns = ['col_a', 'col_b']  # String columns instead of integers
+    columns = ["col_a", "col_b"]  # String columns instead of integers
 
     # Should handle string column references
     obj._fit_jointly(X, columns)
 
-    assert 'col_a' in obj._bin_edges
-    assert 'col_b' in obj._bin_edges
+    assert "col_a" in obj._bin_edges
+    assert "col_b" in obj._bin_edges
 
 
 def test_fit_jointly_binning_error():
     """Test _fit_jointly re-raises BinningError unchanged."""
+
     class BinningErrorInterval(DummyIntervalBinning):
         def _calculate_bins_jointly(self, all_data, columns):
             raise BinningError("Joint binning error")
@@ -643,7 +700,7 @@ def test_process_user_specifications_binning_error():
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.side_effect = BinningError("User specs validation error")
 
         # BinningError should be re-raised unchanged
@@ -685,27 +742,24 @@ def test_lookup_bin_widths_method():
 def test_lookup_bin_ranges_method():
     """Test lookup_bin_ranges method directly."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2], 'col_a': [0, 1, 2, 3]}  # 2 bins, 3 bins
+    obj._bin_edges = {0: [0, 1, 2], "col_a": [0, 1, 2, 3]}  # 2 bins, 3 bins
     obj._fitted = True
 
     # Test bin range lookup
     result = obj.lookup_bin_ranges()
 
     # Should return number of bins per column
-    expected = {0: 2, 'col_a': 3}
+    expected = {0: 2, "col_a": 3}
     assert result == expected
 
 
+@pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
 def test_fit_jointly_with_string_columns_and_nan():
     """Test _fit_per_column with string columns and NaN data to cover line 123."""
-    import pandas as pd
 
     obj = DummyIntervalBinning(fit_jointly=False)  # Use per-column fitting for string column test
     # Create a DataFrame with string column names where first column is all NaN
-    df = pd.DataFrame({
-        'string_col': [np.nan, np.nan, np.nan],
-        'numeric_col': [1.0, 2.0, 3.0]
-    })
+    df = pd.DataFrame({"string_col": [np.nan, np.nan, np.nan], "numeric_col": [1.0, 2.0, 3.0]})
 
     # Should handle string column references and NaN warnings
     with warnings.catch_warnings(record=True) as w:
@@ -718,8 +772,8 @@ def test_fit_jointly_with_string_columns_and_nan():
         # Look for the exact format from line 123: "column 'string_col'"
         assert any("column 'string_col'" in msg for msg in warning_messages)
 
-    assert 'string_col' in obj._bin_edges
-    assert 'numeric_col' in obj._bin_edges
+    assert "string_col" in obj._bin_edges
+    assert "numeric_col" in obj._bin_edges
 
 
 def test_process_user_specifications_generic_error():
@@ -727,7 +781,7 @@ def test_process_user_specifications_generic_error():
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch('binning.base._interval_binning_base.ensure_bin_dict') as mock_ensure:
+    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
         mock_ensure.side_effect = ValueError("Generic user specs error")
 
         # Generic exception should be wrapped in ConfigurationError (line 188)

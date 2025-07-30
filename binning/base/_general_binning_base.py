@@ -22,8 +22,9 @@ from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumn
 from ..utils.errors import ValidationMixin, BinningError
 from ..utils.sklearn_integration import SklearnCompatibilityMixin
 from ..utils.inspection import safe_get_class_parameters
+from ..config import get_config
 
-
+# pylint: disable=too-many-ancestors
 class GeneralBinningBase(
     ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin
 ):
@@ -60,6 +61,7 @@ class GeneralBinningBase(
         >>> X_binned = binner.fit_transform(X)
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         preserve_dataframe: Optional[bool] = None,
@@ -81,8 +83,9 @@ class GeneralBinningBase(
         Raises:
             ValueError: If guidance_columns and fit_jointly=True are both specified.
         """
+        _ = kwargs
+
         # Load configuration defaults
-        from ..config import get_config
         config = get_config()
 
         # Apply defaults from configuration
@@ -205,6 +208,8 @@ class GeneralBinningBase(
             ValueError: If input validation or parameter validation fails.
             RuntimeError: If fitting encounters runtime issues.
         """
+        _ = y
+
         try:
             # Validate parameters first
             self._validate_params()

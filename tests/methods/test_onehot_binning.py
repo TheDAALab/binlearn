@@ -19,22 +19,17 @@ Test Classes:
 """
 
 import numpy as np
-import pandas as pd
 import pytest
 from unittest.mock import Mock, patch
 
+from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
 from binning.methods._onehot_binning import OneHotBinning
 from binning.utils.errors import BinningError
 from binning.utils.constants import MISSING_VALUE
 
 try:
-    import polars as pl
-    POLARS_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    POLARS_AVAILABLE = False
-
-try:
     from scipy import sparse
+
     SCIPY_AVAILABLE = True
 except ImportError:  # pragma: no cover
     sparse = None
@@ -44,12 +39,13 @@ except ImportError:  # pragma: no cover
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+
 SKLEARN_AVAILABLE = True
 
 
 class TestOneHotBinningInitialization:
     """Test OneHotBinning initialization and parameter validation.
-    
+
     This test class verifies that the OneHotBinning transformer initializes
     correctly with both default and custom parameters, handles parameter
     validation properly, and maintains the correct state during initialization.
@@ -57,7 +53,7 @@ class TestOneHotBinningInitialization:
 
     def test_default_initialization(self):
         """Test initialization with default parameters.
-        
+
         Verifies that all default parameter values are set correctly and
         that the transformer is in the expected initial state.
         """
@@ -70,7 +66,7 @@ class TestOneHotBinningInitialization:
 
     def test_custom_initialization(self):
         """Test initialization with custom parameters.
-        
+
         Verifies that custom parameters are correctly accepted and stored,
         including max_unique_values, preserve_dataframe options, and
         pre-defined bin specifications.
@@ -79,7 +75,7 @@ class TestOneHotBinningInitialization:
             max_unique_values=50,
             preserve_dataframe=True,
             bin_spec={"col1": [{"singleton": 1.0}]},
-            bin_representatives={"col1": [1.0]}
+            bin_representatives={"col1": [1.0]},
         )
         assert binning.max_unique_values == 50
         assert binning.preserve_dataframe is True
@@ -193,7 +189,7 @@ class TestOneHotBinningBasicFunctionality:
 
         X_binned = binning.fit_transform(X)
         assert X_binned.shape == X.shape
-        assert hasattr(binning, 'bin_spec_')
+        assert hasattr(binning, "bin_spec_")
 
     def test_multiple_fits(self):
         """Test that multiple fits reset the state properly."""
@@ -214,15 +210,13 @@ class TestOneHotBinningBasicFunctionality:
         assert first_spec != second_spec
 
 
+@pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
 class TestOneHotBinningPandasIntegration:
     """Test OneHotBinning with pandas DataFrames."""
 
     def test_pandas_dataframe_basic(self):
         """Test basic functionality with pandas DataFrame."""
-        df = pd.DataFrame({
-            'A': [1, 2, 1, 3],
-            'B': [2, 3, 2, 1]
-        })
+        df = pd.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})
 
         binning = OneHotBinning(preserve_dataframe=True)
 
@@ -232,15 +226,12 @@ class TestOneHotBinningPandasIntegration:
 
         # Should return DataFrame
         assert isinstance(df_binned, pd.DataFrame)
-        assert list(df_binned.columns) == ['A', 'B']
+        assert list(df_binned.columns) == ["A", "B"]
         assert df_binned.shape == df.shape
 
     def test_pandas_dataframe_without_preserve(self):
         """Test pandas DataFrame without preserve_dataframe."""
-        df = pd.DataFrame({
-            'A': [1, 2, 1, 3],
-            'B': [2, 3, 2, 1]
-        })
+        df = pd.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})
 
         binning = OneHotBinning(preserve_dataframe=False)
 
@@ -253,24 +244,18 @@ class TestOneHotBinningPandasIntegration:
 
     def test_pandas_with_column_names(self):
         """Test that column names are preserved in bin specifications."""
-        df = pd.DataFrame({
-            'feature1': [1, 2, 3],
-            'feature2': [4, 5, 6]
-        })
+        df = pd.DataFrame({"feature1": [1, 2, 3], "feature2": [4, 5, 6]})
 
         binning = OneHotBinning()
         binning.fit(df)
 
         # Column names should be in bin_spec_
-        assert 'feature1' in binning.bin_spec_
-        assert 'feature2' in binning.bin_spec_
+        assert "feature1" in binning.bin_spec_
+        assert "feature2" in binning.bin_spec_
 
     def test_pandas_with_missing_values(self):
         """Test pandas DataFrame with missing values."""
-        df = pd.DataFrame({
-            'A': [1, np.nan, 2],
-            'B': [3, 4, np.nan]
-        })
+        df = pd.DataFrame({"A": [1, np.nan, 2], "B": [3, 4, np.nan]})
 
         binning = OneHotBinning(preserve_dataframe=True)
 
@@ -287,10 +272,7 @@ class TestOneHotBinningPolarsIntegration:
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame({  # type: ignore[name-defined]
-            'A': [1, 2, 1, 3],
-            'B': [2, 3, 2, 1]
-        })
+        df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[name-defined]
 
         binning = OneHotBinning(preserve_dataframe=True)
 
@@ -300,15 +282,12 @@ class TestOneHotBinningPolarsIntegration:
 
         # Should return Polars DataFrame
         assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
-        assert df_binned.columns == ['A', 'B']
+        assert df_binned.columns == ["A", "B"]
         assert df_binned.shape == df.shape
 
     def test_polars_dataframe_without_preserve(self):
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame({  # type: ignore[name-defined]
-            'A': [1, 2, 1, 3],
-            'B': [2, 3, 2, 1]
-        })
+        df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[name-defined]
 
         binning = OneHotBinning(preserve_dataframe=False)
 
@@ -321,17 +300,16 @@ class TestOneHotBinningPolarsIntegration:
 
     def test_polars_with_column_names(self):
         """Test that column names are preserved in bin specifications."""
-        df = pl.DataFrame({  # type: ignore[name-defined]
-            'feature1': [1, 2, 3],
-            'feature2': [4, 5, 6]
-        })
+        df = pl.DataFrame(
+            {"feature1": [1, 2, 3], "feature2": [4, 5, 6]}  # type: ignore[name-defined]
+        )
 
         binning = OneHotBinning()
         binning.fit(df)
 
         # Column names should be in bin_spec_
-        assert 'feature1' in binning.bin_spec_
-        assert 'feature2' in binning.bin_spec_
+        assert "feature1" in binning.bin_spec_
+        assert "feature2" in binning.bin_spec_
 
 
 class TestOneHotBinningSklearnIntegration:
@@ -342,10 +320,7 @@ class TestOneHotBinningSklearnIntegration:
         X = np.array([[1, 2], [2, 3], [1, 2], [3, 1]])
 
         # Create pipeline
-        pipeline = Pipeline([
-            ('binning', OneHotBinning()),
-            ('scaler', StandardScaler())
-        ])
+        pipeline = Pipeline([("binning", OneHotBinning()), ("scaler", StandardScaler())])
 
         # Should work without errors
         X_transformed = pipeline.fit_transform(X)
@@ -356,10 +331,9 @@ class TestOneHotBinningSklearnIntegration:
         X = np.array([[1, 2, 3], [2, 3, 4], [1, 2, 3]])
 
         # Create ColumnTransformer
-        ct = ColumnTransformer([
-            ('binning', OneHotBinning(), [0, 1]),
-            ('scaler', StandardScaler(), [2])
-        ])
+        ct = ColumnTransformer(
+            [("binning", OneHotBinning(), [0, 1]), ("scaler", StandardScaler(), [2])]
+        )
 
         X_transformed = ct.fit_transform(X)
         # Note: ColumnTransformer typically returns float64
@@ -372,7 +346,7 @@ class TestOneHotBinningSklearnIntegration:
         binning = OneHotBinning()
 
         # Check if method exists and works
-        if hasattr(binning, 'get_feature_names_out'):
+        if hasattr(binning, "get_feature_names_out"):
             X = np.array([[1, 2], [2, 3]])
             binning.fit(X)
             feature_names = binning.get_feature_names_out()
@@ -389,7 +363,7 @@ class TestOneHotBinningWorkflows:
 
         # Fit
         binning.fit(X)
-        assert hasattr(binning, 'bin_spec_')
+        assert hasattr(binning, "bin_spec_")
         assert 0 in binning.bin_spec_
 
         # Transform
@@ -527,16 +501,16 @@ class TestOneHotBinningFitGetParamsWorkflow:
         params = binning.get_params()
 
         # Check that all OneHotBinning-specific params are preserved
-        assert params['max_unique_values'] == 25
-        assert params['preserve_dataframe'] is True
+        assert params["max_unique_values"] == 25
+        assert params["preserve_dataframe"] is True
 
         # Should also include fitted bin specifications
-        assert 'bin_spec' in params
-        assert 'bin_representatives' in params
+        assert "bin_spec" in params
+        assert "bin_representatives" in params
 
         # Fitted bin specs should match current state
-        assert params['bin_spec'] == binning.bin_spec_
-        assert params['bin_representatives'] == binning.bin_representatives_
+        assert params["bin_spec"] == binning.bin_spec_
+        assert params["bin_representatives"] == binning.bin_representatives_
 
     def test_reinstantiate_without_fit_workflow(self):
         """Test that reinstantiated transformer works without calling fit."""
@@ -588,7 +562,7 @@ class TestOneHotBinningRepr:
         # After fitting, it should show fitted parameters or at least not crash
         assert "OneHotBinning" in str_repr
         # Check that we can access fitted state
-        assert hasattr(binning, 'bin_spec_')
+        assert hasattr(binning, "bin_spec_")
         assert len(binning.bin_spec_) > 0
 
 
@@ -629,9 +603,7 @@ class TestOneHotBinningErrorHandling:
 
     def test_extreme_values_handling(self):
         """Test handling of extreme values."""
-        X = np.array([[np.finfo(float).max, 1],
-                     [np.finfo(float).min, 2],
-                     [0, 3]])
+        X = np.array([[np.finfo(float).max, 1], [np.finfo(float).min, 2], [0, 3]])
 
         binning = OneHotBinning()
 

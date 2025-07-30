@@ -1,4 +1,5 @@
 """Tests for errors module."""
+
 import warnings
 from unittest.mock import Mock, patch
 
@@ -17,7 +18,7 @@ from binning.utils.errors import (
     PerformanceWarning,
     ValidationMixin,
     validate_tree_params,
-    suggest_alternatives
+    suggest_alternatives,
 )
 
 
@@ -105,6 +106,7 @@ class TestWarningClasses:
         assert issubclass(PerformanceWarning, UserWarning)
 
 
+# pylint: disable=too-many-public-methods
 class TestValidationMixin:
     """Test ValidationMixin methods."""
 
@@ -132,6 +134,8 @@ class TestValidationMixin:
 
     def test_validate_array_like_conversion_error(self):
         """Test validate_array_like with data that can't be converted."""
+
+        # pylint: disable=too-few-public-methods
         class UnconvertibleType:
             def __array__(self):
                 raise ValueError("Cannot convert to array")
@@ -185,7 +189,7 @@ class TestValidationMixin:
     def test_validate_guidance_columns_none(self):
         """Test validate_guidance_columns with None."""
         result = ValidationMixin.validate_guidance_columns(None, [0, 1], (10, 3))
-        assert result == []
+        assert not result
 
     def test_validate_guidance_columns_single(self):
         """Test validate_guidance_columns with single column."""
@@ -202,7 +206,7 @@ class TestValidationMixin:
         with pytest.raises(InvalidDataError, match="Guidance columns cannot overlap"):
             ValidationMixin.validate_guidance_columns([0, 2], [0, 1], (10, 3))
 
-    @patch('binning.utils.errors.get_config')
+    @patch("binning.utils.errors.get_config")
     def test_check_data_quality_warnings_disabled(self, mock_get_config):
         """Test check_data_quality with warnings disabled."""
         mock_config = Mock()
@@ -217,11 +221,11 @@ class TestValidationMixin:
             result = ValidationMixin.check_data_quality(data, "test")
             assert len(w) == 0
             assert result is None  # Method returns None when warnings are disabled
-            
+
         # Verify that get_config was called
         mock_get_config.assert_called_once()
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_missing_values(self, mock_get_config):
         """Test check_data_quality with missing values."""
         mock_config = Mock()
@@ -238,7 +242,7 @@ class TestValidationMixin:
             assert issubclass(w[0].category, DataQualityWarning)
             assert "75.0% missing values" in str(w[0].message)
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_infinite_values(self, mock_get_config):
         """Test check_data_quality with infinite values."""
         mock_config = Mock()
@@ -254,7 +258,7 @@ class TestValidationMixin:
             assert issubclass(w[0].category, DataQualityWarning)
             assert "infinite values" in str(w[0].message)
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_constant_column(self, mock_get_config):
         """Test check_data_quality with constant column."""
         mock_config = Mock()
@@ -272,7 +276,7 @@ class TestValidationMixin:
             assert "Column 1" in str(w[0].message)
             assert "constant" in str(w[0].message)
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_string_missing_values(self, mock_get_config):
         """Test check_data_quality with string data containing missing values."""
         mock_config = Mock()
@@ -289,7 +293,7 @@ class TestValidationMixin:
             assert issubclass(w[0].category, DataQualityWarning)
             assert "60.0% missing values" in str(w[0].message)
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_complex_dtype_exception(self, mock_get_config):
         """Test check_data_quality with complex dtype that raises exceptions."""
         mock_config = Mock()
@@ -297,12 +301,12 @@ class TestValidationMixin:
         mock_get_config.return_value = mock_config
 
         # Create data that will trigger the exception handling
-        complex_data = np.array([1+2j, 3+4j])  # Complex dtype
+        complex_data = np.array([1 + 2j, 3 + 4j])  # Complex dtype
 
         # Should not raise exception, just skip checks
         ValidationMixin.check_data_quality(complex_data, "test")
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_type_error_exception(self, mock_get_config):
         """Test check_data_quality with data that triggers TypeError in missing value check."""
         mock_config = Mock()
@@ -311,12 +315,12 @@ class TestValidationMixin:
 
         # Test with data that will trigger the except block
         # Use a dtype that will cause problems in the missing value check
-        special_data = np.array([{'a': 1}, {'b': 2}], dtype=object)
+        special_data = np.array([{"a": 1}, {"b": 2}], dtype=object)
 
         # Should not raise exception, just skip checks
         ValidationMixin.check_data_quality(special_data, "test")
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_inf_exception(self, mock_get_config):
         """Test check_data_quality with infinite value check exception."""
         mock_config = Mock()
@@ -324,13 +328,13 @@ class TestValidationMixin:
         mock_get_config.return_value = mock_config
 
         # Mock np.isinf to raise a TypeError (which should be caught)
-        with patch('numpy.isinf') as mock_isinf:
+        with patch("numpy.isinf") as mock_isinf:
             mock_isinf.side_effect = TypeError("Data type not supported")
 
             # Should not raise exception, just skip checks
             ValidationMixin.check_data_quality(np.array([1, 2, 3]), "test")
 
-    @patch('binning.config.get_config')
+    @patch("binning.config.get_config")
     def test_check_data_quality_complex_dtype_skip(self, mock_get_config):
         """Test check_data_quality skips complex dtypes."""
         mock_config = Mock()
@@ -353,7 +357,7 @@ class TestValidateTreeParams:
     def test_empty_params(self):
         """Test with empty parameters."""
         result = validate_tree_params("classification", {})
-        assert result == {}
+        assert not result
 
     def test_none_params(self):
         """Test with None parameters."""
@@ -361,7 +365,7 @@ class TestValidateTreeParams:
         # This test checks the actual behavior when None is passed
         # even though it's not in the type signature
         result = validate_tree_params("classification", None)  # type: ignore
-        assert result == {}
+        assert not result
 
     def test_valid_params(self):
         """Test with valid parameters."""
@@ -369,7 +373,7 @@ class TestValidateTreeParams:
             "max_depth": 5,
             "min_samples_split": 10,
             "min_samples_leaf": 3,
-            "random_state": 42
+            "random_state": 42,
         }
         result = validate_tree_params("classification", params)
         assert result == params
@@ -422,7 +426,7 @@ class TestValidateTreeParams:
             "min_impurity_decrease": 0.0,
             "class_weight": "balanced",
             "ccp_alpha": 0.0,
-            "criterion": "gini"
+            "criterion": "gini",
         }
         result = validate_tree_params("classification", params)
         assert result == params
@@ -457,7 +461,7 @@ class TestSuggestAlternatives:
     def test_unknown_method(self):
         """Test with unknown method."""
         result = suggest_alternatives("unknown_method")
-        assert result == []
+        assert not result
 
     def test_exact_match(self):
         """Test with exact method name."""

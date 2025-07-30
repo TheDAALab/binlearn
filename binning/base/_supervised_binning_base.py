@@ -9,13 +9,12 @@ The class supports both classification and regression tasks, with intelligent fa
 strategies for insufficient data scenarios and comprehensive data quality validation.
 """
 
+import warnings
 from typing import Any, Dict, Tuple, Optional
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-from ..utils.types import (
-    BinEdges, BinEdgesDict, ColumnId, ColumnList
-)
+from ..utils.types import BinEdges, ColumnList
 from ._interval_binning_base import IntervalBinningBase
 from ..utils.errors import (
     ConfigurationError,
@@ -23,6 +22,7 @@ from ..utils.errors import (
 )
 
 
+# pylint: disable=too-many-ancestors
 class SupervisedBinningBase(IntervalBinningBase):
     """
     Base class for supervised binning methods that use single guidance columns.
@@ -91,9 +91,11 @@ class SupervisedBinningBase(IntervalBinningBase):
                 f"Invalid tree_params: {str(e)}",
                 suggestions=[
                     "Check that all tree_params are valid DecisionTree parameters",
-                    ("Common parameters: max_depth, min_samples_split, "
-                     "min_samples_leaf, random_state"),
-                ]
+                    (
+                        "Common parameters: max_depth, min_samples_split, "
+                        "min_samples_leaf, random_state"
+                    ),
+                ],
             ) from e
 
     def validate_guidance_data(
@@ -141,9 +143,9 @@ class SupervisedBinningBase(IntervalBinningBase):
             # Flatten to 1D for easier processing
             return guidance_validated.ravel()
         raise ValueError(
-                f"{name} has {guidance_validated.ndim} dimensions, "
-                f"expected 1D or 2D array with single column"
-            )
+            f"{name} has {guidance_validated.ndim} dimensions, "
+            f"expected 1D or 2D array with single column"
+        )
 
     def validate_feature_target_pair(
         self, x_col: np.ndarray, guidance_data: np.ndarray, col_id: Any = None
@@ -287,7 +289,6 @@ class SupervisedBinningBase(IntervalBinningBase):
         Optional[Tuple[BinEdges, BinEdges]]
             Fallback bin specification (edges, representatives) or None
         """
-        import warnings
 
         n_valid = valid_mask.sum()
 
@@ -301,7 +302,8 @@ class SupervisedBinningBase(IntervalBinningBase):
             if col_id is not None:
                 # Create a more descriptive column reference
                 col_ref = (
-                    f"column {col_id}" if isinstance(col_id, (int, np.integer))
+                    f"column {col_id}"
+                    if isinstance(col_id, (int, np.integer))
                     else f"column '{col_id}'"
                 )
                 warnings.warn(

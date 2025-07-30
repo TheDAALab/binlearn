@@ -15,29 +15,37 @@ from binning.utils.inspection import (
 )
 
 
+# pylint: disable=too-few-public-methods
 class MockClass:
     """Mock class for inspection."""
+
     def __init__(self, param1: int, param2: str = "default", **kwargs):
+        _ = kwargs
         self.param1 = param1
         self.param2 = param2
 
 
+# pylint: disable=too-few-public-methods
 class MockBaseClass:
     """Base class for inheritance testing."""
+
     def __init__(self, base_param: int = 10, **kwargs):
+        _ = kwargs
         self.base_param = base_param
 
 
+# pylint: disable=too-few-public-methods
 class MockDerivedClass(MockBaseClass):
     """Derived class for inheritance testing."""
+
     def __init__(self, derived_param: str = "derived", **kwargs):
+        _ = kwargs
         super().__init__(**kwargs)
         self.derived_param = derived_param
 
 
 class TestNoInit:
     """Class without explicit __init__ method."""
-    pass
 
 
 class TestGetClassParameters:
@@ -46,30 +54,30 @@ class TestGetClassParameters:
     def test_basic_functionality(self):
         """Test basic parameter extraction."""
         params = get_class_parameters(MockClass)
-        assert set(params) == {'param1', 'param2'}
+        assert set(params) == {"param1", "param2"}
 
     def test_exclude_params(self):
         """Test parameter exclusion."""
-        params = get_class_parameters(MockClass, exclude_params={'param1', 'self', 'kwargs'})
-        assert set(params) == {'param2'}
+        params = get_class_parameters(MockClass, exclude_params={"param1", "self", "kwargs"})
+        assert set(params) == {"param2"}
 
     def test_exclude_base_class(self):
         """Test base class parameter exclusion."""
-        params = get_class_parameters(MockDerivedClass, exclude_base_class='MockBaseClass')
-        assert set(params) == {'derived_param'}
+        params = get_class_parameters(MockDerivedClass, exclude_base_class="MockBaseClass")
+        assert set(params) == {"derived_param"}
 
     def test_exclude_base_class_not_found(self):
         """Test when base class is not in MRO."""
-        params = get_class_parameters(MockClass, exclude_base_class='NonExistentClass')
-        assert set(params) == {'param1', 'param2'}
+        params = get_class_parameters(MockClass, exclude_base_class="NonExistentClass")
+        assert set(params) == {"param1", "param2"}
 
     def test_no_init_method(self):
         """Test with class that has no explicit __init__."""
         params = get_class_parameters(TestNoInit)
         # object.__init__ has *args parameter, so we expect that
-        assert 'args' in params
+        assert "args" in params
 
-    @patch('inspect.signature')
+    @patch("inspect.signature")
     def test_signature_value_error(self, mock_signature):
         """Test ValueError from inspect.signature on current class."""
         mock_signature.side_effect = ValueError("Invalid signature")
@@ -78,26 +86,25 @@ class TestGetClassParameters:
         ):
             get_class_parameters(MockClass)
 
-    @patch('inspect.signature')
+    @patch("inspect.signature")
     def test_signature_type_error(self, mock_signature):
         """Test TypeError from inspect.signature on current class."""
         mock_signature.side_effect = TypeError("Type error")
         with pytest.raises(TypeError, match="Failed to inspect MockClass.__init__: Type error"):
             get_class_parameters(MockClass)
 
-    @patch('inspect.signature')
+    @patch("inspect.signature")
     def test_base_class_signature_error(self, mock_signature):
         """Test exception from inspect.signature on base class."""
         # First call (current class) succeeds, second call (base class) fails
         mock_signature.side_effect = [
-            MagicMock(parameters={'self': None, 'derived_param': None, 'kwargs': None}),
-            ValueError("Base class signature error")
+            MagicMock(parameters={"self": None, "derived_param": None, "kwargs": None}),
+            ValueError("Base class signature error"),
         ]
         with pytest.raises(
-            ValueError,
-            match="Failed to inspect MockBaseClass.__init__: Base class signature error"
+            ValueError, match="Failed to inspect MockBaseClass.__init__: Base class signature error"
         ):
-            get_class_parameters(MockDerivedClass, exclude_base_class='MockBaseClass')
+            get_class_parameters(MockDerivedClass, exclude_base_class="MockBaseClass")
 
 
 class TestGetConstructorInfo:
@@ -106,13 +113,14 @@ class TestGetConstructorInfo:
     def test_basic_functionality(self):
         """Test basic constructor info extraction."""
         info = get_constructor_info(MockClass)
-        assert 'param1' in info
-        assert 'param2' in info
-        assert info['param1'] == inspect.Parameter.empty  # Required parameter
-        assert info['param2'] == "default"  # Default value
+        assert "param1" in info
+        assert "param2" in info
+        assert info["param1"] == inspect.Parameter.empty  # Required parameter
+        assert info["param2"] == "default"  # Default value
 
     def test_concrete_only_true(self):
         """Test concrete_only=True behavior."""
+
         # Create a test class with __init__ in its dict
         class TestConcreteClass:
             def __init__(self, concrete_param: str = "test"):
@@ -123,22 +131,23 @@ class TestGetConstructorInfo:
         assert test_obj.concrete_param == "test"
 
         info = get_constructor_info(TestConcreteClass, concrete_only=True)
-        assert 'concrete_param' in info
+        assert "concrete_param" in info
 
     def test_concrete_only_false(self):
         """Test concrete_only=False behavior."""
         info = get_constructor_info(MockDerivedClass, concrete_only=False)
-        assert 'derived_param' in info
+        assert "derived_param" in info
 
     def test_no_explicit_init(self):
         """Test with class that has no explicit __init__."""
         info = get_constructor_info(TestNoInit)
         # object.__init__ has *args parameter
-        assert 'args' in info
+        assert "args" in info
 
-    @patch('inspect.signature')
+    @patch("inspect.signature")
     def test_signature_value_error_concrete(self, mock_signature):
         """Test ValueError from inspect.signature with concrete_only=True."""
+
         # Create a test class with __init__ in its dict
         class TestConcreteErrorClass:
             def __init__(self, param: str):
@@ -151,11 +160,11 @@ class TestGetConstructorInfo:
         mock_signature.side_effect = ValueError("Signature error")
         with pytest.raises(
             ValueError,
-            match="Failed to get constructor info for TestConcreteErrorClass: Signature error"
+            match="Failed to get constructor info for TestConcreteErrorClass: Signature error",
         ):
             get_constructor_info(TestConcreteErrorClass, concrete_only=True)
 
-    @patch('inspect.signature')
+    @patch("inspect.signature")
     def test_signature_type_error_normal(self, mock_signature):
         """Test TypeError from inspect.signature with concrete_only=False."""
         mock_signature.side_effect = TypeError("Type error")
@@ -171,28 +180,28 @@ class TestSafeGetClassParameters:
     def test_successful_call(self):
         """Test successful parameter extraction."""
         params = safe_get_class_parameters(MockClass)
-        assert set(params) == {'param1', 'param2'}
+        assert set(params) == {"param1", "param2"}
 
     def test_with_custom_fallback(self):
         """Test with custom fallback value."""
-        params = safe_get_class_parameters(MockClass, fallback=['custom_fallback'])
-        assert set(params) == {'param1', 'param2'}  # Should still succeed
+        params = safe_get_class_parameters(MockClass, fallback=["custom_fallback"])
+        assert set(params) == {"param1", "param2"}  # Should still succeed
 
-    @patch('binning.utils.inspection.get_class_parameters')
+    @patch("binning.utils.inspection.get_class_parameters")
     def test_fallback_on_value_error(self, mock_get_params):
         """Test fallback when ValueError is raised."""
         mock_get_params.side_effect = ValueError("Test error")
         params = safe_get_class_parameters(MockClass)
         assert params == []  # Default fallback
 
-    @patch('binning.utils.inspection.get_class_parameters')
+    @patch("binning.utils.inspection.get_class_parameters")
     def test_fallback_on_type_error(self, mock_get_params):
         """Test fallback when TypeError is raised."""
         mock_get_params.side_effect = TypeError("Test error")
-        params = safe_get_class_parameters(MockClass, fallback=['fallback_param'])
-        assert params == ['fallback_param']
+        params = safe_get_class_parameters(MockClass, fallback=["fallback_param"])
+        assert params == ["fallback_param"]
 
-    @patch('binning.utils.inspection.get_class_parameters')
+    @patch("binning.utils.inspection.get_class_parameters")
     def test_other_exceptions_propagate(self, mock_get_params):
         """Test that other exceptions are not caught."""
         mock_get_params.side_effect = RuntimeError("Test error")
@@ -206,29 +215,29 @@ class TestSafeGetConstructorInfo:
     def test_successful_call(self):
         """Test successful constructor info extraction."""
         info = safe_get_constructor_info(MockClass)
-        assert 'param1' in info
-        assert 'param2' in info
+        assert "param1" in info
+        assert "param2" in info
 
     def test_with_custom_fallback(self):
         """Test with custom fallback value."""
-        info = safe_get_constructor_info(MockClass, fallback={'custom': 'fallback'})
-        assert 'param1' in info  # Should still succeed
+        info = safe_get_constructor_info(MockClass, fallback={"custom": "fallback"})
+        assert "param1" in info  # Should still succeed
 
-    @patch('binning.utils.inspection.get_constructor_info')
+    @patch("binning.utils.inspection.get_constructor_info")
     def test_fallback_on_value_error(self, mock_get_info):
         """Test fallback when ValueError is raised."""
         mock_get_info.side_effect = ValueError("Test error")
         info = safe_get_constructor_info(MockClass)
         assert info == {}  # Default fallback
 
-    @patch('binning.utils.inspection.get_constructor_info')
+    @patch("binning.utils.inspection.get_constructor_info")
     def test_fallback_on_type_error(self, mock_get_info):
         """Test fallback when TypeError is raised."""
         mock_get_info.side_effect = TypeError("Test error")
-        info = safe_get_constructor_info(MockClass, fallback={'fallback': 'value'})
-        assert info == {'fallback': 'value'}
+        info = safe_get_constructor_info(MockClass, fallback={"fallback": "value"})
+        assert info == {"fallback": "value"}
 
-    @patch('binning.utils.inspection.get_constructor_info')
+    @patch("binning.utils.inspection.get_constructor_info")
     def test_other_exceptions_propagate(self, mock_get_info):
         """Test that other exceptions are not caught."""
         mock_get_info.side_effect = RuntimeError("Test error")
@@ -248,7 +257,7 @@ class TestIntegration:
         info = safe_get_constructor_info(GeneralBinningBase)
 
         # Should include GeneralBinningBase parameters
-        expected_params = {'preserve_dataframe', 'fit_jointly', 'guidance_columns'}
+        expected_params = {"preserve_dataframe", "fit_jointly", "guidance_columns"}
         assert set(params) >= expected_params
         assert all(param in info for param in expected_params)
 
@@ -257,12 +266,11 @@ class TestIntegration:
         from binning.methods._equal_width_binning import EqualWidthBinning
 
         params = safe_get_class_parameters(
-            EqualWidthBinning,
-            exclude_base_class='GeneralBinningBase'
+            EqualWidthBinning, exclude_base_class="GeneralBinningBase"
         )
 
         # Should exclude GeneralBinningBase parameters
-        general_params = {'preserve_dataframe', 'fit_jointly', 'guidance_columns'}
+        general_params = {"preserve_dataframe", "fit_jointly", "guidance_columns"}
         assert not any(param in params for param in general_params)
 
 
