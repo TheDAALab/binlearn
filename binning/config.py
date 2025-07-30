@@ -14,7 +14,7 @@ import json
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, asdict
 
-
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class BinningConfig:
     """
@@ -446,5 +446,4 @@ class ConfigContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # Restore original configuration
-        global _config_manager
         _config_manager._config = BinningConfig.from_dict(self.original_config)
