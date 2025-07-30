@@ -40,12 +40,7 @@ from .errors import (
 )
 
 # Import sklearn integration utilities
-from .sklearn_integration import (
-    SklearnCompatibilityMixin,
-    BinningPipeline,
-    BinningFeatureSelector,
-    make_binning_scorer,
-)
+from .sklearn_integration import SklearnCompatibilityMixin
 
 # Import utility functions
 from .bin_operations import (
@@ -100,8 +95,7 @@ __all__ = [
     "ValidationMixin", "DataQualityWarning",
 
     # Sklearn integration
-    "SklearnCompatibilityMixin", "BinningPipeline", "BinningFeatureSelector",
-    "make_binning_scorer",
+    "SklearnCompatibilityMixin",
 
     # Interval binning utilities
     "ensure_bin_dict",

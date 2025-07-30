@@ -19,7 +19,14 @@ from .utils.errors import (
 )
 
 # Sklearn utilities
-from .utils.sklearn_integration import BinningFeatureSelector, BinningPipeline
+from .utils.sklearn_integration import SklearnCompatibilityMixin
+
+# Tools and integrations
+from .tools import (
+    BinningFeatureSelector,
+    BinningPipeline,
+    make_binning_scorer,
+)
 
 # Base classes and utilities
 from .base import (

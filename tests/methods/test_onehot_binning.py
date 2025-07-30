@@ -17,12 +17,11 @@ try:
 except ImportError:  # pragma: no cover
     POLARS_AVAILABLE = False
 
-try:
-    from sklearn.compose import ColumnTransformer
-    from sklearn.preprocessing import StandardScaler
-    SKLEARN_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    SKLEARN_AVAILABLE = False
+# Import sklearn components
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+SKLEARN_AVAILABLE = True
 
 
 class TestOneHotBinningInitialization:
@@ -298,21 +297,17 @@ class TestOneHotBinningPolarsIntegration:
         assert 'feature2' in binning.bin_spec_
 
 
-@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="Scikit-learn not available")
 class TestOneHotBinningSklearnIntegration:
     """Test OneHotBinning with scikit-learn components."""
 
     def test_sklearn_pipeline_compatibility(self):
         """Test that OneHotBinning works in sklearn pipelines."""
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
         X = np.array([[1, 2], [2, 3], [1, 2], [3, 1]])
 
         # Create pipeline
-        pipeline = Pipeline([  # type: ignore[name-defined]
+        pipeline = Pipeline([
             ('binning', OneHotBinning()),
-            ('scaler', StandardScaler())  # type: ignore[name-defined]
+            ('scaler', StandardScaler())
         ])
 
         # Should work without errors
@@ -324,14 +319,14 @@ class TestOneHotBinningSklearnIntegration:
         X = np.array([[1, 2, 3], [2, 3, 4], [1, 2, 3]])
 
         # Create ColumnTransformer
-        ct = ColumnTransformer([  # type: ignore[name-defined]
+        ct = ColumnTransformer([
             ('binning', OneHotBinning(), [0, 1]),
-            ('scaler', StandardScaler(), [2])  # type: ignore[name-defined]
+            ('scaler', StandardScaler(), [2])
         ])
 
         X_transformed = ct.fit_transform(X)
         # Note: ColumnTransformer typically returns float64
-        assert X_transformed.dtype in [np.float64, np.int64]  # type: ignore[attr-defined]
+        assert X_transformed.dtype in [np.float64, np.int64]
         assert X_transformed.shape[1] == 3  # Same number of features
 
     def test_sklearn_feature_names_out(self):

@@ -108,7 +108,7 @@ class BinningConfig:
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> "BinningConfig":
         """Create config from dictionary, ignoring unknown keys."""
-        valid_keys = {field.name for field in cls.__dataclass_fields__.values()}
+        valid_keys = {field.name for field in cls.__dataclass_fields__.values()}  # pylint: disable=no-member
         filtered_dict = {k: v for k, v in config_dict.items() if k in valid_keys}
         return cls(**filtered_dict)
 
@@ -153,7 +153,7 @@ class BinningConfig:
 
                 setattr(self, key, value)
             else:
-                available_keys = list(self.__dataclass_fields__.keys())
+                available_keys = list(self.__dataclass_fields__.keys())  # pylint: disable=no-member
                 raise ValueError(
                     f"Unknown configuration parameter: {key}. Available: {available_keys}"
                 )
@@ -369,7 +369,7 @@ def get_config_schema() -> Dict[str, Dict[str, Any]]:
     config = BinningConfig()
     schema = {}
 
-    for field_name, field in config.__dataclass_fields__.items():
+    for field_name, field in config.__dataclass_fields__.items():  # pylint: disable=no-member
         schema[field_name] = {
             "type": field.type,
             "default": getattr(config, field_name),

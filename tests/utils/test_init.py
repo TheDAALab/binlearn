@@ -66,9 +66,6 @@ class TestUtilsImports:
     def test_sklearn_integration_imported(self):
         """Test that sklearn integration utilities are imported."""
         assert hasattr(utils, 'SklearnCompatibilityMixin')
-        assert hasattr(utils, 'BinningPipeline')
-        assert hasattr(utils, 'BinningFeatureSelector')
-        assert hasattr(utils, 'make_binning_scorer')
 
     def test_bin_operations_imported(self):
         """Test that bin operations are imported."""
@@ -115,8 +112,7 @@ class TestUtilsImports:
             "ValidationMixin", "DataQualityWarning",
 
             # Sklearn integration
-            "SklearnCompatibilityMixin", "BinningPipeline", "BinningFeatureSelector",
-            "make_binning_scorer",
+            "SklearnCompatibilityMixin",
 
             # Interval binning utilities
             "ensure_bin_dict", "validate_bins", "default_representatives", "create_bin_masks",

@@ -6,19 +6,16 @@ import pandas as pd
 from binning.methods._equal_width_binning import EqualWidthBinning
 from binning.utils.errors import ConfigurationError
 
-# Try to import sklearn components
+# Import sklearn components
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+from sklearn.base import clone
 try:
-    from sklearn.pipeline import Pipeline
-    from sklearn.compose import ColumnTransformer
-    from sklearn.preprocessing import StandardScaler
-    try:
-        from scipy import sparse
-    except ImportError:  # pragma: no cover
-        sparse = None
-    SKLEARN_AVAILABLE = True
+    from scipy import sparse
 except ImportError:  # pragma: no cover
-    SKLEARN_AVAILABLE = False
     sparse = None
+SKLEARN_AVAILABLE = True
 
 # Try to import polars
 try:
@@ -469,7 +466,6 @@ class TestEqualWidthBinningDataTypes:
         assert result.shape == df.shape
 
 
-@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="Scikit-learn not available")
 class TestEqualWidthBinningSklearnIntegration:
     """Test sklearn pipeline integration."""
 
@@ -526,8 +522,6 @@ class TestEqualWidthBinningSklearnIntegration:
 
     def test_sklearn_clone_estimator(self):
         """Test sklearn clone functionality."""
-        from sklearn.base import clone
-
         ewb_original = EqualWidthBinning(n_bins=7, bin_range=(0, 50))
         ewb_cloned = clone(ewb_original)
 

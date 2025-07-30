@@ -17,12 +17,11 @@ try:
 except ImportError:  # pragma: no cover
     POLARS_AVAILABLE = False
 
-try:
-    from sklearn.compose import ColumnTransformer
-    from sklearn.preprocessing import StandardScaler
-    SKLEARN_AVAILABLE = True
-except ImportError:  # pragma: no cover
-    SKLEARN_AVAILABLE = False
+# Import sklearn components
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+SKLEARN_AVAILABLE = True
 
 
 class TestSupervisedBinningInitialization:
@@ -536,15 +535,11 @@ class TestSupervisedBinningPolarsIntegration:
         assert result.shape == (6, 2)
 
 
-@pytest.mark.skipif(not SKLEARN_AVAILABLE, reason="Scikit-learn not available")
 class TestSupervisedBinningSklearnIntegration:
     """Test SupervisedBinning with scikit-learn components."""
 
     def test_sklearn_pipeline_compatibility(self):
         """Test that SupervisedBinning works in sklearn pipelines."""
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import StandardScaler
-
         X = np.column_stack([
             [1, 2, 3, 4, 5, 6],      # feature 1
             [10, 20, 30, 40, 50, 60], # feature 2
