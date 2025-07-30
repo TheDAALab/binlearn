@@ -220,9 +220,9 @@ class TestFindFlexibleBinForValue:
         """Test finding value in interval bins."""
         bin_defs = [{'interval': [0, 2]}, {'interval': [2, 4]}, {'interval': [4, 6]}]
         assert find_flexible_bin_for_value(1.0, bin_defs) == 0
-        assert find_flexible_bin_for_value(2.0, bin_defs) == 0  # Matches first interval at boundary
+        assert find_flexible_bin_for_value(2.0, bin_defs) == 0  # First interval at boundary
         assert find_flexible_bin_for_value(3.0, bin_defs) == 1
-        assert find_flexible_bin_for_value(4.0, bin_defs) == 1  # Matches second interval at boundary
+        assert find_flexible_bin_for_value(4.0, bin_defs) == 1  # Second interval at boundary
 
     def test_mixed_bins(self):
         """Test with mixed singleton and interval bins."""

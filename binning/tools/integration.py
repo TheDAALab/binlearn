@@ -1,4 +1,17 @@
-"""Integration utilities for binning with various frameworks."""
+"""Integration utilities for binning with various frameworks.
+
+This module provides utilities for integrating binning methods with scikit-learn
+and other machine learning frameworks. It includes feature selectors, pipeline
+utilities, and scoring functions that leverage binning for improved ML workflows.
+
+Classes:
+    BinningFeatureSelector: Feature selector using binning-based mutual information.
+    BinningPipeline: Pipeline utilities for binning operations.
+
+Functions:
+    make_binning_scorer: Create a scorer that includes binning in evaluation.
+    _import_supervised_binning: Helper function to import SupervisedBinning.
+"""
 # pylint: disable=import-outside-toplevel,attribute-defined-outside-init,invalid-name
 # pylint: disable=raise-missing-from,too-few-public-methods
 
@@ -14,7 +27,21 @@ from sklearn.model_selection import cross_val_score
 
 
 class BinningFeatureSelector(BaseEstimator, TransformerMixin):
-    """Feature selector that uses binning-based mutual information."""
+    """Feature selector that uses binning-based mutual information.
+    
+    This transformer combines binning methods with mutual information-based
+    feature selection to identify the most informative features for prediction.
+    It first applies a specified binning method to discretize features, then
+    uses mutual information to rank and select the top k features.
+    
+    Attributes:
+        binning_method (str): The binning method to use.
+        k (int): Number of top features to select.
+        score_func (str): Scoring function for feature selection.
+        binning_params (dict): Parameters passed to the binning method.
+        selector_ (SelectKBest): Fitted feature selector (set after fit).
+        binner_ (object): Fitted binning transformer (set after fit).
+    """
 
     def __init__(
         self,
@@ -23,19 +50,18 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         score_func: str = "auto",
         binning_params: Optional[Dict] = None,
     ):
-        """
-        Initialize the feature selector.
+        """Initialize the feature selector.
 
-        Parameters
-        ----------
-        binning_method : str, default="equal_width"
-            Binning method to use before computing mutual information.
-        k : int, default=10
-            Number of top features to select.
-        score_func : str, default="auto"
-            Scoring function ("mutual_info_classif", "mutual_info_regression", "auto").
-        binning_params : dict, optional
-            Parameters to pass to the binning method.
+        Args:
+            binning_method: Binning method to use before computing mutual information.
+                Options: "equal_width", "supervised", "onehot". Defaults to "equal_width".
+            k: Number of top features to select. Defaults to 10.
+            score_func: Scoring function for feature selection. Options:
+                "mutual_info_classif", "mutual_info_regression", "auto".
+                If "auto", automatically detects based on target variable.
+                Defaults to "auto".
+            binning_params: Additional parameters to pass to the binning method.
+                Defaults to None (empty dict).
         """
         self.binning_method = binning_method
         self.k = k
@@ -43,7 +69,21 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         self.binning_params = binning_params or {}
 
     def fit(self, X, y):
-        """Fit the feature selector."""
+        """Fit the feature selector.
+        
+        Applies the specified binning method to the input data, then fits
+        a mutual information-based feature selector on the binned features.
+        
+        Args:
+            X: Input features. Can be array-like, pandas DataFrame, or polars DataFrame.
+            y: Target values for supervised feature selection.
+            
+        Returns:
+            self: Returns the fitted feature selector.
+            
+        Raises:
+            ValueError: If binning_method or score_func is not recognized.
+        """
         # Import here to avoid circular imports
         if self.binning_method == "equal_width":
             from binning.methods._equal_width_binning import EqualWidthBinning
@@ -88,25 +128,60 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Transform the input by selecting features."""
+        """Transform the input by selecting features.
+        
+        Applies the fitted binning transformation followed by feature selection
+        to return only the top k most informative features.
+        
+        Args:
+            X: Input features to transform. Must have same structure as training data.
+            
+        Returns:
+            Transformed data with only selected features.
+            
+        Raises:
+            NotFittedError: If the selector has not been fitted yet.
+        """
         check_is_fitted(self)
         X_binned = self.binner_.transform(X)
         return self.selector_.transform(X_binned)
 
     def get_support(self, indices: bool = False):
-        """Get selected feature indices or boolean mask."""
+        """Get selected feature indices or boolean mask.
+        
+        Args:
+            indices: If True, return feature indices. If False, return boolean mask.
+                Defaults to False.
+                
+        Returns:
+            Boolean mask or integer indices of selected features.
+            
+        Raises:
+            NotFittedError: If the selector has not been fitted yet.
+        """
         check_is_fitted(self)
         return self.selector_.get_support(indices=indices)
 
 
 def _import_supervised_binning():
-    """Import SupervisedBinning."""
+    """Import SupervisedBinning class.
+    
+    Helper function to import SupervisedBinning while avoiding circular imports.
+    
+    Returns:
+        SupervisedBinning class from binning.methods._supervised_binning.
+    """
     from binning.methods._supervised_binning import SupervisedBinning
     return SupervisedBinning
 
 
 class BinningPipeline:
-    """Pipeline utilities for binning operations."""
+    """Pipeline utilities for binning operations.
+    
+    This class provides static methods for creating machine learning pipelines
+    that incorporate binning methods. It simplifies the process of combining
+    binning transformations with downstream estimators.
+    """
 
     @staticmethod
     def create_supervised_binning_pipeline(
@@ -115,7 +190,25 @@ class BinningPipeline:
         tree_params: Optional[Dict] = None,
         final_estimator=None,
     ):
-        """Create a pipeline with supervised binning."""
+        """Create a pipeline with supervised binning.
+        
+        Creates a scikit-learn pipeline that uses supervised binning as the first
+        step, optionally followed by a final estimator.
+        
+        Args:
+            guidance_column: Column to use for supervised binning guidance.
+                Can be column name (str) or index (int).
+            task_type: Type of supervised learning task. Options: "classification"
+                or "regression". Defaults to "classification".
+            tree_params: Parameters to pass to the decision tree used for binning.
+                Defaults to None (use default tree parameters).
+            final_estimator: Optional estimator to add as final step in pipeline.
+                If None, returns just the binning transformer. Defaults to None.
+                
+        Returns:
+            sklearn.pipeline.Pipeline with binning and optional final estimator,
+            or just the binning transformer if final_estimator is None.
+        """
         # Import locally to avoid issues
         SupervisedBinning = _import_supervised_binning()
 
@@ -129,9 +222,42 @@ class BinningPipeline:
 
 
 def make_binning_scorer(binning_method: str = "supervised", binning_params: Optional[Dict] = None):
-    """Create a scorer that includes binning in the evaluation."""
+    """Create a scorer that includes binning in the evaluation.
+    
+    Creates a scikit-learn compatible scorer that applies binning to the data
+    before evaluating a model. This allows for cross-validation and model
+    selection that incorporates the binning transformation.
+    
+    Args:
+        binning_method: Binning method to apply. Options: "supervised",
+            "equal_width". Defaults to "supervised".
+        binning_params: Parameters to pass to the binning method.
+            Defaults to None (use default parameters).
+            
+    Returns:
+        sklearn.metrics scorer that applies binning before model evaluation.
+        
+    Raises:
+        ValueError: If binning_method is not recognized.
+    """
     def binning_score(estimator, X, y):
-        """Score function that applies binning before evaluation."""
+        """Score function that applies binning before evaluation.
+        
+        This nested function performs the actual scoring by first applying
+        the specified binning method to the data, then evaluating the
+        estimator using cross-validation.
+        
+        Args:
+            estimator: Machine learning estimator to evaluate.
+            X: Input features.
+            y: Target values.
+            
+        Returns:
+            float: Mean cross-validation score after binning transformation.
+            
+        Raises:
+            ValueError: If binning_method is not recognized.
+        """
         # Create and fit binner based on method
         params = binning_params or {}
 

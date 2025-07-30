@@ -1,5 +1,12 @@
 """
-Interval binning base class with unified joint/per-column logic.
+Interval binning base class with comprehensive edge and clipping support.
+
+This module provides the foundational IntervalBinningBase class for all interval-based
+binning transformers. It handles bin edge management, value clipping, joint/per-column
+fitting strategies, and supports both guided and unguided binning approaches.
+
+The class provides robust handling of out-of-range values with configurable clipping
+behavior and comprehensive validation of bin edges and representatives.
 """
 
 from __future__ import annotations
@@ -14,7 +21,9 @@ from ..utils.types import (
     GuidanceColumns
 )
 from ._general_binning_base import GeneralBinningBase
-from ..utils.bin_operations import ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
+from ..utils.bin_operations import (
+    ensure_bin_dict, validate_bins, default_representatives, create_bin_masks
+)
 from ..utils.data_handling import return_like_input
 from ..utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 from ..utils.errors import (
@@ -25,7 +34,43 @@ from ..utils.errors import (
 
 
 class IntervalBinningBase(GeneralBinningBase):
-    """Base class for interval binning methods."""
+    """Base class for interval-based binning methods with edge and clipping support.
+    
+    This abstract base class provides the foundation for all interval-based binning
+    transformers such as equal-width, equal-frequency, and supervised binning methods.
+    It handles bin edge computation, value clipping, and provides both joint and
+    per-column fitting strategies.
+    
+    The class supports comprehensive out-of-range value handling with configurable
+    clipping behavior, robust bin validation, and automatic representative value
+    computation for inverse transformations.
+    
+    Args:
+        clip (bool, optional): Whether to clip values outside bin ranges to nearest
+            bin edges. If None, uses global configuration default.
+        preserve_dataframe (bool, optional): Whether to preserve DataFrame format in output.
+            If None, uses global configuration default.
+        bin_edges (BinEdgesDict, optional): Pre-computed bin edges for each column.
+            If provided, skips edge computation during fitting.
+        bin_representatives (BinEdgesDict, optional): Pre-computed representative values
+            for each bin, used in inverse transformation.
+        fit_jointly (bool, optional): Whether to fit parameters jointly across all columns.
+            If None, uses global configuration default.
+        guidance_columns (GuidanceColumns, optional): Columns to use for guided binning.
+            Cannot be used with fit_jointly=True.
+        **kwargs: Additional arguments passed to GeneralBinningBase.
+        
+    Attributes:
+        clip (bool): Whether values outside bin ranges are clipped.
+        bin_edges_ (BinEdgesDict): Computed bin edges after fitting.
+        bin_representatives_ (BinEdgesDict): Computed bin representatives after fitting.
+        
+    Example:
+        >>> # This is an abstract class, use a concrete implementation
+        >>> from binning.methods import EqualWidthBinning
+        >>> binner = EqualWidthBinning(n_bins=5, clip=True)
+        >>> X_binned = binner.fit_transform(X)
+    """
 
     def __init__(
         self,
@@ -37,6 +82,23 @@ class IntervalBinningBase(GeneralBinningBase):
         guidance_columns: Optional[GuidanceColumns] = None,
         **kwargs,
     ):
+        """Initialize the interval binning base class.
+        
+        Args:
+            clip (bool, optional): Whether to clip values outside bin ranges to nearest
+                bin edges. If None, uses global configuration default.
+            preserve_dataframe (bool, optional): Whether to preserve DataFrame format in output.
+                If None, uses global configuration default.
+            bin_edges (BinEdgesDict, optional): Pre-computed bin edges for each column.
+                If provided, skips edge computation during fitting.
+            bin_representatives (BinEdgesDict, optional): Pre-computed representative values
+                for each bin, used in inverse transformation.
+            fit_jointly (bool, optional): Whether to fit parameters jointly across all columns.
+                If None, uses global configuration default.
+            guidance_columns (GuidanceColumns, optional): Columns to use for guided binning.
+                Cannot be used with fit_jointly=True.
+            **kwargs: Additional arguments passed to GeneralBinningBase parent class.
+        """
         super().__init__(
             preserve_dataframe=preserve_dataframe,
             fit_jointly=fit_jointly,
@@ -67,7 +129,15 @@ class IntervalBinningBase(GeneralBinningBase):
             self._process_provided_bins()
 
     def _process_provided_bins(self) -> None:
-        """Process user-provided bin specifications and mark as fitted if complete."""
+        """Process user-provided bin specifications and mark as fitted if complete.
+        
+        Validates and processes pre-provided bin edges and representatives. If both
+        are provided and valid, marks the transformer as fitted to enable transform
+        without requiring a separate fit call.
+        
+        Raises:
+            ConfigurationError: If provided bin specifications are invalid.
+        """
         try:
             if self.bin_edges is not None:
                 self._bin_edges = ensure_bin_dict(self.bin_edges)
@@ -92,7 +162,9 @@ class IntervalBinningBase(GeneralBinningBase):
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
-            raise ConfigurationError(f"Failed to process provided bin specifications: {str(e)}") from e
+            raise ConfigurationError(
+                f"Failed to process provided bin specifications: {str(e)}"
+            ) from e
 
     @property
     def bin_edges(self):
@@ -248,7 +320,9 @@ class IntervalBinningBase(GeneralBinningBase):
         """
         raise NotImplementedError("Must be implemented by subclasses.")
 
-    def _get_column_key(self, target_col: ColumnId, available_keys: ColumnList, col_index: int) -> ColumnId:
+    def _get_column_key(
+        self, target_col: ColumnId, available_keys: ColumnList, col_index: int
+    ) -> ColumnId:
         """Find the right key for a column, handling mismatches between fit and transform."""
         # Direct match
         if target_col in available_keys:

@@ -1,5 +1,15 @@
-"""
-SupervisedBinning transformer - creates bins using decision tree splits guided by a target column.
+"""Supervised binning transformer.
+
+This module implements supervised binning, where bin boundaries are determined
+by training decision trees on guidance/target variables. The tree splits provide
+optimal cut points that maximize the relationship between features and targets.
+
+This approach creates bins that are most informative for the prediction task,
+often leading to better downstream model performance compared to unsupervised
+binning methods.
+
+Classes:
+    SupervisedBinning: Main transformer for supervised binning operations.
 """
 
 from typing import Any, Dict, Tuple, Optional
@@ -15,15 +25,36 @@ from ..utils.errors import InvalidDataError, ConfigurationError, FittingError, v
 
 
 class SupervisedBinning(ReprMixin, SupervisedBinningBase):
-    """
-    Supervised binning transformer for single guidance/target column.
+    """Supervised binning transformer for single guidance/target column.
 
-    Creates bins using decision tree splits guided by a target column.
-    This method fits a decision tree to predict the guidance column from the
-    features to be binned, then uses the tree's leaf boundaries to define
-    bin intervals. Each path from root to leaf defines an interval bin.
+    Creates bins using decision tree splits guided by a target column. This method
+    fits a decision tree to predict the guidance column from the features to be
+    binned, then uses the tree's split thresholds to define bin boundaries.
+    
+    The resulting bins are optimized for the prediction task, as they capture
+    the most important feature ranges for distinguishing different target values.
+    This often leads to better model performance compared to unsupervised binning.
 
-    Inherits all validation and guidance logic from SupervisedBinningBase.
+    The transformer supports both classification and regression tasks, automatically
+    selecting appropriate decision tree algorithms. It's fully sklearn-compatible
+    and supports pandas/polars DataFrames.
+
+    Attributes:
+        guidance_columns (list): Columns to use for supervised guidance.
+        task_type (str): Type of task ("classification" or "regression").
+        tree_params (dict): Parameters for the decision tree.
+        min_samples_for_split (int): Minimum samples required for tree splits.
+        max_unique_values (int): Maximum unique values before switching to regression.
+        fit_jointly (bool): Whether to fit parameters jointly across columns.
+        preserve_dataframe (bool): Whether to preserve DataFrame format.
+        bin_edges_ (dict): Computed bin edges after fitting.
+
+    Example:
+        >>> import numpy as np
+        >>> from binning.methods import SupervisedBinning
+        >>> X = np.random.rand(100, 4)  # Features + target in last column
+        >>> binner = SupervisedBinning(guidance_columns=[3])
+        >>> X_binned = binner.fit_transform(X)
     """
 
     def __init__(
@@ -181,7 +212,8 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         Args:
             tree: Fitted decision tree (classifier or regressor).
-            _x_data: Training data used to fit the tree (unused but kept for interface compatibility).
+            _x_data: Training data used to fit the tree (unused but kept for interface
+                compatibility).
 
         Returns:
             List of split threshold values.

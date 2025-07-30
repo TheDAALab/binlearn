@@ -1,5 +1,30 @@
-"""
-This module brings together all tools.
+"""Binning: A comprehensive toolkit for data discretization and binning.
+
+This package provides a complete suite of tools for binning (discretizing) continuous
+data into discrete intervals or categories. It supports multiple binning strategies,
+integrates with popular data science libraries, and provides sklearn-compatible
+transformers for machine learning pipelines.
+
+Key Features:
+    - Multiple binning methods: equal-width, supervised, one-hot, and flexible binning
+    - Support for pandas and polars DataFrames
+    - Scikit-learn compatible transformers
+    - Advanced features like guidance columns and custom bin specifications
+    - Comprehensive error handling and validation
+    - Integration utilities for ML workflows
+
+Main Components:
+    Methods: EqualWidthBinning, SupervisedBinning, OneHotBinning
+    Base Classes: GeneralBinningBase, IntervalBinningBase, FlexibleBinningBase
+    Utilities: Data handling, bin operations, error management
+    Integration: Feature selection, pipeline utilities, scoring functions
+
+Example:
+    >>> from binning import EqualWidthBinning
+    >>> import numpy as np
+    >>> X = np.random.rand(100, 3)
+    >>> binner = EqualWidthBinning(n_bins=5)
+    >>> X_binned = binner.fit_transform(X)
 """
 
 # Version information

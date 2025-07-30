@@ -1,9 +1,12 @@
 """
-Base class for supervised binning methods.
+Base class for supervised binning methods with decision tree integration.
 
-This module provides the common infrastructure for all supervised binning methods,
-including guidance data validation, decision tree integration, and feature-target
-pair handling.
+This module provides the foundational SupervisedBinningBase class for all supervised
+binning transformers. It handles guidance data validation, decision tree configuration,
+feature-target pair processing, and automatic task type detection.
+
+The class supports both classification and regression tasks, with intelligent fallback
+strategies for insufficient data scenarios and comprehensive data quality validation.
 """
 
 from typing import Any, Dict, Tuple, Optional
@@ -88,7 +91,8 @@ class SupervisedBinningBase(IntervalBinningBase):
                 f"Invalid tree_params: {str(e)}",
                 suggestions=[
                     "Check that all tree_params are valid DecisionTree parameters",
-                    "Common parameters: max_depth, min_samples_split, min_samples_leaf, random_state",
+                    ("Common parameters: max_depth, min_samples_split, "
+                     "min_samples_leaf, random_state"),
                 ]
             ) from e
 
@@ -296,7 +300,10 @@ class SupervisedBinningBase(IntervalBinningBase):
 
             if col_id is not None:
                 # Create a more descriptive column reference
-                col_ref = f"column {col_id}" if isinstance(col_id, (int, np.integer)) else f"column '{col_id}'"
+                col_ref = (
+                    f"column {col_id}" if isinstance(col_id, (int, np.integer))
+                    else f"column '{col_id}'"
+                )
                 warnings.warn(
                     f"Data in {col_ref} has no valid data points. "
                     f"Using default bin range [{min_val}, {max_val}]",

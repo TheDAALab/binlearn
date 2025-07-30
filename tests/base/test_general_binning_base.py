@@ -1,3 +1,20 @@
+"""
+Comprehensive test suite for GeneralBinningBase abstract base class.
+
+This module tests the core functionality of the GeneralBinningBase class,
+which provides the foundation for all binning transformers in the package.
+It covers initialization, configuration handling, abstract method implementation,
+guidance column processing, fitting workflows, and error handling.
+
+Classes:
+    DummyGeneralBinning: Concrete implementation of GeneralBinningBase for testing.
+
+Functions:
+    test_*: Individual test functions covering various aspects of the base class
+    functionality including initialization, parameter validation, fitting,
+    transformation, guidance handling, and sklearn compatibility.
+"""
+
 import pytest
 import numpy as np
 import pandas as pd
@@ -6,7 +23,23 @@ from unittest.mock import Mock, patch
 from binning.base._general_binning_base import GeneralBinningBase
 from binning.utils.errors import BinningError
 
+
 class DummyGeneralBinning(GeneralBinningBase):
+    """Concrete implementation of GeneralBinningBase for testing purposes.
+    
+    This dummy class implements all abstract methods of GeneralBinningBase
+    with minimal functionality to enable testing of the base class behavior
+    without requiring a full binning implementation.
+    """
+
+    class DummyGeneralBinning(GeneralBinningBase):
+    """Concrete implementation of GeneralBinningBase for testing purposes.
+    
+    This dummy class implements all abstract methods of GeneralBinningBase
+    with minimal functionality to enable testing of the base class behavior
+    without requiring a full binning implementation.
+    """
+
     def __init__(self, preserve_dataframe=None, fit_jointly=None, guidance_columns=None, **kwargs):
         super().__init__(preserve_dataframe, fit_jointly, guidance_columns, **kwargs)
 
@@ -23,7 +56,11 @@ class DummyGeneralBinning(GeneralBinningBase):
         return np.ones_like(X, dtype=float)
 
 def test_init_default_config():
-    """Test initialization with default config values."""
+    """Test initialization with default configuration values.
+    
+    Verifies that the GeneralBinningBase correctly loads default values
+    from the global configuration when no explicit parameters are provided.
+    """
     obj = DummyGeneralBinning()
     assert obj.preserve_dataframe is not None  # Should get from config
     assert obj.fit_jointly is not None  # Should get from config
@@ -33,14 +70,22 @@ def test_init_default_config():
     assert obj._guidance_columns is None
 
 def test_init_explicit_params():
-    """Test initialization with explicit parameters."""
+    """Test initialization with explicit parameters.
+    
+    Verifies that explicitly provided parameters override default
+    configuration values and are stored correctly in the instance.
+    """
     obj = DummyGeneralBinning(preserve_dataframe=True, fit_jointly=False, guidance_columns=['col1'])
     assert obj.preserve_dataframe is True
     assert obj.fit_jointly is False
     assert obj.guidance_columns == ['col1']
 
 def test_init_incompatible_params():
-    """Test initialization with incompatible parameters."""
+    """Test initialization with incompatible parameter combinations.
+    
+    Verifies that the base class correctly rejects incompatible parameter
+    combinations like guidance_columns with fit_jointly=True.
+    """
     with pytest.raises(ValueError, match="guidance_columns and fit_jointly=True are incompatible"):
         DummyGeneralBinning(guidance_columns=['col1'], fit_jointly=True)
 

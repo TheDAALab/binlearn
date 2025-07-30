@@ -1,5 +1,14 @@
 """
-OneHotBinning transformer - creates a singleton bin for each unique value in the data.
+OneHotBinning transformer for creating singleton bins from unique values.
+
+This module implements a specialized binning method that creates one bin per unique
+value in the data. Unlike traditional one-hot encoding that expands features into
+multiple columns, this transformer maintains the original data shape while creating
+singleton bins defined as {"singleton": value}.
+
+The transformer is designed for scenarios where you want to treat each unique value
+as its own bin, useful for categorical data represented as numbers or when you need
+fine-grained binning based on actual data values.
 """
 
 from typing import Tuple, Optional
@@ -13,18 +22,46 @@ from ..base._repr_mixin import ReprMixin
 
 
 class OneHotBinning(ReprMixin, FlexibleBinningBase):
-    """
-    Creates a singleton bin for each unique value in numeric data.
-
-    This is NOT one-hot encoding that expands columns. Instead, it's a binning
-    method that creates one bin per unique value, where each bin is defined as
-    {"singleton": value}. The output has the same shape as the input.
-
+    """Creates a singleton bin for each unique value in numeric data.
+    
+    This transformer creates one bin per unique value found in the data, where each
+    bin is defined as {"singleton": value}. Unlike traditional one-hot encoding that
+    expands columns, this maintains the original data shape while creating fine-grained
+    bins based on actual data values.
+    
+    The method is particularly useful for:
+    - Categorical data represented as numbers
+    - Fine-grained binning where each unique value should be its own bin
+    - Preprocessing for models that benefit from value-specific binning
+    
     **Important**: This method only supports numeric data. Non-numeric data will
     raise a ValueError during fitting.
-
-    For example:
-    - Input: [[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]]
+    
+    Args:
+        preserve_dataframe (bool, optional): Whether to preserve DataFrame format in output.
+            If None, uses global configuration default.
+        bin_spec (FlexibleBinSpec, optional): Pre-defined bin specifications for columns.
+            If provided, skips automatic bin generation.
+        bin_representatives (BinEdgesDict, optional): Pre-computed bin representatives.
+        max_unique_values (int): Maximum number of unique values allowed per column
+            before raising an error. Prevents memory issues with high cardinality data.
+        **kwargs: Additional arguments passed to the parent FlexibleBinningBase.
+        
+    Attributes:
+        max_unique_values (int): Maximum unique values allowed per column.
+        bin_spec_ (FlexibleBinDefs): Generated bin specifications after fitting.
+        bin_representatives_ (BinEdgesDict): Computed bin representatives after fitting.
+        
+    Raises:
+        ValueError: If non-numeric data is provided or if unique values exceed max_unique_values.
+        
+    Example:
+        >>> import numpy as np
+        >>> from binning.methods import OneHotBinning
+        >>> X = np.array([[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]])
+        >>> binner = OneHotBinning(max_unique_values=50)
+        >>> X_binned = binner.fit_transform(X)
+        >>> # Each unique value gets its own bin: 1.0->bin0, 2.0->bin1, etc.
     """
 
     def __init__(
@@ -35,27 +72,26 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         max_unique_values: int = 100,
         **kwargs,
     ):
-        """
-        Initialize OneHotBinning.
+        """Initialize OneHotBinning transformer.
 
-        Creates singleton bins for each unique value in the data.
-        This is NOT traditional one-hot encoding - instead, it creates
-        bins where each bin contains exactly one unique value.
+        Creates singleton bins for each unique value in the data. This is NOT 
+        traditional one-hot encoding - instead, it creates bins where each bin 
+        contains exactly one unique value, maintaining the original data shape.
 
-        Parameters
-        ----------
-        preserve_dataframe : bool, optional
-            Whether to preserve pandas DataFrame structure in output.
-
-        bin_spec : dict or None, default=None
-            Pre-defined bin specification.
-
-        bin_representatives : dict or None, default=None
-            Pre-defined bin representatives.
-
-        max_unique_values : int, default=100
-            Maximum number of unique values per column to prevent
-            memory issues with high-cardinality data.
+        Args:
+            preserve_dataframe (bool, optional): Whether to preserve pandas DataFrame 
+                structure in output. If None, uses global configuration default.
+            bin_spec (FlexibleBinSpec, optional): Pre-defined bin specification.
+                If provided, skips automatic bin generation during fitting.
+            bin_representatives (BinEdgesDict, optional): Pre-defined bin representatives.
+                Used for inverse transformation.
+            max_unique_values (int): Maximum number of unique values per column allowed.
+                Prevents memory issues with high-cardinality data. Default is 100.
+            **kwargs: Additional arguments passed to FlexibleBinningBase parent class.
+                
+        Note:
+            The fit_jointly parameter is automatically disabled for this transformer
+            as it's incompatible with the one-hot binning approach.
         """
         # Remove fit_jointly from kwargs if present to avoid conflicts
         kwargs.pop('fit_jointly', None)
@@ -70,7 +106,11 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         self.max_unique_values = max_unique_values
 
     def _validate_params(self) -> None:
-        """Validate OneHotBinning specific parameters."""
+        """Validate OneHotBinning specific parameters.
+        
+        Raises:
+            ValueError: If max_unique_values is not a positive integer.
+        """
         super()._validate_params()
 
         if not isinstance(self.max_unique_values, int) or self.max_unique_values <= 0:
@@ -79,20 +119,30 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
     def _calculate_flexible_bins(
         self, x_col: np.ndarray, col_id: ColumnId, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[FlexibleBinDefs, BinEdges]:
-        """
-        Calculate singleton bins for each unique value in the column.
+        """Calculate singleton bins for each unique value in the column.
 
-        Note: This method only supports numeric data. Non-numeric data will raise an error.
+        Creates one bin per unique value found in the data. Each bin is defined as
+        {"singleton": value} and contains exactly one unique value. This method only
+        supports numeric data and will raise an error for non-numeric inputs.
 
         Args:
-            x_col: Numeric data for a single column.
-            col_id: Column identifier.
-            guidance_data: Optional guidance data (not used in one-hot binning).
+            x_col (np.ndarray): Numeric data for a single column to analyze.
+            col_id (ColumnId): Column identifier for error reporting.
+            guidance_data (Optional[np.ndarray]): Optional guidance data, not used 
+                in one-hot binning but kept for interface compatibility.
 
         Returns:
-            Tuple containing:
-            - List of singleton bin definitions: [{"singleton": val1}, {"singleton": val2}, ...]
-            - List of representative values: [val1, val2, ...]
+            Tuple[FlexibleBinDefs, BinEdges]: A tuple containing:
+                - List of singleton bin definitions: [{"singleton": val1}, {"singleton": val2}, ...]
+                - List of representative values: [val1, val2, ...]
+
+        Raises:
+            ValueError: If the column contains non-numeric data or if the number of
+                unique values exceeds max_unique_values.
+                
+        Note:
+            NaN and infinite values are filtered out before determining unique values.
+            If all values are NaN/inf, a default bin with value 0.0 is created.
         """
         # Convert to numeric array - this will raise an error for non-numeric data
         try:

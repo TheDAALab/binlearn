@@ -1,8 +1,23 @@
 """
-Comprehensive tests for binning.utils.data_handling module.
+Comprehensive test suite for the binning.utils.data_handling module.
 
-This test suite aims to achieve 100% line coverage by systematically testing
-every code path in the data_handling module.
+This test module provides extensive coverage for all data handling utilities
+used throughout the binning package. It tests functions for DataFrame detection,
+array preparation, input/output format handling, column determination, and
+data type conversion with various input formats including pandas DataFrames,
+polars DataFrames, and numpy arrays.
+
+The test suite aims for 100% line coverage by systematically testing every
+code path, edge case, and error condition in the data_handling module.
+
+Test Classes:
+    TestIsPandasDf: Tests for pandas DataFrame detection.
+    TestIsPolarsDF: Tests for polars DataFrame detection.
+    TestPrepareArray: Tests for array preparation and metadata extraction.
+    TestReturnLikeInput: Tests for output format preservation.
+    TestDetermineColumns: Tests for column name determination logic.
+    TestPrepareInputWithColumns: Tests for input preparation with column handling.
+    TestAdditionalCoverage: Tests for edge cases and additional coverage.
 """
 
 from unittest.mock import Mock, patch
@@ -20,10 +35,19 @@ from binning.utils.data_handling import (
 
 
 class TestIsPandasDf:
-    """Test _is_pandas_df function."""
+    """Test the _is_pandas_df function for pandas DataFrame detection.
+    
+    This test class verifies that the _is_pandas_df function correctly
+    identifies pandas DataFrames in various scenarios including when
+    pandas is available, not available, and with different object types.
+    """
 
     def test_with_pandas_dataframe(self):
-        """Test with actual pandas DataFrame."""
+        """Test detection with an actual pandas DataFrame.
+        
+        Verifies that the function returns True when given a genuine
+        pandas DataFrame and pandas is available.
+        """
         with patch('binning._pandas_config.pd') as mock_pd:
             # Mock pandas DataFrame
             mock_df = Mock()
@@ -34,13 +58,21 @@ class TestIsPandasDf:
             assert result is True
 
     def test_with_pandas_none(self):
-        """Test when pandas is None (not available)."""
+        """Test behavior when pandas is not available.
+        
+        Verifies that the function returns False when pandas is None
+        (indicating pandas is not installed or available).
+        """
         with patch('binning._pandas_config.pd', None):
             result = _is_pandas_df(Mock())
             assert result is False
 
     def test_with_non_dataframe(self):
-        """Test with non-DataFrame object."""
+        """Test detection with non-DataFrame objects.
+        
+        Verifies that the function returns False when given objects
+        that are not pandas DataFrames, even when pandas is available.
+        """
         with patch('binning._pandas_config.pd') as mock_pd:
             mock_pd.DataFrame = type(Mock())
 
@@ -177,7 +209,7 @@ class TestReturnLikeInput:
                 original_input.columns = ['A', 'B']
                 original_input.index = [0, 1]
 
-                result = return_like_input(arr, original_input, preserve_dataframe=True)
+                _result = return_like_input(arr, original_input, preserve_dataframe=True)
 
                 # Verify DataFrame constructor was called
                 mock_df_class.assert_called_once_with(arr, columns=['A', 'B'], index=[0, 1])
@@ -196,7 +228,9 @@ class TestReturnLikeInput:
                 original_input.index = [0, 1]
                 custom_columns = ['X', 'Y']
 
-                result = return_like_input(arr, original_input, columns=custom_columns, preserve_dataframe=True)
+                _result = return_like_input(
+                    arr, original_input, columns=custom_columns, preserve_dataframe=True
+                )
 
                 mock_df_class.assert_called_once_with(arr, columns=['X', 'Y'], index=[0, 1])
 
@@ -224,7 +258,7 @@ class TestReturnLikeInput:
                     original_input = Mock()
                     original_input.columns = ['A', 'B']
 
-                    result = return_like_input(arr, original_input, preserve_dataframe=True)
+                    _result = return_like_input(arr, original_input, preserve_dataframe=True)
 
                     mock_df_class.assert_called_once_with(arr, schema=['A', 'B'])
 
@@ -242,7 +276,9 @@ class TestReturnLikeInput:
                     original_input.columns = ['A', 'B']
                     custom_columns = ['X', 'Y']
 
-                    result = return_like_input(arr, original_input, columns=custom_columns, preserve_dataframe=True)
+                    _result = return_like_input(
+                        arr, original_input, columns=custom_columns, preserve_dataframe=True
+                    )
 
                     mock_df_class.assert_called_once_with(arr, schema=['X', 'Y'])
 
@@ -349,9 +385,13 @@ class TestPrepareInputWithColumns:
                 X = Mock()
                 original_cols = ['X', 'Y']
 
-                arr, columns = prepare_input_with_columns(X, fitted=True, original_columns=original_cols)
+                arr, columns = prepare_input_with_columns(
+                    X, fitted=True, original_columns=original_cols
+                )
 
-                mock_determine.assert_called_once_with(X, None, True, original_cols, mock_array.shape)
+                mock_determine.assert_called_once_with(
+                    X, None, True, original_cols, mock_array.shape
+                )
 
                 assert np.array_equal(arr, mock_array)
                 assert columns == [0, 1]
@@ -369,7 +409,7 @@ class TestAdditionalCoverage:
                     expected_array = np.array(input_list)
                     mock_asarray.return_value = expected_array
 
-                    arr, columns, index = prepare_array(input_list)
+                    arr, _columns, _index = prepare_array(input_list)
 
                     mock_asarray.assert_called_with(input_list)
                     assert np.array_equal(arr, expected_array)

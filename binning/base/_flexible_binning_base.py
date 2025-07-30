@@ -1,4 +1,14 @@
-"""Flexible binning base class with unified joint/per-column logic."""
+"""
+Flexible binning base class supporting both singleton and interval bins.
+
+This module provides the foundational FlexibleBinningBase class for binning methods
+that can handle mixed bin types - both singleton bins (exact value matches) and 
+interval bins (range matches). This flexibility allows for more complex binning
+strategies that combine categorical-like binning with traditional interval binning.
+
+The class provides comprehensive support for bin specification management,
+validation, and transformation while maintaining full sklearn compatibility.
+"""
 
 from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple
@@ -29,9 +39,40 @@ from ..utils.constants import MISSING_VALUE
 class FlexibleBinningBase(GeneralBinningBase):
     """Base class for flexible binning methods supporting singleton and interval bins.
 
-    This class handles binning where bins can be:
-    - Singleton bins: {"singleton": value} - exact value matches
-    - Interval bins: {"interval": [min, max]} - range matches
+    This abstract base class enables binning methods that can handle mixed bin types:
+    - Singleton bins: {"singleton": value} for exact value matches
+    - Interval bins: {"interval": [min, max]} for range matches
+    
+    This flexibility is particularly useful for:
+    - Mixed categorical and continuous data
+    - One-hot encoding style binning combined with range binning
+    - Custom binning specifications where some values need exact matches
+    
+    The class provides comprehensive bin specification management, validation,
+    and transformation capabilities while maintaining full sklearn compatibility.
+    
+    Args:
+        preserve_dataframe (bool, optional): Whether to preserve DataFrame format in output.
+            If None, uses global configuration default.
+        bin_spec (FlexibleBinSpec, optional): Pre-defined bin specifications mapping
+            columns to lists of bin definitions.
+        bin_representatives (BinEdgesDict, optional): Pre-computed representative values
+            for each bin, used in inverse transformation.
+        fit_jointly (bool, optional): Whether to fit parameters jointly across all columns.
+            If None, uses global configuration default.
+        guidance_columns (GuidanceColumns, optional): Columns to use for guided binning.
+            Cannot be used with fit_jointly=True.
+        **kwargs: Additional arguments passed to GeneralBinningBase.
+        
+    Attributes:
+        bin_spec_ (FlexibleBinSpec): Generated bin specifications after fitting.
+        bin_representatives_ (BinEdgesDict): Computed bin representatives after fitting.
+        
+    Example:
+        >>> # This is an abstract class, use a concrete implementation
+        >>> from binning.methods import OneHotBinning
+        >>> binner = OneHotBinning(max_unique_values=50)
+        >>> X_binned = binner.fit_transform(X)
     """
 
     def __init__(
@@ -86,7 +127,9 @@ class FlexibleBinningBase(GeneralBinningBase):
                 self._original_columns = list(self._bin_spec.keys())
 
         except Exception as e:
-            raise ValueError(f"Failed to process provided flexible bin specifications: {str(e)}") from e
+            raise ValueError(
+                f"Failed to process provided flexible bin specifications: {str(e)}"
+            ) from e
 
     @property
     def bin_spec(self):
@@ -257,7 +300,9 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         raise NotImplementedError("Must be implemented by subclasses.")
 
-    def _get_column_key(self, target_col: ColumnId, available_keys: ColumnList, col_index: int) -> ColumnId:
+    def _get_column_key(
+        self, target_col: ColumnId, available_keys: ColumnList, col_index: int
+    ) -> ColumnId:
         """Find the right key for a column, handling mismatches between fit and transform."""
         # Direct match
         if target_col in available_keys:

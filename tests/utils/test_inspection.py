@@ -73,7 +73,9 @@ class TestGetClassParameters:
     def test_signature_value_error(self, mock_signature):
         """Test ValueError from inspect.signature on current class."""
         mock_signature.side_effect = ValueError("Invalid signature")
-        with pytest.raises(ValueError, match="Failed to inspect MockClass.__init__: Invalid signature"):
+        with pytest.raises(
+            ValueError, match="Failed to inspect MockClass.__init__: Invalid signature"
+        ):
             get_class_parameters(MockClass)
 
     @patch('inspect.signature')
@@ -91,7 +93,10 @@ class TestGetClassParameters:
             MagicMock(parameters={'self': None, 'derived_param': None, 'kwargs': None}),
             ValueError("Base class signature error")
         ]
-        with pytest.raises(ValueError, match="Failed to inspect MockBaseClass.__init__: Base class signature error"):
+        with pytest.raises(
+            ValueError,
+            match="Failed to inspect MockBaseClass.__init__: Base class signature error"
+        ):
             get_class_parameters(MockDerivedClass, exclude_base_class='MockBaseClass')
 
 
@@ -144,14 +149,19 @@ class TestGetConstructorInfo:
         assert test_obj.param == "test"
 
         mock_signature.side_effect = ValueError("Signature error")
-        with pytest.raises(ValueError, match="Failed to get constructor info for TestConcreteErrorClass: Signature error"):
+        with pytest.raises(
+            ValueError,
+            match="Failed to get constructor info for TestConcreteErrorClass: Signature error"
+        ):
             get_constructor_info(TestConcreteErrorClass, concrete_only=True)
 
     @patch('inspect.signature')
     def test_signature_type_error_normal(self, mock_signature):
         """Test TypeError from inspect.signature with concrete_only=False."""
         mock_signature.side_effect = TypeError("Type error")
-        with pytest.raises(TypeError, match="Failed to get constructor info for MockClass: Type error"):
+        with pytest.raises(
+            TypeError, match="Failed to get constructor info for MockClass: Type error"
+        ):
             get_constructor_info(MockClass, concrete_only=False)
 
 

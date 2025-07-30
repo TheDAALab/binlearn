@@ -1,4 +1,20 @@
-"""Tests for EqualWidthBinning transformer."""
+"""
+Comprehensive test suite for EqualWidthBinning transformer.
+
+This module contains extensive tests for the EqualWidthBinning class, covering
+initialization, parameter validation, fitting, transformation, edge cases,
+data type compatibility, sklearn integration, and error handling.
+
+Test Classes:
+    TestEqualWidthBinning: Core functionality tests including initialization,
+        validation, fitting, transformation, and basic operations.
+    TestEqualWidthBinningDataTypes: Tests for various data type compatibility
+        including pandas DataFrames, polars DataFrames, and scipy sparse matrices.
+    TestEqualWidthBinningSklearnIntegration: Tests for sklearn compatibility
+        including pipeline integration, ColumnTransformer usage, and cloning.
+    TestEqualWidthBinningFitGetParamsWorkflow: Tests for parameter handling
+        and sklearn-style workflows.
+"""
 
 import pytest
 import numpy as np
@@ -26,16 +42,29 @@ except ImportError:  # pragma: no cover
 
 
 class TestEqualWidthBinning:
-    """Test cases for EqualWidthBinning."""
+    """Comprehensive test cases for EqualWidthBinning core functionality.
+    
+    This test class covers the fundamental operations of the EqualWidthBinning
+    transformer including initialization, parameter validation, fitting,
+    transformation, edge cases, and basic data handling scenarios.
+    """
 
     def test_init_default(self):
-        """Test initialization with default parameters."""
+        """Test initialization with default parameters.
+        
+        Verifies that the transformer initializes correctly with default
+        parameter values and that all attributes are set as expected.
+        """
         ewb = EqualWidthBinning()
         assert ewb.n_bins == 10
         assert ewb.bin_range is None
 
     def test_init_custom_params(self):
-        """Test initialization with custom parameters."""
+        """Test initialization with custom parameters.
+        
+        Verifies that the transformer correctly accepts and stores custom
+        parameter values including n_bins, bin_range, and fit_jointly options.
+        """
         ewb = EqualWidthBinning(
             n_bins=5,
             bin_range=(0, 100),
@@ -46,12 +75,20 @@ class TestEqualWidthBinning:
         assert ewb.fit_jointly is True
 
     def test_validate_params_valid(self):
-        """Test parameter validation with valid parameters."""
+        """Test parameter validation with valid parameters.
+        
+        Ensures that the _validate_params method accepts valid parameter
+        combinations without raising exceptions.
+        """
         ewb = EqualWidthBinning(n_bins=5, bin_range=(0, 100))
         ewb._validate_params()  # Should not raise
 
     def test_validate_params_invalid_n_bins(self):
-        """Test parameter validation with invalid n_bins."""
+        """Test parameter validation with invalid n_bins values.
+        
+        Verifies that the validator correctly rejects invalid n_bins values
+        such as zero, negative numbers, and non-integer types.
+        """
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
             ewb = EqualWidthBinning(n_bins=0)
             ewb._validate_params()
@@ -61,7 +98,11 @@ class TestEqualWidthBinning:
             ewb._validate_params()
 
     def test_validate_params_invalid_bin_range(self):
-        """Test parameter validation with invalid bin_range."""
+        """Test parameter validation with invalid bin_range values.
+        
+        Verifies that the validator correctly rejects invalid bin_range
+        specifications such as reversed ranges (min > max).
+        """
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
             ewb = EqualWidthBinning(bin_range=(10, 5))  # min > max
             ewb._validate_params()
@@ -361,10 +402,20 @@ class TestEqualWidthBinning:
 
 
 class TestEqualWidthBinningDataTypes:
-    """Test EqualWidthBinning with different data types."""
+    """Comprehensive tests for EqualWidthBinning with various data types.
+    
+    This test class verifies that the EqualWidthBinning transformer works
+    correctly with different input data types including numpy arrays of
+    various dtypes, pandas DataFrames, polars DataFrames, and scipy sparse
+    matrices. It ensures proper type preservation and format handling.
+    """
 
     def test_numpy_arrays_2d(self):
-        """Test with 2D numpy arrays."""
+        """Test functionality with 2D numpy arrays.
+        
+        Verifies that the transformer correctly handles standard 2D numpy
+        arrays and produces output of the expected shape and dtype.
+        """
         X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0], [4.0, 40.0]])
         ewb = EqualWidthBinning(n_bins=2)
 
@@ -376,7 +427,11 @@ class TestEqualWidthBinningDataTypes:
         assert result.dtype == int
 
     def test_numpy_arrays_1d(self):
-        """Test with 1D numpy array."""
+        """Test functionality with 1D numpy arrays.
+        
+        Ensures that 1D arrays are properly handled when reshaped to
+        2D format and that the output maintains correct dimensionality.
+        """
         X = np.array([1.0, 2.0, 3.0, 4.0, 5.0]).reshape(-1, 1)
         ewb = EqualWidthBinning(n_bins=3)
 
@@ -388,7 +443,12 @@ class TestEqualWidthBinningDataTypes:
         assert result.dtype == int
 
     def test_numpy_different_dtypes(self):
-        """Test with different numpy dtypes."""
+        """Test compatibility with different numpy data types.
+        
+        Verifies that the transformer works correctly with various numpy
+        dtypes including int32, float32, and others, ensuring proper
+        type handling and conversion.
+        """
         # Test int32
         X_int = np.array([[1, 10], [2, 20], [3, 30]], dtype=np.int32)
         ewb = EqualWidthBinning(n_bins=2)
@@ -404,7 +464,12 @@ class TestEqualWidthBinningDataTypes:
         assert isinstance(result_float32, np.ndarray)
 
     def test_pandas_dataframe_input_output(self):
-        """Test with pandas DataFrame input and output."""
+        """Test pandas DataFrame input and output handling.
+        
+        Verifies that pandas DataFrames are processed correctly and that
+        the preserve_dataframe option works as expected for maintaining
+        DataFrame format in the output.
+        """
         df = pd.DataFrame({
             'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
             'feature2': [10.0, 20.0, 30.0, 40.0, 50.0],

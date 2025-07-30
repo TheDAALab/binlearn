@@ -61,7 +61,9 @@ def get_class_parameters(
                 return class_specific_params
             except (ValueError, TypeError) as exc:
                 # If base class inspection fails, return all current params
-                raise type(exc)(f"Failed to inspect {exclude_base_class}.__init__: {str(exc)}") from exc
+                raise type(exc)(
+                    f"Failed to inspect {exclude_base_class}.__init__: {str(exc)}"
+                ) from exc
 
     # Base class not found in MRO, return all parameters
     return list(current_params)
@@ -112,7 +114,9 @@ def get_constructor_info(class_obj: Type, concrete_only: bool = True) -> Dict[st
         return params
     except (ValueError, TypeError) as exc:
         # Re-raise with context for easier debugging
-        raise type(exc)(f"Failed to get constructor info for {class_obj.__name__}: {str(exc)}") from exc
+        raise type(exc)(
+            f"Failed to get constructor info for {class_obj.__name__}: {str(exc)}"
+        ) from exc
 
 
 def safe_get_class_parameters(

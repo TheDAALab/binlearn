@@ -1,4 +1,21 @@
-"""Tests for integration module."""
+"""
+Comprehensive test suite for the binning.tools.integration module.
+
+This module provides extensive testing for the integration utilities that
+connect binning methods with scikit-learn and other ML frameworks. It covers
+feature selection using binning-based mutual information, pipeline creation
+utilities, and custom scoring functions that incorporate binning.
+
+Test Classes:
+    TestBinningFeatureSelector: Tests for the BinningFeatureSelector class
+        including initialization, fitting with different binning methods,
+        transformation, feature selection, and error handling.
+    TestBinningPipeline: Tests for the BinningPipeline utility class including
+        supervised binning pipeline creation with various configurations.
+    TestMakeBinningScorer: Tests for the make_binning_scorer function including
+        scorer creation, evaluation with different binning methods, and
+        cross-validation integration.
+"""
 # pylint: disable=protected-access,line-too-long,unused-variable,unused-argument
 from unittest.mock import Mock, patch
 
@@ -14,10 +31,21 @@ from binning.tools.integration import (
 
 
 class TestBinningFeatureSelector:
-    """Test BinningFeatureSelector."""
+    """Comprehensive test suite for BinningFeatureSelector class.
+    
+    This test class verifies the functionality of the BinningFeatureSelector,
+    which combines binning methods with mutual information-based feature
+    selection. Tests cover initialization, fitting with different binning
+    methods, transformation, and sklearn compatibility.
+    """
 
     def test_init_default_params(self):
-        """Test initialization with default parameters."""
+        """Test initialization with default parameters.
+        
+        Verifies that the BinningFeatureSelector initializes correctly
+        with default parameter values for binning method, k features,
+        score function, and binning parameters.
+        """
         selector = BinningFeatureSelector()
 
         assert selector.binning_method == "equal_width"
@@ -26,7 +54,12 @@ class TestBinningFeatureSelector:
         assert selector.binning_params == {}
 
     def test_init_custom_params(self):
-        """Test initialization with custom parameters."""
+        """Test initialization with custom parameters.
+        
+        Verifies that the BinningFeatureSelector correctly accepts and
+        stores custom parameters including binning method, number of features,
+        score function, and binning-specific parameters.
+        """
         binning_params = {'n_bins': 5}
         selector = BinningFeatureSelector(
             binning_method="supervised",
@@ -44,7 +77,12 @@ class TestBinningFeatureSelector:
     @patch('binning.methods._equal_width_binning.EqualWidthBinning')
     @patch('binning.tools.integration.mutual_info_classif')
     def test_fit_equal_width_classification(self, mock_mutual_info, mock_binning_class, mock_select_k):
-        """Test fit with equal_width binning for classification."""
+        """Test fitting with equal_width binning for classification tasks.
+        
+        Verifies that the selector correctly uses EqualWidthBinning for
+        classification tasks, applies the binning transformation, and
+        sets up mutual information-based feature selection.
+        """
         # Setup mocks
         mock_binner = Mock()
         mock_binner.fit_transform.return_value = np.array([[1, 2], [3, 4]])

@@ -1,4 +1,12 @@
-"""Equal-width binning transformer."""
+"""Equal-width binning transformer.
+
+This module implements equal-width binning, where continuous data is divided
+into bins of equal width across the range of each feature. This is one of the
+most common and straightforward binning strategies.
+
+Classes:
+    EqualWidthBinning: Main transformer for equal-width binning operations.
+"""
 
 from typing import Any, Tuple, Optional, List
 import numpy as np
@@ -14,8 +22,30 @@ from ..utils.errors import ConfigurationError
 class EqualWidthBinning(ReprMixin, IntervalBinningBase):
     """Classic equal-width binning transformer.
 
-    Creates bins of equal width across the range of each feature.
-    Enhanced with configuration management, error handling, and sklearn integration.
+    Creates bins of equal width across the range of each feature. Each bin
+    spans the same numeric range, making this method intuitive and easy to
+    interpret. The bins are determined solely by the minimum and maximum
+    values in each feature, without considering the target variable.
+
+    This transformer is sklearn-compatible and supports pandas/polars DataFrames.
+    It includes advanced features like custom bin ranges, clipping, and
+    comprehensive error handling.
+
+    Attributes:
+        n_bins (int): Number of bins per feature.
+        bin_range (tuple, optional): Custom range for binning.
+        clip (bool, optional): Whether to clip values outside bin range.
+        columns (list, optional): Specific columns to bin.
+        guidance_columns (list, optional): Columns to exclude from binning.
+        preserve_dataframe (bool): Whether to preserve DataFrame format.
+        bin_edges_ (dict): Computed bin edges after fitting.
+        
+    Example:
+        >>> import numpy as np
+        >>> from binning.methods import EqualWidthBinning
+        >>> X = np.random.rand(100, 3)
+        >>> binner = EqualWidthBinning(n_bins=5)
+        >>> X_binned = binner.fit_transform(X)
     """
 
     def __init__(

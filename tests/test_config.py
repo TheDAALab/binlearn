@@ -1,5 +1,24 @@
 """
-Comprehensive tests for config.py to achieve 100% coverage.
+Comprehensive test suite for the binning configuration system.
+
+This module provides extensive testing for the configuration management
+system in the binning package, including the BinningConfig dataclass,
+ConfigManager class, configuration loading/saving, environment variable
+handling, context management, and all configuration utilities.
+
+The test suite aims for 100% code coverage by systematically testing
+every configuration feature, edge case, and error condition.
+
+Test Classes:
+    TestBinningConfig: Tests for the BinningConfig dataclass including
+        initialization, validation, and dictionary conversion.
+    TestConfigManager: Tests for the ConfigManager singleton including
+        loading, saving, environment variable handling, and state management.
+    TestGlobalFunctions: Tests for global configuration functions like
+        get_config, set_config, load_config, and reset_config.
+    TestConfigContext: Tests for the ConfigContext context manager.
+    TestConfigEdgeCases: Tests for edge cases and error conditions.
+    TestConfigIntegration: Integration tests with binning transformers.
 """
 # pylint: disable=protected-access
 
@@ -26,16 +45,29 @@ from binning.config import (
 
 
 def test_basic_config_import():
-    """Simple test to ensure pytest discovers this module."""
+    """Basic test to ensure pytest discovers this module correctly.
+    
+    Verifies that the main configuration classes can be imported
+    successfully and are available for testing.
+    """
     assert BinningConfig is not None
     assert ConfigManager is not None
 
 
 class TestBinningConfig:
-    """Test BinningConfig dataclass."""
+    """Comprehensive test suite for the BinningConfig dataclass.
+    
+    This test class verifies all aspects of the BinningConfig dataclass
+    including default initialization, dictionary conversion, validation,
+    and configuration parameter handling.
+    """
 
     def test_init_defaults(self):
-        """Test default initialization."""
+        """Test initialization with default parameter values.
+        
+        Verifies that the BinningConfig dataclass initializes correctly
+        with the expected default values for all configuration parameters.
+        """
         config = BinningConfig()
         assert config.preserve_dataframe is False
         assert config.fit_jointly is False
@@ -44,7 +76,11 @@ class TestBinningConfig:
         assert config.equal_width_default_bins == 5
 
     def test_from_dict_valid_keys(self):
-        """Test from_dict with valid keys."""
+        """Test configuration creation from dictionary with valid keys.
+        
+        Verifies that the from_dict method correctly creates a BinningConfig
+        instance from a dictionary with valid configuration parameters.
+        """
         config_dict = {
             'preserve_dataframe': True,
             'fit_jointly': True,

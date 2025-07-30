@@ -1,5 +1,21 @@
 """
-Comprehensive tests for OneHotBinning functionality.
+Comprehensive test suite for OneHotBinning transformer.
+
+This module provides extensive testing for the OneHotBinning class, which creates
+singleton bins for each unique value in the data. The tests cover initialization,
+parameter validation, basic functionality, pandas/polars integration, sklearn
+compatibility, error handling, and various edge cases.
+
+Test Classes:
+    TestOneHotBinningInitialization: Tests for parameter initialization and validation.
+    TestOneHotBinningBasicFunctionality: Core fitting and transformation tests.
+    TestOneHotBinningPandasIntegration: Tests for pandas DataFrame compatibility.
+    TestOneHotBinningPolarsIntegration: Tests for polars DataFrame compatibility.
+    TestOneHotBinningSklearnIntegration: Tests for sklearn pipeline compatibility.
+    TestOneHotBinningWorkflows: Tests for complete ML workflows.
+    TestOneHotBinningFitGetParamsWorkflow: Tests for parameter handling workflows.
+    TestOneHotBinningRepr: Tests for string representation functionality.
+    TestOneHotBinningErrorHandling: Tests for error conditions and edge cases.
 """
 
 import numpy as np
@@ -25,10 +41,19 @@ SKLEARN_AVAILABLE = True
 
 
 class TestOneHotBinningInitialization:
-    """Test OneHotBinning initialization and parameter handling."""
+    """Test OneHotBinning initialization and parameter validation.
+    
+    This test class verifies that the OneHotBinning transformer initializes
+    correctly with both default and custom parameters, handles parameter
+    validation properly, and maintains the correct state during initialization.
+    """
 
     def test_default_initialization(self):
-        """Test default parameter initialization."""
+        """Test initialization with default parameters.
+        
+        Verifies that all default parameter values are set correctly and
+        that the transformer is in the expected initial state.
+        """
         binning = OneHotBinning()
         assert binning.max_unique_values == 100
         assert binning.preserve_dataframe is False  # Default from config
@@ -37,7 +62,12 @@ class TestOneHotBinningInitialization:
         assert binning.bin_representatives is None
 
     def test_custom_initialization(self):
-        """Test initialization with custom parameters."""
+        """Test initialization with custom parameters.
+        
+        Verifies that custom parameters are correctly accepted and stored,
+        including max_unique_values, preserve_dataframe options, and
+        pre-defined bin specifications.
+        """
         binning = OneHotBinning(
             max_unique_values=50,
             preserve_dataframe=True,
