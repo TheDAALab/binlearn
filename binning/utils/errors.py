@@ -6,6 +6,8 @@ import warnings
 from typing import Any, Optional, List, Dict
 import numpy as np
 
+from binning.config import get_config
+
 
 class BinningError(Exception):
     """Base exception for all binning-related errors."""
@@ -84,7 +86,7 @@ class ValidationMixin:
                     "Check for any invalid values in your data",
                     "Consider converting data types explicitly",
                 ],
-            )
+            ) from e
 
         # Check if array is empty - let specific methods handle this with their own error messages
         # if array.size == 0:
@@ -160,7 +162,6 @@ class ValidationMixin:
     @staticmethod
     def check_data_quality(data: np.ndarray, name: str = "data") -> None:
         """Check data quality and issue warnings if needed."""
-        from binning.config import get_config
 
         config = get_config()
 
@@ -198,7 +199,8 @@ class ValidationMixin:
                         "Consider clipping or removing these values.",
                         DataQualityWarning,
                     )
-        except Exception:
+        except (TypeError, ValueError):
+            # Skip infinite value check if data type doesn't support it
             pass
 
         # Check for constant columns
@@ -216,6 +218,8 @@ class ValidationMixin:
 
 def validate_tree_params(task_type: str, tree_params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate tree parameters for SupervisedBinning."""
+    _ = task_type
+
     if not tree_params:
         return {}
 

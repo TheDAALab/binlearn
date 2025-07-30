@@ -23,6 +23,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_val_score
 
+from ..methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
 
 class BinningFeatureSelector(BaseEstimator, TransformerMixin):
     """Feature selector that uses binning-based mutual information.
@@ -84,16 +85,10 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         """
         # Import here to avoid circular imports
         if self.binning_method == "equal_width":
-            from binning.methods._equal_width_binning import EqualWidthBinning
-
             binner = EqualWidthBinning(**self.binning_params)
         elif self.binning_method == "supervised":
-            from binning.methods._supervised_binning import SupervisedBinning
-
             binner = SupervisedBinning(**self.binning_params)
         elif self.binning_method == "onehot":
-            from binning.methods._onehot_binning import OneHotBinning
-
             binner = OneHotBinning(**self.binning_params)
         else:
             raise ValueError(f"Unknown binning method: {self.binning_method}")
@@ -161,18 +156,6 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         return self.selector_.get_support(indices=indices)
 
 
-def _import_supervised_binning():
-    """Import SupervisedBinning class.
-    
-    Helper function to import SupervisedBinning while avoiding circular imports.
-    
-    Returns:
-        SupervisedBinning class from binning.methods._supervised_binning.
-    """
-    from binning.methods._supervised_binning import SupervisedBinning
-    return SupervisedBinning
-
-
 class BinningPipeline:
     """Pipeline utilities for binning operations.
     
@@ -207,8 +190,6 @@ class BinningPipeline:
             sklearn.pipeline.Pipeline with binning and optional final estimator,
             or just the binning transformer if final_estimator is None.
         """
-        # Import locally to avoid issues
-        SupervisedBinning = _import_supervised_binning()
 
         binner = SupervisedBinning(
             task_type=task_type, tree_params=tree_params, guidance_columns=[guidance_column]
@@ -260,16 +241,12 @@ def make_binning_scorer(binning_method: str = "supervised", binning_params: Opti
         params = binning_params or {}
 
         if binning_method == "supervised":
-            from binning.methods._supervised_binning import SupervisedBinning
-
             params.setdefault("guidance_columns", [-1])  # Assume last column is target
             binner = SupervisedBinning(**params)
             # For supervised binning, we need to include the target
             X_with_target = np.column_stack([X, y])
             X_binned = binner.fit_transform(X_with_target)
         elif binning_method == "equal_width":
-            from binning.methods._equal_width_binning import EqualWidthBinning
-
             binner = EqualWidthBinning(**params)
             X_binned = binner.fit_transform(X)
         else:

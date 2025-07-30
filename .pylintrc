@@ -1,5 +1,5 @@
 [FORMAT]
-good-names=X,X2,X_df,X_df_1d,X_bins,Xt,X_np,X_pd
+good-names=X,X2,X_df,X_df_1d,X_bins,Xt,X_np,X_pd,X_binned,X_with_target,X_binning,X_guidance
 
 [SIMILARITIES]
 min-similarity-lines=15

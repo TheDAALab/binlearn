@@ -21,6 +21,7 @@ from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
 
 
+# pylint: disable=too-many-ancestors
 class OneHotBinning(ReprMixin, FlexibleBinningBase):
     """Creates a singleton bin for each unique value in numeric data.
     

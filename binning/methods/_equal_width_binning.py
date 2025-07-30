@@ -19,6 +19,7 @@ from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError
 
 
+# pylint: disable=too-many-ancestors
 class EqualWidthBinning(ReprMixin, IntervalBinningBase):
     """Classic equal-width binning transformer.
 
@@ -48,6 +49,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         >>> X_binned = binner.fit_transform(X)
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         n_bins: int = 10,

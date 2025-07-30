@@ -202,7 +202,7 @@ class TestValidationMixin:
         with pytest.raises(InvalidDataError, match="Guidance columns cannot overlap"):
             ValidationMixin.validate_guidance_columns([0, 2], [0, 1], (10, 3))
 
-    @patch('binning.config.get_config')
+    @patch('binning.utils.errors.get_config')
     def test_check_data_quality_warnings_disabled(self, mock_get_config):
         """Test check_data_quality with warnings disabled."""
         mock_config = Mock()
@@ -211,11 +211,15 @@ class TestValidationMixin:
 
         data = np.array([1, 2, np.nan, 4])
 
-        # Should not raise any warnings
+        # Should not raise any warnings and should return early
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            ValidationMixin.check_data_quality(data, "test")
+            result = ValidationMixin.check_data_quality(data, "test")
             assert len(w) == 0
+            assert result is None  # Method returns None when warnings are disabled
+            
+        # Verify that get_config was called
+        mock_get_config.assert_called_once()
 
     @patch('binning.config.get_config')
     def test_check_data_quality_missing_values(self, mock_get_config):
@@ -319,9 +323,9 @@ class TestValidationMixin:
         mock_config.show_warnings = True
         mock_get_config.return_value = mock_config
 
-        # Mock np.isinf to raise an exception
+        # Mock np.isinf to raise a TypeError (which should be caught)
         with patch('numpy.isinf') as mock_isinf:
-            mock_isinf.side_effect = Exception("Some error")
+            mock_isinf.side_effect = TypeError("Data type not supported")
 
             # Should not raise exception, just skip checks
             ValidationMixin.check_data_quality(np.array([1, 2, 3]), "test")

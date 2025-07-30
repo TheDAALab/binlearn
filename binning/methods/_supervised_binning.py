@@ -22,8 +22,9 @@ from ..utils.types import (
 from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
+from ..config import get_config
 
-
+# pylint: disable=too-many-ancestors
 class SupervisedBinning(ReprMixin, SupervisedBinningBase):
     """Supervised binning transformer for single guidance/target column.
 
@@ -57,6 +58,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         >>> X_binned = binner.fit_transform(X)
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         task_type: str = "classification",
@@ -119,6 +121,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         # Create tree template for cloning during fitting
         self._create_tree_template()
 
+    # pylint: disable=too-many-locals
     def _calculate_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
     ) -> Tuple[BinEdges, BinEdges]:
@@ -191,7 +194,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         # Combine data bounds with split points
         all_edges = [data_min] + sorted(split_points) + [data_max]
         # Remove duplicates while preserving order
-        from ..config import get_config
+
         config = get_config()
         bin_edges = []
         for edge in all_edges:
