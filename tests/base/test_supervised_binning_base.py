@@ -660,3 +660,15 @@ def test_dummy_methods_coverage():
     edges, reps = obj._calculate_bins(x_col, 0)
     assert edges == [0.0, 1.0, 2.0]
     assert reps == [0.5, 1.5]
+
+
+def test_create_tree_template_invalid_params():
+    """Test _create_tree_template with invalid tree_params that cause TypeError."""
+    from binning.utils.errors import ConfigurationError
+
+    # Create object with invalid tree parameters that will cause TypeError
+    obj = DummySupervisedBinning(task_type="classification")
+    obj.tree_params = {"invalid_param": "invalid_value", "max_depth": "not_an_int"}
+
+    with pytest.raises(ConfigurationError, match="Invalid tree_params"):
+        obj._create_tree_template()

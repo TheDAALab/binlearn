@@ -50,11 +50,11 @@ def test_init_with_bin_representatives():
     assert obj.bin_representatives == bin_reps
 
 
-@patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec")
+@patch("binning.base._flexible_binning_base.validate_flexible_bin_spec_format")
 @patch("binning.base._flexible_binning_base.validate_flexible_bins")
 def test_process_provided_flexible_bins_spec_only(mock_validate, mock_ensure_spec):
     """Test _process_provided_flexible_bins with spec only."""
-    mock_ensure_spec.return_value = {0: [1]}  # New simplified format
+    # Mock returns don't matter for format validation - it validates in place
 
     obj = DummyFlexibleBinning()
     obj.bin_spec = {0: [1]}  # New simplified format
@@ -66,19 +66,20 @@ def test_process_provided_flexible_bins_spec_only(mock_validate, mock_ensure_spe
         mock_gen.return_value = [1.0]
         obj._process_provided_flexible_bins()
 
-        mock_ensure_spec.assert_called_once()
+        mock_ensure_spec.assert_called_once_with(
+            {0: [1]}, check_finite_bounds=False, strict=False
+        )  # Updated call signature
         mock_gen.assert_called_once()
         mock_validate.assert_called_once()
         assert obj._fitted is True
 
 
-@patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec")
-@patch("binning.base._flexible_binning_base.ensure_bin_dict")
+@patch("binning.base._flexible_binning_base.validate_flexible_bin_spec_format")
+@patch("binning.base._flexible_binning_base.validate_bin_representatives_format")
 @patch("binning.base._flexible_binning_base.validate_flexible_bins")
 def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mock_ensure_spec):
     """Test _process_provided_flexible_bins with both spec and reps."""
-    mock_ensure_spec.return_value = {0: [1]}  # New simplified format
-    mock_ensure_dict.return_value = {0: [1.0]}
+    # Mock format validation functions don't need return values - they validate in place
 
     obj = DummyFlexibleBinning()
     obj.bin_spec = {0: [1]}  # New simplified format
@@ -86,8 +87,10 @@ def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mo
 
     obj._process_provided_flexible_bins()
 
-    mock_ensure_spec.assert_called_once()
-    mock_ensure_dict.assert_called_once()
+    mock_ensure_spec.assert_called_once_with(
+        {0: [1]}, check_finite_bounds=False, strict=False
+    )  # Updated call signature
+    mock_ensure_dict.assert_called_once_with({0: [1.0]})
     mock_validate.assert_called_once()
     assert obj._fitted is True
 
@@ -97,7 +100,9 @@ def test_process_provided_flexible_bins_error():
     obj = DummyFlexibleBinning()
     obj.bin_spec = {0: [1]}  # New simplified format
 
-    with patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec") as mock_ensure:
+    with patch(
+        "binning.base._flexible_binning_base.validate_flexible_bin_spec_format"
+    ) as mock_ensure:
         mock_ensure.side_effect = Exception("Test error")
 
         with pytest.raises(
@@ -116,9 +121,8 @@ def test_process_provided_flexible_bins_no_spec():
     # Should not raise any errors
 
 
-@patch.object(DummyFlexibleBinning, "_process_user_specifications")
 @patch.object(DummyFlexibleBinning, "_finalize_fitting")
-def test_fit_per_column_success(mock_finalize, mock_process):
+def test_fit_per_column_success(mock_finalize):
     """Test _fit_per_column successful execution."""
     obj = DummyFlexibleBinning()
     X = np.array([[1, 2], [3, 4]])
@@ -127,12 +131,10 @@ def test_fit_per_column_success(mock_finalize, mock_process):
     result = obj._fit_per_column(X, columns)
 
     assert result is obj
-    mock_process.assert_called_once_with(columns)
     mock_finalize.assert_called_once()
 
 
-@patch.object(DummyFlexibleBinning, "_process_user_specifications")
-def test_fit_per_column_with_existing_specs(mock_process):
+def test_fit_per_column_with_existing_specs():
     """Test _fit_per_column with existing specs.
 
     The fit method should always calculate bins for all columns,
@@ -164,8 +166,8 @@ def test_fit_per_column_error_handling():
     """Test _fit_per_column error handling."""
     obj = DummyFlexibleBinning()
 
-    with patch.object(obj, "_process_user_specifications") as mock_process:
-        mock_process.side_effect = Exception("Test error")
+    with patch.object(obj, "_calculate_flexible_bins") as mock_calc:
+        mock_calc.side_effect = Exception("Test error")
 
         X = np.array([[1, 2], [3, 4]])
         columns = [0, 1]
@@ -178,8 +180,8 @@ def test_fit_per_column_reraise_known_errors():
     """Test _fit_per_column re-raises known errors."""
     obj = DummyFlexibleBinning()
 
-    with patch.object(obj, "_process_user_specifications") as mock_process:
-        mock_process.side_effect = ValueError("Known error")
+    with patch.object(obj, "_calculate_flexible_bins") as mock_calc:
+        mock_calc.side_effect = ValueError("Known error")
 
         X = np.array([[1, 2], [3, 4]])
         columns = [0, 1]
@@ -188,10 +190,9 @@ def test_fit_per_column_reraise_known_errors():
             obj._fit_per_column(X, columns)
 
 
-@patch.object(DummyFlexibleBinning, "_process_user_specifications")
 @patch.object(DummyFlexibleBinning, "_calculate_flexible_bins_jointly")
 @patch.object(DummyFlexibleBinning, "_finalize_fitting")
-def test_fit_jointly_success(mock_finalize, mock_calc_jointly, mock_process):
+def test_fit_jointly_success(mock_finalize, mock_calc_jointly):
     """Test _fit_jointly successful execution."""
     # Configure the mock to return the expected tuple
     mock_calc_jointly.return_value = ([0], [0.0])  # New simplified format
@@ -202,7 +203,6 @@ def test_fit_jointly_success(mock_finalize, mock_calc_jointly, mock_process):
 
     obj._fit_jointly(X, columns)
 
-    mock_process.assert_called_once_with(columns)
     mock_calc_jointly.assert_called()  # Should be called for each column
     mock_finalize.assert_called_once()
 
@@ -211,8 +211,8 @@ def test_fit_jointly_error_handling():
     """Test _fit_jointly error handling."""
     obj = DummyFlexibleBinning()
 
-    with patch.object(obj, "_process_user_specifications") as mock_process:
-        mock_process.side_effect = Exception("Test error")
+    with patch.object(obj, "_calculate_flexible_bins_jointly") as mock_calc:
+        mock_calc.side_effect = Exception("Test error")
 
         X = np.array([[1, 2], [3, 4]])
         columns = [0, 1]
@@ -326,34 +326,6 @@ def test_finalize_fitting_error():
             obj._finalize_fitting()
 
 
-def test_process_user_specifications():
-    """Test _process_user_specifications method."""
-    obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [1]}  # New simplified format
-    obj.bin_representatives = {0: [1.0]}
-
-    with patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec") as mock_spec:
-        with patch("binning.base._flexible_binning_base.ensure_bin_dict") as mock_dict:
-            mock_spec.return_value = {0: [1]}  # New simplified format
-            mock_dict.return_value = {0: [1.0]}
-
-            obj._process_user_specifications([0, 1])
-
-            mock_spec.assert_called_once_with({0: [1]})  # New simplified format
-            mock_dict.assert_called_once_with({0: [1.0]})
-
-
-def test_process_user_specifications_no_user_specs():
-    """Test _process_user_specifications with no user specs."""
-    obj = DummyFlexibleBinning()
-    obj.bin_spec = None
-    obj.bin_representatives = None
-
-    with patch.object(obj, "_process_provided_flexible_bins") as mock_process:
-        obj._process_user_specifications([0, 1])
-        mock_process.assert_not_called()
-
-
 def test_calculate_flexible_bins_jointly_abstract():
     """Test _calculate_flexible_bins_jointly default implementation."""
     obj = DummyFlexibleBinning()
@@ -459,18 +431,6 @@ def test_calculate_flexible_bins_jointly_fallback():
     # Should fall back to _calculate_flexible_bins
     result = obj._calculate_flexible_bins_jointly(all_data, [0])
     assert result == ([0], [0.0])  # New simplified format
-
-
-def test_ensure_flexible_bin_dict_deprecated():
-    """Test deprecated _ensure_flexible_bin_dict method."""
-    obj = DummyFlexibleBinning()
-
-    with patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec") as mock_ensure:
-        mock_ensure.return_value = {0: [1]}  # New simplified format
-
-        result = obj._ensure_flexible_bin_dict({0: [1]})  # New simplified format
-        assert result == {0: [1]}  # New simplified format
-        mock_ensure.assert_called_once()
 
 
 def test_generate_default_flexible_representatives():
@@ -639,17 +599,16 @@ def test_fit_per_column_with_guidance_data():
     columns = [0, 1]
     guidance_data = np.array([[0.5, 1.5], [2.5, 3.5]])
 
-    with patch.object(obj, "_process_user_specifications"):
-        with patch.object(obj, "_calculate_flexible_bins") as mock_calc:
-            mock_calc.return_value = ([1], [1.0])  # New simplified format
-            with patch.object(obj, "_finalize_fitting"):
-                obj._fit_per_column(X, columns, guidance_data=guidance_data)
+    with patch.object(obj, "_calculate_flexible_bins") as mock_calc:
+        mock_calc.return_value = ([1], [1.0])  # New simplified format
+        with patch.object(obj, "_finalize_fitting"):
+            obj._fit_per_column(X, columns, guidance_data=guidance_data)
 
-            # Should be called with guidance_data
-            calls = mock_calc.call_args_list
-            assert len(calls) == 2  # Called for both columns
-            # Check that guidance_data was passed to at least one call
-            assert any(call[0][2] is guidance_data for call in calls)
+        # Should be called with guidance_data
+        calls = mock_calc.call_args_list
+        assert len(calls) == 2  # Called for both columns
+        # Check that guidance_data was passed to at least one call
+        assert any(call[0][2] is guidance_data for call in calls)
 
 
 def test_fit_jointly_with_no_missing_columns():
@@ -665,20 +624,19 @@ def test_fit_jointly_with_no_missing_columns():
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
 
-    with patch.object(obj, "_process_user_specifications"):
-        with patch.object(obj, "_calculate_flexible_bins_jointly") as mock_calc:
-            mock_calc.return_value = ([99], [99.0])  # New simplified format
+    with patch.object(obj, "_calculate_flexible_bins_jointly") as mock_calc:
+        mock_calc.return_value = ([99], [99.0])  # New simplified format
 
-            with patch.object(obj, "_finalize_fitting"):
-                obj._fit_jointly(X, columns)
+        with patch.object(obj, "_finalize_fitting"):
+            obj._fit_jointly(X, columns)
 
-            # Should calculate bins for all columns now
-            mock_calc.assert_called_once()
-            # All columns should have the same jointly calculated specs
-            assert obj._bin_spec[0] == [99]
-            assert obj._bin_spec[1] == [99]
-            assert obj._bin_reps[0] == [99.0]
-            assert obj._bin_reps[1] == [99.0]
+        # Should calculate bins for all columns now
+        mock_calc.assert_called_once()
+        # All columns should have the same jointly calculated specs
+        assert obj._bin_spec[0] == [99]
+        assert obj._bin_spec[1] == [99]
+        assert obj._bin_reps[0] == [99.0]
+        assert obj._bin_reps[1] == [99.0]
 
 
 def test_calculate_flexible_bins_jointly_direct_call():
@@ -769,3 +727,32 @@ def test_property_setters_no_fitted_attribute():
     # These should not raise errors
     obj.bin_spec = {0: [1]}  # New simplified format
     obj.bin_representatives = {0: [1.0]}
+
+
+def test_fit_jointly_minimal_class_edge_cases():
+    """Covers edge cases for MinimalFlexibleBinning._fit_jointly and _calculate_flexible_bins_jointly."""
+    obj = MinimalFlexibleBinning()
+    # Edge case: empty input
+    result = obj._calculate_flexible_bins_jointly(np.array([]), [])
+    assert result == ([0], [0.0])
+    # Edge case: fit with empty columns
+    obj._fit_jointly(np.array([[]]), [])
+    assert obj._bin_spec == {}
+    assert obj._bin_reps == {}
+
+
+def test_dummy_flexible_binning_repr_and_properties():
+    """Covers DummyFlexibleBinning property setters and __repr__."""
+    obj = DummyFlexibleBinning()
+    # Set bin_spec and bin_representatives
+    obj.bin_spec = {0: [1]}
+    obj.bin_representatives = {0: [1.0]}
+    # Check repr
+    assert isinstance(repr(obj), str)
+    # Remove _fitted and set properties
+    if hasattr(obj, "_fitted"):
+        delattr(obj, "_fitted")
+    obj.bin_spec = {1: [2]}
+    obj.bin_representatives = {1: [2.0]}
+    assert obj.bin_spec == {1: [2]}
+    assert obj.bin_representatives == {1: [2.0]}

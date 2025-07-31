@@ -19,7 +19,8 @@ import numpy as np
 from ..utils.types import BinEdges, BinEdgesDict, ColumnId, ColumnList, GuidanceColumns
 from ._general_binning_base import GeneralBinningBase
 from ..utils.bin_operations import (
-    ensure_bin_dict,
+    validate_bin_edges_format,
+    validate_bin_representatives_format,
     validate_bins,
     default_representatives,
     create_bin_masks,
@@ -122,6 +123,9 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_edges = bin_edges
         self.bin_representatives = bin_representatives
 
+        # Validate parameters early
+        self._validate_params()
+
         # Working specifications (fitted or user-provided)
         self._bin_edges: BinEdgesDict = {}
         self._bin_reps: BinEdgesDict = {}
@@ -129,6 +133,40 @@ class IntervalBinningBase(GeneralBinningBase):
         # If bin_edges are provided, process them immediately to enable transform without fit
         if bin_edges is not None:
             self._process_provided_bins()
+
+    def _validate_params(self) -> None:
+        """Validate parameters for interval binning.
+
+        Performs comprehensive validation of all IntervalBinningBase parameters
+        to ensure they meet the expected format and constraints. This includes
+        validating bin edge format, ordering, and compatibility with representatives.
+
+        Raises:
+            ConfigurationError: If any parameter validation fails.
+
+        Note:
+            - Called automatically during initialization for early error detection
+            - Can be overridden in subclasses for additional validation
+            - Should only validate, not transform parameters
+        """
+        try:
+            # Call parent validation first
+            super()._validate_params()
+
+            # Validate bin edges format if provided
+            if self.bin_edges is not None:
+                validate_bin_edges_format(self.bin_edges)
+
+            # Validate bin representatives format if provided
+            if self.bin_representatives is not None:
+                validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
+
+                # Validate compatibility with bin_edges if both are provided
+                if self.bin_edges is not None:
+                    validate_bins(self.bin_edges, self.bin_representatives)
+
+        except ValueError as e:
+            raise ConfigurationError(str(e)) from e
 
     def _process_provided_bins(self) -> None:
         """Process user-provided bin specifications and mark as fitted if complete.
@@ -142,16 +180,21 @@ class IntervalBinningBase(GeneralBinningBase):
         """
         try:
             if self.bin_edges is not None:
-                self._bin_edges = ensure_bin_dict(self.bin_edges)
+                # Validate format but don't transform - store as-is
+                validate_bin_edges_format(self.bin_edges)
+                self._bin_edges = self.bin_edges
 
             if self.bin_representatives is not None:
-                self._bin_reps = ensure_bin_dict(self.bin_representatives)
+                # Validate format but don't transform - store as-is
+                validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
+                self._bin_reps = self.bin_representatives
             else:
                 # Generate default representatives for provided edges
-                for col in self._bin_edges:
-                    if col not in self._bin_reps:
-                        edges = self._bin_edges[col]
-                        self._bin_reps[col] = default_representatives(edges)
+                self._bin_reps = {}
+                if self.bin_edges is not None:
+                    for col, edges in self.bin_edges.items():
+                        edges_list = list(edges)
+                        self._bin_reps[col] = default_representatives(edges_list)
 
             # Validate the bins
             if self._bin_edges:
@@ -162,8 +205,6 @@ class IntervalBinningBase(GeneralBinningBase):
                 self._original_columns = list(self._bin_edges.keys())
 
         except Exception as e:
-            if isinstance(e, BinningError):
-                raise
             raise ConfigurationError(
                 f"Failed to process provided bin specifications: {str(e)}"
             ) from e
@@ -398,18 +439,20 @@ class IntervalBinningBase(GeneralBinningBase):
 
         try:
             if self.bin_edges is not None:
-                self._bin_edges = ensure_bin_dict(self.bin_edges)
+                # Validate format but don't transform - store as-is
+                validate_bin_edges_format(self.bin_edges)
+                self._bin_edges = self.bin_edges
             else:
                 self._bin_edges = {}
 
             if self.bin_representatives is not None:
-                self._bin_reps = ensure_bin_dict(self.bin_representatives)
+                # Validate format but don't transform - store as-is
+                validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
+                self._bin_reps = self.bin_representatives
             else:
                 self._bin_reps = {}
 
         except Exception as e:
-            if isinstance(e, BinningError):
-                raise
             raise ConfigurationError(f"Failed to process bin specifications: {str(e)}") from e
 
     def _finalize_fitting(self) -> None:

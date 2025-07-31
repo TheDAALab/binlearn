@@ -26,17 +26,20 @@ from ..utils.types import (
     GuidanceColumns,
 )
 from ._general_binning_base import GeneralBinningBase
-from ..utils.bin_operations import ensure_bin_dict
+from ..utils.bin_operations import (
+    validate_bin_representatives_format,
+)
 from ..utils.flexible_bin_operations import (
-    ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
+    validate_flexible_bin_spec_format,
     is_missing_value,
     find_flexible_bin_for_value,
     calculate_flexible_bin_width,
     transform_value_to_flexible_bin,
     get_flexible_bin_count,
 )
+from ..utils.errors import ConfigurationError
 from ..utils.data_handling import return_like_input
 from ..utils.constants import MISSING_VALUE
 
@@ -110,6 +113,43 @@ class FlexibleBinningBase(GeneralBinningBase):
         if bin_spec is not None:
             self._process_provided_flexible_bins()
 
+    def _validate_params(self) -> None:
+        """Validate parameters for flexible binning.
+
+        Performs comprehensive validation of all FlexibleBinningBase parameters
+        to ensure they meet the expected format and constraints. This includes
+        validating bin specification format and compatibility with representatives.
+
+        Raises:
+            ConfigurationError: If any parameter validation fails.
+
+        Note:
+            - Called automatically during initialization for early error detection
+            - Can be overridden in subclasses for additional validation
+            - Should only validate, not transform parameters
+        """
+        try:
+            # Call parent validation first
+            super()._validate_params()
+
+            # Validate bin_spec format if provided
+            if self.bin_spec is not None:
+                # Use centralized validation with finite bounds checking and strict validation
+                validate_flexible_bin_spec_format(
+                    self.bin_spec, check_finite_bounds=True, strict=True
+                )
+
+            # Validate bin_representatives format if provided
+            if self.bin_representatives is not None:
+                validate_bin_representatives_format(self.bin_representatives)
+
+                # Validate compatibility with bin_spec if both are provided
+                if self.bin_spec is not None:
+                    validate_flexible_bins(self.bin_spec, self.bin_representatives)
+
+        except ValueError as e:
+            raise ConfigurationError(str(e)) from e
+
     def _process_provided_flexible_bins(self) -> None:
         """Process user-provided flexible bin specifications and mark as fitted if complete.
 
@@ -123,23 +163,43 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         try:
             if self.bin_spec is not None:
-                self._bin_spec = ensure_flexible_bin_spec(self.bin_spec)
+                # Use centralized validation with lenient settings for initialization
+                # This allows empty bin definitions and equal bounds that subclasses can catch later
+                validate_flexible_bin_spec_format(
+                    self.bin_spec, check_finite_bounds=False, strict=False
+                )
+                self._bin_spec = self.bin_spec
 
             if self.bin_representatives is not None:
-                self._bin_reps = ensure_bin_dict(self.bin_representatives)
+                # Validate format but don't transform - store as-is
+                validate_bin_representatives_format(self.bin_representatives)
+                self._bin_reps = self.bin_representatives
             else:
                 # Generate default representatives for provided specs
                 for col, bin_defs in self._bin_spec.items():
                     if col not in self._bin_reps:
                         self._bin_reps[col] = generate_default_flexible_representatives(bin_defs)
 
-            # Validate the bins
-            if self._bin_spec:
-                validate_flexible_bins(self._bin_spec, self._bin_reps)
-                # Mark as fitted since we have complete bin specifications
-                self._fitted = True
-                # Store columns for later reference
-                self._original_columns = list(self._bin_spec.keys())
+            # Validate the bins only if both spec and reps are provided
+            # For incomplete specifications, defer validation to subclass _validate_params
+            if self._bin_spec and self._bin_reps:
+                try:
+                    validate_flexible_bins(self._bin_spec, self._bin_reps)
+                    # Mark as fitted since we have complete bin specifications
+                    self._fitted = True
+                    # Store columns for later reference
+                    self._original_columns = list(self._bin_spec.keys())
+                except ValueError as e:
+                    # Only defer specific validation errors that individual classes should handle
+                    # Re-raise errors about mismatched representatives, missing columns, etc.
+                    error_msg = str(e)
+                    if "must be < max" in error_msg or "cannot be empty" in error_msg:
+                        # These are validation errors that should be deferred to subclass
+                        # _validate_params
+                        pass
+                    else:
+                        # All other validation errors should be raised during initialization
+                        raise
 
         except Exception as e:
             raise ValueError(
@@ -228,7 +288,9 @@ class FlexibleBinningBase(GeneralBinningBase):
             NotImplementedError: If required methods are not implemented.
         """
         try:
-            self._process_user_specifications(columns)
+            # Initialize internal state - reset specs to allow refitting from data
+            self._bin_spec = {}
+            self._bin_reps = {}
 
             # Always calculate bins from data for all columns
             # User-provided specifications serve as parameters or starting points
@@ -262,7 +324,9 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         _ = columns
         try:
-            self._process_user_specifications(columns)
+            # Initialize internal state - reset specs to allow refitting from data
+            self._bin_spec = {}
+            self._bin_reps = {}
 
             # Always calculate bins from all flattened data
             # For true joint binning, flatten all data together
@@ -279,30 +343,6 @@ class FlexibleBinningBase(GeneralBinningBase):
             self._finalize_fitting()
         except Exception as e:
             raise ValueError(f"Failed to fit joint bins: {str(e)}") from e
-
-    def _process_user_specifications(self, columns: ColumnList) -> None:
-        """Process user-provided flexible bin specifications.
-
-        Validates and processes any pre-provided bin specifications and representatives
-        from the user. Ensures they are in the correct format and initializes internal
-        storage structures. Resets specifications if none are provided to allow refitting.
-
-        Args:
-            columns (ColumnList): List of column identifiers, currently unused
-                but kept for interface compatibility.
-        """
-        _ = columns
-        if self.bin_spec is not None:
-            self._bin_spec = ensure_flexible_bin_spec(self.bin_spec)
-        else:
-            # Reset _bin_spec if no user specs provided to allow refitting
-            self._bin_spec = {}
-
-        if self.bin_representatives is not None:
-            self._bin_reps = ensure_bin_dict(self.bin_representatives)
-        else:
-            # Reset _bin_reps if no user reps provided to allow refitting
-            self._bin_reps = {}
 
     def _finalize_fitting(self) -> None:
         """Finalize the flexible binning fitting process.
@@ -347,20 +387,6 @@ class FlexibleBinningBase(GeneralBinningBase):
             using first column.
         """
         return self._calculate_flexible_bins(all_data, columns[0] if columns else 0)
-
-    def _ensure_flexible_bin_dict(self, bin_spec: Any) -> FlexibleBinSpec:
-        """Ensure bin_spec is in the correct dictionary format.
-
-        Args:
-            bin_spec (Any): Input bin specification in various formats.
-
-        Returns:
-            FlexibleBinSpec: Properly formatted flexible bin specification dictionary.
-
-        Deprecated:
-            Use ensure_flexible_bin_spec from _flexible_bin_utils instead.
-        """
-        return ensure_flexible_bin_spec(bin_spec)
 
     def _generate_default_flexible_representatives(self, bin_defs: FlexibleBinDefs) -> BinEdges:
         """Generate default representatives for flexible bins.
@@ -649,27 +675,6 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)
-
-    def _get_fitted_params(self) -> Dict[str, Any]:
-        """Get fitted parameter values for FlexibleBinningBase.
-
-        Returns the internal fitted state as a dictionary, including flexible
-        bin specifications and representatives for all columns. This is used by
-        sklearn's get_params infrastructure and for debugging.
-
-        Returns:
-            Dict[str, Any]: Dictionary containing:
-                - 'bin_spec': Dictionary of flexible bin specifications for each column
-                - 'bin_representatives': Dictionary of bin representatives for each column
-
-        Note:
-            This method is part of the sklearn parameter interface and is typically
-            not called directly by users.
-        """
-        return {
-            "bin_spec": self._bin_spec,
-            "bin_representatives": self._bin_reps,
-        }
 
     # Properties for sklearn compatibility
     @property

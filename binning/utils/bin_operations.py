@@ -18,29 +18,92 @@ from .types import (
 )
 
 
-def ensure_bin_dict(data: Any) -> BinEdgesDict:
-    """Convert any input to a dictionary of bin edges/representatives.
+def validate_bin_edges_format(bin_edges: Any) -> None:
+    """Validate bin edges format without transformation.
 
     Args:
-        data: Input data (dict, array-like, or None).
+        bin_edges: Input bin edges to validate.
 
-    Returns:
-        Dictionary mapping column keys to lists of values.
+    Raises:
+        ValueError: If format is invalid.
     """
-    if data is None:
-        return {}
+    if bin_edges is None:
+        return
 
-    if isinstance(data, dict):
-        return {k: list(np.asarray(v, dtype=float)) for k, v in data.items()}
+    if not isinstance(bin_edges, dict):
+        raise ValueError("bin_edges must be a dictionary mapping column identifiers to edge lists")
 
-    # Convert array-like to dict with integer keys
-    arr = np.asarray(data, dtype=float)
-    if arr.ndim == 0:
-        return {0: [float(arr)]}
-    if arr.ndim == 1:
-        return {0: arr.tolist()}
+    for col_id, edges in bin_edges.items():
+        if not hasattr(edges, "__iter__") or isinstance(edges, (str, bytes)):
+            raise ValueError(
+                f"Edges for column {col_id} must be array-like (list, tuple, or numpy array)"
+            )
 
-    return {i: arr[i].tolist() for i in range(arr.shape[0])}
+        edges_list = list(edges)
+        if len(edges_list) < 2:
+            raise ValueError(f"Column {col_id} needs at least 2 bin edges")
+
+        # Check if all values are numeric
+        try:
+            float_edges = [float(x) for x in edges_list]
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"All edges for column {col_id} must be numeric") from exc
+
+        # Check if edges are sorted
+        if not all(float_edges[i] <= float_edges[i + 1] for i in range(len(float_edges) - 1)):
+            raise ValueError(f"Bin edges for column {col_id} must be sorted in ascending order")
+
+        # Check for invalid values
+        if any(not np.isfinite(x) for x in float_edges):
+            raise ValueError(f"Bin edges for column {col_id} must be finite values")
+
+
+def validate_bin_representatives_format(bin_representatives: Any, bin_edges: Any = None) -> None:
+    """Validate bin representatives format without transformation.
+
+    Args:
+        bin_representatives: Input bin representatives to validate.
+        bin_edges: Optional bin edges to check compatibility.
+
+    Raises:
+        ValueError: If format is invalid.
+    """
+    if bin_representatives is None:
+        return
+
+    if not isinstance(bin_representatives, dict):
+        raise ValueError(
+            "bin_representatives must be a dictionary mapping column identifiers to"
+            " representative lists"
+        )
+
+    for col_id, reps in bin_representatives.items():
+        if not hasattr(reps, "__iter__") or isinstance(reps, (str, bytes)):
+            raise ValueError(
+                f"Representatives for column {col_id} must be array-like (list, tuple,"
+                " or numpy array)"
+            )
+
+        reps_list = list(reps)
+
+        # Check if all values are numeric
+        try:
+            float_reps = [float(x) for x in reps_list]
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"All representatives for column {col_id} must be numeric") from exc
+
+        # Check for invalid values
+        if any(not np.isfinite(x) for x in float_reps):
+            raise ValueError(f"Representatives for column {col_id} must be finite values")
+
+        # Check compatibility with bin edges if provided
+        if bin_edges is not None and col_id in bin_edges:
+            expected_bins = len(list(bin_edges[col_id])) - 1
+            if len(reps_list) != expected_bins:
+                raise ValueError(
+                    f"Column {col_id}: {len(reps_list)} representatives provided, but "
+                    f"{expected_bins} expected"
+                )
 
 
 def validate_bins(bin_spec: BinEdgesDict, bin_reps: BinRepsDict) -> None:
@@ -53,20 +116,26 @@ def validate_bins(bin_spec: BinEdgesDict, bin_reps: BinRepsDict) -> None:
     Raises:
         ValueError: If bins are invalid.
     """
+    if bin_spec is None:
+        return
+
     for col, edges in bin_spec.items():
-        if len(edges) < 2:
+        edges_list = list(edges)
+        if len(edges_list) < 2:
             raise ValueError(f"Column {col} needs at least 2 bin edges")
 
         # Check if edges are sorted
-        if not all(edges[i] <= edges[i + 1] for i in range(len(edges) - 1)):
+        float_edges = [float(x) for x in edges_list]
+        if not all(float_edges[i] <= float_edges[i + 1] for i in range(len(float_edges) - 1)):
             raise ValueError(f"Bin edges for column {col} must be non-decreasing")
 
         # Check representatives match
-        if col in bin_reps:
-            n_bins = len(edges) - 1
-            if len(bin_reps[col]) != n_bins:
+        if bin_reps is not None and col in bin_reps:
+            n_bins = len(edges_list) - 1
+            reps_list = list(bin_reps[col])
+            if len(reps_list) != n_bins:
                 raise ValueError(
-                    f"Column {col}: {len(bin_reps[col])} representatives " f"for {n_bins} bins"
+                    f"Column {col}: {len(reps_list)} representatives " f"for {n_bins} bins"
                 )
 
 

@@ -80,12 +80,10 @@ class TestEqualWidthBinning:
         such as zero, negative numbers, and non-integer types.
         """
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
-            ewb = EqualWidthBinning(n_bins=0)
-            ewb._validate_params()
+            EqualWidthBinning(n_bins=0)
 
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
-            ewb = EqualWidthBinning(n_bins=-1)
-            ewb._validate_params()
+            EqualWidthBinning(n_bins=-1)
 
     def test_validate_params_invalid_bin_range(self):
         """Test parameter validation with invalid bin_range values.
@@ -94,12 +92,10 @@ class TestEqualWidthBinning:
         specifications such as reversed ranges (min > max).
         """
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
-            ewb = EqualWidthBinning(bin_range=(10, 5))  # min > max
-            ewb._validate_params()
+            EqualWidthBinning(bin_range=(10, 5))  # min > max
 
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
-            ewb = EqualWidthBinning(bin_range=(5, 5))  # min == max
-            ewb._validate_params()
+            EqualWidthBinning(bin_range=(5, 5))  # min == max
 
     def test_fit_transform_basic(self):
         """Test basic fit and transform functionality."""
@@ -302,19 +298,15 @@ class TestEqualWidthBinning:
 
     def test_joint_binning_invalid_n_bins(self):
         """Test joint binning with invalid n_bins."""
-        X = np.array([[1, 2], [3, 4]])
-        ewb = EqualWidthBinning(n_bins=0, fit_jointly=True)
-
+        # Now fails during initialization (better behavior!)
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
-            ewb.fit(X)
+            EqualWidthBinning(n_bins=0, fit_jointly=True)
 
     def test_per_column_invalid_n_bins(self):
         """Test per-column binning with invalid n_bins."""
-        X = np.array([[1, 2], [3, 4]])
-        ewb = EqualWidthBinning(n_bins=-1)
-
+        # Now fails during initialization (better behavior!)
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
-            ewb.fit(X)
+            EqualWidthBinning(n_bins=-1)
 
     def test_create_bins_constant_data_handling(self):
         """Test _create_equal_width_bins with constant data."""

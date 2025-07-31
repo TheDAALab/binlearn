@@ -127,6 +127,11 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
             - Automatically handles both numeric and categorical guidance data
             - Tree parameters are validated during initialization
         """
+        # Store parameters BEFORE calling super().__init__
+        # because parent class calls _validate_params() which needs these attributes
+        self.task_type = task_type
+        self.tree_params = tree_params
+
         # Remove fit_jointly from kwargs if present to avoid conflicts
         kwargs.pop("fit_jointly", None)
 
@@ -139,11 +144,8 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
             bin_representatives=bin_representatives,
             fit_jointly=False,  # Always use per-column fitting for supervised binning
             guidance_columns=guidance_columns,
+            **kwargs,
         )
-
-        # Store original parameters for sklearn clone compatibility (after super call)
-        self.task_type = task_type
-        self.tree_params = tree_params
 
         # Initialize tree storage attributes
         self._fitted_trees: Dict[ColumnId, Any] = {}

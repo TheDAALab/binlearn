@@ -59,16 +59,17 @@ from .sklearn_integration import SklearnCompatibilityMixin
 
 # Import utility functions
 from .bin_operations import (
-    ensure_bin_dict,
+    validate_bin_edges_format,
+    validate_bin_representatives_format,
     validate_bins,
     default_representatives,
     create_bin_masks,
 )
 
 from .flexible_bin_operations import (
-    ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
+    validate_flexible_bin_spec_format,
     is_missing_value,
     find_flexible_bin_for_value,
     calculate_flexible_bin_width,
@@ -130,14 +131,15 @@ __all__ = [
     # Sklearn integration
     "SklearnCompatibilityMixin",
     # Interval binning utilities
-    "ensure_bin_dict",
+    "validate_bin_edges_format",
+    "validate_bin_representatives_format",
     "validate_bins",
     "default_representatives",
     "create_bin_masks",
     # Flexible binning utilities
-    "ensure_flexible_bin_spec",
     "generate_default_flexible_representatives",
     "validate_flexible_bins",
+    "validate_flexible_bin_spec_format",
     "is_missing_value",
     "find_flexible_bin_for_value",
     "calculate_flexible_bin_width",

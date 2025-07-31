@@ -52,11 +52,12 @@ def test_init_with_bin_representatives():
     assert obj.bin_representatives == bin_reps
 
 
-@patch("binning.base._interval_binning_base.ensure_bin_dict")
+@patch("binning.base._interval_binning_base.validate_bin_edges_format")
 @patch("binning.base._interval_binning_base.validate_bins")
-def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
+def test_process_provided_bins_edges_only(mock_validate, mock_validate_format):
     """Test _process_provided_bins with edges only."""
-    mock_ensure.side_effect = lambda x: x  # Return input unchanged
+    mock_validate_format.return_value = None  # No validation errors
+    mock_validate.return_value = None  # No validation errors
 
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
@@ -66,17 +67,20 @@ def test_process_provided_bins_edges_only(mock_validate, mock_ensure):
         mock_default.return_value = [0.5, 1.5]
         obj._process_provided_bins()
 
-        mock_ensure.assert_called()
+        mock_validate_format.assert_called_once_with({0: [0, 1, 2]})
         mock_default.assert_called_once()
         mock_validate.assert_called_once()
         assert obj._fitted is True
 
 
-@patch("binning.base._interval_binning_base.ensure_bin_dict")
+@patch("binning.base._interval_binning_base.validate_bin_edges_format")
+@patch("binning.base._interval_binning_base.validate_bin_representatives_format")
 @patch("binning.base._interval_binning_base.validate_bins")
-def test_process_provided_bins_both(mock_validate, mock_ensure):
+def test_process_provided_bins_both(mock_validate, mock_validate_reps, mock_validate_edges):
     """Test _process_provided_bins with both edges and reps."""
-    mock_ensure.side_effect = lambda x: x
+    mock_validate_edges.return_value = None
+    mock_validate_reps.return_value = None
+    mock_validate.return_value = None
 
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
@@ -84,47 +88,35 @@ def test_process_provided_bins_both(mock_validate, mock_ensure):
 
     obj._process_provided_bins()
 
-    assert mock_ensure.call_count == 2
+    mock_validate_edges.assert_called_once_with({0: [0, 1, 2]})
+    mock_validate_reps.assert_called_once_with({0: [0.5, 1.5]}, {0: [0, 1, 2]})
     mock_validate.assert_called_once()
     assert obj._fitted is True
 
 
 def test_process_provided_bins_invalid_edges_type():
     """Test _process_provided_bins with invalid edge types."""
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: "invalid"}  # String instead of array-like
-
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.return_value = {0: "invalid"}
-
-        with pytest.raises(Exception):  # Should raise ConfigurationError
-            obj._process_provided_bins()
+    # Now fails during initialization due to validation
+    with pytest.raises(ConfigurationError, match="must be array-like"):
+        DummyIntervalBinning(bin_edges={0: "invalid"})
 
 
 def test_process_provided_bins_too_few_edges():
     """Test _process_provided_bins with too few edges."""
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [1]}  # Only one edge
-
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.return_value = {0: [1]}
-
-        with pytest.raises(Exception):  # Should raise ConfigurationError
-            obj._process_provided_bins()
+    # Now fails during initialization due to validation
+    with pytest.raises(ConfigurationError, match="needs at least 2 bin edges"):
+        DummyIntervalBinning(bin_edges={0: [1]})
 
 
 def test_process_provided_bins_error():
     """Test _process_provided_bins error handling."""
     obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.side_effect = Exception("Test error")
+    # Set invalid bin_edges that will cause validation to fail
+    obj.bin_edges = {0: "invalid_edges"}  # String instead of list
 
-        with pytest.raises(
-            ConfigurationError, match="Failed to process provided bin specifications"
-        ):
-            obj._process_provided_bins()
+    with pytest.raises(ConfigurationError, match="must be array-like"):
+        obj._process_provided_bins()
 
 
 @patch.object(DummyIntervalBinning, "_process_user_specifications")
@@ -624,32 +616,24 @@ def test_fit_per_column_binning_error():
         obj._fit_per_column(X, columns)
 
 
-def test_process_provided_bins_binning_error():
-    """Test _process_provided_bins re-raises BinningError unchanged."""
+def test_process_provided_bins_real_error_scenario():
+    """Test _process_provided_bins with actual validation errors."""
     obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: "invalid_string"}  # Invalid type
 
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.side_effect = BinningError("Bins validation error")
-
-        # BinningError should be re-raised unchanged
-        with pytest.raises(BinningError, match="Bins validation error"):
-            obj._process_provided_bins()
+    # This should raise a real validation error
+    with pytest.raises(ConfigurationError, match="must be array-like"):
+        obj._process_provided_bins()
 
 
-def test_process_provided_bins_configuration_error():
-    """Test _process_provided_bins wraps generic exceptions in ConfigurationError."""
+def test_process_provided_bins_insufficient_edges():
+    """Test _process_provided_bins with insufficient bin edges."""
     obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [1]}  # Only one edge, need at least 2
 
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.side_effect = ValueError("Generic validation error")
-
-        # Generic exception should be wrapped in ConfigurationError
-        with pytest.raises(
-            ConfigurationError, match="Failed to process provided bin specifications"
-        ):
-            obj._process_provided_bins()
+    # This should raise a real validation error
+    with pytest.raises(ConfigurationError, match="needs at least 2 bin edges"):
+        obj._process_provided_bins()
 
 
 def test_finalize_fitting_default_representatives():
@@ -697,17 +681,14 @@ def test_fit_jointly_binning_error():
         obj._fit_jointly(X, columns)
 
 
-def test_process_user_specifications_binning_error():
-    """Test _process_user_specifications re-raises BinningError unchanged."""
+def test_process_user_specifications_invalid_edges():
+    """Test _process_user_specifications with invalid bin edges."""
     obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges = {0: [3, 1, 2]}  # Unsorted edges
 
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.side_effect = BinningError("User specs validation error")
-
-        # BinningError should be re-raised unchanged
-        with pytest.raises(BinningError, match="User specs validation error"):
-            obj._process_user_specifications([0, 1])
+    # This should raise a real validation error
+    with pytest.raises(ConfigurationError, match="must be sorted"):
+        obj._process_user_specifications([0, 1])
 
 
 def test_inverse_transform_method():
@@ -778,14 +759,39 @@ def test_fit_jointly_with_string_columns_and_nan():
     assert "numeric_col" in obj._bin_edges
 
 
-def test_process_user_specifications_generic_error():
-    """Test _process_user_specifications wraps generic errors to cover line 188."""
+def test_process_user_specifications_non_numeric_edges():
+    """Test _process_user_specifications with non-numeric edges."""
+    obj = DummyIntervalBinning()
+    obj.bin_edges = {0: ["a", "b", "c"]}  # Non-numeric edges
+
+    # This should raise a real validation error
+    with pytest.raises(ConfigurationError, match="must be numeric"):
+        obj._process_user_specifications([0, 1])
+
+
+def test_process_provided_bins_non_binning_exception():
+    """Test _process_provided_bins with non-BinningError exception re-raising."""
     obj = DummyIntervalBinning()
     obj.bin_edges = {0: [0, 1, 2]}
 
-    with patch("binning.base._interval_binning_base.ensure_bin_dict") as mock_ensure:
-        mock_ensure.side_effect = ValueError("Generic user specs error")
+    # Mock to raise a non-BinningError exception
+    with patch("binning.base._interval_binning_base.validate_bin_edges_format") as mock_validate:
+        mock_validate.side_effect = ValueError("Some unexpected validation error")
 
-        # Generic exception should be wrapped in ConfigurationError (line 188)
+        with pytest.raises(
+            ConfigurationError, match="Failed to process provided bin specifications"
+        ):
+            obj._process_provided_bins()
+
+
+def test_process_user_specifications_non_binning_exception():
+    """Test _process_user_specifications with non-BinningError exception re-raising."""
+    obj = DummyIntervalBinning()
+    obj.bin_edges = {0: [0, 1, 2]}
+
+    # Mock to raise a non-BinningError exception
+    with patch("binning.base._interval_binning_base.validate_bin_edges_format") as mock_validate:
+        mock_validate.side_effect = RuntimeError("Some unexpected runtime error")
+
         with pytest.raises(ConfigurationError, match="Failed to process bin specifications"):
-            obj._process_user_specifications([0, 1])
+            obj._process_user_specifications([0])

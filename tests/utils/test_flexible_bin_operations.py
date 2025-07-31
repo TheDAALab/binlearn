@@ -3,9 +3,9 @@
 import pytest
 import numpy as np
 from binning.utils.flexible_bin_operations import (
-    ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
+    validate_flexible_bin_spec_format,
     is_missing_value,
     find_flexible_bin_for_value,
     calculate_flexible_bin_width,
@@ -15,53 +15,91 @@ from binning.utils.flexible_bin_operations import (
 from binning.utils.constants import MISSING_VALUE
 
 
-class TestEnsureFlexibleBinSpec:
-    """Test ensure_flexible_bin_spec function."""
+class TestValidateFlexibleBinSpecFormat:
+    """Test validate_flexible_bin_spec_format function."""
 
-    def test_none_input(self):
-        """Test with None input."""
-        result = ensure_flexible_bin_spec(None)
-        assert not result
+    def test_valid_bin_spec(self):
+        """Test that valid bin specifications pass validation."""
+        bin_spec = {
+            "col1": [1, 2, 3],  # Singleton bins
+            "col2": [(0, 1), (1, 2), (2, 3)],  # Interval bins
+            "col3": [1, (2, 3), 4],  # Mixed bins
+        }
+        # Should not raise any exception
+        validate_flexible_bin_spec_format(bin_spec)
 
-    def test_dict_input(self):
-        """Test with valid dictionary input in new simplified format."""
-        bin_spec = {"col1": [1, (2, 3)], "col2": [5]}
-        result = ensure_flexible_bin_spec(bin_spec)
-        expected = {"col1": [1, (2, 3)], "col2": [5]}
-        assert result == expected
-
-    def test_dict_input_new_format(self):
-        """Test with new simplified format."""
-        bin_spec = {"col1": [1, (2, 3)], "col2": [5]}
-        result = ensure_flexible_bin_spec(bin_spec)
-        assert result == bin_spec
-
-    def test_invalid_input_type(self):
-        """Test with invalid input type."""
+    def test_invalid_bin_spec_not_dict(self):
+        """Test that non-dict bin specs raise ValueError."""
         with pytest.raises(ValueError, match="bin_spec must be a dictionary"):
-            ensure_flexible_bin_spec([1, 2, 3])
+            validate_flexible_bin_spec_format([1, 2, 3])  # type: ignore
 
-    def test_string_input(self):
-        """Test with string input."""
-        with pytest.raises(ValueError, match="bin_spec must be a dictionary"):
-            ensure_flexible_bin_spec("invalid")
+    def test_invalid_bin_defs_not_list(self):
+        """Test that non-list bin definitions raise ValueError."""
+        bin_spec = {"col1": 123}  # Should be list/tuple
+        with pytest.raises(ValueError, match="must be a list or tuple"):
+            validate_flexible_bin_spec_format(bin_spec)  # type: ignore
 
-    def test_empty_dict(self):
-        """Test with empty dictionary."""
-        result = ensure_flexible_bin_spec({})
-        assert not result
+    def test_empty_bin_defs(self):
+        """Test that empty bin definitions raise ValueError."""
+        bin_spec = {"col1": []}
+        with pytest.raises(ValueError, match="cannot be empty"):
+            validate_flexible_bin_spec_format(bin_spec)
 
-    def test_invalid_bin_definition_type(self):
-        """Test with invalid bin definition type (not int, float, tuple, or dict)."""
-        bin_spec = {"col1": [1, "invalid_string", 2]}  # String is invalid
-        with pytest.raises(ValueError, match="Invalid bin definition: invalid_string"):
-            ensure_flexible_bin_spec(bin_spec)
+    def test_invalid_interval_length(self):
+        """Test that intervals with wrong length raise ValueError."""
+        bin_spec = {"col1": [(1, 2, 3)]}  # Should be (min, max)
+        with pytest.raises(ValueError, match="Interval must be \\(min, max\\)"):
+            validate_flexible_bin_spec_format(bin_spec)
 
-    def test_invalid_bin_definition_list(self):
-        """Test with invalid bin definition type (list)."""
-        bin_spec = {"col1": [1, [2, 3], 4]}  # List is invalid
-        with pytest.raises(ValueError, match="Invalid bin definition: \\[2, 3\\]"):
-            ensure_flexible_bin_spec(bin_spec)
+    def test_invalid_interval_types(self):
+        """Test that intervals with non-numeric values raise ValueError."""
+        bin_spec = {"col1": [("a", "b")]}
+        with pytest.raises(ValueError, match="Interval values must be numeric"):
+            validate_flexible_bin_spec_format(bin_spec)
+
+    def test_invalid_interval_ordering(self):
+        """Test that intervals with min >= max raise ValueError."""
+        bin_spec = {"col1": [(2, 1)]}  # min > max
+        with pytest.raises(ValueError, match="must be < max"):
+            validate_flexible_bin_spec_format(bin_spec)
+
+    def test_invalid_interval_equal_bounds(self):
+        """Test that intervals with min == max raise ValueError."""
+        bin_spec = {"col1": [(2, 2)]}  # min == max
+        with pytest.raises(ValueError, match="must be < max"):
+            validate_flexible_bin_spec_format(bin_spec)
+
+    def test_invalid_bin_type(self):
+        """Test that invalid bin types raise ValueError."""
+        bin_spec = {"col1": ["invalid"]}
+        with pytest.raises(ValueError, match="must be either a numeric scalar"):
+            validate_flexible_bin_spec_format(bin_spec)
+
+    def test_finite_bounds_check_disabled(self):
+        """Test that infinite bounds are allowed when check_finite_bounds=False."""
+        bin_spec = {"col1": [float("inf"), (-float("inf"), 0), (0, float("inf"))]}
+        # Should not raise exception with default check_finite_bounds=False
+        validate_flexible_bin_spec_format(bin_spec, check_finite_bounds=False)
+
+    def test_finite_bounds_check_enabled_singleton(self):
+        """Test that infinite singleton values raise ValueError when check_finite_bounds=True."""
+        bin_spec = {"col1": [float("inf")]}
+        with pytest.raises(ValueError, match="Singleton value must be finite"):
+            validate_flexible_bin_spec_format(bin_spec, check_finite_bounds=True)
+
+    def test_finite_bounds_check_enabled_interval(self):
+        """Test that infinite interval bounds raise ValueError when check_finite_bounds=True."""
+        bin_spec = {"col1": [(0, float("inf"))]}
+        with pytest.raises(ValueError, match="Interval bounds must be finite"):
+            validate_flexible_bin_spec_format(bin_spec, check_finite_bounds=True)
+
+    def test_finite_bounds_valid(self):
+        """Test that finite bounds pass validation when check_finite_bounds=True."""
+        bin_spec = {
+            "col1": [1.5, (0.0, 2.0), 3.0],
+        }
+        # Should not raise exception
+        validate_flexible_bin_spec_format(bin_spec, check_finite_bounds=True)
 
 
 class TestGenerateDefaultFlexibleRepresentatives:
@@ -136,7 +174,8 @@ class TestValidateFlexibleBins:
         bin_spec = {"col1": [1, "invalid"]}  # Invalid string bin
         bin_reps = {"col1": [1.0, 2.0]}
         with pytest.raises(
-            ValueError, match="Bin must be either a scalar \\(singleton\\) or tuple \\(interval\\)"
+            ValueError,
+            match="Bin must be either a numeric scalar \\(singleton\\) or tuple \\(interval\\)",
         ):
             validate_flexible_bins(bin_spec, bin_reps)
 
@@ -151,7 +190,7 @@ class TestValidateFlexibleBins:
         """Test with invalid interval order (min > max)."""
         bin_spec = {"col1": [(3, 1)]}  # min > max
         bin_reps = {"col1": [2.0]}
-        with pytest.raises(ValueError, match="Interval min must be <= max"):
+        with pytest.raises(ValueError, match="Interval min \\(3\\) must be < max \\(1\\)"):
             validate_flexible_bins(bin_spec, bin_reps)
 
     def test_invalid_interval_values(self):
@@ -183,21 +222,24 @@ class TestIsMissingValue:
         assert is_missing_value(None) is True
 
     def test_string_values(self):
-        """Test with string values."""
-        assert is_missing_value("string") is True
-        assert is_missing_value("1.5") is False  # String numbers can be converted to float
-        assert is_missing_value("") is True
+        """Test with string values - now considered non-missing (not supported in
+        flexible binning)."""
+        assert is_missing_value("string") is False
+        assert is_missing_value("1.5") is False
+        assert is_missing_value("") is False
 
     def test_non_convertible_types(self):
-        """Test with non-convertible types."""
-        assert is_missing_value([1, 2, 3]) is True
-        assert is_missing_value({"key": "value"}) is True
-        assert is_missing_value(object()) is True
+        """Test with non-convertible types - now considered non-missing (not supported in
+        flexible binning)."""
+        assert is_missing_value([1, 2, 3]) is False
+        assert is_missing_value({"key": "value"}) is False
+        assert is_missing_value(object()) is False
 
     def test_boolean_values(self):
-        """Test with boolean values."""
-        assert is_missing_value(True) is False  # True converts to 1.0
-        assert is_missing_value(False) is False  # False converts to 0.0
+        """Test with boolean values - now considered non-missing (not supported in
+        flexible binning)."""
+        assert is_missing_value(True) is False
+        assert is_missing_value(False) is False
 
 
 class TestFindFlexibleBinForValue:

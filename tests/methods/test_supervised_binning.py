@@ -54,8 +54,8 @@ class TestSupervisedBinningInitialization:
         assert binning.guidance_columns == [2]
 
     def test_invalid_task_type(self):
-        """Test validation of task_type parameter."""
-        with pytest.raises(ConfigurationError, match="task_type must be"):
+        """Test initialization with invalid task type."""
+        with pytest.raises(ConfigurationError, match="Invalid task_type"):
             SupervisedBinning(task_type="invalid")
 
     def test_tree_params_validation(self):
@@ -776,7 +776,7 @@ class TestSupervisedBinningErrorHandling:
     def test_invalid_tree_params(self):
         """Test with invalid tree parameters."""
         # Should raise error during initialization with invalid params
-        with pytest.raises(ConfigurationError, match="Invalid tree_params"):
+        with pytest.raises(ConfigurationError, match="Invalid tree parameters"):
             SupervisedBinning(tree_params={"invalid_param": 123})
 
     def test_extreme_values_handling(self):

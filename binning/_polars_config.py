@@ -4,9 +4,11 @@ This module attempts to import polars and sets a flag indicating its availabilit
 """
 
 try:
-    import polars as pl  # pylint: disable=import-error,unused-import  # noqa
+    # pylint: disable=import-error,unused-import
+    import polars as pl  # pragma: no cover
 
-    POLARS_AVAILABLE = True
+    POLARS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover
-    pl = None  # pylint: disable=invalid-name  # pragma: no cover
+    # pylint: disable=invalid-name
+    pl = None  # pragma: no cover
     POLARS_AVAILABLE = False  # pragma: no cover

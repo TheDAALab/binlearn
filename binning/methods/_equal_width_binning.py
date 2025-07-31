@@ -103,6 +103,11 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             >>> edges = {0: [0, 25, 50, 75, 100]}
             >>> binner = EqualWidthBinning(bin_edges=edges)
         """
+        # Store equal-width specific parameters BEFORE calling super().__init__
+        # because parent class calls _validate_params() which needs these attributes
+        self.n_bins = n_bins
+        self.bin_range = bin_range
+
         super().__init__(
             clip=clip,
             preserve_dataframe=preserve_dataframe,
@@ -111,10 +116,6 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             fit_jointly=fit_jointly,
             **kwargs,
         )
-
-        # Store equal-width specific parameters
-        self.n_bins = n_bins
-        self.bin_range = bin_range
 
     def _calculate_bins(
         self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
