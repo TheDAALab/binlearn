@@ -11,20 +11,35 @@ from .constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 # Import type aliases for re-export
 from .types import (
     # Column and data types
-    ColumnId, ColumnList, OptionalColumnList, GuidanceColumns, ArrayLike,
+    ColumnId,
+    ColumnList,
+    OptionalColumnList,
+    GuidanceColumns,
+    ArrayLike,
     # Interval binning types
-    BinEdges, BinEdgesDict, BinReps, BinRepsDict,
-    OptionalBinEdgesDict, OptionalBinRepsDict,
+    BinEdges,
+    BinEdgesDict,
+    BinReps,
+    BinRepsDict,
+    OptionalBinEdgesDict,
+    OptionalBinRepsDict,
     # Flexible binning types
-    FlexibleBinDef, FlexibleBinDefs, FlexibleBinSpec, OptionalFlexibleBinSpec,
+    FlexibleBinDef,
+    FlexibleBinDefs,
+    FlexibleBinSpec,
+    OptionalFlexibleBinSpec,
     # Calculation return types
-    IntervalBinCalculationResult, FlexibleBinCalculationResult,
+    IntervalBinCalculationResult,
+    FlexibleBinCalculationResult,
     # Count and validation types
     BinCountDict,
     # Numpy array types
-    Array1D, Array2D, BooleanMask,
+    Array1D,
+    Array2D,
+    BooleanMask,
     # Parameter types
-    FitParams, JointParams,
+    FitParams,
+    JointParams,
 )
 
 # Import error classes
@@ -50,7 +65,7 @@ from .bin_operations import (
     create_bin_masks,
 )
 
-from .flexible_binning import (
+from .flexible_bin_operations import (
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
@@ -79,30 +94,46 @@ __all__ = [
     "MISSING_VALUE",
     "ABOVE_RANGE",
     "BELOW_RANGE",
-
     # Type aliases
-    "ColumnId", "ColumnList", "OptionalColumnList", "GuidanceColumns", "ArrayLike",
-    "BinEdges", "BinEdgesDict", "BinReps", "BinRepsDict",
-    "OptionalBinEdgesDict", "OptionalBinRepsDict",
-    "FlexibleBinDef", "FlexibleBinDefs", "FlexibleBinSpec", "OptionalFlexibleBinSpec",
-    "IntervalBinCalculationResult", "FlexibleBinCalculationResult",
-    "BinCountDict", "Array1D", "Array2D", "BooleanMask",
-    "FitParams", "JointParams",
-
+    "ColumnId",
+    "ColumnList",
+    "OptionalColumnList",
+    "GuidanceColumns",
+    "ArrayLike",
+    "BinEdges",
+    "BinEdgesDict",
+    "BinReps",
+    "BinRepsDict",
+    "OptionalBinEdgesDict",
+    "OptionalBinRepsDict",
+    "FlexibleBinDef",
+    "FlexibleBinDefs",
+    "FlexibleBinSpec",
+    "OptionalFlexibleBinSpec",
+    "IntervalBinCalculationResult",
+    "FlexibleBinCalculationResult",
+    "BinCountDict",
+    "Array1D",
+    "Array2D",
+    "BooleanMask",
+    "FitParams",
+    "JointParams",
     # Error classes
-    "BinningError", "InvalidDataError", "ConfigurationError",
-    "FittingError", "TransformationError", "ValidationError",
-    "ValidationMixin", "DataQualityWarning",
-
+    "BinningError",
+    "InvalidDataError",
+    "ConfigurationError",
+    "FittingError",
+    "TransformationError",
+    "ValidationError",
+    "ValidationMixin",
+    "DataQualityWarning",
     # Sklearn integration
     "SklearnCompatibilityMixin",
-
     # Interval binning utilities
     "ensure_bin_dict",
     "validate_bins",
     "default_representatives",
     "create_bin_masks",
-
     # Flexible binning utilities
     "ensure_flexible_bin_spec",
     "generate_default_flexible_representatives",
@@ -112,7 +143,6 @@ __all__ = [
     "calculate_flexible_bin_width",
     "transform_value_to_flexible_bin",
     "get_flexible_bin_count",
-
     # Data handling utilities
     "prepare_array",
     "return_like_input",

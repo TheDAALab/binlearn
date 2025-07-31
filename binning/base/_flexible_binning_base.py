@@ -27,7 +27,7 @@ from ..utils.types import (
 )
 from ._general_binning_base import GeneralBinningBase
 from ..utils.bin_operations import ensure_bin_dict
-from ..utils.flexible_binning import (
+from ..utils.flexible_bin_operations import (
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
@@ -129,9 +129,8 @@ class FlexibleBinningBase(GeneralBinningBase):
                 self._bin_reps = ensure_bin_dict(self.bin_representatives)
             else:
                 # Generate default representatives for provided specs
-                for col in self._bin_spec:
+                for col, bin_defs in self._bin_spec.items():
                     if col not in self._bin_reps:
-                        bin_defs = self._bin_spec[col]
                         self._bin_reps[col] = generate_default_flexible_representatives(bin_defs)
 
             # Validate the bins
@@ -317,9 +316,9 @@ class FlexibleBinningBase(GeneralBinningBase):
                 specifications are inconsistent.
         """
         # Generate default representatives for any missing ones
-        for col in self._bin_spec:
+        for col, bin_spec in self._bin_spec.items():
             if col not in self._bin_reps:
-                self._bin_reps[col] = generate_default_flexible_representatives(self._bin_spec[col])
+                self._bin_reps[col] = generate_default_flexible_representatives(bin_spec)
 
         # Validate the bins
         validate_flexible_bins(self._bin_spec, self._bin_reps)

@@ -124,7 +124,8 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
             - Supports both per-column and joint fitting strategies
             - Joint fitting creates consistent bins across all features using all unique values
             - Only supports numeric data; non-numeric data will raise errors
-            - Input format simplified: [1, 2, (3, 5)] but internally stored as dicts for compatibility
+            - Input format simplified: [1, 2, (3, 5)] but internally stored as dicts for
+                compatibility
         """
         super().__init__(
             bin_spec=bin_spec,

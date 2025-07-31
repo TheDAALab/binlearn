@@ -51,7 +51,7 @@ from ..utils.bin_operations import (
     default_representatives,
     create_bin_masks,
 )
-from ..utils.flexible_binning import (
+from ..utils.flexible_bin_operations import (
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,

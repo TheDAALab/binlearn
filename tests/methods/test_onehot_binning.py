@@ -74,13 +74,13 @@ class TestOneHotBinningInitialization:
         binning = OneHotBinning(
             max_unique_values=50,
             preserve_dataframe=True,
-            bin_spec={"col1": [{"singleton": 1.0}]},
+            bin_spec={"col1": [1.0]},  # New simplified format
             bin_representatives={"col1": [1.0]},
         )
         assert binning.max_unique_values == 50
         assert binning.preserve_dataframe is True
         assert binning.fit_jointly is False  # Default from config
-        assert binning.bin_spec == {"col1": [{"singleton": 1.0}]}
+        assert binning.bin_spec == {"col1": [1.0]}  # New simplified format
         assert binning.bin_representatives == {"col1": [1.0]}
 
     def test_parameter_validation(self):

@@ -54,15 +54,6 @@ def ensure_flexible_bin_spec(bin_spec: Any) -> FlexibleBinSpec:
                 elif isinstance(bin_def, tuple):
                     # Already in simplified format
                     converted_bin_defs.append(bin_def)
-                elif isinstance(bin_def, dict):
-                    # Convert old dict format to simplified format
-                    if "singleton" in bin_def:
-                        converted_bin_defs.append(bin_def["singleton"])
-                    elif "interval" in bin_def:
-                        interval = bin_def["interval"]
-                        converted_bin_defs.append(tuple(interval))
-                    else:
-                        raise ValueError(f"Invalid bin definition: {bin_def}")
                 else:
                     raise ValueError(f"Invalid bin definition: {bin_def}")
             converted_spec[col] = converted_bin_defs
@@ -154,7 +145,7 @@ def _validate_single_flexible_bin_def(bin_def: FlexibleBinDef, col: ColumnId, bi
     if isinstance(bin_def, (int, float)):
         # Singleton bin - no additional validation needed
         return
-    elif isinstance(bin_def, tuple):
+    if isinstance(bin_def, tuple):
         if len(bin_def) != 2:
             raise ValueError(f"Column {col}, bin {bin_idx}: Interval must be (min, max)")
 
@@ -166,7 +157,8 @@ def _validate_single_flexible_bin_def(bin_def: FlexibleBinDef, col: ColumnId, bi
             raise ValueError(f"Column {col}, bin {bin_idx}: Interval min must be <= max")
     else:
         raise ValueError(
-            f"Column {col}, bin {bin_idx}: Bin must be either a scalar (singleton) or tuple (interval)"
+            f"Column {col}, bin {bin_idx}: Bin must be either a scalar (singleton) or "
+            f"tuple (interval)"
         )
 
 
@@ -247,12 +239,12 @@ def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     if isinstance(bin_def, (int, float)):
         # Singleton bin has zero width
         return 0.0
-    elif isinstance(bin_def, tuple) and len(bin_def) == 2:
+    if isinstance(bin_def, tuple) and len(bin_def) == 2:
         # Interval bin
         left, right = bin_def
         return right - left
-    else:
-        raise ValueError(f"Unknown bin definition: {bin_def}")
+
+    raise ValueError(f"Unknown bin definition: {bin_def}")
 
 
 def transform_value_to_flexible_bin(value: Any, bin_defs: FlexibleBinDefs) -> int:

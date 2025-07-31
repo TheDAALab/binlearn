@@ -521,7 +521,7 @@ def test_get_params_with_fitted_attributes():
     obj._fitted = True
 
     # Add some fitted attributes to test lines 294-298
-    setattr(obj, "bin_spec_", {0: [{"singleton": 1}]})
+    setattr(obj, "bin_spec_", {0: [1]})  # New simplified format
     setattr(obj, "bin_representatives_", {0: [1.0]})
     setattr(obj, "bin_edges_", {0: [0, 1, 2]})
 
@@ -531,7 +531,7 @@ def test_get_params_with_fitted_attributes():
     assert "bin_spec" in params
     assert "bin_representatives" in params
     assert "bin_edges" in params
-    assert params["bin_spec"] == {0: [{"singleton": 1}]}
+    assert params["bin_spec"] == {0: [1]}  # New simplified format
     assert params["bin_representatives"] == {0: [1.0]}
     assert params["bin_edges"] == {0: [0, 1, 2]}
 

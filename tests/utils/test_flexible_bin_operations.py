@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from binning.utils.flexible_binning import (
+from binning.utils.flexible_bin_operations import (
     ensure_flexible_bin_spec,
     generate_default_flexible_representatives,
     validate_flexible_bins,
@@ -21,11 +21,11 @@ class TestEnsureFlexibleBinSpec:
     def test_none_input(self):
         """Test with None input."""
         result = ensure_flexible_bin_spec(None)
-        assert result == {}
+        assert not result
 
     def test_dict_input(self):
-        """Test with valid dictionary input - converts old format to new format."""
-        bin_spec = {"col1": [{"singleton": 1}, {"interval": [2, 3]}], "col2": [{"singleton": 5}]}
+        """Test with valid dictionary input in new simplified format."""
+        bin_spec = {"col1": [1, (2, 3)], "col2": [5]}
         result = ensure_flexible_bin_spec(bin_spec)
         expected = {"col1": [1, (2, 3)], "col2": [5]}
         assert result == expected
@@ -50,6 +50,18 @@ class TestEnsureFlexibleBinSpec:
         """Test with empty dictionary."""
         result = ensure_flexible_bin_spec({})
         assert not result
+
+    def test_invalid_bin_definition_type(self):
+        """Test with invalid bin definition type (not int, float, tuple, or dict)."""
+        bin_spec = {"col1": [1, "invalid_string", 2]}  # String is invalid
+        with pytest.raises(ValueError, match="Invalid bin definition: invalid_string"):
+            ensure_flexible_bin_spec(bin_spec)
+
+    def test_invalid_bin_definition_list(self):
+        """Test with invalid bin definition type (list)."""
+        bin_spec = {"col1": [1, [2, 3], 4]}  # List is invalid
+        with pytest.raises(ValueError, match="Invalid bin definition: \\[2, 3\\]"):
+            ensure_flexible_bin_spec(bin_spec)
 
 
 class TestGenerateDefaultFlexibleRepresentatives:

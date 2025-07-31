@@ -35,7 +35,7 @@ def test_init_default():
 
 def test_init_with_bin_spec():
     """Test initialization with bin_spec provided."""
-    bin_spec = {0: [{"singleton": 1}]}
+    bin_spec = {0: [1]}  # New simplified format
 
     with patch.object(DummyFlexibleBinning, "_process_provided_flexible_bins") as mock_process:
         obj = DummyFlexibleBinning(bin_spec=bin_spec)
@@ -54,10 +54,10 @@ def test_init_with_bin_representatives():
 @patch("binning.base._flexible_binning_base.validate_flexible_bins")
 def test_process_provided_flexible_bins_spec_only(mock_validate, mock_ensure_spec):
     """Test _process_provided_flexible_bins with spec only."""
-    mock_ensure_spec.return_value = {0: [{"singleton": 1}]}
+    mock_ensure_spec.return_value = {0: [1]}  # New simplified format
 
     obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [{"singleton": 1}]}
+    obj.bin_spec = {0: [1]}  # New simplified format
     obj.bin_representatives = None
 
     with patch(
@@ -77,11 +77,11 @@ def test_process_provided_flexible_bins_spec_only(mock_validate, mock_ensure_spe
 @patch("binning.base._flexible_binning_base.validate_flexible_bins")
 def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mock_ensure_spec):
     """Test _process_provided_flexible_bins with both spec and reps."""
-    mock_ensure_spec.return_value = {0: [{"singleton": 1}]}
+    mock_ensure_spec.return_value = {0: [1]}  # New simplified format
     mock_ensure_dict.return_value = {0: [1.0]}
 
     obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [{"singleton": 1}]}
+    obj.bin_spec = {0: [1]}  # New simplified format
     obj.bin_representatives = {0: [1.0]}
 
     obj._process_provided_flexible_bins()
@@ -95,7 +95,7 @@ def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mo
 def test_process_provided_flexible_bins_error():
     """Test _process_provided_flexible_bins error handling."""
     obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [{"singleton": 1}]}
+    obj.bin_spec = {0: [1]}  # New simplified format
 
     with patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec") as mock_ensure:
         mock_ensure.side_effect = Exception("Test error")
@@ -139,14 +139,14 @@ def test_fit_per_column_with_existing_specs(mock_process):
     even when existing specs are present.
     """
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [{"singleton": 1}]}
+    obj._bin_spec = {0: [1]}  # New simplified format
     obj._bin_reps = {0: [1.0]}
 
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
 
     with patch.object(obj, "_calculate_flexible_bins") as mock_calc:
-        mock_calc.return_value = ([{"singleton": 2}], [2.0])
+        mock_calc.return_value = ([2], [2.0])  # New simplified format
 
         with patch.object(obj, "_finalize_fitting"):
             obj._fit_per_column(X, columns)
@@ -194,7 +194,7 @@ def test_fit_per_column_reraise_known_errors():
 def test_fit_jointly_success(mock_finalize, mock_calc_jointly, mock_process):
     """Test _fit_jointly successful execution."""
     # Configure the mock to return the expected tuple
-    mock_calc_jointly.return_value = ([{"singleton": 0}], [0.0])
+    mock_calc_jointly.return_value = ([0], [0.0])  # New simplified format
 
     obj = DummyFlexibleBinning()
     X = np.array([[1, 2], [3, 4]])
@@ -275,7 +275,7 @@ def test_transform_columns(mock_transform):
     mock_transform.return_value = 0  # Return bin index 0
 
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [{"singleton": 1}], 1: [{"singleton": 2}]}
+    obj._bin_spec = {0: [1], 1: [2]}  # New simplified format
     obj._bin_reps = {0: [1.0], 1: [2.0]}
 
     X = np.array([[1, 2], [3, 4]])
@@ -304,7 +304,7 @@ def test_transform_columns_missing_key():
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [{"singleton": 1}]}
+    obj._bin_spec = {0: [1]}  # New simplified format
     obj._bin_reps = {0: [1.0]}
 
     obj._finalize_fitting()
@@ -315,7 +315,7 @@ def test_finalize_fitting(mock_validate):
 def test_finalize_fitting_error():
     """Test _finalize_fitting error handling."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [{"singleton": 1}]}
+    obj._bin_spec = {0: [1]}  # New simplified format
     obj._bin_reps = {0: [1.0]}
 
     with patch("binning.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
@@ -329,17 +329,17 @@ def test_finalize_fitting_error():
 def test_process_user_specifications():
     """Test _process_user_specifications method."""
     obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [{"singleton": 1}]}
+    obj.bin_spec = {0: [1]}  # New simplified format
     obj.bin_representatives = {0: [1.0]}
 
     with patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec") as mock_spec:
         with patch("binning.base._flexible_binning_base.ensure_bin_dict") as mock_dict:
-            mock_spec.return_value = {0: [{"singleton": 1}]}
+            mock_spec.return_value = {0: [1]}  # New simplified format
             mock_dict.return_value = {0: [1.0]}
 
             obj._process_user_specifications([0, 1])
 
-            mock_spec.assert_called_once_with({0: [{"singleton": 1}]})
+            mock_spec.assert_called_once_with({0: [1]})  # New simplified format
             mock_dict.assert_called_once_with({0: [1.0]})
 
 
@@ -395,7 +395,7 @@ def test_inverse_transform_columns_missing_key():
 
 def test_get_binning_params():
     """Test _get_binning_params method with automatic discovery."""
-    obj = DummyFlexibleBinning(bin_spec={0: [{"singleton": 1}]})
+    obj = DummyFlexibleBinning(bin_spec={0: [1]})  # New simplified format
     params = obj._get_binning_params()
 
     # With automatic discovery, these should be included
@@ -407,12 +407,12 @@ def test_get_fitted_params():
     """Test _get_fitted_params method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [{"singleton": 1}]}
+    obj._bin_spec = {0: [1]}  # New simplified format
     obj._bin_reps = {0: [1.0]}
 
     params = obj._get_fitted_params()
 
-    assert params["bin_spec"] == {0: [{"singleton": 1}]}
+    assert params["bin_spec"] == {0: [1]}  # New simplified format
     assert params["bin_representatives"] == {0: [1.0]}
 
 
@@ -421,7 +421,7 @@ def test_handle_bin_params():
     obj = DummyFlexibleBinning()
 
     # Test with bin_spec change
-    reset = obj._handle_bin_params({"bin_spec": {0: [{"singleton": 1}]}})
+    reset = obj._handle_bin_params({"bin_spec": {0: [1]}})  # New simplified format
     assert reset is True
 
     # Test with bin_representatives change
@@ -436,7 +436,7 @@ def test_handle_bin_params():
 def test_finalize_fitting_with_missing_reps():
     """Test _finalize_fitting generates missing representatives."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [{"singleton": 1}], 1: [{"singleton": 2}]}
+    obj._bin_spec = {0: [1], 1: [2]}  # New simplified format
     obj._bin_reps = {0: [1.0]}  # Missing reps for column 1
 
     with patch(
@@ -447,7 +447,7 @@ def test_finalize_fitting_with_missing_reps():
             obj._finalize_fitting()
 
         # Should generate reps for column 1 only
-        mock_gen.assert_called_once_with([{"singleton": 2}])
+        mock_gen.assert_called_once_with([2])  # New simplified format
         assert obj._bin_reps[1] == [2.0]
 
 
@@ -466,10 +466,10 @@ def test_ensure_flexible_bin_dict_deprecated():
     obj = DummyFlexibleBinning()
 
     with patch("binning.base._flexible_binning_base.ensure_flexible_bin_spec") as mock_ensure:
-        mock_ensure.return_value = {0: [{"singleton": 1}]}
+        mock_ensure.return_value = {0: [1]}  # New simplified format
 
-        result = obj._ensure_flexible_bin_dict({0: [{"singleton": 1}]})
-        assert result == {0: [{"singleton": 1}]}
+        result = obj._ensure_flexible_bin_dict({0: [1]})  # New simplified format
+        assert result == {0: [1]}  # New simplified format
         mock_ensure.assert_called_once()
 
 
@@ -482,9 +482,7 @@ def test_generate_default_flexible_representatives():
     ) as mock_gen:
         mock_gen.return_value = [1.0, 2.0]
 
-        result = obj._generate_default_flexible_representatives(
-            [{"singleton": 1}, {"singleton": 2}]
-        )
+        result = obj._generate_default_flexible_representatives([1, 2])  # New simplified format
         assert result == [1.0, 2.0]
         mock_gen.assert_called_once()
 
@@ -493,7 +491,7 @@ def test_lookup_bin_widths():
     """Test lookup_bin_widths method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [{"interval": [1, 3]}, {"singleton": 5}]}
+    obj._bin_spec = {0: [(1, 3), 5]}  # New simplified format: interval and singleton
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
         mock_prepare.return_value = (np.array([[0, 1]]), [0])
@@ -515,7 +513,7 @@ def test_lookup_bin_widths_missing_value():
     """Test lookup_bin_widths with missing values."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [{"singleton": 1}]}
+    obj._bin_spec = {0: [1]}  # New simplified format
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
         with patch("binning.base._flexible_binning_base.MISSING_VALUE", 999):
@@ -534,7 +532,7 @@ def test_lookup_bin_ranges():
     """Test lookup_bin_ranges method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [{"singleton": 1}, {"singleton": 2}], 1: [{"singleton": 3}]}
+    obj._bin_spec = {0: [1, 2], 1: [3]}  # New simplified format
 
     result = obj.lookup_bin_ranges()
 
@@ -546,7 +544,7 @@ def test_deprecated_validate_flexible_bins():
     obj = DummyFlexibleBinning()
 
     with patch("binning.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
-        bin_spec = {0: [{"singleton": 1}]}
+        bin_spec = {0: [1]}  # New simplified format
         bin_reps = {0: [1.0]}
 
         obj._validate_flexible_bins(bin_spec, bin_reps)
@@ -572,7 +570,7 @@ def test_deprecated_find_bin_for_value():
     with patch("binning.base._flexible_binning_base.find_flexible_bin_for_value") as mock_find:
         mock_find.return_value = 1
 
-        bin_defs = [{"singleton": 1}, {"singleton": 2}]
+        bin_defs = [1, 2]  # New simplified format
         result = obj._find_bin_for_value(2.0, bin_defs)
         assert result == 1
         mock_find.assert_called_once_with(2.0, bin_defs)
@@ -625,7 +623,7 @@ def test_handle_bin_params_multiple_changes():
 
     reset = obj._handle_bin_params(
         {
-            "bin_spec": {0: [{"singleton": 1}]},
+            "bin_spec": {0: [1]},  # New simplified format
             "fit_jointly": False,
             "guidance_columns": None,
             "other_param": "value",
@@ -643,7 +641,7 @@ def test_fit_per_column_with_guidance_data():
 
     with patch.object(obj, "_process_user_specifications"):
         with patch.object(obj, "_calculate_flexible_bins") as mock_calc:
-            mock_calc.return_value = ([{"singleton": 1}], [1.0])
+            mock_calc.return_value = ([1], [1.0])  # New simplified format
             with patch.object(obj, "_finalize_fitting"):
                 obj._fit_per_column(X, columns, guidance_data=guidance_data)
 
@@ -661,7 +659,7 @@ def test_fit_jointly_with_no_missing_columns():
     even when existing specs are present.
     """
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [{"singleton": 1}], 1: [{"singleton": 2}]}
+    obj._bin_spec = {0: [1], 1: [2]}  # New simplified format
     obj._bin_reps = {0: [1.0], 1: [2.0]}
 
     X = np.array([[1, 2], [3, 4]])
@@ -669,7 +667,7 @@ def test_fit_jointly_with_no_missing_columns():
 
     with patch.object(obj, "_process_user_specifications"):
         with patch.object(obj, "_calculate_flexible_bins_jointly") as mock_calc:
-            mock_calc.return_value = ([{"singleton": 99}], [99.0])
+            mock_calc.return_value = ([99], [99.0])  # New simplified format
 
             with patch.object(obj, "_finalize_fitting"):
                 obj._fit_jointly(X, columns)
@@ -677,8 +675,8 @@ def test_fit_jointly_with_no_missing_columns():
             # Should calculate bins for all columns now
             mock_calc.assert_called_once()
             # All columns should have the same jointly calculated specs
-            assert obj._bin_spec[0] == [{"singleton": 99}]
-            assert obj._bin_spec[1] == [{"singleton": 99}]
+            assert obj._bin_spec[0] == [99]
+            assert obj._bin_spec[1] == [99]
             assert obj._bin_reps[0] == [99.0]
             assert obj._bin_reps[1] == [99.0]
 
@@ -749,7 +747,7 @@ def test_property_setters_reset_fitted_state():
     obj._fitted = True
 
     # Test bin_spec setter resets fitted state
-    obj.bin_spec = {0: [{"singleton": 1}]}
+    obj.bin_spec = {0: [1]}  # New simplified format
     assert obj._fitted is False
 
     # Mark as fitted again
@@ -769,5 +767,5 @@ def test_property_setters_no_fitted_attribute():
         delattr(obj, "_fitted")
 
     # These should not raise errors
-    obj.bin_spec = {0: [{"singleton": 1}]}
+    obj.bin_spec = {0: [1]}  # New simplified format
     obj.bin_representatives = {0: [1.0]}
