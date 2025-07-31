@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional
 
+
 # pylint: disable=too-few-public-methods
 class SklearnCompatibilityMixin:
     """Mixin to enhance sklearn compatibility for binning methods."""
@@ -13,7 +14,7 @@ class SklearnCompatibilityMixin:
             "requires_y": False,
             "requires_positive_X": False,
             "requires_positive_y": False,
-            "X_types": ["2darray", "sparse"],
+            "X_types": ["2darray"],
             "poor_score": True,
             "no_validation": False,
             "multioutput": False,
@@ -38,7 +39,7 @@ class SklearnCompatibilityMixin:
         elif hasattr(X, "feature_names"):
             feature_names = list(X.feature_names)
         elif hasattr(X, "_feature_names"):
-            feature_names = list(X._feature_names) # pylint: disable=protected-access
+            feature_names = list(X._feature_names)  # pylint: disable=protected-access
         else:
             # Default to generic names
             n_features = X.shape[1] if hasattr(X, "shape") else len(X[0])

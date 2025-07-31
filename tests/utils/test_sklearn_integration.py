@@ -1,4 +1,5 @@
 """Tests for sklearn_integration module."""
+
 # pylint: disable=protected-access
 from unittest.mock import Mock
 
@@ -21,7 +22,6 @@ class TestSklearnCompatibilityMixin:
         assert tags["allow_nan"] is True
         assert tags["stateless"] is False
         assert "2darray" in tags["X_types"]
-        assert "sparse" in tags["X_types"]
 
     def test_check_feature_names_with_columns(self):
         """Test _check_feature_names with DataFrame-like object."""
@@ -29,13 +29,13 @@ class TestSklearnCompatibilityMixin:
 
         # Mock object with columns
         mock_X = Mock()
-        mock_X.columns = ['col1', 'col2', 'col3']
+        mock_X.columns = ["col1", "col2", "col3"]
 
         result = mixin._check_feature_names(mock_X, reset=True)
 
-        assert result == ['col1', 'col2', 'col3']
-        assert hasattr(mixin, 'feature_names_in_')
-        assert mixin.feature_names_in_ == ['col1', 'col2', 'col3']
+        assert result == ["col1", "col2", "col3"]
+        assert hasattr(mixin, "feature_names_in_")
+        assert mixin.feature_names_in_ == ["col1", "col2", "col3"]
 
     def test_check_feature_names_with_feature_names_attr(self):
         """Test _check_feature_names with feature_names attribute."""
@@ -44,12 +44,12 @@ class TestSklearnCompatibilityMixin:
         # Mock object with feature_names
         mock_X = Mock()
         del mock_X.columns  # Remove columns attribute
-        mock_X.feature_names = ['feat1', 'feat2']
+        mock_X.feature_names = ["feat1", "feat2"]
 
         result = mixin._check_feature_names(mock_X, reset=True)
 
-        assert result == ['feat1', 'feat2']
-        assert mixin.feature_names_in_ == ['feat1', 'feat2']
+        assert result == ["feat1", "feat2"]
+        assert mixin.feature_names_in_ == ["feat1", "feat2"]
 
     def test_check_feature_names_with_underscore_feature_names_attr(self):
         """Test _check_feature_names with _feature_names attribute."""
@@ -59,12 +59,12 @@ class TestSklearnCompatibilityMixin:
         mock_X = Mock()
         del mock_X.columns
         del mock_X.feature_names
-        mock_X._feature_names = ['_feat1', '_feat2', '_feat3']
+        mock_X._feature_names = ["_feat1", "_feat2", "_feat3"]
 
         result = mixin._check_feature_names(mock_X, reset=True)
 
-        assert result == ['_feat1', '_feat2', '_feat3']
-        assert mixin.feature_names_in_ == ['_feat1', '_feat2', '_feat3']
+        assert result == ["_feat1", "_feat2", "_feat3"]
+        assert mixin.feature_names_in_ == ["_feat1", "_feat2", "_feat3"]
 
     def test_check_feature_names_with_generic_array(self):
         """Test _check_feature_names with generic array (no feature names)."""
@@ -79,7 +79,7 @@ class TestSklearnCompatibilityMixin:
 
         result = mixin._check_feature_names(mock_X, reset=True)
 
-        expected = ['feature_0', 'feature_1', 'feature_2', 'feature_3']
+        expected = ["feature_0", "feature_1", "feature_2", "feature_3"]
         assert result == expected
         assert mixin.feature_names_in_ == expected
 
@@ -88,27 +88,27 @@ class TestSklearnCompatibilityMixin:
         mixin = SklearnCompatibilityMixin()
 
         # Mock object without shape but with length
-        mock_X = [['a', 'b', 'c'], ['d', 'e', 'f']]
+        mock_X = [["a", "b", "c"], ["d", "e", "f"]]
 
         result = mixin._check_feature_names(mock_X, reset=True)
 
-        expected = ['feature_0', 'feature_1', 'feature_2']
+        expected = ["feature_0", "feature_1", "feature_2"]
         assert result == expected
         assert mixin.feature_names_in_ == expected
 
     def test_check_feature_names_no_reset(self):
         """Test _check_feature_names without reset when feature_names_in_ exists."""
         mixin = SklearnCompatibilityMixin()
-        mixin.feature_names_in_ = ['existing1', 'existing2']
+        mixin.feature_names_in_ = ["existing1", "existing2"]
 
         mock_X = Mock()
-        mock_X.columns = ['new1', 'new2', 'new3']
+        mock_X.columns = ["new1", "new2", "new3"]
 
         result = mixin._check_feature_names(mock_X, reset=False)
 
         # Should return new feature names but keep existing feature_names_in_
-        assert result == ['new1', 'new2', 'new3']
-        assert mixin.feature_names_in_ == ['existing1', 'existing2']
+        assert result == ["new1", "new2", "new3"]
+        assert mixin.feature_names_in_ == ["existing1", "existing2"]
 
     def test_get_feature_names_out_not_fitted(self):
         """Test get_feature_names_out when not fitted."""
@@ -120,9 +120,9 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_input_features(self):
         """Test get_feature_names_out with explicit input_features."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
+        setattr(mixin, "_fitted", True)
 
-        input_features = ['in1', 'in2', 'in3']
+        input_features = ["in1", "in2", "in3"]
         result = mixin.get_feature_names_out(input_features)
 
         assert result == input_features
@@ -130,68 +130,68 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_stored_feature_names(self):
         """Test get_feature_names_out with stored feature_names_in_."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
-        mixin.feature_names_in_ = ['stored1', 'stored2']
+        setattr(mixin, "_fitted", True)
+        mixin.feature_names_in_ = ["stored1", "stored2"]
 
         result = mixin.get_feature_names_out()
 
-        assert result == ['stored1', 'stored2']
+        assert result == ["stored1", "stored2"]
 
     def test_get_feature_names_out_with_n_features_in(self):
         """Test get_feature_names_out with n_features_in_."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
-        setattr(mixin, 'n_features_in_', 3)
+        setattr(mixin, "_fitted", True)
+        setattr(mixin, "n_features_in_", 3)
 
         result = mixin.get_feature_names_out()
 
-        assert result == ['x0', 'x1', 'x2']
+        assert result == ["x0", "x1", "x2"]
 
     def test_get_feature_names_out_with_underscore_n_features_in(self):
         """Test get_feature_names_out with _n_features_in."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
-        setattr(mixin, '_n_features_in', 2)
+        setattr(mixin, "_fitted", True)
+        setattr(mixin, "_n_features_in", 2)
 
         result = mixin.get_feature_names_out()
 
-        assert result == ['x0', 'x1']
+        assert result == ["x0", "x1"]
 
     def test_get_feature_names_out_with_guidance_columns_list(self):
         """Test get_feature_names_out with guidance_columns as list."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
-        mixin.feature_names_in_ = ['col1', 'col2', 'col3', 'col4']
-        setattr(mixin, 'guidance_columns', ['col2', 'col4'])
+        setattr(mixin, "_fitted", True)
+        mixin.feature_names_in_ = ["col1", "col2", "col3", "col4"]
+        setattr(mixin, "guidance_columns", ["col2", "col4"])
 
         result = mixin.get_feature_names_out()
 
         # Should exclude guidance columns
-        assert result == ['col1', 'col3']
+        assert result == ["col1", "col3"]
 
     def test_get_feature_names_out_with_guidance_columns_indices(self):
         """Test get_feature_names_out with guidance_columns as indices."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
-        mixin.feature_names_in_ = ['col1', 'col2', 'col3', 'col4']
-        setattr(mixin, 'guidance_columns', [1, 3])
+        setattr(mixin, "_fitted", True)
+        mixin.feature_names_in_ = ["col1", "col2", "col3", "col4"]
+        setattr(mixin, "guidance_columns", [1, 3])
 
         result = mixin.get_feature_names_out()
 
         # Should exclude columns at indices 1 and 3
-        assert result == ['col1', 'col3']
+        assert result == ["col1", "col3"]
 
     def test_get_feature_names_out_with_guidance_columns_non_list(self):
         """Test get_feature_names_out with guidance_columns not as a list."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, '_fitted', True)
-        mixin.feature_names_in_ = ['col1', 'col2', 'col3', 'col4']
-        setattr(mixin, 'guidance_columns', 'col2')  # Single string, not a list
+        setattr(mixin, "_fitted", True)
+        mixin.feature_names_in_ = ["col1", "col2", "col3", "col4"]
+        setattr(mixin, "guidance_columns", "col2")  # Single string, not a list
 
         result = mixin.get_feature_names_out()
 
         # Should exclude the single guidance column
-        assert result == ['col1', 'col3', 'col4']
+        assert result == ["col1", "col3", "col4"]
 
     def test_validate_params(self):
         """Test _validate_params method."""
