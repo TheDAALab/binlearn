@@ -276,7 +276,18 @@ class GeneralBinningBase(
             if self.fit_jointly:
                 self._fit_jointly(X_binning, binning_cols, **fit_params)
             else:
-                self._fit_per_column(X_binning, binning_cols, X_guidance, **fit_params)
+                # Handle potential conflict between X_guidance and fit_params['guidance_data']
+                fit_params_clean = fit_params.copy()
+                external_guidance_data = fit_params_clean.pop("guidance_data", None)
+
+                # Use external guidance data if no embedded guidance columns
+                final_guidance_data = (
+                    X_guidance if X_guidance is not None else external_guidance_data
+                )
+
+                self._fit_per_column(
+                    X_binning, binning_cols, final_guidance_data, **fit_params_clean
+                )
 
             self._fitted = True
             return self

@@ -290,6 +290,11 @@ class IntervalBinningBase(GeneralBinningBase):
             BinningError: If bin processing or validation fails.
         """
         try:
+            # Handle potential duplicate guidance_data from fit_params
+            # The positional guidance_data takes precedence over fit_params
+            fit_params_clean = fit_params.copy()
+            fit_params_clean.pop("guidance_data", None)  # Remove duplicate if present
+
             self._process_user_specifications(columns)
 
             # Always calculate bins from data for all columns
