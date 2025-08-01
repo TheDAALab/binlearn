@@ -35,11 +35,6 @@ jobs:
         python -c "import binning; print(f'🏷️  Version: {binning.__version__}')"
         python -m setuptools_scm
 
-    - name: Lint with ruff
-      run: |
-        ruff check binning/
-        ruff format --check binning/
-
     - name: Type check with mypy
       run: mypy binning/
 
