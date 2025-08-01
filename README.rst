@@ -70,7 +70,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
   * Type hints and documentation
 
 📦 **Quick Install**
--------------------
+--------------------
 
 .. code-block:: bash
 
