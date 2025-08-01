@@ -134,26 +134,18 @@ class TestManualIntervalBinning:
         mib._validate_params()
 
     def test_validate_params_none_bin_edges(self):
-        """Test _validate_params with None bin_edges."""
-        bin_edges = {0: [0.0, 10.0, 20.0]}
-        mib = ManualIntervalBinning(bin_edges=bin_edges)
-        mib.bin_edges = None  # Set to None to test validation
-
+        """Test that None bin_edges raises ConfigurationError during construction."""
         with pytest.raises(
             ConfigurationError, match="bin_edges must be provided for ManualIntervalBinning"
         ):
-            mib._validate_params()
+            ManualIntervalBinning(bin_edges=None)  # type: ignore
 
     def test_validate_params_empty_bin_edges(self):
-        """Test _validate_params with empty bin_edges."""
-        bin_edges = {0: [0.0, 10.0, 20.0]}
-        mib = ManualIntervalBinning(bin_edges=bin_edges)
-        mib.bin_edges = {}  # Set to empty dict
-
+        """Test that empty bin_edges raises ConfigurationError during construction."""
         with pytest.raises(
             ConfigurationError, match="bin_edges cannot be empty for ManualIntervalBinning"
         ):
-            mib._validate_params()
+            ManualIntervalBinning(bin_edges={})
 
     def test_validate_params_invalid_edge_type(self):
         """Test that initialization with invalid edge type raises ConfigurationError."""

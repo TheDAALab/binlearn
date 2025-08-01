@@ -168,12 +168,9 @@ class TestManualFlexibleBinningValidateParams:
         binner._validate_params()
 
     def test_validate_params_empty_bin_spec_raises_error(self):
-        """Test _validate_params with empty bin_spec raises ConfigurationError."""
-        bin_spec = {}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
-
+        """Test that empty bin_spec raises ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="bin_spec must be provided and non-empty"):
-            binner._validate_params()
+            ManualFlexibleBinning(bin_spec={})
 
     def test_validate_params_non_list_specs_raises_error(self):
         """Test that non-list specifications are rejected during initialization."""
@@ -184,12 +181,9 @@ class TestManualFlexibleBinningValidateParams:
             ManualFlexibleBinning(bin_spec=bin_spec)  # type: ignore
 
     def test_validate_params_empty_column_specs_raises_error(self):
-        """Test _validate_params with empty column specifications."""
-        bin_spec = {0: []}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
-
+        """Test that empty column specifications raise ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="cannot be empty"):
-            binner._validate_params()
+            ManualFlexibleBinning(bin_spec={0: []})
 
     def test_validate_params_invalid_interval_length_raises_error(self):
         """Test that invalid interval tuple length is rejected during initialization."""
@@ -200,12 +194,9 @@ class TestManualFlexibleBinningValidateParams:
             ManualFlexibleBinning(bin_spec=bin_spec)
 
     def test_validate_params_non_finite_interval_bounds_raises_error(self):
-        """Test _validate_params with non-finite interval bounds."""
-        bin_spec = {0: [(np.nan, 5)]}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
-
+        """Test that non-finite interval bounds raise ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="must be finite"):
-            binner._validate_params()
+            ManualFlexibleBinning(bin_spec={0: [(np.nan, 5)]})
 
     def test_validate_params_invalid_interval_order_raises_error(self):
         """Test that invalid interval order is rejected during initialization."""
@@ -216,12 +207,9 @@ class TestManualFlexibleBinningValidateParams:
             ManualFlexibleBinning(bin_spec=bin_spec)
 
     def test_validate_params_equal_interval_bounds_raises_error(self):
-        """Test _validate_params with equal interval bounds."""
-        bin_spec = {0: [(5, 5)]}  # min == max
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
-
+        """Test that equal interval bounds raise ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="min .* must be < max"):
-            binner._validate_params()
+            ManualFlexibleBinning(bin_spec={0: [(5, 5)]})
 
     def test_validate_params_with_valid_representatives(self):
         """Test _validate_params with valid bin_representatives."""
@@ -397,20 +385,14 @@ class TestManualFlexibleBinningEdgeCases:
         binner._validate_params()
 
     def test_infinite_bound_validation(self):
-        """Test validation with infinite bounds."""
-        bin_spec = {0: [(1, np.inf)]}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
-
+        """Test that infinite bounds raise ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="must be finite"):
-            binner._validate_params()
+            ManualFlexibleBinning(bin_spec={0: [(1, np.inf)]})
 
     def test_negative_infinite_bound_validation(self):
-        """Test validation with negative infinite bounds."""
-        bin_spec = {0: [(-np.inf, 5)]}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
-
+        """Test that negative infinite bounds raise ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="must be finite"):
-            binner._validate_params()
+            ManualFlexibleBinning(bin_spec={0: [(-np.inf, 5)]})
 
 
 class TestManualFlexibleBinningErrorHandling:

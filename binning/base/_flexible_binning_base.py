@@ -113,6 +113,9 @@ class FlexibleBinningBase(GeneralBinningBase):
         if bin_spec is not None:
             self._process_provided_flexible_bins()
 
+        # Validate parameters after everything is set up
+        self._validate_params()
+
     def _validate_params(self) -> None:
         """Validate parameters for flexible binning.
 

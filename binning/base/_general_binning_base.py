@@ -750,7 +750,12 @@ class GeneralBinningBase(
         if self._handle_bin_params(params):
             self._fitted = False
 
-        return super().set_params(**params)
+        result = super().set_params(**params)
+
+        # Validate all parameters after setting them
+        self._validate_params()
+
+        return result
 
     def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
         """Handle all parameter changes automatically.

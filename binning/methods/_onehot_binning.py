@@ -127,13 +127,15 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
             - Input format simplified: [1, 2, (3, 5)] but internally stored as dicts for
                 compatibility
         """
+        # Set subclass-specific parameters first
+        self.max_unique_values = max_unique_values
+
         super().__init__(
             bin_spec=bin_spec,
             bin_representatives=bin_representatives,
             preserve_dataframe=preserve_dataframe,
             **kwargs,
         )
-        self.max_unique_values = max_unique_values
 
     def _validate_params(self) -> None:
         """Validate OneHotBinning specific parameters.
