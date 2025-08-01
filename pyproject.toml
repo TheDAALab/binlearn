@@ -201,7 +201,6 @@ addopts = [
     "-q",
     "--strict-markers",
     "--strict-config",
-    "--cov=binning",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",

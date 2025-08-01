@@ -179,16 +179,14 @@ class FlexibleBinningBase(GeneralBinningBase):
                     "min (1) must be < max (inf)",  # Positive infinity case
                 ]
             ):
-                from ..utils.errors import ConfigurationError
-
                 raise ConfigurationError(
                     f"Failed to process provided flexible bin specifications: {error_msg}"
                 ) from e
-            else:
-                # Most validation errors remain as ValueError
-                raise ValueError(
-                    f"Failed to process provided flexible bin specifications: {error_msg}"
-                ) from e
+
+            # Most validation errors remain as ValueError
+            raise ValueError(
+                f"Failed to process provided flexible bin specifications: {error_msg}"
+            ) from e
 
     @property
     def bin_spec(self):

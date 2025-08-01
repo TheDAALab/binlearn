@@ -427,7 +427,10 @@ class SupervisedBinningBase(IntervalBinningBase):
             valid_data = x_col[valid_mask]
             min_val = np.min(valid_data)
             max_val = np.max(valid_data)
-            warning_msg = f"has only {n_valid} valid samples (minimum {min_samples} required). Creating single bin"
+            warning_msg = (
+                f"has only {n_valid} valid samples (minimum {min_samples} required)."
+                " Creating single bin"
+            )
 
         # Ensure we have a valid range
         if min_val == max_val:
