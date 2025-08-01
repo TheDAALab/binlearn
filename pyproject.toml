@@ -123,7 +123,7 @@ tag_regex = '^v(?P<version>[vV]?\d+(?:\.\d+)*(?:[-\.]?(?:a|alpha|b|beta|rc|dev|p
 
 [tool.black]
 line-length = 100
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+target-version = ['py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
