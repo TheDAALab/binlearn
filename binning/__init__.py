@@ -28,7 +28,11 @@ Example:
 """
 
 # Version information
-from ._version import __version__
+try:
+    from ._version import __version__
+except ImportError:
+    # Fallback for development or when setuptools_scm hasn't run yet
+    __version__ = "unknown"
 
 # Configuration management
 from .config import get_config, set_config, load_config, reset_config

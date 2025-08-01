@@ -1,12 +1,36 @@
-Examples
-========
+# Examples Documentation
 
-Comprehensive examples and use cases for the Binning Framework.
+This section provides comprehensive, practical examples for each binning method in the framework. Each example page includes:
 
-Feature Examples
-----------------
+- **Basic Usage**: Simple examples to get started
+- **Real-world Applications**: Practical use cases with realistic datasets
+- **Advanced Techniques**: Complex scenarios and optimization strategies
+- **Performance Analysis**: Benchmarking and scalability considerations
+- **Best Practices**: Guidelines for when and how to use each method
 
-Detailed examples for specific binning methods and advanced usage patterns.
+## Available Examples
+
+### Core Binning Methods
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Binning Methods
+
+   equal_width_binning_examples
+   equal_frequency_binning_examples
+   kmeans_binning_examples
+   onehot_binning_examples
+
+### Quick Start Guide
+
+#### Choosing the Right Binning Method
+
+| **Method** | **Best For** | **Advantages** | **Use Cases** |
+|------------|--------------|----------------|---------------|
+| **Equal Width** | Uniform distributions, interpretable boundaries | Simple, fast, interpretable | Age groups, price ranges, scores |
+| **Equal Frequency** | Skewed distributions, balanced samples | Equal sample sizes, robust to outliers | Percentile analysis, ranking systems |
+| **K-Means** | Natural clusters, multimodal data | Finds data-driven boundaries | Customer segmentation, image processing |
+| **One-Hot** | Linear models, sparse features | Creates binary features, ML-ready | Logistic regression, neural networks |
 
 .. toctree::
    :maxdepth: 1
