@@ -327,20 +327,18 @@ class TestManualFlexibleBinningTransformation:
         assert binner._fitted is True
 
     @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_transform_pandas_dataframe(self):
         """Test transform with pandas DataFrame."""
         bin_spec = {"feature1": [1, (2, 5), (5, 10)], "feature2": [10, 20, 30]}
         binner = ManualFlexibleBinning(bin_spec=bin_spec, preserve_dataframe=True)
 
-        if PANDAS_AVAILABLE:
-            import pandas as pd  # Import here to satisfy type checker
+        df = pd.DataFrame({"feature1": [1, 3, 7], "feature2": [10, 20, 30]})
 
-            df = pd.DataFrame({"feature1": [1, 3, 7], "feature2": [10, 20, 30]})
+        result = binner.fit_transform(df)
 
-            result = binner.fit_transform(df)
-
-            assert isinstance(result, pd.DataFrame)
-            assert list(result.columns) == ["feature1", "feature2"]
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ["feature1", "feature2"]
 
 
 class TestManualFlexibleBinningEdgeCases:

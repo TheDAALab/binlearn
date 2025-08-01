@@ -996,6 +996,7 @@ class TestSupervisedBinningParameterRoundtrip:
         reconstructed_output = reconstructed.transform(X_test)
         np.testing.assert_array_equal(original_output, reconstructed_output)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_edge_deduplication_float_tolerance(self):
         """Test edge deduplication logic with float tolerance - covers both branches."""
         from binning.config import get_config
