@@ -615,44 +615,6 @@ class GeneralBinningBase(
 
         return params
 
-    def _get_binning_params(self) -> Dict[str, Any]:
-        """Get class-specific binning parameters for backwards compatibility.
-
-        Extracts and returns only the class-specific parameters that are unique
-        to the particular binning method, excluding base class parameters like
-        preserve_dataframe, fit_jointly, and guidance_columns.
-
-        This method is primarily used for backwards compatibility and internal
-        parameter management, providing a clean way to access method-specific
-        configuration without base class parameters.
-
-        Returns:
-            Dict[str, Any]: Class-specific parameters excluding base class parameters.
-                For example, for EqualWidthBinning this would include n_bins, bin_range,
-                but not preserve_dataframe or fit_jointly.
-
-        Example:
-            >>> ewb = EqualWidthBinning(n_bins=5, preserve_dataframe=True)
-            >>> params = ewb._get_binning_params()
-            >>> # params = {'n_bins': 5} (excludes preserve_dataframe)
-
-        Note:
-            - Used internally for parameter management
-            - Excludes GeneralBinningBase parameters
-            - Provides clean separation of concerns for parameter handling
-        """
-        class_specific_params = safe_get_class_parameters(
-            self.__class__, exclude_base_class="GeneralBinningBase"
-        )
-
-        # Build result dictionary
-        result = {}
-        for param_name in class_specific_params:
-            if hasattr(self, param_name):
-                result[param_name] = getattr(self, param_name)
-
-        return result
-
     def _get_fitted_params(self) -> Dict[str, Any]:
         """Get fitted parameters that should be transferred to new instances.
 

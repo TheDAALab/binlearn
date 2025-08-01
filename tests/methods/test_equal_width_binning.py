@@ -200,14 +200,6 @@ class TestEqualWidthBinning:
         assert df_transformed.shape == df.shape
         assert list(df_transformed.columns) == list(df.columns)
 
-    def test_get_binning_params(self):
-        """Test _get_binning_params method."""
-        ewb = EqualWidthBinning(n_bins=5, bin_range=(0, 100))
-        params = ewb._get_binning_params()
-
-        assert params["n_bins"] == 5
-        assert params["bin_range"] == (0, 100)
-
     def test_handle_bin_params(self):
         """Test _handle_bin_params method."""
         ewb = EqualWidthBinning()

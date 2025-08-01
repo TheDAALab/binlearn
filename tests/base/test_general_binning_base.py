@@ -379,6 +379,23 @@ def test_get_params():
     assert params["preserve_dataframe"] is True
 
 
+def test_get_params_missing_attributes():
+    """Test get_params when object is missing some class-specific attributes."""
+    from unittest.mock import patch
+
+    obj = DummyGeneralBinning()
+
+    # Mock safe_get_class_parameters to return a parameter that doesn't exist on the object
+    with patch("binning.base._general_binning_base.safe_get_class_parameters") as mock_params:
+        mock_params.return_value = ["preserve_dataframe", "nonexistent_param"]
+
+        params = obj.get_params()
+
+        # Should include preserve_dataframe (it exists) but not nonexistent_param
+        assert "preserve_dataframe" in params
+        assert "nonexistent_param" not in params
+
+
 def test_set_params():
     """Test set_params method."""
     obj = DummyGeneralBinning(preserve_dataframe=True)
@@ -419,18 +436,28 @@ def test_validate_params():
         obj._validate_params()
 
 
-def test_get_binning_params():
-    """Test _get_binning_params method."""
-    obj = DummyGeneralBinning()
-    params = obj._get_binning_params()
-    assert isinstance(params, dict)
-
-
 def test_get_fitted_params():
     """Test _get_fitted_params method."""
     obj = DummyGeneralBinning()
     params = obj._get_fitted_params()
     assert isinstance(params, dict)
+
+
+def test_get_fitted_params_missing_attributes():
+    """Test _get_fitted_params when object is missing some expected attributes."""
+    from unittest.mock import patch
+
+    obj = DummyGeneralBinning()
+
+    # Mock safe_get_class_parameters to return a parameter that doesn't exist on the object
+    with patch("binning.base._general_binning_base.safe_get_class_parameters") as mock_params:
+        mock_params.return_value = ["preserve_dataframe", "nonexistent_fitted_param"]
+
+        params = obj._get_fitted_params()
+
+        # Should include existing attributes but not nonexistent ones
+        assert isinstance(params, dict)
+        assert "nonexistent_fitted_param" not in params
 
 
 def test_handle_bin_params():

@@ -123,16 +123,13 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_edges = bin_edges
         self.bin_representatives = bin_representatives
 
-        # Validate parameters early
-        self._validate_params()
-
         # Working specifications (fitted or user-provided)
         self._bin_edges: BinEdgesDict = {}
         self._bin_reps: BinEdgesDict = {}
 
-        # If bin_edges are provided, process them immediately to enable transform without fit
-        if bin_edges is not None:
-            self._process_provided_bins()
+        # Validate parameters early
+        # This will also process any provided bins
+        self._validate_params()
 
     def _validate_params(self) -> None:
         """Validate parameters for interval binning.
@@ -140,6 +137,7 @@ class IntervalBinningBase(GeneralBinningBase):
         Performs comprehensive validation of all IntervalBinningBase parameters
         to ensure they meet the expected format and constraints. This includes
         validating bin edge format, ordering, and compatibility with representatives.
+        Also processes any provided bins to enable transform without fit.
 
         Raises:
             ConfigurationError: If any parameter validation fails.
@@ -148,66 +146,43 @@ class IntervalBinningBase(GeneralBinningBase):
             - Called automatically during initialization for early error detection
             - Can be overridden in subclasses for additional validation
             - Should only validate, not transform parameters
+            - Also processes provided bin specifications
         """
         try:
             # Call parent validation first
             super()._validate_params()
 
-            # Validate bin edges format if provided
+            # Process and validate bin edges if provided
             if self.bin_edges is not None:
                 validate_bin_edges_format(self.bin_edges)
+                self._bin_edges = self.bin_edges
 
-            # Validate bin representatives format if provided
+            # Process and validate bin representatives if provided
             if self.bin_representatives is not None:
                 validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
+                self._bin_reps = self.bin_representatives
 
                 # Validate compatibility with bin_edges if both are provided
                 if self.bin_edges is not None:
                     validate_bins(self.bin_edges, self.bin_representatives)
-
-        except ValueError as e:
-            raise ConfigurationError(str(e)) from e
-
-    def _process_provided_bins(self) -> None:
-        """Process user-provided bin specifications and mark as fitted if complete.
-
-        Validates and processes pre-provided bin edges and representatives. If both
-        are provided and valid, marks the transformer as fitted to enable transform
-        without requiring a separate fit call.
-
-        Raises:
-            ConfigurationError: If provided bin specifications are invalid.
-        """
-        try:
-            if self.bin_edges is not None:
-                # Validate format but don't transform - store as-is
-                validate_bin_edges_format(self.bin_edges)
-                self._bin_edges = self.bin_edges
-
-            if self.bin_representatives is not None:
-                # Validate format but don't transform - store as-is
-                validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
-                self._bin_reps = self.bin_representatives
-            else:
+            elif self.bin_edges is not None and self._bin_edges:
                 # Generate default representatives for provided edges
                 self._bin_reps = {}
-                if self.bin_edges is not None:
-                    for col, edges in self.bin_edges.items():
-                        edges_list = list(edges)
-                        self._bin_reps[col] = default_representatives(edges_list)
+                for col, edges in self.bin_edges.items():
+                    edges_list = list(edges)
+                    self._bin_reps[col] = default_representatives(edges_list)
 
-            # Validate the bins
-            if self._bin_edges:
+            # If we have complete specifications, mark as fitted
+            if self.bin_edges is not None and self._bin_edges and self._bin_reps:
+                # Validate the complete bins
                 validate_bins(self._bin_edges, self._bin_reps)
                 # Mark as fitted since we have complete bin specifications
                 self._fitted = True
                 # Store columns for later reference
                 self._original_columns = list(self._bin_edges.keys())
 
-        except Exception as e:
-            raise ConfigurationError(
-                f"Failed to process provided bin specifications: {str(e)}"
-            ) from e
+        except ValueError as e:
+            raise ConfigurationError(str(e)) from e
 
     @property
     def bin_edges(self):

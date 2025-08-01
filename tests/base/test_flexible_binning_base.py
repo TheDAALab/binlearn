@@ -37,10 +37,40 @@ def test_init_with_bin_spec():
     """Test initialization with bin_spec provided."""
     bin_spec = {0: [1]}  # New simplified format
 
-    with patch.object(DummyFlexibleBinning, "_process_provided_flexible_bins") as mock_process:
-        obj = DummyFlexibleBinning(bin_spec=bin_spec)
-        assert obj.bin_spec == bin_spec
-        mock_process.assert_called_once()
+    # Test that initialization works and processes the bin_spec
+    obj = DummyFlexibleBinning(bin_spec=bin_spec)
+    assert obj.bin_spec == bin_spec
+    # The processing now happens in _validate_params during __init__
+    assert obj._bin_spec == bin_spec  # Should be processed and stored
+    assert obj._fitted is True  # Should be marked as fitted with complete spec
+
+
+def test_init_with_bin_representatives_another():
+    """Test initialization with bin_representatives provided."""
+    bin_reps = {0: [1.0]}
+    obj = DummyFlexibleBinning(bin_representatives=bin_reps)
+    assert obj.bin_representatives == bin_reps
+
+
+def test_init_with_both_spec_and_reps():
+    """Test initialization with both bin_spec and bin_representatives."""
+    bin_spec = {0: [1]}
+    bin_reps = {0: [1.0]}
+
+    obj = DummyFlexibleBinning(bin_spec=bin_spec, bin_representatives=bin_reps)
+    assert obj.bin_spec == bin_spec
+    assert obj.bin_representatives == bin_reps
+    # Should be processed and marked as fitted
+    assert obj._bin_spec == bin_spec
+    assert obj._bin_reps == bin_reps
+    assert obj._fitted is True
+
+
+def test_init_validation_error():
+    """Test that validation errors are caught during initialization."""
+    # Test with invalid bin_spec that should cause validation to fail
+    with pytest.raises(ValueError, match="Failed to process provided flexible bin specifications"):
+        DummyFlexibleBinning(bin_spec={0: [(2, 3, 4)]})  # Invalid tuple format
 
 
 def test_init_with_bin_representatives():
@@ -48,77 +78,6 @@ def test_init_with_bin_representatives():
     bin_reps = {0: [1.0]}
     obj = DummyFlexibleBinning(bin_representatives=bin_reps)
     assert obj.bin_representatives == bin_reps
-
-
-@patch("binning.base._flexible_binning_base.validate_flexible_bin_spec_format")
-@patch("binning.base._flexible_binning_base.validate_flexible_bins")
-def test_process_provided_flexible_bins_spec_only(mock_validate, mock_ensure_spec):
-    """Test _process_provided_flexible_bins with spec only."""
-    # Mock returns don't matter for format validation - it validates in place
-
-    obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [1]}  # New simplified format
-    obj.bin_representatives = None
-
-    with patch(
-        "binning.base._flexible_binning_base.generate_default_flexible_representatives"
-    ) as mock_gen:
-        mock_gen.return_value = [1.0]
-        obj._process_provided_flexible_bins()
-
-        mock_ensure_spec.assert_called_once_with(
-            {0: [1]}, check_finite_bounds=False, strict=False
-        )  # Updated call signature
-        mock_gen.assert_called_once()
-        mock_validate.assert_called_once()
-        assert obj._fitted is True
-
-
-@patch("binning.base._flexible_binning_base.validate_flexible_bin_spec_format")
-@patch("binning.base._flexible_binning_base.validate_bin_representatives_format")
-@patch("binning.base._flexible_binning_base.validate_flexible_bins")
-def test_process_provided_flexible_bins_both(mock_validate, mock_ensure_dict, mock_ensure_spec):
-    """Test _process_provided_flexible_bins with both spec and reps."""
-    # Mock format validation functions don't need return values - they validate in place
-
-    obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [1]}  # New simplified format
-    obj.bin_representatives = {0: [1.0]}
-
-    obj._process_provided_flexible_bins()
-
-    mock_ensure_spec.assert_called_once_with(
-        {0: [1]}, check_finite_bounds=False, strict=False
-    )  # Updated call signature
-    mock_ensure_dict.assert_called_once_with({0: [1.0]})
-    mock_validate.assert_called_once()
-    assert obj._fitted is True
-
-
-def test_process_provided_flexible_bins_error():
-    """Test _process_provided_flexible_bins error handling."""
-    obj = DummyFlexibleBinning()
-    obj.bin_spec = {0: [1]}  # New simplified format
-
-    with patch(
-        "binning.base._flexible_binning_base.validate_flexible_bin_spec_format"
-    ) as mock_ensure:
-        mock_ensure.side_effect = Exception("Test error")
-
-        with pytest.raises(
-            ValueError, match="Failed to process provided flexible bin specifications"
-        ):
-            obj._process_provided_flexible_bins()
-
-
-def test_process_provided_flexible_bins_no_spec():
-    """Test _process_provided_flexible_bins with no spec."""
-    obj = DummyFlexibleBinning()
-    obj.bin_spec = None
-    obj.bin_representatives = None
-
-    obj._process_provided_flexible_bins()
-    # Should not raise any errors
 
 
 @patch.object(DummyFlexibleBinning, "_finalize_fitting")
@@ -365,14 +324,22 @@ def test_inverse_transform_columns_missing_key():
         obj._inverse_transform_columns(X, columns)
 
 
-def test_get_binning_params():
-    """Test _get_binning_params method with automatic discovery."""
-    obj = DummyFlexibleBinning(bin_spec={0: [1]})  # New simplified format
-    params = obj._get_binning_params()
+def test_inverse_transform_columns_all_missing():
+    """Test _inverse_transform_columns when all values are missing."""
+    from binning.utils.constants import MISSING_VALUE
 
-    # With automatic discovery, these should be included
-    assert "bin_spec" in params
-    assert "bin_representatives" in params
+    obj = DummyFlexibleBinning()
+    obj._bin_reps = {0: [1.0, 2.0]}
+
+    # All values are missing - this should cover the regular_indices.any() == False branch
+    X = np.array([[MISSING_VALUE], [MISSING_VALUE]])
+    columns = [0]
+
+    result = obj._inverse_transform_columns(X, columns)
+
+    # All results should be NaN
+    expected = np.array([[np.nan], [np.nan]])
+    np.testing.assert_array_equal(result, expected)
 
 
 def test_get_fitted_params():
@@ -486,6 +453,26 @@ def test_lookup_bin_widths_missing_value():
                 result = obj.lookup_bin_widths(bin_indices)
 
                 mock_return.assert_called_once()
+
+
+def test_lookup_bin_widths_out_of_bounds():
+    """Test lookup_bin_widths with out-of-bounds bin indices."""
+    obj = DummyFlexibleBinning()
+    obj._fitted = True
+    obj._bin_spec = {0: [1, 2]}  # Two bins: indices 0 and 1
+
+    with patch.object(obj, "_prepare_input") as mock_prepare:
+        # Bin index 5 is out of bounds (only have indices 0 and 1)
+        mock_prepare.return_value = (np.array([[5]]), [0])
+
+        with patch("binning.base._flexible_binning_base.return_like_input") as mock_return:
+            mock_return.return_value = np.array([[np.nan]])
+
+            bin_indices = np.array([[5]])
+            result = obj.lookup_bin_widths(bin_indices)
+
+            # Should return NaN for out-of-bounds indices
+            mock_return.assert_called_once()
 
 
 def test_lookup_bin_ranges():

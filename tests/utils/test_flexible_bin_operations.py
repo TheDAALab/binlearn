@@ -69,6 +69,18 @@ class TestValidateFlexibleBinSpecFormat:
         with pytest.raises(ValueError, match="must be < max"):
             validate_flexible_bin_spec_format(bin_spec)
 
+    def test_non_strict_mode_allows_equal_bounds(self):
+        """Test that non-strict mode allows equal bounds but not reversed."""
+        # Equal bounds should be allowed in non-strict mode
+        bin_spec = {"col1": [(2, 2)]}  # min == max
+        # Should not raise any exception in non-strict mode
+        validate_flexible_bin_spec_format(bin_spec, strict=False)
+
+        # But reversed bounds (min > max) should still raise error in non-strict mode
+        bin_spec_reversed = {"col1": [(3, 1)]}  # min > max
+        with pytest.raises(ValueError, match="must be <= max"):
+            validate_flexible_bin_spec_format(bin_spec_reversed, strict=False)
+
     def test_invalid_bin_type(self):
         """Test that invalid bin types raise ValueError."""
         bin_spec = {"col1": ["invalid"]}
@@ -285,6 +297,22 @@ class TestFindFlexibleBinForValue:
         assert find_flexible_bin_for_value(3.0, bin_defs) == 0  # Right boundary
         assert find_flexible_bin_for_value(0.9, bin_defs) == MISSING_VALUE  # Just outside left
         assert find_flexible_bin_for_value(3.1, bin_defs) == MISSING_VALUE  # Just outside right
+
+    def test_edge_cases_branch_coverage(self):
+        """Test edge cases to cover remaining branches."""
+        # Test tuple with wrong length (not 2) - should be skipped
+        bin_defs = [(1, 2, 3)]  # Wrong length tuple
+        assert find_flexible_bin_for_value(2, bin_defs) == MISSING_VALUE
+
+        # Test non-numeric value against interval (should not match)
+        bin_defs = [(1, 3)]
+        assert find_flexible_bin_for_value("string", bin_defs) == MISSING_VALUE
+
+        # Test mixed bin types to ensure all branches are covered
+        bin_defs = [5, (1, 3), "invalid_bin_def"]  # Mix of valid and invalid
+        assert find_flexible_bin_for_value(5, bin_defs) == 0  # Matches singleton
+        assert find_flexible_bin_for_value(2, bin_defs) == 1  # Matches interval
+        assert find_flexible_bin_for_value(10, bin_defs) == MISSING_VALUE  # No match
 
 
 class TestCalculateFlexibleBinWidth:

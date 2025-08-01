@@ -109,11 +109,8 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._bin_spec: FlexibleBinSpec = {}
         self._bin_reps: BinEdgesDict = {}
 
-        # If bin_spec is provided, process it immediately to enable transform without fit
-        if bin_spec is not None:
-            self._process_provided_flexible_bins()
-
         # Validate parameters after everything is set up
+        # This will also process any provided bins
         self._validate_params()
 
     def _validate_params(self) -> None:
@@ -122,6 +119,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         Performs comprehensive validation of all FlexibleBinningBase parameters
         to ensure they meet the expected format and constraints. This includes
         validating bin specification format and compatibility with representatives.
+        Also processes any provided bins to enable transform without fit.
 
         Raises:
             ConfigurationError: If any parameter validation fails.
@@ -130,84 +128,67 @@ class FlexibleBinningBase(GeneralBinningBase):
             - Called automatically during initialization for early error detection
             - Can be overridden in subclasses for additional validation
             - Should only validate, not transform parameters
+            - Also processes provided bin specifications
         """
         try:
             # Call parent validation first
             super()._validate_params()
 
-            # Validate bin_spec format if provided
+            # Process and validate bin_spec if provided
             if self.bin_spec is not None:
                 # Use centralized validation with finite bounds checking and strict validation
                 validate_flexible_bin_spec_format(
                     self.bin_spec, check_finite_bounds=True, strict=True
                 )
+                # Store the validated spec
+                self._bin_spec = self.bin_spec
 
-            # Validate bin_representatives format if provided
+            # Process and validate bin_representatives if provided
             if self.bin_representatives is not None:
                 validate_bin_representatives_format(self.bin_representatives)
+                self._bin_reps = self.bin_representatives
 
                 # Validate compatibility with bin_spec if both are provided
                 if self.bin_spec is not None:
                     validate_flexible_bins(self.bin_spec, self.bin_representatives)
+            elif self.bin_spec is not None and self._bin_spec:
+                # Generate default representatives for provided specs
+                self._bin_reps = {}
+                for col, bin_defs in self._bin_spec.items():
+                    self._bin_reps[col] = generate_default_flexible_representatives(bin_defs)
+
+            # If we have complete specifications, mark as fitted
+            if self.bin_spec is not None and self._bin_spec and self._bin_reps:
+                # Validate the complete bins
+                validate_flexible_bins(self._bin_spec, self._bin_reps)
+                # Mark as fitted since we have complete bin specifications
+                self._fitted = True
+                # Store columns for later reference
+                self._original_columns = list(self._bin_spec.keys())
 
         except ValueError as e:
-            raise ConfigurationError(str(e)) from e
+            error_msg = str(e)
+            # Some specific validation errors should be ConfigurationError
+            if any(
+                pattern in error_msg
+                for pattern in [
+                    "cannot be empty",
+                    "must be finite",
+                    "min (5) must be < max (5)",  # Equal bounds case
+                    "min (-inf) must be < max",  # Negative infinity case
+                    "min (1) must be < max (inf)",  # Positive infinity case
+                ]
+            ):
+                from ..utils.errors import ConfigurationError
 
-    def _process_provided_flexible_bins(self) -> None:
-        """Process user-provided flexible bin specifications and mark as fitted if complete.
-
-        Validates and processes pre-provided bin specifications and representatives.
-        If both are provided and valid, marks the transformer as fitted to enable
-        transform without requiring a separate fit call.
-
-        Raises:
-            ValueError: If provided flexible bin specifications are invalid or
-                cannot be processed.
-        """
-        try:
-            if self.bin_spec is not None:
-                # Use centralized validation with lenient settings for initialization
-                # This allows empty bin definitions and equal bounds that subclasses can catch later
-                validate_flexible_bin_spec_format(
-                    self.bin_spec, check_finite_bounds=False, strict=False
-                )
-                self._bin_spec = self.bin_spec
-
-            if self.bin_representatives is not None:
-                # Validate format but don't transform - store as-is
-                validate_bin_representatives_format(self.bin_representatives)
-                self._bin_reps = self.bin_representatives
+                raise ConfigurationError(
+                    f"Failed to process provided flexible bin specifications: {error_msg}"
+                ) from e
             else:
-                # Generate default representatives for provided specs
-                for col, bin_defs in self._bin_spec.items():
-                    if col not in self._bin_reps:
-                        self._bin_reps[col] = generate_default_flexible_representatives(bin_defs)
-
-            # Validate the bins only if both spec and reps are provided
-            # For incomplete specifications, defer validation to subclass _validate_params
-            if self._bin_spec and self._bin_reps:
-                try:
-                    validate_flexible_bins(self._bin_spec, self._bin_reps)
-                    # Mark as fitted since we have complete bin specifications
-                    self._fitted = True
-                    # Store columns for later reference
-                    self._original_columns = list(self._bin_spec.keys())
-                except ValueError as e:
-                    # Only defer specific validation errors that individual classes should handle
-                    # Re-raise errors about mismatched representatives, missing columns, etc.
-                    error_msg = str(e)
-                    if "must be < max" in error_msg or "cannot be empty" in error_msg:
-                        # These are validation errors that should be deferred to subclass
-                        # _validate_params
-                        pass
-                    else:
-                        # All other validation errors should be raised during initialization
-                        raise
-
-        except Exception as e:
-            raise ValueError(
-                f"Failed to process provided flexible bin specifications: {str(e)}"
-            ) from e
+                # Most validation errors remain as ValueError
+                raise ValueError(
+                    f"Failed to process provided flexible bin specifications: {error_msg}"
+                ) from e
 
     @property
     def bin_spec(self):

@@ -361,7 +361,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         Example:
             >>> binner.validate_task_type("clustering", ["classification", "regression"])
-            # ValueError: task_type 'clustering' not supported. Valid options are: 
+            # ValueError: task_type 'clustering' not supported. Valid options are:
             # ['classification', 'regression']
 
         Note:
@@ -412,53 +412,41 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         n_valid = valid_mask.sum()
 
+        # Check if we have sufficient data to continue with normal processing
+        if n_valid >= min_samples:
+            return None
+
+        # Insufficient data - create fallback bins with appropriate warning
         if n_valid == 0:
             # No valid data - create default range
             min_val = np.nanmin(x_col) if not np.isnan(x_col).all() else 1.0
             max_val = np.nanmax(x_col) if not np.isnan(x_col).all() else 1.0
-            if min_val == max_val:
-                max_val = min_val + 1.0
-
-            if col_id is not None:
-                # Create a more descriptive column reference
-                col_ref = (
-                    f"column {col_id}"
-                    if isinstance(col_id, (int, np.integer))
-                    else f"column '{col_id}'"
-                )
-                warnings.warn(
-                    f"Data in {col_ref} has no valid data points. "
-                    f"Using default bin range [{min_val}, {max_val}]",
-                    DataQualityWarning,
-                )
-
-            return [min_val, max_val], [(min_val + max_val) / 2]
-
-        if n_valid < min_samples:
-            # Insufficient data for complex binning
+            warning_msg = "has no valid data points"
+        else:
+            # Some valid data but insufficient for complex binning
             valid_data = x_col[valid_mask]
             min_val = np.min(valid_data)
             max_val = np.max(valid_data)
+            warning_msg = f"has only {n_valid} valid samples (minimum {min_samples} required). Creating single bin"
 
-            if min_val == max_val:
-                max_val = min_val + 1.0
+        # Ensure we have a valid range
+        if min_val == max_val:
+            max_val = min_val + 1.0
 
-            if col_id is not None:
-                # Create a more descriptive column reference
-                if isinstance(col_id, (int, np.integer)):
-                    col_ref = f"column {col_id}"
-                else:
-                    col_ref = f"column '{col_id}'"
-                warnings.warn(
-                    f"Data in {col_ref} has only {n_valid} valid samples "
-                    f"(minimum {min_samples} required). Creating single bin.",
-                    DataQualityWarning,
-                )
+        # Issue warning with appropriate column reference
+        if col_id is not None:
+            col_ref = (
+                f"column {col_id}"
+                if isinstance(col_id, (int, np.integer))
+                else f"column '{col_id}'"
+            )
+            warnings.warn(
+                f"Data in {col_ref} {warning_msg}. "
+                f"Using {'default ' if n_valid == 0 else ''}bin range [{min_val}, {max_val}]",
+                DataQualityWarning,
+            )
 
-            return [min_val, max_val], [(min_val + max_val) / 2]
-
-        # Sufficient data - continue with normal processing
-        return None
+        return [min_val, max_val], [(min_val + max_val) / 2]
 
     def create_fallback_bins(
         self, x_col: np.ndarray, default_range: Optional[Tuple[float, float]] = None

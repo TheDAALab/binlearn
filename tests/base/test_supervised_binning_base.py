@@ -259,20 +259,6 @@ def test_extract_valid_pairs():
     assert targ_valid[1] == 1
 
 
-def test_get_binning_params():
-    """Test _get_binning_params method with automatic discovery."""
-    tree_params = {"max_depth": 5}
-    obj = DummySupervisedBinning(task_type="regression", tree_params=tree_params)
-
-    params = obj._get_binning_params()
-
-    # With automatic discovery, these should be included
-    assert "task_type" in params
-    assert "tree_params" in params
-    assert params["task_type"] == "regression"
-    assert params["tree_params"] == tree_params
-
-
 def test_data_quality_warnings():
     """Test data quality warning generation."""
     obj = DummySupervisedBinning()
@@ -488,14 +474,16 @@ def test_validate_feature_target_pair_object_dtype():
 
 
 def test_handle_insufficient_data_string_column():
-    """Test handle_insufficient_data with string column ID to cover lines 286, 291."""
+    """Test handle_insufficient_data with string and integer column IDs to cover lines 422-435."""
     obj = DummySupervisedBinning()
 
-    # Empty valid data - should trigger line 286
+    # Test with string column ID - should trigger the else branch (f"column '{col_id}'")
     x_col = np.array([np.nan, np.nan, np.nan])
     valid_mask = np.array([False, False, False])
 
-    with pytest.warns(DataQualityWarning, match="has no valid data points"):
+    with pytest.warns(
+        DataQualityWarning, match="Data in column 'string_col' has no valid data points"
+    ):
         result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=2, col_id="string_col")
 
     # Should return fallback bins
@@ -504,16 +492,52 @@ def test_handle_insufficient_data_string_column():
     assert len(edges) == 2
     assert len(reps) == 1
 
+    # Test with Python integer column ID - should trigger the if branch (f"column {col_id}")
+    with pytest.warns(DataQualityWarning, match="Data in column 42 has no valid data points"):
+        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=2, col_id=42)
+
+    # Should return fallback bins
+    assert result is not None
+    edges, reps = result
+    assert len(edges) == 2
+    assert len(reps) == 1
+
+    # Test with numpy integer column ID to cover the np.integer type check
+    np_int_col_id = np.int32(99)
+    with pytest.warns(DataQualityWarning, match="Data in column 99 has no valid data points"):
+        result = obj.handle_insufficient_data(
+            x_col, valid_mask, min_samples=2, col_id=np_int_col_id
+        )
+
+    # Should return fallback bins
+    assert result is not None
+    edges, reps = result
+    assert len(edges) == 2
+    assert len(reps) == 1
+
+    # Test with col_id=None (no warning issued, but completes branch coverage)
+    result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=2, col_id=None)
+    assert result is not None
+    edges, reps = result
+    assert len(edges) == 2
+    assert len(reps) == 1
+    edges, reps = result
+    assert len(edges) == 2
+    assert len(reps) == 1
+
 
 def test_handle_insufficient_data_min_samples():
-    """Test handle_insufficient_data with min_samples threshold to cover lines 302-326."""
+    """Test handle_insufficient_data with min_samples threshold to cover lines 446-458."""
     obj = DummySupervisedBinning()
 
-    # Only 2 valid samples, but need minimum 5
+    # Only 2 valid samples, but need minimum 5 - test with string column ID
     x_col = np.array([1.0, 2.0, np.nan, np.nan, np.nan])
     valid_mask = np.array([True, True, False, False, False])
 
-    with pytest.warns(DataQualityWarning, match="has only 2 valid samples.*minimum 5 required"):
+    with pytest.warns(
+        DataQualityWarning,
+        match="Data in column 'test_col' has only 2 valid samples.*minimum 5 required",
+    ):
         result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=5, col_id="test_col")
 
     # Should return fallback bins due to insufficient samples
@@ -522,19 +546,29 @@ def test_handle_insufficient_data_min_samples():
     assert len(edges) == 2
     assert len(reps) == 1
 
+    # Test with Python integer column ID to cover the integer branch
+    with pytest.warns(
+        DataQualityWarning, match="Data in column 123 has only 2 valid samples.*minimum 5 required"
+    ):
+        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=5, col_id=123)
 
-def test_handle_insufficient_data_integer_column():
-    """Test handle_insufficient_data with integer column ID to cover integer branch."""
-    obj = DummySupervisedBinning()
+    # Test with numpy integer column ID to cover the np.integer branch
+    np_int_col_id = np.int64(456)
+    with pytest.warns(
+        DataQualityWarning, match="Data in column 456 has only 2 valid samples.*minimum 5 required"
+    ):
+        result = obj.handle_insufficient_data(
+            x_col, valid_mask, min_samples=5, col_id=np_int_col_id
+        )
 
-    # Test with insufficient samples and integer column
-    x_col = np.array([1.0, np.nan, np.nan])
-    valid_mask = np.array([True, False, False])
+    # Test with col_id=None (no warning issued, but completes branch coverage)
+    result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=5, col_id=None)
+    assert result is not None
+    edges, reps = result
+    assert len(edges) == 2
+    assert len(reps) == 1
 
-    with pytest.warns(DataQualityWarning, match="has only 1 valid samples.*minimum 3 required"):
-        result = obj.handle_insufficient_data(x_col, valid_mask, min_samples=3, col_id=0)
-
-    # Should return fallback bins
+    # Should return fallback bins due to insufficient samples
     assert result is not None
     edges, reps = result
     assert len(edges) == 2
@@ -594,22 +628,6 @@ def test_create_fallback_bins_same_min_max():
     # Should adjust max to be min + 1
     assert edges == [5.0, 6.0]
     assert reps == [5.5]
-
-
-def test_get_binning_params_supervised():
-    """Test _get_binning_params with automatic discovery."""
-    tree_params = {"max_depth": 3, "random_state": 42}
-    obj = DummySupervisedBinning(task_type="regression", tree_params=tree_params)
-
-    params = obj._get_binning_params()
-
-    # With automatic discovery, these should be included
-    assert "task_type" in params
-    assert "tree_params" in params
-    assert params["task_type"] == "regression"
-    assert params["tree_params"] == tree_params
-    assert params["task_type"] == "regression"
-    assert params["tree_params"] == tree_params
 
 
 def test_handle_bin_params():

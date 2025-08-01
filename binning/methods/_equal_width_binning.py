@@ -281,6 +281,9 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             - Focuses on parameter validation, not data validation
             - Part of sklearn-compatible parameter validation pattern
         """
+        # Call parent validation first (handles bin edges and representatives)
+        super()._validate_params()
+
         # Validate n_bins
         if not isinstance(self.n_bins, int) or self.n_bins < 1:
             raise ConfigurationError(

@@ -85,21 +85,13 @@ class TestOneHotBinningInitialization:
 
     def test_parameter_validation(self):
         """Test parameter validation."""
-        # Test basic creation works - OneHotBinning doesn't validate max_unique_values in constructor
-        binning = OneHotBinning(max_unique_values=-1)
-        assert binning.max_unique_values == -1  # Should be set even if invalid
+        # Test that validation happens during initialization (new behavior after refactoring)
+        with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
+            OneHotBinning(max_unique_values=-1)
 
-        # The validation happens during fit when it's actually used
-        X = np.array([[1], [2]])
-        with pytest.raises(ValueError):
-            binning.fit(X)
-
-    def test_get_binning_params(self):
-        """Test _get_binning_params method."""
-        binning = OneHotBinning(max_unique_values=50)
-        params = binning._get_binning_params()
-        assert "max_unique_values" in params
-        assert params["max_unique_values"] == 50
+        # Test that valid parameters work fine
+        binning = OneHotBinning(max_unique_values=100)
+        assert binning.max_unique_values == 100
 
     def test_handle_bin_params(self):
         """Test _handle_bin_params method."""

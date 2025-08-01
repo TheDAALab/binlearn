@@ -20,6 +20,7 @@ Test Classes:
     TestConfigEdgeCases: Tests for edge cases and error conditions.
     TestConfigIntegration: Integration tests with binning transformers.
 """
+
 # pylint: disable=protected-access
 
 import json
@@ -40,13 +41,13 @@ from binning.config import (
     apply_config_defaults,
     validate_config_parameter,
     get_config_schema,
-    _get_parameter_description
+    _get_parameter_description,
 )
 
 
 def test_basic_config_import():
     """Basic test to ensure pytest discovers this module correctly.
-    
+
     Verifies that the main configuration classes can be imported
     successfully and are available for testing.
     """
@@ -56,7 +57,7 @@ def test_basic_config_import():
 
 class TestBinningConfig:
     """Comprehensive test suite for the BinningConfig dataclass.
-    
+
     This test class verifies all aspects of the BinningConfig dataclass
     including default initialization, dictionary conversion, validation,
     and configuration parameter handling.
@@ -64,7 +65,7 @@ class TestBinningConfig:
 
     def test_init_defaults(self):
         """Test initialization with default parameter values.
-        
+
         Verifies that the BinningConfig dataclass initializes correctly
         with the expected default values for all configuration parameters.
         """
@@ -77,15 +78,11 @@ class TestBinningConfig:
 
     def test_from_dict_valid_keys(self):
         """Test configuration creation from dictionary with valid keys.
-        
+
         Verifies that the from_dict method correctly creates a BinningConfig
         instance from a dictionary with valid configuration parameters.
         """
-        config_dict = {
-            'preserve_dataframe': True,
-            'fit_jointly': True,
-            'float_tolerance': 1e-8
-        }
+        config_dict = {"preserve_dataframe": True, "fit_jointly": True, "float_tolerance": 1e-8}
         config = BinningConfig.from_dict(config_dict)
         assert config.preserve_dataframe is True
         assert config.fit_jointly is True
@@ -94,30 +91,27 @@ class TestBinningConfig:
     def test_from_dict_filters_invalid_keys(self):
         """Test from_dict filters out invalid keys."""
         config_dict = {
-            'preserve_dataframe': True,
-            'invalid_key': 'should_be_ignored',
-            'another_invalid': 123
+            "preserve_dataframe": True,
+            "invalid_key": "should_be_ignored",
+            "another_invalid": 123,
         }
         config = BinningConfig.from_dict(config_dict)
         assert config.preserve_dataframe is True
-        assert not hasattr(config, 'invalid_key')
+        assert not hasattr(config, "invalid_key")
 
     def test_to_dict(self):
         """Test to_dict conversion."""
         config = BinningConfig(preserve_dataframe=True, fit_jointly=True)
         config_dict = config.to_dict()
         assert isinstance(config_dict, dict)
-        assert config_dict['preserve_dataframe'] is True
-        assert config_dict['fit_jointly'] is True
+        assert config_dict["preserve_dataframe"] is True
+        assert config_dict["fit_jointly"] is True
 
     def test_load_from_file(self):
         """Test loading from JSON file."""
-        config_data = {
-            'preserve_dataframe': True,
-            'equal_width_default_bins': 10
-        }
+        config_data = {"preserve_dataframe": True, "equal_width_default_bins": 10}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as file_handle:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as file_handle:
             json.dump(config_data, file_handle)
             temp_path = file_handle.name
 
@@ -132,18 +126,18 @@ class TestBinningConfig:
         """Test saving to JSON file."""
         config = BinningConfig(preserve_dataframe=True, fit_jointly=True)
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as file_handle:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as file_handle:
             temp_path = file_handle.name
 
         try:
             config.save_to_file(temp_path)
 
             # Verify file contents
-            with open(temp_path, 'r', encoding='utf-8') as file_handle:
+            with open(temp_path, "r", encoding="utf-8") as file_handle:
                 saved_data = json.load(file_handle)
 
-            assert saved_data['preserve_dataframe'] is True
-            assert saved_data['fit_jointly'] is True
+            assert saved_data["preserve_dataframe"] is True
+            assert saved_data["fit_jointly"] is True
         finally:
             os.unlink(temp_path)
 
@@ -159,56 +153,74 @@ class TestBinningConfig:
         config = BinningConfig()
 
         with pytest.raises(ValueError, match="Unknown configuration parameter"):
-            config.update(invalid_parameter='value')
+            config.update(invalid_parameter="value")
 
     def test_update_validation(self):
         """Test update method with validation."""
         config = BinningConfig()
 
-        # Test positive depth validation
+        # Test positive depth validation - negative value should raise error
         with pytest.raises(ValueError, match="must be positive"):
             config.update(supervised_default_max_depth=-1)
 
-        # Test float tolerance validation
+        # Test positive depth validation - positive value should work
+        config.update(supervised_default_max_depth=5)  # Should pass validation
+        assert config.supervised_default_max_depth == 5
+
+        # Test float tolerance validation - negative should raise error
         with pytest.raises(ValueError, match="float_tolerance must be positive"):
             config.update(float_tolerance=-1.0)
+
+        # Test float tolerance validation - positive should work
+        config.update(float_tolerance=0.001)  # Should pass validation
+        assert config.float_tolerance == 0.001
+
+        # Test NEGATION: depth parameter with non-integer value (should skip depth validation branch)
+        # This covers the case where key matches pattern but isinstance(value, int) is False
+        config.update(supervised_default_max_depth="3")  # String instead of int, skips validation
+        assert config.supervised_default_max_depth == "3"
+
+        # Test NEGATION: float_tolerance with non-numeric value (should skip tolerance validation branch)
+        # This covers the case where key == "float_tolerance" but isinstance(value, (int, float)) is False
+        config.update(float_tolerance="0.001")  # String instead of number, skips validation
+        assert config.float_tolerance == "0.001"
 
     def test_validate_strategy_parameter(self):
         """Test _validate_strategy_parameter method."""
         config = BinningConfig()
 
         # Valid values
-        config._validate_strategy_parameter('equal_width_default_range_strategy', 'min_max')
-        config._validate_strategy_parameter('equal_width_default_range_strategy', 'percentile')
-        config._validate_strategy_parameter('equal_width_default_range_strategy', 'std')
+        config._validate_strategy_parameter("equal_width_default_range_strategy", "min_max")
+        config._validate_strategy_parameter("equal_width_default_range_strategy", "percentile")
+        config._validate_strategy_parameter("equal_width_default_range_strategy", "std")
 
         # Invalid value
         with pytest.raises(ValueError, match="must be one of"):
-            config._validate_strategy_parameter('equal_width_default_range_strategy', 'invalid')
+            config._validate_strategy_parameter("equal_width_default_range_strategy", "invalid")
 
     def test_get_method_defaults(self):
         """Test get_method_defaults for different methods."""
         config = BinningConfig()
 
         # Equal width
-        ew_defaults = config.get_method_defaults('equal_width')
-        assert 'n_bins' in ew_defaults
-        assert 'clip' in ew_defaults
-        assert ew_defaults['n_bins'] == config.equal_width_default_bins
+        ew_defaults = config.get_method_defaults("equal_width")
+        assert "n_bins" in ew_defaults
+        assert "clip" in ew_defaults
+        assert ew_defaults["n_bins"] == config.equal_width_default_bins
 
         # Supervised
-        sup_defaults = config.get_method_defaults('supervised')
-        assert 'max_depth' in sup_defaults
-        assert 'min_samples_leaf' in sup_defaults
+        sup_defaults = config.get_method_defaults("supervised")
+        assert "max_depth" in sup_defaults
+        assert "min_samples_leaf" in sup_defaults
 
         # OneHot
-        oh_defaults = config.get_method_defaults('onehot')
-        assert 'max_unique_values' in oh_defaults
+        oh_defaults = config.get_method_defaults("onehot")
+        assert "max_unique_values" in oh_defaults
 
         # Unknown method - should return base defaults
-        unknown_defaults = config.get_method_defaults('UnknownMethod')
-        assert 'preserve_dataframe' in unknown_defaults
-        assert 'fit_jointly' in unknown_defaults
+        unknown_defaults = config.get_method_defaults("UnknownMethod")
+        assert "preserve_dataframe" in unknown_defaults
+        assert "fit_jointly" in unknown_defaults
 
 
 class TestConfigManager:
@@ -235,9 +247,9 @@ class TestConfigManager:
 
     def test_load_config_from_file(self):
         """Test load_config method."""
-        config_data = {'preserve_dataframe': True}
+        config_data = {"preserve_dataframe": True}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_data, f)
             temp_path = f.name
 
@@ -262,10 +274,10 @@ class TestConfigManager:
     def test_load_from_env(self):
         """Test _load_from_env with environment variables."""
         env_vars = {
-            'BINNING_PRESERVE_DATAFRAME': 'true',
-            'BINNING_FIT_JOINTLY': 'false',
-            'BINNING_FLOAT_TOLERANCE': '1e-8',
-            'BINNING_EQUAL_WIDTH_BINS': '10'
+            "BINNING_PRESERVE_DATAFRAME": "true",
+            "BINNING_FIT_JOINTLY": "false",
+            "BINNING_FLOAT_TOLERANCE": "1e-8",
+            "BINNING_EQUAL_WIDTH_BINS": "10",
         }
 
         with patch.dict(os.environ, env_vars):
@@ -282,8 +294,8 @@ class TestConfigManager:
     def test_load_from_env_invalid_values(self):
         """Test _load_from_env with invalid environment values."""
         env_vars = {
-            'BINNING_PRESERVE_DATAFRAME': 'invalid_bool',
-            'BINNING_FLOAT_TOLERANCE': 'not_a_number'
+            "BINNING_PRESERVE_DATAFRAME": "invalid_bool",
+            "BINNING_FLOAT_TOLERANCE": "not_a_number",
         }
 
         with patch.dict(os.environ, env_vars):
@@ -305,7 +317,7 @@ class TestConfigManager:
         manager = ConfigManager()
 
         with pytest.raises(FileNotFoundError):
-            manager.load_config('/nonexistent/file.json')
+            manager.load_config("/nonexistent/file.json")
 
 
 class TestGlobalFunctions:
@@ -324,9 +336,9 @@ class TestGlobalFunctions:
 
     def test_load_config_function(self):
         """Test load_config function."""
-        config_data = {'preserve_dataframe': True}
+        config_data = {"preserve_dataframe": True}
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(config_data, f)
             temp_path = f.name
 
@@ -348,69 +360,68 @@ class TestGlobalFunctions:
         set_config(preserve_dataframe=True, fit_jointly=True)
 
         # Test with method name
-        params = apply_config_defaults('equal_width')
-        assert params['preserve_dataframe'] is True
-        assert params['fit_jointly'] is True
-        assert 'n_bins' in params  # Method-specific default
+        params = apply_config_defaults("equal_width")
+        assert params["preserve_dataframe"] is True
+        assert params["fit_jointly"] is True
+        assert "n_bins" in params  # Method-specific default
 
         # Test with user_params preservation
-        params = apply_config_defaults('equal_width',
-                                     user_params={'preserve_dataframe': False})
-        assert params['preserve_dataframe'] is False
+        params = apply_config_defaults("equal_width", user_params={"preserve_dataframe": False})
+        assert params["preserve_dataframe"] is False
 
         # Test with override parameters
-        params = apply_config_defaults('equal_width',
-                                     user_params={'n_bins': 5},
-                                     n_bins=10)  # Override should win
-        assert params['n_bins'] == 10
+        params = apply_config_defaults(
+            "equal_width", user_params={"n_bins": 5}, n_bins=10
+        )  # Override should win
+        assert params["n_bins"] == 10
 
         # Test with None and empty user_params
-        params = apply_config_defaults('equal_width', user_params=None)
-        assert 'n_bins' in params
+        params = apply_config_defaults("equal_width", user_params=None)
+        assert "n_bins" in params
 
-        params = apply_config_defaults('equal_width', user_params={})
-        assert 'n_bins' in params
+        params = apply_config_defaults("equal_width", user_params={})
+        assert "n_bins" in params
 
         reset_config()  # Clean up
 
     def test_validate_config_parameter(self):
         """Test validate_config_parameter function."""
         # Valid parameters
-        assert validate_config_parameter('preserve_dataframe', True) is True
-        assert validate_config_parameter('fit_jointly', False) is True
-        assert validate_config_parameter('float_tolerance', 1e-8) is True
-        assert validate_config_parameter('equal_width_default_bins', 10) is True
+        assert validate_config_parameter("preserve_dataframe", True) is True
+        assert validate_config_parameter("fit_jointly", False) is True
+        assert validate_config_parameter("float_tolerance", 1e-8) is True
+        assert validate_config_parameter("equal_width_default_bins", 10) is True
 
         # Invalid parameter names
-        assert validate_config_parameter('invalid_param', 'value') is False
-        assert validate_config_parameter('nonexistent_param', 'value') is False
+        assert validate_config_parameter("invalid_param", "value") is False
+        assert validate_config_parameter("nonexistent_param", "value") is False
 
         # Invalid strategy value
-        assert validate_config_parameter('equal_width_default_range_strategy', 'invalid') is False
+        assert validate_config_parameter("equal_width_default_range_strategy", "invalid") is False
 
     def test_get_config_schema(self):
         """Test get_config_schema function."""
         schema = get_config_schema()
 
         assert isinstance(schema, dict)
-        assert 'preserve_dataframe' in schema
-        assert 'fit_jointly' in schema
-        assert 'float_tolerance' in schema
+        assert "preserve_dataframe" in schema
+        assert "fit_jointly" in schema
+        assert "float_tolerance" in schema
 
         # Check schema structure
-        param_schema = schema['preserve_dataframe']
-        assert 'type' in param_schema
-        assert 'default' in param_schema
-        assert 'description' in param_schema
+        param_schema = schema["preserve_dataframe"]
+        assert "type" in param_schema
+        assert "default" in param_schema
+        assert "description" in param_schema
 
     def test_get_parameter_description(self):
         """Test _get_parameter_description function."""
-        desc = _get_parameter_description('preserve_dataframe')
+        desc = _get_parameter_description("preserve_dataframe")
         assert isinstance(desc, str)
         assert len(desc) > 0
 
         # Test fallback for unknown parameter
-        desc = _get_parameter_description('unknown_param')
+        desc = _get_parameter_description("unknown_param")
         assert desc == "No description available"
 
 
@@ -479,11 +490,11 @@ class TestConfigEdgeCases:
     def test_config_file_not_found(self):
         """Test loading from non-existent file."""
         with pytest.raises(FileNotFoundError):
-            BinningConfig.load_from_file('/non/existent/file.json')
+            BinningConfig.load_from_file("/non/existent/file.json")
 
     def test_config_file_invalid_json(self):
         """Test loading from file with invalid JSON."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("invalid json content")
             temp_path = f.name
 
@@ -499,7 +510,7 @@ class TestConfigEdgeCases:
 
         # Try to save to a directory that doesn't exist
         with pytest.raises(FileNotFoundError):
-            config.save_to_file('/non/existent/directory/config.json')
+            config.save_to_file("/non/existent/directory/config.json")
 
 
 class TestConfigIntegration:
@@ -517,7 +528,7 @@ class TestConfigIntegration:
         assert config.equal_width_default_bins == 8
 
         # Save to file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = f.name
 
         try:
@@ -541,24 +552,20 @@ class TestConfigIntegration:
         reset_config()
 
         # Modify config
-        set_config(
-            equal_width_default_bins=7,
-            default_clip=False,
-            preserve_dataframe=True
-        )
+        set_config(equal_width_default_bins=7, default_clip=False, preserve_dataframe=True)
 
         config = get_config()
 
         # Test method defaults
-        ew_defaults = config.get_method_defaults('equal_width')
-        assert ew_defaults['n_bins'] == 7
-        assert ew_defaults['clip'] is False
+        ew_defaults = config.get_method_defaults("equal_width")
+        assert ew_defaults["n_bins"] == 7
+        assert ew_defaults["clip"] is False
 
         # Test apply_config_defaults
-        params = apply_config_defaults('equal_width')
+        params = apply_config_defaults("equal_width")
 
-        assert params['n_bins'] == 7
-        assert params['clip'] is False
-        assert params['preserve_dataframe'] is True
+        assert params["n_bins"] == 7
+        assert params["clip"] is False
+        assert params["preserve_dataframe"] is True
 
         reset_config()

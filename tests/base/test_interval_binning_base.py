@@ -38,11 +38,11 @@ def test_init_with_bin_edges():
     """Test initialization with bin_edges provided."""
     bin_edges = {0: [0, 1, 2]}
 
-    with patch.object(DummyIntervalBinning, "_process_provided_bins") as mock_process:
-        obj = DummyIntervalBinning(bin_edges=bin_edges)
-        assert obj.bin_edges == bin_edges
-        mock_process.assert_called_once()
-        mock_process.assert_called_once()
+    # Initialization now automatically validates and processes bin edges
+    obj = DummyIntervalBinning(bin_edges=bin_edges)
+    assert obj.bin_edges == bin_edges
+    # Should be fitted automatically after initialization with valid edges
+    assert obj._fitted is True
 
 
 def test_init_with_bin_representatives():
@@ -52,71 +52,18 @@ def test_init_with_bin_representatives():
     assert obj.bin_representatives == bin_reps
 
 
-@patch("binning.base._interval_binning_base.validate_bin_edges_format")
-@patch("binning.base._interval_binning_base.validate_bins")
-def test_process_provided_bins_edges_only(mock_validate, mock_validate_format):
-    """Test _process_provided_bins with edges only."""
-    mock_validate_format.return_value = None  # No validation errors
-    mock_validate.return_value = None  # No validation errors
-
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
-    obj.bin_representatives = None
-
-    with patch("binning.base._interval_binning_base.default_representatives") as mock_default:
-        mock_default.return_value = [0.5, 1.5]
-        obj._process_provided_bins()
-
-        mock_validate_format.assert_called_once_with({0: [0, 1, 2]})
-        mock_default.assert_called_once()
-        mock_validate.assert_called_once()
-        assert obj._fitted is True
-
-
-@patch("binning.base._interval_binning_base.validate_bin_edges_format")
-@patch("binning.base._interval_binning_base.validate_bin_representatives_format")
-@patch("binning.base._interval_binning_base.validate_bins")
-def test_process_provided_bins_both(mock_validate, mock_validate_reps, mock_validate_edges):
-    """Test _process_provided_bins with both edges and reps."""
-    mock_validate_edges.return_value = None
-    mock_validate_reps.return_value = None
-    mock_validate.return_value = None
-
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
-    obj.bin_representatives = {0: [0.5, 1.5]}
-
-    obj._process_provided_bins()
-
-    mock_validate_edges.assert_called_once_with({0: [0, 1, 2]})
-    mock_validate_reps.assert_called_once_with({0: [0.5, 1.5]}, {0: [0, 1, 2]})
-    mock_validate.assert_called_once()
-    assert obj._fitted is True
-
-
-def test_process_provided_bins_invalid_edges_type():
-    """Test _process_provided_bins with invalid edge types."""
+def test_init_invalid_edges_type():
+    """Test initialization with invalid edge types."""
     # Now fails during initialization due to validation
     with pytest.raises(ConfigurationError, match="must be array-like"):
         DummyIntervalBinning(bin_edges={0: "invalid"})
 
 
-def test_process_provided_bins_too_few_edges():
-    """Test _process_provided_bins with too few edges."""
+def test_init_too_few_edges():
+    """Test initialization with too few edges."""
     # Now fails during initialization due to validation
     with pytest.raises(ConfigurationError, match="needs at least 2 bin edges"):
         DummyIntervalBinning(bin_edges={0: [1]})
-
-
-def test_process_provided_bins_error():
-    """Test _process_provided_bins error handling."""
-    obj = DummyIntervalBinning()
-
-    # Set invalid bin_edges that will cause validation to fail
-    obj.bin_edges = {0: "invalid_edges"}  # String instead of list
-
-    with pytest.raises(ConfigurationError, match="must be array-like"):
-        obj._process_provided_bins()
 
 
 @patch.object(DummyIntervalBinning, "_process_user_specifications")
@@ -330,6 +277,25 @@ def test_inverse_transform_columns_missing_key():
         obj._inverse_transform_columns(X, columns)
 
 
+def test_inverse_transform_columns_all_special_values():
+    """Test _inverse_transform_columns when all values are special (nan, inf, etc)."""
+    from binning.utils.constants import BELOW_RANGE, ABOVE_RANGE, MISSING_VALUE
+
+    obj = DummyIntervalBinning()
+    obj._bin_reps = {0: [1.0, 2.0, 3.0]}
+
+    # All values are special - this should cover the regular_indices.any() == False branch
+    X = np.array([[MISSING_VALUE], [BELOW_RANGE], [ABOVE_RANGE]])
+    columns = [0]
+
+    result = obj._inverse_transform_columns(X, columns)
+
+    # Check that special values are handled correctly
+    assert np.isnan(result[0, 0])  # MISSING_VALUE -> NaN
+    assert result[1, 0] == -np.inf  # BELOW_RANGE -> -inf
+    assert result[2, 0] == np.inf  # ABOVE_RANGE -> inf
+
+
 @patch("binning.base._interval_binning_base.validate_bins")
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
@@ -388,18 +354,6 @@ def test_calculate_bins_jointly_abstract():
     # Should fall back to _calculate_bins with new signature
     result = obj._calculate_bins_jointly(np.array([1, 2]), [0])
     assert result == ([0.0, 1.0, 2.0], [0.5, 1.5])
-
-
-def test_get_binning_params():
-    """Test _get_binning_params method with automatic discovery."""
-    obj = DummyIntervalBinning(bin_edges={0: [0, 1, 2]}, clip=True)
-    params = obj._get_binning_params()
-
-    # With automatic discovery, these should be included
-    assert "bin_edges" in params
-    assert "bin_representatives" in params
-    assert "clip" in params
-    assert params["clip"] is True
 
 
 def test_get_fitted_params():
@@ -616,26 +570,6 @@ def test_fit_per_column_binning_error():
         obj._fit_per_column(X, columns)
 
 
-def test_process_provided_bins_real_error_scenario():
-    """Test _process_provided_bins with actual validation errors."""
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: "invalid_string"}  # Invalid type
-
-    # This should raise a real validation error
-    with pytest.raises(ConfigurationError, match="must be array-like"):
-        obj._process_provided_bins()
-
-
-def test_process_provided_bins_insufficient_edges():
-    """Test _process_provided_bins with insufficient bin edges."""
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [1]}  # Only one edge, need at least 2
-
-    # This should raise a real validation error
-    with pytest.raises(ConfigurationError, match="needs at least 2 bin edges"):
-        obj._process_provided_bins()
-
-
 def test_finalize_fitting_default_representatives():
     """Test _finalize_fitting generates default representatives for missing ones."""
     obj = DummyIntervalBinning()
@@ -722,6 +656,24 @@ def test_lookup_bin_widths_method():
     np.testing.assert_array_equal(result, expected)
 
 
+def test_lookup_bin_widths_all_invalid():
+    """Test lookup_bin_widths when all bin indices are invalid."""
+    from binning.utils.constants import MISSING_VALUE
+
+    obj = DummyIntervalBinning()
+    obj._bin_edges = {0: [0, 1, 3]}  # Valid bin indices: 0, 1
+    obj._fitted = True
+
+    # All indices are invalid - this should cover the valid.any() == False branch
+    bin_indices = np.array([[MISSING_VALUE], [-5], [10]])  # All invalid
+    result = obj.lookup_bin_widths(bin_indices)
+
+    # Should return default values (likely 0.0) for all invalid indices
+    # The key is that valid.any() returns False so no valid processing happens
+    expected = np.array([[0.0], [0.0], [0.0]])
+    np.testing.assert_array_equal(result, expected)
+
+
 def test_lookup_bin_ranges_method():
     """Test lookup_bin_ranges method directly."""
     obj = DummyIntervalBinning()
@@ -767,21 +719,6 @@ def test_process_user_specifications_non_numeric_edges():
     # This should raise a real validation error
     with pytest.raises(ConfigurationError, match="must be numeric"):
         obj._process_user_specifications([0, 1])
-
-
-def test_process_provided_bins_non_binning_exception():
-    """Test _process_provided_bins with non-BinningError exception re-raising."""
-    obj = DummyIntervalBinning()
-    obj.bin_edges = {0: [0, 1, 2]}
-
-    # Mock to raise a non-BinningError exception
-    with patch("binning.base._interval_binning_base.validate_bin_edges_format") as mock_validate:
-        mock_validate.side_effect = ValueError("Some unexpected validation error")
-
-        with pytest.raises(
-            ConfigurationError, match="Failed to process provided bin specifications"
-        ):
-            obj._process_provided_bins()
 
 
 def test_process_user_specifications_non_binning_exception():
