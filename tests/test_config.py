@@ -32,16 +32,16 @@ import pytest
 
 from binning.config import (
     BinningConfig,
-    ConfigManager,
     ConfigContext,
+    ConfigManager,
+    _get_parameter_description,
+    apply_config_defaults,
     get_config,
-    set_config,
+    get_config_schema,
     load_config,
     reset_config,
-    apply_config_defaults,
+    set_config,
     validate_config_parameter,
-    get_config_schema,
-    _get_parameter_description,
 )
 
 
@@ -133,7 +133,7 @@ class TestBinningConfig:
             config.save_to_file(temp_path)
 
             # Verify file contents
-            with open(temp_path, "r", encoding="utf-8") as file_handle:
+            with open(temp_path, encoding="utf-8") as file_handle:
                 saved_data = json.load(file_handle)
 
             assert saved_data["preserve_dataframe"] is True

@@ -6,18 +6,20 @@ contain both singleton values and interval ranges.
 """
 
 from __future__ import annotations
+
 from typing import Any
 
 import numpy as np
+
 from .constants import MISSING_VALUE
 from .types import (
-    ColumnId,
+    BinCountDict,
     BinReps,
     BinRepsDict,
+    ColumnId,
     FlexibleBinDef,
     FlexibleBinDefs,
     FlexibleBinSpec,
-    BinCountDict,
 )
 
 

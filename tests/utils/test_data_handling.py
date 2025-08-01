@@ -25,12 +25,12 @@ from unittest.mock import Mock, patch
 import numpy as np
 
 from binning.utils.data_handling import (
+    _determine_columns,
     _is_pandas_df,
     _is_polars_df,
     prepare_array,
-    return_like_input,
-    _determine_columns,
     prepare_input_with_columns,
+    return_like_input,
 )
 
 

@@ -8,6 +8,6 @@ from .integration import (
 
 __all__ = [
     "BinningFeatureSelector",
-    "BinningPipeline", 
+    "BinningPipeline",
     "make_binning_scorer",
 ]

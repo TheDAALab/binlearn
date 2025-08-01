@@ -1,18 +1,19 @@
 """Tests for flexible_binning module."""
 
-import pytest
 import numpy as np
-from binning.utils.flexible_bin_operations import (
-    generate_default_flexible_representatives,
-    validate_flexible_bins,
-    validate_flexible_bin_spec_format,
-    is_missing_value,
-    find_flexible_bin_for_value,
-    calculate_flexible_bin_width,
-    transform_value_to_flexible_bin,
-    get_flexible_bin_count,
-)
+import pytest
+
 from binning.utils.constants import MISSING_VALUE
+from binning.utils.flexible_bin_operations import (
+    calculate_flexible_bin_width,
+    find_flexible_bin_for_value,
+    generate_default_flexible_representatives,
+    get_flexible_bin_count,
+    is_missing_value,
+    transform_value_to_flexible_bin,
+    validate_flexible_bin_spec_format,
+    validate_flexible_bins,
+)
 
 
 class TestValidateFlexibleBinSpecFormat:

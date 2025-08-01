@@ -5,10 +5,12 @@ This module provides utility functions for working with traditional interval bin
 """
 
 from __future__ import annotations
-from typing import Any, Tuple
+
+from typing import Any
 
 import numpy as np
-from .constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
+
+from .constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
 from .types import (
     BinEdges,
     BinEdgesDict,
@@ -157,7 +159,7 @@ def default_representatives(edges: BinEdges) -> BinReps:
 
 def create_bin_masks(
     bin_indices: np.ndarray, n_bins: int
-) -> Tuple[BooleanMask, BooleanMask, BooleanMask, BooleanMask]:
+) -> tuple[BooleanMask, BooleanMask, BooleanMask, BooleanMask]:
     """Create boolean masks for different bin index types.
 
     Args:

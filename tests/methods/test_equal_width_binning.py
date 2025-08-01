@@ -16,17 +16,18 @@ Test Classes:
         and sklearn-style workflows.
 """
 
-import pytest
 import numpy as np
-from binning.methods._equal_width_binning import EqualWidthBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
+import pytest
+from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
 
 # Import sklearn components
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import clone
+
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binning.methods._equal_width_binning import EqualWidthBinning
+from binning.utils.errors import ConfigurationError, DataQualityWarning
 
 try:
     from scipy import sparse
@@ -316,21 +317,21 @@ class TestEqualWidthBinning:
         """Test parameter validation with non-integer n_bins."""
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
             ewb = EqualWidthBinning()
-            setattr(ewb, "n_bins", "invalid")  # Bypass type checking
+            ewb.n_bins = "invalid"  # Bypass type checking
             ewb._validate_params()
 
     def test_validate_params_invalid_bin_range_length(self):
         """Test parameter validation with invalid bin_range length."""
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
             ewb = EqualWidthBinning()
-            setattr(ewb, "bin_range", (1, 2, 3))  # Bypass type checking, wrong length
+            ewb.bin_range = 1, 2, 3  # Bypass type checking, wrong length
             ewb._validate_params()
 
     def test_validate_params_non_tuple_bin_range(self):
         """Test parameter validation with non-tuple bin_range."""
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
             ewb = EqualWidthBinning()
-            setattr(ewb, "bin_range", [0, 10])  # Bypass type checking, list instead of tuple
+            ewb.bin_range = [0, 10]  # Bypass type checking, list instead of tuple
             ewb._validate_params()
 
     def test_empty_params_in_handle_bin_params(self):
@@ -767,7 +768,7 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         # The bin edges should be calculated from the actual data range (1-7)
         # For equal width binning with 5 bins: [1.0, 2.2, 3.4, 4.6, 5.8, 7.0]
         expected_edges_col0 = [1.0, 2.2, 3.4, 4.6, 5.8, 7.0]
-        expected_edges_col1 = [2.0, 3.0, 4.0, 5.0, 6.0, 8.0]
+        _ = [2.0, 3.0, 4.0, 5.0, 6.0, 8.0]  # expected_edges_col1
 
         # Check that edges were calculated from data, not from user-provided values
         assert len(ewb._bin_edges[0]) == 6  # 5 bins = 6 edges

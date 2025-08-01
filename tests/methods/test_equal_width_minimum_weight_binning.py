@@ -16,17 +16,17 @@ Test Classes:
         constraint functionality and bin merging behavior.
 """
 
-import pytest
 import numpy as np
-from binning.methods._equal_width_minimum_weight_binning import EqualWidthMinimumWeightBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning, FittingError
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
+import pytest
+from sklearn.base import clone
 
 # Import sklearn components
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import clone
+
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binning.methods._equal_width_minimum_weight_binning import EqualWidthMinimumWeightBinning
+from binning.utils.errors import ConfigurationError, DataQualityWarning, FittingError
 
 
 class TestEqualWidthMinimumWeightBinning:

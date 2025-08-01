@@ -1,5 +1,6 @@
 """Tests for types module."""
 import numpy as np
+
 from binning.utils import types
 
 

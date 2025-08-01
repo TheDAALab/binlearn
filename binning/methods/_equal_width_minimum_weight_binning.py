@@ -9,14 +9,14 @@ Classes:
 """
 
 import warnings
+from typing import Any, List, Optional, Tuple
 
-from typing import Any, Tuple, Optional, List
 import numpy as np
 
-from ..utils.types import BinEdgesDict, GuidanceColumns, ColumnList
 from ..base._interval_binning_base import IntervalBinningBase
-from ..utils.errors import ConfigurationError, DataQualityWarning, FittingError
 from ..base._repr_mixin import ReprMixin
+from ..utils.errors import ConfigurationError, DataQualityWarning, FittingError
+from ..utils.types import BinEdgesDict, ColumnList, GuidanceColumns
 
 
 # pylint: disable=too-many-ancestors

@@ -16,19 +16,19 @@ Test Classes:
         and sklearn-style workflows.
 """
 
-import pytest
+import kmeans1d
 import numpy as np
-from binning.methods._kmeans_binning import KMeansBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
+import pytest
+from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
 
 # Import sklearn components
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import clone
 
-import kmeans1d
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binning.methods._kmeans_binning import KMeansBinning
+from binning.utils.errors import ConfigurationError, DataQualityWarning
 
 
 class TestKMeansBinning:
@@ -261,7 +261,6 @@ class TestKMeansBinning:
         kmb = KMeansBinning(n_bins=3)
 
         # Create a mock that will replace kmeans1d.cluster temporarily
-        import kmeans1d
 
         original_cluster = kmeans1d.cluster
 

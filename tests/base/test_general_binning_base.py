@@ -15,10 +15,11 @@ Functions:
     transformation, guidance handling, and sklearn compatibility.
 """
 
-import pytest
+from unittest.mock import patch
+
 import numpy as np
-import inspect
-from unittest.mock import Mock, patch
+import pytest
+
 from binning import PANDAS_AVAILABLE, pd
 from binning.base._general_binning_base import GeneralBinningBase
 from binning.utils.errors import BinningError
@@ -189,7 +190,7 @@ def test_fit_with_dataframe():
     obj = DummyGeneralBinning()
     df = pd.DataFrame([[1, 2], [3, 4]], columns=["A", "B"])
 
-    result = obj.fit(df)
+    _ = obj.fit(df)
     assert obj._feature_names_in == ["A", "B"]
 
 
@@ -419,13 +420,13 @@ def test_validate_params():
     obj._validate_params()  # Should not raise
 
     # Test invalid preserve_dataframe
-    setattr(obj, "preserve_dataframe", "invalid")  # Bypass type checking for test
+    obj.preserve_dataframe = "invalid"  # Bypass type checking for test
     with pytest.raises(TypeError, match="preserve_dataframe must be a boolean"):
         obj._validate_params()
 
     # Test invalid fit_jointly
     obj.preserve_dataframe = True
-    setattr(obj, "fit_jointly", "invalid")  # Bypass type checking for test
+    obj.fit_jointly = "invalid"  # Bypass type checking for test
     with pytest.raises(TypeError, match="fit_jointly must be a boolean"):
         obj._validate_params()
 
@@ -548,9 +549,9 @@ def test_get_params_with_fitted_attributes():
     obj._fitted = True
 
     # Add some fitted attributes to test lines 294-298
-    setattr(obj, "bin_spec_", {0: [1]})  # New simplified format
-    setattr(obj, "bin_representatives_", {0: [1.0]})
-    setattr(obj, "bin_edges_", {0: [0, 1, 2]})
+    obj.bin_spec_ = {0: [1]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
 
     params = obj.get_params()
 
@@ -571,8 +572,8 @@ def test_get_params_with_none_fitted_attributes():
     obj._fitted = True
 
     # Add fitted attributes with None values
-    setattr(obj, "bin_spec_", None)
-    setattr(obj, "bin_representatives_", {0: [1.0]})  # This one is not None
+    obj.bin_spec_ = None
+    obj.bin_representatives_ = {0: [1.0]}  # This one is not None
 
     params = obj.get_params()
 

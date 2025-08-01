@@ -9,13 +9,14 @@ Classes:
     EqualFrequencyBinning: Main transformer for equal-frequency binning operations.
 """
 
-from typing import Any, Tuple, Optional, List
+from typing import Any, List, Optional, Tuple
+
 import numpy as np
 
-from ..utils.types import BinEdgesDict
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError
+from ..utils.types import BinEdgesDict
 
 
 # pylint: disable=too-many-ancestors

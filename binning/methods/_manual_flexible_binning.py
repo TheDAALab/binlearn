@@ -9,13 +9,14 @@ Classes:
     ManualFlexibleBinning: Main transformer for user-defined flexible binning.
 """
 
-from typing import Any, Tuple, Optional
+from typing import Any, Optional, Tuple
+
 import numpy as np
 
-from ..utils.types import FlexibleBinSpec, BinEdgesDict, FlexibleBinDefs, BinReps
 from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
-from ..utils.errors import ConfigurationError, BinningError
+from ..utils.errors import BinningError, ConfigurationError
+from ..utils.types import BinEdgesDict, BinReps, FlexibleBinDefs, FlexibleBinSpec
 
 
 # pylint: disable=too-many-ancestors

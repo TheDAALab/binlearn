@@ -1,9 +1,11 @@
-import pytest
 import warnings
+from unittest.mock import patch
+
 import numpy as np
-from unittest.mock import Mock, patch
+import pytest
+
 from binning.base._supervised_binning_base import SupervisedBinningBase
-from binning.utils.errors import DataQualityWarning
+from binning.utils.errors import ConfigurationError, DataQualityWarning, ValidationError
 
 
 class DummySupervisedBinning(SupervisedBinningBase):
@@ -55,7 +57,7 @@ def test_init_regression():
 
 def test_init_invalid_task_type():
     """Test initialization with invalid task type."""
-    with pytest.raises(Exception):  # Should raise ConfigurationError
+    with pytest.raises(ConfigurationError):  # Should raise ConfigurationError
         DummySupervisedBinning(task_type="invalid")
 
 
@@ -105,7 +107,7 @@ def test_validate_guidance_data_multiple_columns():
     obj = DummySupervisedBinning()
     guidance_data = np.array([[1, 3], [2, 4], [1, 3]])
 
-    with pytest.raises(Exception):  # Should raise ValidationError
+    with pytest.raises(ValidationError):  # Should raise ValidationError
         obj.validate_guidance_data(guidance_data)
 
 
@@ -174,9 +176,9 @@ def test_validate_feature_target_pairs_with_missing():
     assert len(feat_clean) == 3
     assert len(targ_clean) == 3
     # Only first element should be valid
-    assert valid_mask[0] == True
-    assert valid_mask[1] == False  # features has NaN
-    assert valid_mask[2] == False  # targets has NaN
+    assert valid_mask[0]
+    assert not valid_mask[1]  # features has NaN
+    assert not valid_mask[2]  # targets has NaN
 
 
 def test_validate_feature_target_pairs_insufficient_data():
@@ -267,7 +269,7 @@ def test_data_quality_warnings():
     features = np.array([np.inf, 2.0, 3.0])
     targets = np.array([0, 1, 0])
 
-    with patch("warnings.warn") as mock_warn:
+    with patch("warnings.warn"):
         feat_clean, targ_clean, mask = obj.validate_feature_target_pair(features, targets, "col1")
 
         # Should handle infinite values appropriately
@@ -279,7 +281,7 @@ def test_feature_target_length_mismatch():
     features = np.array([1.0, 2.0])
     targets = np.array([0, 1, 0])  # Different length
 
-    with pytest.raises(Exception):  # Should raise ValidationError
+    with pytest.raises(ValidationError):  # Should raise ValidationError
         obj.validate_feature_target_pair(features, targets, "col1")
 
 
@@ -316,7 +318,7 @@ def test_guidance_data_validation_name():
     obj = DummySupervisedBinning()
     guidance_data = np.array([[1, 2]])  # Invalid: multiple columns
 
-    with pytest.raises(Exception):  # Should mention custom name in error
+    with pytest.raises(ValidationError):  # Should mention custom name in error
         obj.validate_guidance_data(guidance_data, name="custom_target")
 
 

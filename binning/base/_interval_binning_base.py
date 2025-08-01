@@ -10,29 +10,30 @@ behavior and comprehensive validation of bin edges and representatives.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Optional, Tuple
-from abc import abstractmethod
+
 import warnings
+from abc import abstractmethod
+from typing import Any
 
 import numpy as np
 
-from ..utils.types import BinEdges, BinEdgesDict, ColumnId, ColumnList, GuidanceColumns
-from ._general_binning_base import GeneralBinningBase
+from ..config import get_config
 from ..utils.bin_operations import (
+    create_bin_masks,
+    default_representatives,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
-    default_representatives,
-    create_bin_masks,
 )
+from ..utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
 from ..utils.data_handling import return_like_input
-from ..utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
 from ..utils.errors import (
     BinningError,
     ConfigurationError,
     DataQualityWarning,
 )
-from ..config import get_config
+from ..utils.types import BinEdges, BinEdgesDict, ColumnId, ColumnList, GuidanceColumns
+from ._general_binning_base import GeneralBinningBase
 
 
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
@@ -78,12 +79,12 @@ class IntervalBinningBase(GeneralBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        clip: Optional[bool] = None,
-        preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[BinEdgesDict] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        fit_jointly: Optional[bool] = None,
-        guidance_columns: Optional[GuidanceColumns] = None,
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
+        guidance_columns: GuidanceColumns | None = None,
         **kwargs,
     ):
         """Initialize the interval binning base class.
@@ -240,9 +241,9 @@ class IntervalBinningBase(GeneralBinningBase):
         self,
         X: np.ndarray,
         columns: ColumnList,
-        guidance_data: Optional[np.ndarray] = None,
+        guidance_data: np.ndarray | None = None,
         **fit_params,
-    ) -> "IntervalBinningBase":
+    ) -> IntervalBinningBase:
         """Fit bins per column with optional guidance data.
 
         Processes each column independently to calculate bin edges and representatives.
@@ -284,7 +285,7 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
     def _calculate_bins_for_columns(
-        self, X: np.ndarray, columns: ColumnList, guidance_data: Optional[np.ndarray]
+        self, X: np.ndarray, columns: ColumnList, guidance_data: np.ndarray | None
     ) -> None:
         """Calculate bins for each column.
 
@@ -302,7 +303,7 @@ class IntervalBinningBase(GeneralBinningBase):
             self._calculate_bins_for_single_column(X, i, col, guidance_data)
 
     def _calculate_bins_for_single_column(
-        self, X: np.ndarray, col_index: int, col: ColumnId, guidance_data: Optional[np.ndarray]
+        self, X: np.ndarray, col_index: int, col: ColumnId, guidance_data: np.ndarray | None
     ) -> None:
         """Calculate bins for a single column.
 
@@ -352,7 +353,7 @@ class IntervalBinningBase(GeneralBinningBase):
         else:
             col_ref = f"column '{col}'"
 
-        warnings.warn(f"Data in {col_ref} contains only NaN values", DataQualityWarning)
+        warnings.warn(f"Data in {col_ref} contains only NaN values", DataQualityWarning, stacklevel=2)
 
     def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
         """Fit bins jointly across all columns.
@@ -382,7 +383,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
             # Check if all data is NaN
             if np.all(np.isnan(all_data)):
-                warnings.warn("All data contains only NaN values", DataQualityWarning)
+                warnings.warn("All data contains only NaN values", DataQualityWarning, stacklevel=2)
 
             # Calculate bins once from all flattened data
             edges, reps = self._calculate_bins_jointly(all_data, columns)
@@ -457,7 +458,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
     def _calculate_bins_jointly(
         self, all_data: np.ndarray, columns: ColumnList
-    ) -> Tuple[BinEdges, BinEdges]:
+    ) -> tuple[BinEdges, BinEdges]:
         """Calculate bins from all flattened data for joint binning.
 
         This method provides a default implementation for joint binning that
@@ -481,8 +482,8 @@ class IntervalBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[BinEdges, BinEdges]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[BinEdges, BinEdges]:
         """Calculate bin edges and representatives for a column.
 
         Parameters
@@ -699,7 +700,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return return_like_input(result, bin_indices, columns, self.preserve_dataframe)
 
-    def lookup_bin_ranges(self) -> Dict[ColumnId, int]:
+    def lookup_bin_ranges(self) -> dict[ColumnId, int]:
         """Return number of bins for each column.
 
         Provides the count of bins (ranges) created for each column after fitting.
@@ -721,7 +722,7 @@ class IntervalBinningBase(GeneralBinningBase):
         self._check_fitted()
         return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}
 
-    def _get_fitted_params(self) -> Dict[str, Any]:
+    def _get_fitted_params(self) -> dict[str, Any]:
         """Get fitted parameter values for IntervalBinningBase.
 
         Returns the internal fitted state as a dictionary, including bin edges

@@ -16,17 +16,18 @@ Test Classes:
         and sklearn-style workflows.
 """
 
-import pytest
 import numpy as np
-from binning.methods._equal_frequency_binning import EqualFrequencyBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
+import pytest
+from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
 
 # Import sklearn components
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import clone
+
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binning.methods._equal_frequency_binning import EqualFrequencyBinning
+from binning.utils.errors import ConfigurationError, DataQualityWarning
 
 
 class TestEqualFrequencyBinning:

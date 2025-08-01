@@ -20,8 +20,8 @@ Test Classes:
 # pylint: disable=protected-access
 from unittest.mock import Mock, patch
 
-import pytest
 import numpy as np
+import pytest
 
 from binning.tools.integration import BinningFeatureSelector, BinningPipeline, make_binning_scorer
 

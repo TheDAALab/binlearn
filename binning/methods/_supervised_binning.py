@@ -12,15 +12,16 @@ Classes:
     SupervisedBinning: Main transformer for supervised binning operations.
 """
 
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
 from sklearn.base import clone
 
-from ..utils.types import BinEdges, ColumnId, GuidanceColumns
-from ..base._supervised_binning_base import SupervisedBinningBase
 from ..base._repr_mixin import ReprMixin
-from ..utils.errors import InvalidDataError, ConfigurationError, FittingError, validate_tree_params
+from ..base._supervised_binning_base import SupervisedBinningBase
 from ..config import get_config
+from ..utils.errors import ConfigurationError, FittingError, InvalidDataError, validate_tree_params
+from ..utils.types import BinEdges, ColumnId, GuidanceColumns
 
 
 # pylint: disable=too-many-ancestors

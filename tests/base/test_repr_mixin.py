@@ -1,8 +1,5 @@
 """Tests for ReprMixin to achieve 100% coverage."""
 
-import pytest
-import sys
-import os
 
 from binning.base._repr_mixin import ReprMixin
 
@@ -85,7 +82,11 @@ class TestReprMixin:
         """Test ReprMixin handling of default values and empty containers."""
 
         class DefaultsClass(ReprMixin):
-            def __init__(self, param1=None, param2=[], param3={}):
+            def __init__(self, param1=None, param2=None, param3=None):
+                if param3 is None:
+                    param3 = {}
+                if param2 is None:
+                    param2 = []
                 self.param1 = param1
                 self.param2 = param2 or []
                 self.param3 = param3 or {}

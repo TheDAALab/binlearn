@@ -9,10 +9,11 @@ This module provides a comprehensive configuration system that supports:
 - Integration with the binning framework's type system
 """
 
-import os
 import json
+import os
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Optional
-from dataclasses import dataclass, asdict
+
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
@@ -108,7 +109,9 @@ class BinningConfig:
     @classmethod
     def from_dict(cls, config_dict: Dict[str, Any]) -> "BinningConfig":
         """Create config from dictionary, ignoring unknown keys."""
-        valid_keys = {field.name for field in cls.__dataclass_fields__.values()}  # pylint: disable=no-member
+        valid_keys = {
+            field.name for field in cls.__dataclass_fields__.values()
+        }  # pylint: disable=no-member
         filtered_dict = {k: v for k, v in config_dict.items() if k in valid_keys}
         return cls(**filtered_dict)
 
@@ -119,7 +122,7 @@ class BinningConfig:
     @classmethod
     def load_from_file(cls, filepath: str) -> "BinningConfig":
         """Load configuration from JSON file."""
-        with open(filepath, "r", encoding="utf-8") as file_handle:
+        with open(filepath, encoding="utf-8") as file_handle:
             config_dict = json.load(file_handle)
         return cls.from_dict(config_dict)
 
@@ -143,8 +146,11 @@ class BinningConfig:
                 # Validate specific parameter types
                 if key.endswith("_strategy") and isinstance(value, str):
                     self._validate_strategy_parameter(key, value)
-                elif (key.startswith("supervised_") and key.endswith("_depth") and
-                      isinstance(value, int)):
+                elif (
+                    key.startswith("supervised_")
+                    and key.endswith("_depth")
+                    and isinstance(value, int)
+                ):
                     if value < 1:
                         raise ValueError(f"{key} must be positive, got {value}")
                 elif key == "float_tolerance" and isinstance(value, (int, float)):
@@ -164,7 +170,7 @@ class BinningConfig:
             "equal_width_default_range_strategy": ["min_max", "percentile", "std"],
             "missing_value_strategy": ["preserve", "error", "ignore"],
             "infinite_value_strategy": ["clip", "error", "preserve"],
-            "default_column_selection": ["numeric", "all", "explicit"]
+            "default_column_selection": ["numeric", "all", "explicit"],
         }
 
         if key in valid_strategies and value not in valid_strategies[key]:
@@ -187,24 +193,30 @@ class BinningConfig:
         }
 
         if method_name == "equal_width":
-            defaults.update({
-                "n_bins": self.equal_width_default_bins,
-                "clip": self.default_clip,
-                "range_strategy": self.equal_width_default_range_strategy,
-            })
+            defaults.update(
+                {
+                    "n_bins": self.equal_width_default_bins,
+                    "clip": self.default_clip,
+                    "range_strategy": self.equal_width_default_range_strategy,
+                }
+            )
         elif method_name == "onehot":
-            defaults.update({
-                "max_unique_values": self.onehot_max_unique_values,
-                "sort_values": self.onehot_sort_values,
-            })
+            defaults.update(
+                {
+                    "max_unique_values": self.onehot_max_unique_values,
+                    "sort_values": self.onehot_sort_values,
+                }
+            )
         elif method_name == "supervised":
-            defaults.update({
-                "max_depth": self.supervised_default_max_depth,
-                "min_samples_leaf": self.supervised_default_min_samples_leaf,
-                "min_samples_split": self.supervised_default_min_samples_split,
-                "task_type": self.supervised_default_task_type,
-                "random_state": self.supervised_random_state,
-            })
+            defaults.update(
+                {
+                    "max_depth": self.supervised_default_max_depth,
+                    "min_samples_leaf": self.supervised_default_min_samples_leaf,
+                    "min_samples_split": self.supervised_default_min_samples_split,
+                    "task_type": self.supervised_default_task_type,
+                    "random_state": self.supervised_random_state,
+                }
+            )
 
         return defaults
 
@@ -238,7 +250,7 @@ class ConfigManager:
             env_value = os.getenv(env_var)
             if env_value is not None:
                 try:
-                    if value_type == bool:
+                    if value_type is bool:
                         value = env_value.lower() in ("true", "1", "yes", "on")
                     else:
                         value = value_type(env_value)
@@ -297,10 +309,9 @@ def reset_config() -> None:
 # CONFIGURATION INTEGRATION UTILITIES
 # =============================================================================
 
+
 def apply_config_defaults(
-    method_name: str,
-    user_params: Optional[Dict[str, Any]] = None,
-    **override_params
+    method_name: str, user_params: Optional[Dict[str, Any]] = None, **override_params
 ) -> Dict[str, Any]:
     """
     Apply configuration defaults to user parameters for a specific method.
@@ -373,7 +384,7 @@ def get_config_schema() -> Dict[str, Dict[str, Any]]:
         schema[field_name] = {
             "type": field.type,
             "default": getattr(config, field_name),
-            "description": _get_parameter_description(field_name)
+            "description": _get_parameter_description(field_name),
         }
 
     return schema
@@ -410,7 +421,7 @@ def _get_parameter_description(param_name: str) -> str:
         "missing_value_strategy": "How to handle missing values",
         "infinite_value_strategy": "How to handle infinite values",
         "auto_detect_numeric_columns": "Whether to automatically detect numeric columns",
-        "default_column_selection": "Default strategy for column selection"
+        "default_column_selection": "Default strategy for column selection",
     }
 
     return descriptions.get(param_name, "No description available")
@@ -419,6 +430,7 @@ def _get_parameter_description(param_name: str) -> str:
 # =============================================================================
 # CONTEXT MANAGERS FOR CONFIGURATION
 # =============================================================================
+
 
 class ConfigContext:
     """

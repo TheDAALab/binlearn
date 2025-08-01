@@ -11,12 +11,13 @@ as its own bin, useful for categorical data represented as numbers or when you n
 fine-grained binning based on actual data values.
 """
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 import numpy as np
 
-from ..utils.types import FlexibleBinDefs, ColumnId, FlexibleBinSpec, BinEdges, BinEdgesDict
 from ..base._flexible_binning_base import FlexibleBinningBase
 from ..base._repr_mixin import ReprMixin
+from ..utils.types import BinEdges, BinEdgesDict, ColumnId, FlexibleBinDefs, FlexibleBinSpec
 
 
 # pylint: disable=too-many-ancestors

@@ -120,7 +120,7 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_input_features(self):
         """Test get_feature_names_out with explicit input_features."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
+        mixin._fitted = True
 
         input_features = ["in1", "in2", "in3"]
         result = mixin.get_feature_names_out(input_features)
@@ -130,7 +130,7 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_stored_feature_names(self):
         """Test get_feature_names_out with stored feature_names_in_."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
+        mixin._fitted = True
         mixin.feature_names_in_ = ["stored1", "stored2"]
 
         result = mixin.get_feature_names_out()
@@ -140,8 +140,8 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_n_features_in(self):
         """Test get_feature_names_out with n_features_in_."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
-        setattr(mixin, "n_features_in_", 3)
+        mixin._fitted = True
+        mixin.n_features_in_ = 3
 
         result = mixin.get_feature_names_out()
 
@@ -150,8 +150,8 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_underscore_n_features_in(self):
         """Test get_feature_names_out with _n_features_in."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
-        setattr(mixin, "_n_features_in", 2)
+        mixin._fitted = True
+        mixin._n_features_in = 2
 
         result = mixin.get_feature_names_out()
 
@@ -160,9 +160,9 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_guidance_columns_list(self):
         """Test get_feature_names_out with guidance_columns as list."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
+        mixin._fitted = True
         mixin.feature_names_in_ = ["col1", "col2", "col3", "col4"]
-        setattr(mixin, "guidance_columns", ["col2", "col4"])
+        mixin.guidance_columns = ["col2", "col4"]
 
         result = mixin.get_feature_names_out()
 
@@ -172,9 +172,9 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_guidance_columns_indices(self):
         """Test get_feature_names_out with guidance_columns as indices."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
+        mixin._fitted = True
         mixin.feature_names_in_ = ["col1", "col2", "col3", "col4"]
-        setattr(mixin, "guidance_columns", [1, 3])
+        mixin.guidance_columns = [1, 3]
 
         result = mixin.get_feature_names_out()
 
@@ -184,9 +184,9 @@ class TestSklearnCompatibilityMixin:
     def test_get_feature_names_out_with_guidance_columns_non_list(self):
         """Test get_feature_names_out with guidance_columns not as a list."""
         mixin = SklearnCompatibilityMixin()
-        setattr(mixin, "_fitted", True)
+        mixin._fitted = True
         mixin.feature_names_in_ = ["col1", "col2", "col3", "col4"]
-        setattr(mixin, "guidance_columns", "col2")  # Single string, not a list
+        mixin.guidance_columns = "col2"  # Single string, not a list
 
         result = mixin.get_feature_names_out()
 

@@ -13,26 +13,27 @@ Functions:
     _import_supervised_binning: Helper function to import SupervisedBinning.
 """
 
-from typing import Dict, Optional, Union, Any
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import SelectKBest, mutual_info_classif, mutual_info_regression
-from sklearn.utils.validation import check_is_fitted
-from sklearn.pipeline import Pipeline
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.utils.validation import check_is_fitted
 
 from ..methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
 
+
 class BinningFeatureSelector(BaseEstimator, TransformerMixin):
     """Feature selector that uses binning-based mutual information.
-    
+
     This transformer combines binning methods with mutual information-based
     feature selection to identify the most informative features for prediction.
     It first applies a specified binning method to discretize features, then
     uses mutual information to rank and select the top k features.
-    
+
     Attributes:
         binning_method (str): The binning method to use.
         k (int): Number of top features to select.
@@ -73,17 +74,17 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         """Fit the feature selector.
-        
+
         Applies the specified binning method to the input data, then fits
         a mutual information-based feature selector on the binned features.
-        
+
         Args:
             X: Input features. Can be array-like, pandas DataFrame, or polars DataFrame.
             y: Target values for supervised feature selection.
-            
+
         Returns:
             self: Returns the fitted feature selector.
-            
+
         Raises:
             ValueError: If binning_method or score_func is not recognized.
         """
@@ -126,16 +127,16 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """Transform the input by selecting features.
-        
+
         Applies the fitted binning transformation followed by feature selection
         to return only the top k most informative features.
-        
+
         Args:
             X: Input features to transform. Must have same structure as training data.
-            
+
         Returns:
             Transformed data with only selected features.
-            
+
         Raises:
             NotFittedError: If the selector has not been fitted yet.
         """
@@ -147,14 +148,14 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
 
     def get_support(self, indices: bool = False):
         """Get selected feature indices or boolean mask.
-        
+
         Args:
             indices: If True, return feature indices. If False, return boolean mask.
                 Defaults to False.
-                
+
         Returns:
             Boolean mask or integer indices of selected features.
-            
+
         Raises:
             NotFittedError: If the selector has not been fitted yet.
         """
@@ -166,7 +167,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
 # pylint: disable=too-few-public-methods
 class BinningPipeline:
     """Pipeline utilities for binning operations.
-    
+
     This class provides static methods for creating machine learning pipelines
     that incorporate binning methods. It simplifies the process of combining
     binning transformations with downstream estimators.
@@ -180,10 +181,10 @@ class BinningPipeline:
         final_estimator=None,
     ):
         """Create a pipeline with supervised binning.
-        
+
         Creates a scikit-learn pipeline that uses supervised binning as the first
         step, optionally followed by a final estimator.
-        
+
         Args:
             guidance_column: Column to use for supervised binning guidance.
                 Can be column name (str) or index (int).
@@ -193,7 +194,7 @@ class BinningPipeline:
                 Defaults to None (use default tree parameters).
             final_estimator: Optional estimator to add as final step in pipeline.
                 If None, returns just the binning transformer. Defaults to None.
-                
+
         Returns:
             sklearn.pipeline.Pipeline with binning and optional final estimator,
             or just the binning transformer if final_estimator is None.
@@ -210,38 +211,38 @@ class BinningPipeline:
 
 def make_binning_scorer(binning_method: str = "supervised", binning_params: Optional[Dict] = None):
     """Create a scorer that includes binning in the evaluation.
-    
+
     Creates a scikit-learn compatible scorer that applies binning to the data
     before evaluating a model. This allows for cross-validation and model
     selection that incorporates the binning transformation.
-    
+
     Args:
         binning_method: Binning method to apply. Options: "supervised",
             "equal_width". Defaults to "supervised".
         binning_params: Parameters to pass to the binning method.
             Defaults to None (use default parameters).
-            
+
     Returns:
         sklearn.metrics scorer that applies binning before model evaluation.
-        
+
     Raises:
         ValueError: If binning_method is not recognized.
     """
     def binning_score(estimator, X, y):
         """Score function that applies binning before evaluation.
-        
+
         This nested function performs the actual scoring by first applying
         the specified binning method to the data, then evaluating the
         estimator using cross-validation.
-        
+
         Args:
             estimator: Machine learning estimator to evaluate.
             X: Input features.
             y: Target values.
-            
+
         Returns:
             float: Mean cross-validation score after binning transformation.
-            
+
         Raises:
             ValueError: If binning_method is not recognized.
         """

@@ -11,18 +11,19 @@ configurable behavior through the global configuration system.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Optional, Tuple
+
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from ..utils.data_handling import return_like_input, prepare_input_with_columns
-from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
-from ..utils.errors import ValidationMixin, BinningError
-from ..utils.sklearn_integration import SklearnCompatibilityMixin
-from ..utils.inspection import safe_get_class_parameters
 from ..config import get_config
+from ..utils.data_handling import prepare_input_with_columns, return_like_input
+from ..utils.errors import BinningError, ValidationMixin
+from ..utils.inspection import safe_get_class_parameters
+from ..utils.sklearn_integration import SklearnCompatibilityMixin
+from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
 
 
 # pylint: disable=too-many-ancestors
@@ -65,8 +66,8 @@ class GeneralBinningBase(
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
-        preserve_dataframe: Optional[bool] = None,
-        fit_jointly: Optional[bool] = None,
+        preserve_dataframe: bool | None = None,
+        fit_jointly: bool | None = None,
         guidance_columns: GuidanceColumns = None,
         **kwargs,
     ):
@@ -115,7 +116,7 @@ class GeneralBinningBase(
         self._n_features_in = None
         self._feature_names_in = None
 
-    def _prepare_input(self, X: ArrayLike) -> Tuple[np.ndarray, ColumnList]:
+    def _prepare_input(self, X: ArrayLike) -> tuple[np.ndarray, ColumnList]:
         """Prepare input array and determine column identifiers.
 
         Converts input data to a standardized numpy array format while preserving
@@ -158,7 +159,7 @@ class GeneralBinningBase(
 
     def _separate_columns(
         self, X: ArrayLike
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], ColumnList, ColumnList]:
+    ) -> tuple[np.ndarray, np.ndarray | None, ColumnList, ColumnList]:
         """Universal column separation logic for binning and guidance columns.
 
         Separates the input data into binning columns (to be transformed) and
@@ -221,7 +222,7 @@ class GeneralBinningBase(
 
         return X_binning, X_guidance, binning_columns, guidance_columns
 
-    def fit(self, X: Any, y: Any = None, **fit_params) -> "GeneralBinningBase":
+    def fit(self, X: Any, y: Any = None, **fit_params) -> GeneralBinningBase:
         """Universal fit method with guidance support.
 
         Fits the binning transformer to the input data. Handles both guided and
@@ -434,8 +435,8 @@ class GeneralBinningBase(
     # Abstract methods to be implemented by subclasses
     @abstractmethod
     def _fit_per_column(
-        self, X: Any, columns: ColumnList, guidance_data: Optional[ArrayLike] = None, **fit_params
-    ) -> "GeneralBinningBase":
+        self, X: Any, columns: ColumnList, guidance_data: ArrayLike | None = None, **fit_params
+    ) -> GeneralBinningBase:
         """Fit bins per column with optional guidance.
 
         Abstract method that must be implemented by subclasses to handle column-wise
@@ -561,7 +562,7 @@ class GeneralBinningBase(
         """
         raise NotImplementedError("Subclasses must implement _inverse_transform_columns method.")
 
-    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+    def get_params(self, deep: bool = True) -> dict[str, Any]:
         """Get parameters for this estimator with automatic parameter discovery.
 
         Automatically discovers and returns all parameters of the estimator,
@@ -615,7 +616,7 @@ class GeneralBinningBase(
 
         return params
 
-    def _get_fitted_params(self) -> Dict[str, Any]:
+    def _get_fitted_params(self) -> dict[str, Any]:
         """Get fitted parameters that should be transferred to new instances.
 
         Automatically discovers and extracts fitted parameters (attributes ending
@@ -664,7 +665,7 @@ class GeneralBinningBase(
 
         return fitted_params
 
-    def set_params(self, **params) -> "GeneralBinningBase":
+    def set_params(self, **params) -> GeneralBinningBase:
         """Set parameters with automatic handling and validation.
 
         Sets parameters on the estimator with intelligent handling of parameter
@@ -719,7 +720,7 @@ class GeneralBinningBase(
 
         return result
 
-    def _handle_bin_params(self, params: Dict[str, Any]) -> bool:
+    def _handle_bin_params(self, params: dict[str, Any]) -> bool:
         """Handle all parameter changes automatically.
 
         Processes parameter changes and determines whether the fitted state should
@@ -826,7 +827,7 @@ class GeneralBinningBase(
         return self._fitted
 
     @property
-    def n_features_in_(self) -> Optional[int]:
+    def n_features_in_(self) -> int | None:
         """Number of features seen during fit.
 
         Provides sklearn-compatible access to the number of features (columns)

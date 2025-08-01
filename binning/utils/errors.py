@@ -3,7 +3,8 @@ Enhanced error handling for the binning framework.
 """
 
 import warnings
-from typing import Any, Optional, List, Dict
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 
 from binning.config import get_config
@@ -187,7 +188,7 @@ class ValidationMixin:
                 warnings.warn(
                     f"{name} contains {missing_pct:.1f}% missing values. "
                     "This may significantly impact binning quality.",
-                    DataQualityWarning,
+                    DataQualityWarning, stacklevel=2,
                 )
 
         # Check for infinite values only for numeric types
@@ -197,7 +198,7 @@ class ValidationMixin:
                     warnings.warn(
                         f"{name} contains infinite values. "
                         "Consider clipping or removing these values.",
-                        DataQualityWarning,
+                        DataQualityWarning, stacklevel=2,
                     )
         except (TypeError, ValueError):
             # Skip infinite value check if data type doesn't support it
@@ -212,7 +213,7 @@ class ValidationMixin:
                     warnings.warn(
                         f"Column {i} in {name} appears to be constant. "
                         "This will result in a single bin.",
-                        DataQualityWarning,
+                        DataQualityWarning, stacklevel=2,
                     )
 
 

@@ -3,22 +3,22 @@
 import warnings
 from unittest.mock import Mock, patch
 
-import pytest
 import numpy as np
+import pytest
 
 from binning.utils.errors import (
     BinningError,
-    InvalidDataError,
+    BinningWarning,
     ConfigurationError,
+    DataQualityWarning,
     FittingError,
+    InvalidDataError,
+    PerformanceWarning,
     TransformationError,
     ValidationError,
-    BinningWarning,
-    DataQualityWarning,
-    PerformanceWarning,
     ValidationMixin,
-    validate_tree_params,
     suggest_alternatives,
+    validate_tree_params,
 )
 
 

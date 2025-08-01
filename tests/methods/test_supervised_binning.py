@@ -2,25 +2,23 @@
 Comprehensive tests for SupervisedBinning functionality.
 """
 
-import numpy as np
-import pytest
 from unittest.mock import Mock, patch
 
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
-from binning.methods._supervised_binning import SupervisedBinning
-from binning.utils.errors import (
-    BinningError,
-    ConfigurationError,
-    FittingError,
-    InvalidDataError,
-    DataQualityWarning,
-)
-from binning.utils.constants import MISSING_VALUE
+import numpy as np
+import pytest
 
 # Import sklearn components
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binning.methods._supervised_binning import SupervisedBinning
+from binning.utils.errors import (
+    ConfigurationError,
+    DataQualityWarning,
+    FittingError,
+    InvalidDataError,
+)
 
 SKLEARN_AVAILABLE = True
 
@@ -90,7 +88,7 @@ class TestSupervisedBinningInitialization:
 
         # Test with no relevant parameters
         params = {"some_other_param": "value"}
-        reset_fitted = binning._handle_bin_params(params)
+        _ = binning._handle_bin_params(params)
         # Should still return True because super()._handle_bin_params might have processed something
         # The key is to trigger lines 323-324 and 327-328 which handle specific parameters
 
@@ -150,9 +148,7 @@ class TestSupervisedBinningInitialization:
         binning = SupervisedBinning()
 
         # Mock the base class to have _validate_params
-        with patch.object(
-            binning.__class__.__bases__[0], "_validate_params", create=True
-        ) as mock_super_validate:
+        with patch.object(binning.__class__.__bases__[0], "_validate_params", create=True):
             binning._validate_params()
             # If super()._validate_params exists, it should be called
             # This will cover line 300 where hasattr(super(), "_validate_params") is checked
@@ -169,7 +165,7 @@ class TestSupervisedBinningInitialization:
         finally:
             # Restore the original method if it existed
             if original_method is not None:
-                setattr(base_class, "_validate_params", original_method)
+                base_class._validate_params = original_method
 
     def test_set_params_task_type(self):
         """Test set_params method with task_type to trigger _handle_bin_params lines 323-324."""
@@ -999,8 +995,9 @@ class TestSupervisedBinningParameterRoundtrip:
     @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_edge_deduplication_float_tolerance(self):
         """Test edge deduplication logic with float tolerance - covers both branches."""
-        from binning.config import get_config
         import numpy as np
+
+        from binning.config import get_config
 
         # TEST CASE 1: Normal tolerance (TRUE branch - edges kept)
         x_data = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
@@ -1097,7 +1094,7 @@ class TestSupervisedBinningParameterRoundtrip:
         mock_binning = MockSupervisedBinning()
 
         # Monkey patch to simulate super() returning object without _validate_params
-        original_super = super
+        _ = super  # original_super
 
         def mock_super(*args, **kwargs):
             class MockSuperReturn:

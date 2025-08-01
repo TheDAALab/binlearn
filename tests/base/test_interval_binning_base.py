@@ -1,10 +1,13 @@
-import pytest
-import numpy as np
 import warnings
-from unittest.mock import Mock, patch
+from unittest.mock import patch
+
+import numpy as np
+import pytest
+
 from binning import PANDAS_AVAILABLE, pd
 from binning.base._interval_binning_base import IntervalBinningBase
-from binning.utils.errors import ConfigurationError, DataQualityWarning, BinningError
+from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE
+from binning.utils.errors import BinningError, ConfigurationError, DataQualityWarning
 
 
 class DummyIntervalBinning(IntervalBinningBase):
@@ -221,9 +224,6 @@ def test_transform_columns_with_clip():
     assert result[1, 1] == 0  # -0.5 clipped to first bin (index 0)
 
 
-from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE
-
-
 def test_transform_columns_without_clip():
     """Test _transform_columns method without clipping."""
     obj = DummyIntervalBinning(clip=False)
@@ -279,7 +279,7 @@ def test_inverse_transform_columns_missing_key():
 
 def test_inverse_transform_columns_all_special_values():
     """Test _inverse_transform_columns when all values are special (nan, inf, etc)."""
-    from binning.utils.constants import BELOW_RANGE, ABOVE_RANGE, MISSING_VALUE
+    from binning.utils.constants import ABOVE_RANGE, MISSING_VALUE
 
     obj = DummyIntervalBinning()
     obj._bin_reps = {0: [1.0, 2.0, 3.0]}
@@ -414,7 +414,7 @@ def test_bin_params_property_setters():
 
 def test_handle_bin_params_direct_access():
     """Test _handle_bin_params with parameters that bypass automatic discovery."""
-    obj = DummyIntervalBinning()
+    _ = DummyIntervalBinning()
 
     # Test with parameters that won't be in the auto-discovery list
     # by creating a custom class that doesn't have these in its signature
@@ -458,7 +458,7 @@ def test_data_quality_warnings():
     X = np.array([[np.inf, 2], [3, np.nan]])
     columns = [0, 1]
 
-    with patch("warnings.warn") as mock_warn:
+    with patch("warnings.warn"):
         with patch.object(obj, "_calculate_bins") as mock_calc:
             mock_calc.return_value = ([0, 1, 2], [0.5, 1.5])
             with patch.object(obj, "_finalize_fitting"):

@@ -2,7 +2,8 @@
 Simple representation mixin for binning classes.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from ..utils.inspection import safe_get_constructor_info
 
 

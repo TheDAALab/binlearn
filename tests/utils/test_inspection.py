@@ -3,18 +3,18 @@ Test the inspection utilities for comprehensive coverage.
 """
 
 import inspect
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from binning.base import GeneralBinningBase
+from binning.methods import EqualWidthBinning
 from binning.utils import (
     get_class_parameters,
     get_constructor_info,
     safe_get_class_parameters,
     safe_get_constructor_info,
 )
-from binning.base import GeneralBinningBase
-from binning.methods import EqualWidthBinning
 
 
 # pylint: disable=too-few-public-methods

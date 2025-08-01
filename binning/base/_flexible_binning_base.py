@@ -11,37 +11,38 @@ validation, and transformation while maintaining full sklearn compatibility.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, Optional, Tuple
+
 from abc import abstractmethod
+from typing import Any
 
 import numpy as np
 
-from ..utils.types import (
-    BinEdges,
-    BinEdgesDict,
-    FlexibleBinSpec,
-    FlexibleBinDefs,
-    ColumnId,
-    ColumnList,
-    GuidanceColumns,
-)
-from ._general_binning_base import GeneralBinningBase
 from ..utils.bin_operations import (
     validate_bin_representatives_format,
 )
-from ..utils.flexible_bin_operations import (
-    generate_default_flexible_representatives,
-    validate_flexible_bins,
-    validate_flexible_bin_spec_format,
-    is_missing_value,
-    find_flexible_bin_for_value,
-    calculate_flexible_bin_width,
-    transform_value_to_flexible_bin,
-    get_flexible_bin_count,
-)
-from ..utils.errors import ConfigurationError
-from ..utils.data_handling import return_like_input
 from ..utils.constants import MISSING_VALUE
+from ..utils.data_handling import return_like_input
+from ..utils.errors import ConfigurationError
+from ..utils.flexible_bin_operations import (
+    calculate_flexible_bin_width,
+    find_flexible_bin_for_value,
+    generate_default_flexible_representatives,
+    get_flexible_bin_count,
+    is_missing_value,
+    transform_value_to_flexible_bin,
+    validate_flexible_bin_spec_format,
+    validate_flexible_bins,
+)
+from ..utils.types import (
+    BinEdges,
+    BinEdgesDict,
+    ColumnId,
+    ColumnList,
+    FlexibleBinDefs,
+    FlexibleBinSpec,
+    GuidanceColumns,
+)
+from ._general_binning_base import GeneralBinningBase
 
 
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
@@ -87,11 +88,11 @@ class FlexibleBinningBase(GeneralBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        preserve_dataframe: Optional[bool] = None,
-        bin_spec: Optional[FlexibleBinSpec] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        fit_jointly: Optional[bool] = None,
-        guidance_columns: Optional[GuidanceColumns] = None,
+        preserve_dataframe: bool | None = None,
+        bin_spec: FlexibleBinSpec | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
+        guidance_columns: GuidanceColumns | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -244,9 +245,9 @@ class FlexibleBinningBase(GeneralBinningBase):
         self,
         X: np.ndarray,
         columns: ColumnList,
-        guidance_data: Optional[np.ndarray] = None,
+        guidance_data: np.ndarray | None = None,
         **fit_params,
-    ) -> "FlexibleBinningBase":
+    ) -> FlexibleBinningBase:
         """Fit flexible bins per column with optional guidance data.
 
         Processes each column independently to calculate flexible bin specifications
@@ -347,7 +348,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     def _calculate_flexible_bins_jointly(
         self, all_data: np.ndarray, columns: ColumnList
-    ) -> Tuple[FlexibleBinDefs, BinEdges]:
+    ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bins from all flattened data for joint binning.
 
         This method provides a default implementation for joint flexible binning
@@ -428,8 +429,8 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[FlexibleBinDefs, BinEdges]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bin definitions and representatives for a column.
 
         Parameters
@@ -635,7 +636,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         return return_like_input(result, bin_indices, columns, self.preserve_dataframe)
 
-    def lookup_bin_ranges(self) -> Dict[ColumnId, int]:
+    def lookup_bin_ranges(self) -> dict[ColumnId, int]:
         """Return number of bins for each column.
 
         Provides the count of bins created for each column after fitting.

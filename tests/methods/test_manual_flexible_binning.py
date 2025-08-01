@@ -6,14 +6,13 @@ testing all initialization scenarios, validation logic, transformation operation
 error handling, and edge cases.
 """
 
-import pytest
+
 import numpy as np
-from unittest.mock import patch, MagicMock
+import pytest
 
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
-
+from binning import PANDAS_AVAILABLE, pd
 from binning.methods import ManualFlexibleBinning
-from binning.utils.errors import ConfigurationError, BinningError
+from binning.utils.errors import BinningError, ConfigurationError
 
 
 class TestManualFlexibleBinningInitialization:

@@ -6,7 +6,7 @@ across different binning classes.
 """
 
 import inspect
-from typing import Dict, Any, Set, List, Optional, Type
+from typing import Any, Dict, List, Optional, Set, Type
 
 
 def get_class_parameters(

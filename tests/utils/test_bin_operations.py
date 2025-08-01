@@ -2,17 +2,17 @@
 
 from unittest.mock import patch
 
-import pytest
 import numpy as np
+import pytest
 
 from binning.utils.bin_operations import (
+    create_bin_masks,
+    default_representatives,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
-    default_representatives,
-    create_bin_masks,
 )
-from binning.utils.constants import MISSING_VALUE, ABOVE_RANGE, BELOW_RANGE
+from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
 
 
 class TestValidateBinEdgesFormat:

@@ -18,14 +18,13 @@ Test Classes:
     TestOneHotBinningErrorHandling: Tests for error conditions and edge cases.
 """
 
+
 import numpy as np
 import pytest
-from unittest.mock import Mock, patch
 
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binning.methods._onehot_binning import OneHotBinning
 from binning.utils.errors import BinningError
-from binning.utils.constants import MISSING_VALUE
 
 try:
     from scipy import sparse
@@ -37,8 +36,8 @@ except ImportError:  # pragma: no cover
 
 # Import sklearn components
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 SKLEARN_AVAILABLE = True
 

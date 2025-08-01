@@ -15,17 +15,18 @@ Test Classes:
     TestManualIntervalBinningEdgeCases: Tests for edge cases and error conditions.
 """
 
-import pytest
 import numpy as np
-from binning.methods._manual_interval_binning import ManualIntervalBinning
-from binning.utils.errors import ConfigurationError, BinningError
-from binning import PANDAS_AVAILABLE, pd, POLARS_AVAILABLE, pl
+import pytest
+from sklearn.base import clone
+from sklearn.compose import ColumnTransformer
 
 # Import sklearn components
 from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import clone
+
+from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binning.methods._manual_interval_binning import ManualIntervalBinning
+from binning.utils.errors import BinningError, ConfigurationError
 
 try:
     from scipy import sparse

@@ -10,16 +10,17 @@ strategies for insufficient data scenarios and comprehensive data quality valida
 """
 
 import warnings
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-from ..utils.types import BinEdges, ColumnList
-from ._interval_binning_base import IntervalBinningBase
 from ..utils.errors import (
     ConfigurationError,
     DataQualityWarning,
 )
+from ..utils.types import BinEdges, ColumnList
+from ._interval_binning_base import IntervalBinningBase
 
 
 # pylint: disable=too-many-ancestors
@@ -446,7 +447,7 @@ class SupervisedBinningBase(IntervalBinningBase):
             warnings.warn(
                 f"Data in {col_ref} {warning_msg}. "
                 f"Using {'default ' if n_valid == 0 else ''}bin range [{min_val}, {max_val}]",
-                DataQualityWarning,
+                DataQualityWarning, stacklevel=2,
             )
 
         return [min_val, max_val], [(min_val + max_val) / 2]

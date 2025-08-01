@@ -35,20 +35,55 @@ except ImportError:
     __version__ = "unknown"
 
 # Configuration management
-from .config import get_config, set_config, load_config, reset_config
-
-# Error handling
-from .utils.errors import (
-    BinningError,
-    InvalidDataError,
-    ConfigurationError,
-    FittingError,
-    TransformationError,
-    ValidationError,
+# Base classes and utilities
+from .base import (
+    ABOVE_RANGE,
+    BELOW_RANGE,
+    # Constants
+    MISSING_VALUE,
+    Array1D,
+    Array2D,
+    ArrayLike,
+    BinCountDict,
+    BinEdges,
+    BinEdgesDict,
+    BinReps,
+    BinRepsDict,
+    BooleanMask,
+    # Type aliases
+    ColumnId,
+    ColumnList,
+    FitParams,
+    FlexibleBinCalculationResult,
+    FlexibleBinDef,
+    FlexibleBinDefs,
+    FlexibleBinningBase,
+    FlexibleBinSpec,
+    # Base classes
+    GeneralBinningBase,
+    GuidanceColumns,
+    IntervalBinCalculationResult,
+    IntervalBinningBase,
+    JointParams,
+    OptionalBinEdgesDict,
+    OptionalBinRepsDict,
+    OptionalColumnList,
+    OptionalFlexibleBinSpec,
+    SupervisedBinningBase,
+    create_bin_masks,
+    default_representatives,
+    # Utility functions
+    prepare_array,
+    prepare_input_with_columns,
+    return_like_input,
+    validate_bin_edges_format,
+    validate_bin_representatives_format,
+    validate_bins,
 )
+from .config import get_config, load_config, reset_config, set_config
 
-# Sklearn utilities
-from .utils.sklearn_integration import SklearnCompatibilityMixin
+# Concrete binning methods
+from .methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
 
 # Tools and integrations
 from .tools import (
@@ -57,54 +92,18 @@ from .tools import (
     make_binning_scorer,
 )
 
-# Base classes and utilities
-from .base import (
-    # Constants
-    MISSING_VALUE,
-    ABOVE_RANGE,
-    BELOW_RANGE,
-    # Type aliases
-    ColumnId,
-    ColumnList,
-    OptionalColumnList,
-    GuidanceColumns,
-    ArrayLike,
-    BinEdges,
-    BinEdgesDict,
-    BinReps,
-    BinRepsDict,
-    OptionalBinEdgesDict,
-    OptionalBinRepsDict,
-    FlexibleBinDef,
-    FlexibleBinDefs,
-    FlexibleBinSpec,
-    OptionalFlexibleBinSpec,
-    IntervalBinCalculationResult,
-    FlexibleBinCalculationResult,
-    BinCountDict,
-    Array1D,
-    Array2D,
-    BooleanMask,
-    FitParams,
-    JointParams,
-    # Base classes
-    GeneralBinningBase,
-    IntervalBinningBase,
-    FlexibleBinningBase,
-    SupervisedBinningBase,
-    # Utility functions
-    prepare_array,
-    return_like_input,
-    prepare_input_with_columns,
-    validate_bin_edges_format,
-    validate_bin_representatives_format,
-    validate_bins,
-    default_representatives,
-    create_bin_masks,
+# Error handling
+from .utils.errors import (
+    BinningError,
+    ConfigurationError,
+    FittingError,
+    InvalidDataError,
+    TransformationError,
+    ValidationError,
 )
 
-# Concrete binning methods
-from .methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
+# Sklearn utilities
+from .utils.sklearn_integration import SklearnCompatibilityMixin
 
 # Optional pandas/polars configurations (if available)
 try:

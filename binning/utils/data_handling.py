@@ -6,10 +6,13 @@ with support for pandas and polars DataFrames.
 """
 
 from __future__ import annotations
-from typing import Any, Tuple, List
+
+from typing import Any
 
 import numpy as np
+
 from binning import _pandas_config, _polars_config
+
 from .types import ArrayLike, OptionalColumnList
 
 
@@ -25,7 +28,7 @@ def _is_polars_df(obj: Any) -> bool:
     return polars_module is not None and isinstance(obj, polars_module.DataFrame)
 
 
-def prepare_array(X: ArrayLike) -> Tuple[np.ndarray, OptionalColumnList, Any]:
+def prepare_array(X: ArrayLike) -> tuple[np.ndarray, OptionalColumnList, Any]:
     """Convert input to numpy array and extract metadata.
 
     Args:
@@ -118,7 +121,7 @@ def _determine_columns(X, col_names, fitted, original_columns, arr_shape):
 
 def prepare_input_with_columns(
     X: ArrayLike, fitted: bool = False, original_columns: OptionalColumnList = None
-) -> Tuple[np.ndarray, List[Any]]:
+) -> tuple[np.ndarray, list[Any]]:
     """Prepare input data and determine column identifiers.
 
     Parameters

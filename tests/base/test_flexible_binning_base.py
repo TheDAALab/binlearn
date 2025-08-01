@@ -1,6 +1,8 @@
-import pytest
+from unittest.mock import patch
+
 import numpy as np
-from unittest.mock import Mock, patch
+import pytest
+
 from binning.base._flexible_binning_base import FlexibleBinningBase
 
 
@@ -430,7 +432,7 @@ def test_lookup_bin_widths():
                 mock_return.return_value = np.array([[2.0]])
 
                 bin_indices = np.array([[0]])
-                result = obj.lookup_bin_widths(bin_indices)
+                _ = obj.lookup_bin_widths(bin_indices)
 
                 mock_calc.assert_called_once()
                 mock_return.assert_called_once()
@@ -450,7 +452,7 @@ def test_lookup_bin_widths_missing_value():
                 mock_return.return_value = np.array([[np.nan]])
 
                 bin_indices = np.array([[999]])
-                result = obj.lookup_bin_widths(bin_indices)
+                _ = obj.lookup_bin_widths(bin_indices)
 
                 mock_return.assert_called_once()
 
@@ -469,7 +471,7 @@ def test_lookup_bin_widths_out_of_bounds():
             mock_return.return_value = np.array([[np.nan]])
 
             bin_indices = np.array([[5]])
-            result = obj.lookup_bin_widths(bin_indices)
+            _ = obj.lookup_bin_widths(bin_indices)
 
             # Should return NaN for out-of-bounds indices
             mock_return.assert_called_once()
@@ -539,7 +541,7 @@ def test_inverse_transform():
                 mock_return.return_value = np.array([[1.0]])
 
                 X = np.array([[0]])
-                result = obj.inverse_transform(X)
+                _ = obj.inverse_transform(X)
 
                 mock_prepare.assert_called_once_with(X)
                 mock_inverse.assert_called_once()
