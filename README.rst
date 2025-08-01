@@ -106,7 +106,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
        print(f"  {col}: {len(data_binned[col].unique())} bins")
 
 🎯 **Advanced Example: Weight-Constrained Binning**
---------------------------------------------------
+---------------------------------------------------
 
 .. code-block:: python
 
