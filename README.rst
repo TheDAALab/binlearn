@@ -170,7 +170,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
 * 🔍 **Examples**: https://binning-framework.readthedocs.io/en/latest/examples/
 
 🎯 **Use Cases**
----------------
+----------------
 
 **Data Preprocessing**
   * Feature engineering for machine learning
@@ -193,7 +193,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
   * Regulatory compliance reporting
 
 ⚙️ **Supported Environments**
-----------------------------
+-----------------------------
 
 **Python Versions**: 3.8, 3.9, 3.10, 3.11, 3.12
 
@@ -209,7 +209,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
 **Operating Systems**: Linux, macOS, Windows
 
 🧪 **Development & Testing**
----------------------------
+----------------------------
 
 .. code-block:: bash
 
@@ -228,7 +228,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
    cd docs && make html
 
 🏆 **Quality Assurance**
------------------------
+------------------------
 
 * ✅ **100% Test Coverage** - Comprehensive test suite
 * ✅ **Type Hints** - Full type annotation support
@@ -238,7 +238,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
 * ✅ **CI/CD** - Automated testing and deployment
 
 🤝 **Contributing**
-------------------
+-------------------
 
 We welcome contributions! Please see our `Contributing Guide <https://binning-framework.readthedocs.io/en/latest/contributing.html>`_ for details.
 
@@ -259,7 +259,7 @@ We welcome contributions! Please see our `Contributing Guide <https://binning-fr
 
 
 🎓 **Research & Citations**
---------------------------
+---------------------------
 
 If you use this framework in academic research, please cite:
 
@@ -274,11 +274,11 @@ If you use this framework in academic research, please cite:
    }
 
 📊 **Success Stories**
----------------------
+----------------------
 
 
 🔮 **Roadmap**
--------------
+--------------
 
 **Upcoming Features**:
   * 🧠 Adaptive binning with automatic parameter selection
@@ -299,7 +299,7 @@ If you use this framework in academic research, please cite:
   * Cloud deployment templates
 
 📞 **Support & Community**
--------------------------
+--------------------------
 
 * 🐛 **Bug Reports**: `GitHub Issues <https://github.com/TheDAALab/binning/issues>`_
 * 💬 **Discussions**: `GitHub Discussions <https://github.com/TheDAALab/binning/discussions>`_
@@ -308,13 +308,13 @@ If you use this framework in academic research, please cite:
 * 🐦 **Twitter**: `@TheDAALab <https://twitter.com/thedaalab>`_
 
 ⭐ **Star History**
-------------------
+-------------------
 
 .. image:: https://api.star-history.com/svg?repos=TheDAALab/binning&type=Date
     :target: https://star-history.com/#TheDAALab/binning&Date
 
 📄 **License**
--------------
+--------------
 
 This project is licensed under the MIT License - see the `LICENSE <https://github.com/TheDAALab/binning/blob/main/LICENSE>`_ file for details.
 
