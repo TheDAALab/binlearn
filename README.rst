@@ -162,7 +162,7 @@ A comprehensive, high-performance Python framework for data binning and discreti
    y_pred = pipeline.predict(X_test)
 
 📚 **Documentation**
--------------------
+--------------------
 
 * 📖 **Full Documentation**: https://binning-framework.readthedocs.io/
 * 🎓 **Tutorials**: https://binning-framework.readthedocs.io/en/latest/tutorials/
@@ -257,42 +257,6 @@ We welcome contributions! Please see our `Contributing Guide <https://binning-fr
   * 🎯 Performance optimizations
   * 🧪 Additional test cases
 
-📈 **Performance Benchmarks**
-----------------------------
-
-The framework is optimized for performance across different data sizes:
-
-.. list-table:: Performance Comparison
-   :header-rows: 1
-   :widths: 20 20 20 20 20
-
-   * - Dataset Size
-     - EqualWidth
-     - EqualFreq
-     - WeightConstrained
-     - Memory Usage
-   * - 1K samples
-     - <1ms
-     - <1ms  
-     - 2ms
-     - <1MB
-   * - 100K samples
-     - 15ms
-     - 25ms
-     - 45ms
-     - 8MB
-   * - 1M samples
-     - 150ms
-     - 280ms
-     - 520ms
-     - 76MB
-   * - 10M samples
-     - 1.8s
-     - 3.2s
-     - 6.1s
-     - 610MB
-
-*Benchmarks run on Intel i7-8700K, 32GB RAM, Python 3.9*
 
 🎓 **Research & Citations**
 --------------------------
@@ -312,14 +276,6 @@ If you use this framework in academic research, please cite:
 📊 **Success Stories**
 ---------------------
 
-*"The weight-constrained binning helped us create customer segments with guaranteed revenue thresholds, improving our marketing ROI by 23%."*
-— **Sarah Chen, Data Scientist at RetailCorp**
-
-*"Seamless pandas integration and excellent documentation made preprocessing our 10M+ sample datasets effortless."*
-— **Dr. Michael Rodriguez, Research Scientist**
-
-*"The scikit-learn compatibility allowed us to easily integrate advanced binning into our existing ML pipelines."*
-— **Alex Kim, ML Engineer at TechStart**
 
 🔮 **Roadmap**
 -------------
