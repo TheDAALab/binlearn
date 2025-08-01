@@ -35,12 +35,15 @@ jobs:
         python -c "import binning; print(f'🏷️  Version: {binning.__version__}')"
         python -m setuptools_scm
 
+    - name: Type check with mypy
+      run: mypy binning/
+
     - name: Test with pytest
       run: |
         pytest --cov=binning --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
 
@@ -76,7 +79,7 @@ jobs:
       run: python -m twine check dist/*
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist-${{ github.sha }}
         path: dist/
@@ -93,7 +96,7 @@ jobs:
         fetch-depth: 0
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dist-${{ github.sha }}
         path: dist/
@@ -117,7 +120,7 @@ jobs:
         fetch-depth: 0
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dist-${{ github.sha }}
         path: dist/
