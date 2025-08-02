@@ -110,8 +110,8 @@ class BinningConfig:
     def from_dict(cls, config_dict: Dict[str, Any]) -> "BinningConfig":
         """Create config from dictionary, ignoring unknown keys."""
         valid_keys = {
-            field.name for field in cls.__dataclass_fields__.values()
-        }  # pylint: disable=no-member
+            field.name for field in cls.__dataclass_fields__.values()  # pylint: disable=no-member
+        }
         filtered_dict = {k: v for k, v in config_dict.items() if k in valid_keys}
         return cls(**filtered_dict)
 
