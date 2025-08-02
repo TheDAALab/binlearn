@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Set, Type
 def get_class_parameters(
     class_obj: Type,
     exclude_params: Optional[Set[str]] = None,
-    exclude_base_class: Optional[str] = None
+    exclude_base_class: Optional[str] = None,
 ) -> List[str]:
     """
     Get parameter names from a class constructor, optionally excluding base class parameters.
@@ -39,7 +39,7 @@ def get_class_parameters(
         If inspect.signature fails due to type issues
     """
     if exclude_params is None:
-        exclude_params = {'self', 'kwargs'}
+        exclude_params = {"self", "kwargs"}
 
     try:
         current_sig = inspect.signature(class_obj.__init__)
@@ -95,16 +95,16 @@ def get_constructor_info(class_obj: Type, concrete_only: bool = True) -> Dict[st
         If inspect.signature fails due to type issues
     """
     try:
-        if concrete_only and '__init__' in class_obj.__dict__:
+        if concrete_only and "__init__" in class_obj.__dict__:
             # Use the concrete class's own __init__ method
-            sig = inspect.signature(class_obj.__dict__['__init__'])
+            sig = inspect.signature(class_obj.__dict__["__init__"])
         else:
             # Use normal method resolution
             sig = inspect.signature(class_obj.__init__)
 
         params = {}
         for name, param in sig.parameters.items():
-            if name in {'self', 'kwargs'}:
+            if name in {"self", "kwargs"}:
                 continue
             # Get default value if it exists
             if param.default is not inspect.Parameter.empty:
@@ -123,7 +123,7 @@ def safe_get_class_parameters(
     class_obj: Type,
     exclude_params: Optional[Set[str]] = None,
     exclude_base_class: Optional[str] = None,
-    fallback: Optional[List[str]] = None
+    fallback: Optional[List[str]] = None,
 ) -> List[str]:
     """
     Safely get class parameters with fallback on inspection failure.
@@ -157,9 +157,7 @@ def safe_get_class_parameters(
 
 
 def safe_get_constructor_info(
-    class_obj: Type,
-    concrete_only: bool = True,
-    fallback: Optional[Dict[str, Any]] = None
+    class_obj: Type, concrete_only: bool = True, fallback: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
     Safely get constructor info with fallback on inspection failure.
