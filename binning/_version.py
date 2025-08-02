@@ -5,12 +5,15 @@ __version__ = "0.2.1.dev0+gd7882f2.d20250801"
 __version_tuple__ = (0, 2, 1, "dev0", "gd7882f2.d20250801")
 
 
-def get_version():
+from typing import Dict, List, Union
+
+
+def get_version() -> str:
     return __version__
 
 
 # Additional metadata for debugging and CI/CD
-def get_version_info():
+def get_version_info() -> Dict[str, Union[str, tuple, bool]]:
     """Get detailed version information."""
     return {
         "version": __version__,

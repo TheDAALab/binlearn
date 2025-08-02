@@ -10,7 +10,7 @@ strategies for insufficient data scenarios and comprehensive data quality valida
 """
 
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -18,6 +18,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from ..utils.errors import (
     ConfigurationError,
     DataQualityWarning,
+    ValidationError,
 )
 from ..utils.types import BinEdges, ColumnList
 from ._interval_binning_base import IntervalBinningBase
@@ -40,8 +41,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         self,
         task_type: str = "classification",
         tree_params: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize SupervisedBinningBase with task configuration and tree parameters.
 
         Sets up the supervised binning transformer with the specified task type
@@ -93,9 +94,9 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         # Note: Tree template creation is deferred to fit time to allow invalid parameters
         # during initialization (for sklearn compatibility)
-        self._tree_template = None
+        self._tree_template: Optional[Union[DecisionTreeClassifier, DecisionTreeRegressor]] = None
 
-    def _create_tree_template(self):
+    def _create_tree_template(self) -> None:
         """Create tree template with merged parameters.
 
         Initializes the decision tree template that will be used for all binning
@@ -194,17 +195,17 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         # Handle dimensionality - supervised binning expects single column
         if guidance_validated.ndim == 1:
-            return guidance_validated
+            return guidance_validated  # type: ignore[no-any-return]
         if guidance_validated.ndim == 2:
             if guidance_validated.shape[1] != 1:
-                raise ValueError(
+                raise ValidationError(
                     f"{name} has {guidance_validated.shape[1]} columns, "
                     f"expected exactly 1. Supervised binning requires a single guidance column. "
                     f"Please specify the correct guidance column."
                 )
             # Flatten to 1D for easier processing
-            return guidance_validated.ravel()
-        raise ValueError(
+            return guidance_validated.ravel()  # type: ignore[no-any-return]
+        raise ValidationError(
             f"{name} has {guidance_validated.ndim} dimensions, "
             f"expected 1D or 2D array with single column"
         )
@@ -253,6 +254,14 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         # Convert feature to float for numeric operations
         x_col = np.asarray(x_col_validated, dtype=float)
+
+        # Check that feature and guidance data have the same length
+        if len(x_col) != len(guidance_data_validated):
+            raise ValidationError(
+                f"Feature column {col_id} has {len(x_col)} samples, "
+                f"but guidance data has {len(guidance_data_validated)} samples. "
+                f"Both must have the same number of samples."
+            )
 
         # Create valid data mask (both feature and target must be non-missing)
         feature_finite = np.isfinite(x_col)
@@ -447,7 +456,8 @@ class SupervisedBinningBase(IntervalBinningBase):
             warnings.warn(
                 f"Data in {col_ref} {warning_msg}. "
                 f"Using {'default ' if n_valid == 0 else ''}bin range [{min_val}, {max_val}]",
-                DataQualityWarning, stacklevel=2,
+                DataQualityWarning,
+                stacklevel=2,
             )
 
         return [min_val, max_val], [(min_val + max_val) / 2]

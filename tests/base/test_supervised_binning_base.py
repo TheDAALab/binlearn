@@ -364,9 +364,9 @@ def test_validate_guidance_data_wrong_dimensions():
     """Test validate_guidance_data with wrong dimensions."""
     obj = DummySupervisedBinning()
 
-    # Test 3D array - should raise ValueError
+    # Test 3D array - should raise ValidationError
     guidance_3d = np.random.rand(2, 3, 4)
-    with pytest.raises(ValueError, match="has 3 dimensions"):
+    with pytest.raises(ValidationError, match="has 3 dimensions"):
         obj.validate_guidance_data(guidance_3d, "test_data")
 
 
@@ -374,9 +374,9 @@ def test_validate_guidance_data_wrong_2d_shape():
     """Test validate_guidance_data with 2D array having multiple columns."""
     obj = DummySupervisedBinning()
 
-    # Test 2D array with multiple columns - should work fine and flatten
+    # Test 2D array with multiple columns - should raise ValidationError
     guidance_2d_multi = np.random.rand(10, 3)
-    with pytest.raises(ValueError, match="Please specify the correct guidance column"):
+    with pytest.raises(ValidationError, match="Please specify the correct guidance column"):
         obj.validate_guidance_data(guidance_2d_multi, "test_data")
 
 
@@ -441,7 +441,7 @@ def test_validate_feature_target_pairs_length_mismatch():
     features = np.array([1.0, 2.0])
     targets = np.array([0, 1, 0])  # Different length
 
-    with pytest.raises(ValueError, match="operands could not be broadcast"):
+    with pytest.raises(ValidationError, match="Both must have the same number of samples"):
         obj.validate_feature_target_pair(features, targets, "col1")
 
 

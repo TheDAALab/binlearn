@@ -3,12 +3,17 @@
 This module attempts to import polars and sets a flag indicating its availability.
 """
 
+from typing import Optional, Any
+
+# Initialize variables
+pl: Optional[Any] = None
+POLARS_AVAILABLE = False
+
 try:
     # pylint: disable=import-error,unused-import
     import polars as pl  # pragma: no cover
 
     POLARS_AVAILABLE = True  # pragma: no cover
 except ImportError:  # pragma: no cover
-    # pylint: disable=invalid-name
-    pl = None  # pragma: no cover
-    POLARS_AVAILABLE = False  # pragma: no cover
+    # pl remains None as initialized above
+    pass  # pragma: no cover

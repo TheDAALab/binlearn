@@ -55,7 +55,7 @@ def get_class_parameters(
     for base_class in class_obj.__mro__:
         if base_class.__name__ == exclude_base_class:
             try:
-                base_sig = inspect.signature(base_class.__init__)
+                base_sig = inspect.signature(base_class.__init__)  # type: ignore[misc]
                 base_params = set(base_sig.parameters.keys()) - exclude_params
                 class_specific_params = list(current_params - base_params)
                 return class_specific_params

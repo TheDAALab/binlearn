@@ -59,7 +59,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         bin_edges: Optional[BinEdgesDict] = None,
         bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize EqualFrequencyBinning transformer.
 

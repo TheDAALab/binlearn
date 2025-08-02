@@ -1,7 +1,15 @@
 """
 Flexible binning base class supporting both singleton and interval bins.
 
-This module provides the foundational FlexibleBinningBase class for binning methods
+This modul    def __init__(
+        self,
+        preserve_dataframe: bool | None = None,
+        bin_spec: FlexibleBinSpec | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
+        guidance_columns: GuidanceColumns | None = None,
+        **kwargs: Any,
+    ) -> None:s the foundational FlexibleBinningBase class for binning methods
 that can handle mixed bin types - both singleton bins (exact value matches) and
 interval bins (range matches). This flexibility allows for more complex binning
 strategies that combine categorical-like binning with traditional interval binning.
@@ -13,7 +21,7 @@ validation, and transformation while maintaining full sklearn compatibility.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -93,8 +101,8 @@ class FlexibleBinningBase(GeneralBinningBase):
         bin_representatives: BinEdgesDict | None = None,
         fit_jointly: bool | None = None,
         guidance_columns: GuidanceColumns | None = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         super().__init__(
             preserve_dataframe=preserve_dataframe,
             fit_jointly=fit_jointly,
@@ -190,7 +198,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             ) from e
 
     @property
-    def bin_spec(self):
+    def bin_spec(self) -> Optional[FlexibleBinSpec]:
         """Get the pre-provided bin specification parameter.
 
         Returns:
@@ -200,7 +208,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         return getattr(self, "_bin_spec_param", None)
 
     @bin_spec.setter
-    def bin_spec(self, value):
+    def bin_spec(self, value: Optional[FlexibleBinSpec]) -> None:
         """Set bin specification and update internal state.
 
         Args:
@@ -216,7 +224,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             self._fitted = False  # Reset fitted state when bin_spec changes
 
     @property
-    def bin_representatives(self):
+    def bin_representatives(self) -> Optional[BinEdgesDict]:
         """Get the pre-provided bin representatives parameter.
 
         Returns:
@@ -226,7 +234,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         return getattr(self, "_bin_representatives_param", None)
 
     @bin_representatives.setter
-    def bin_representatives(self, value):
+    def bin_representatives(self, value: Optional[BinEdgesDict]) -> None:
         """Set bin representatives and update internal state.
 
         Args:
@@ -246,7 +254,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         X: np.ndarray,
         columns: ColumnList,
         guidance_data: np.ndarray | None = None,
-        **fit_params,
+        **fit_params: Any,
     ) -> FlexibleBinningBase:
         """Fit flexible bins per column with optional guidance data.
 
@@ -290,7 +298,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         except Exception as e:
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
         """Fit flexible bins jointly across all columns.
 
         Computes bins using all data across all columns simultaneously, creating
@@ -516,7 +524,7 @@ class FlexibleBinningBase(GeneralBinningBase):
                 # Use utility function for transformation
                 result[row_idx, i] = transform_value_to_flexible_bin(value, bin_defs)
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Transform bin indices back to representative values for flexible bins.
@@ -555,7 +563,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             # Handle missing values
             result[missing_mask, i] = np.nan
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def inverse_transform(self, X: Any) -> Any:
         """Transform bin indices back to representative values.

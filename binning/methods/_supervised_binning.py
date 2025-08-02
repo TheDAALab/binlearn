@@ -12,7 +12,7 @@ Classes:
     SupervisedBinning: Main transformer for supervised binning operations.
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from sklearn.base import clone
@@ -67,8 +67,8 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         bin_edges: Any = None,
         bin_representatives: Any = None,
         guidance_columns: Optional[GuidanceColumns] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize the SupervisedBinning transformer.
 
         Creates a supervised binning transformer that uses decision tree splits
@@ -259,15 +259,15 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         self._store_tree_info(tree, col_id)
 
         # Create bin edges
-        data_min = np.min(x_valid)
-        data_max = np.max(x_valid)
+        data_min: float = np.min(x_valid)
+        data_max: float = np.max(x_valid)
 
         # Combine data bounds with split points
         all_edges = [data_min] + sorted(split_points) + [data_max]
         # Remove duplicates while preserving order
 
         config = get_config()
-        bin_edges = []
+        bin_edges: List[float] = []
         for edge in all_edges:
             if not bin_edges or abs(edge - bin_edges[-1]) > config.float_tolerance:
                 bin_edges.append(edge)
@@ -280,7 +280,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return bin_edges, representatives
 
-    def _extract_split_points(self, tree, _x_data: np.ndarray) -> BinEdges:
+    def _extract_split_points(self, tree: Any, _x_data: np.ndarray) -> BinEdges:
         """Extract split points from a fitted decision tree.
 
         Traverses the decision tree structure to extract all threshold values
@@ -472,7 +472,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
             "tree_": tree_structure,
         }
 
-    def _store_tree_info(self, tree, col_id: Any) -> None:
+    def _store_tree_info(self, tree: Any, col_id: Any) -> None:
         """Store tree information for later access and analysis.
 
         Stores the fitted decision tree and extracts its feature importance

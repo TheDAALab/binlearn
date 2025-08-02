@@ -67,7 +67,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
         guidance_columns: Optional[GuidanceColumns] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize EqualWidthMinimumWeightBinning transformer.
 
@@ -312,7 +312,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         """
 
         # Check if all weights are zero
-        total_weight = np.sum(bin_weights)
+        total_weight: float = np.sum(bin_weights)
         if total_weight == 0:
             warnings.warn(
                 f"Column {col_id}: All weights are zero. Creating default equal-width bins.",
@@ -334,9 +334,9 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
         # Defensive check - ensure we have at least one valid bin
         if len(merged_edges) < 2:
-            merged_edges = [edges[0], edges[-1]]
+            merged_edges = [float(edges[0]), float(edges[-1])]
 
-        return np.array(merged_edges)
+        return np.array(merged_edges)  # type: ignore[no-any-return]
 
     def _perform_bin_merging(self, edges: np.ndarray, bin_weights: np.ndarray) -> List[float]:
         """Perform the actual bin merging logic.
@@ -351,7 +351,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             List[float]: Merged bin edges (may have < 2 elements in edge cases).
         """
         # Start with first bin
-        merged_edges = [edges[0]]
+        merged_edges = [float(edges[0])]
         current_weight = 0
 
         for i, bin_weight in enumerate(bin_weights):
@@ -359,7 +359,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
             # If this is the last bin or weight meets minimum, close current bin
             if i == len(bin_weights) - 1 or current_weight >= self.minimum_weight:
-                merged_edges.append(edges[i + 1])
+                merged_edges.append(float(edges[i + 1]))
                 current_weight = 0
 
         return merged_edges
@@ -400,7 +400,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         """
         return True
 
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
         """Override joint fitting to handle guidance data properly.
 
         Joint fitting doesn't make conceptual sense for weight-constrained binning

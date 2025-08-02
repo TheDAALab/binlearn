@@ -262,7 +262,7 @@ def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     if isinstance(bin_def, tuple) and len(bin_def) == 2:
         # Interval bin
         left, right = bin_def
-        return right - left
+        return right - left  # type: ignore[no-any-return]
 
     raise ValueError(f"Unknown bin definition: {bin_def}")
 

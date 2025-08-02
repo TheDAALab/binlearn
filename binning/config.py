@@ -131,7 +131,7 @@ class BinningConfig:
         with open(filepath, "w", encoding="utf-8") as file_handle:
             json.dump(self.to_dict(), file_handle, indent=2)
 
-    def update(self, **kwargs) -> None:
+    def update(self, **kwargs: Any) -> None:
         """
         Update configuration parameters with validation.
 
@@ -227,7 +227,7 @@ class ConfigManager:
     _instance: Optional["ConfigManager"] = None
     _config: BinningConfig
 
-    def __new__(cls):
+    def __new__(cls) -> "ConfigManager":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._config = BinningConfig()
@@ -267,7 +267,7 @@ class ConfigManager:
         """Get current configuration."""
         return self._config
 
-    def update_config(self, **kwargs) -> None:
+    def update_config(self, **kwargs: Any) -> None:
         """Update configuration parameters."""
         self._config.update(**kwargs)
 
@@ -290,7 +290,7 @@ def get_config() -> BinningConfig:
     return _config_manager.config
 
 
-def set_config(**kwargs) -> None:
+def set_config(**kwargs: Any) -> None:
     """Set configuration parameters."""
     _config_manager.update_config(**kwargs)
 
@@ -311,7 +311,7 @@ def reset_config() -> None:
 
 
 def apply_config_defaults(
-    method_name: str, user_params: Optional[Dict[str, Any]] = None, **override_params
+    method_name: str, user_params: Optional[Dict[str, Any]] = None, **override_params: Any
 ) -> Dict[str, Any]:
     """
     Apply configuration defaults to user parameters for a specific method.
@@ -443,11 +443,11 @@ class ConfigContext:
         # Configuration is automatically restored
     """
 
-    def __init__(self, **temp_config):
+    def __init__(self, **temp_config: Any) -> None:
         self.temp_config = temp_config
-        self.original_config = {}
+        self.original_config: Dict[str, Any] = {}
 
-    def __enter__(self):
+    def __enter__(self) -> "ConfigContext":
         # Save current configuration
         current_config = get_config()
         self.original_config = current_config.to_dict()
@@ -456,6 +456,6 @@ class ConfigContext:
         set_config(**self.temp_config)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         # Restore original configuration
         _config_manager._config = BinningConfig.from_dict(self.original_config)

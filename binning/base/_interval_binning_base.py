@@ -85,7 +85,7 @@ class IntervalBinningBase(GeneralBinningBase):
         bin_representatives: BinEdgesDict | None = None,
         fit_jointly: bool | None = None,
         guidance_columns: GuidanceColumns | None = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """Initialize the interval binning base class.
 
@@ -186,7 +186,7 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ConfigurationError(str(e)) from e
 
     @property
-    def bin_edges(self):
+    def bin_edges(self) -> BinEdgesDict | None:
         """Get the pre-provided bin edges parameter.
 
         Returns:
@@ -196,7 +196,7 @@ class IntervalBinningBase(GeneralBinningBase):
         return getattr(self, "_bin_edges_param", None)
 
     @bin_edges.setter
-    def bin_edges(self, value):
+    def bin_edges(self, value: BinEdgesDict | None) -> None:
         """Set bin edges and update internal state.
 
         Args:
@@ -212,7 +212,7 @@ class IntervalBinningBase(GeneralBinningBase):
             self._fitted = False  # Reset fitted state when bin_edges change
 
     @property
-    def bin_representatives(self):
+    def bin_representatives(self) -> BinEdgesDict | None:
         """Get the pre-provided bin representatives parameter.
 
         Returns:
@@ -222,7 +222,7 @@ class IntervalBinningBase(GeneralBinningBase):
         return getattr(self, "_bin_representatives_param", None)
 
     @bin_representatives.setter
-    def bin_representatives(self, value):
+    def bin_representatives(self, value: BinEdgesDict | None) -> None:
         """Set bin representatives and update internal state.
 
         Args:
@@ -242,7 +242,7 @@ class IntervalBinningBase(GeneralBinningBase):
         X: np.ndarray,
         columns: ColumnList,
         guidance_data: np.ndarray | None = None,
-        **fit_params,
+        **fit_params: Any,
     ) -> IntervalBinningBase:
         """Fit bins per column with optional guidance data.
 
@@ -353,9 +353,11 @@ class IntervalBinningBase(GeneralBinningBase):
         else:
             col_ref = f"column '{col}'"
 
-        warnings.warn(f"Data in {col_ref} contains only NaN values", DataQualityWarning, stacklevel=2)
+        warnings.warn(
+            f"Data in {col_ref} contains only NaN values", DataQualityWarning, stacklevel=2
+        )
 
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
         """Fit bins jointly across all columns.
 
         Computes bins using all data across all columns simultaneously, creating
@@ -574,13 +576,13 @@ class IntervalBinningBase(GeneralBinningBase):
             if self.clip:
                 bin_indices = np.clip(bin_indices, 0, len(edges) - 2)
             else:
-                bin_indices[below_mask] = BELOW_RANGE
-                bin_indices[above_mask] = ABOVE_RANGE
+                bin_indices[below_mask] = BELOW_RANGE  # type: ignore[index]
+                bin_indices[above_mask] = ABOVE_RANGE  # type: ignore[index]
 
-            bin_indices[nan_mask] = MISSING_VALUE
+            bin_indices[nan_mask] = MISSING_VALUE  # type: ignore[index]
             result[:, i] = bin_indices
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Inverse transform from bin indices to representative values.
@@ -624,7 +626,7 @@ class IntervalBinningBase(GeneralBinningBase):
             result[below_mask, i] = -np.inf
             result[above_mask, i] = np.inf
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def inverse_transform(self, X: Any) -> Any:
         """Transform bin indices back to representative values.

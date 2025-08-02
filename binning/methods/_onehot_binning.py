@@ -11,7 +11,7 @@ as its own bin, useful for categorical data represented as numbers or when you n
 fine-grained binning based on actual data values.
 """
 
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import numpy as np
 
@@ -78,8 +78,8 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
         bin_spec: Optional[FlexibleBinSpec] = None,
         bin_representatives: Optional[BinEdgesDict] = None,
         max_unique_values: int = 100,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize OneHotBinning transformer.
 
         Creates a specialized binning transformer that generates singleton bins for

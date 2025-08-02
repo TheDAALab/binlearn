@@ -72,7 +72,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         self.selector_: Optional[SelectKBest] = None
         self.binner_: Optional[Any] = None
 
-    def fit(self, X, y):
+    def fit(self, X: Any, y: Any) -> Any:
         """Fit the feature selector.
 
         Applies the specified binning method to the input data, then fits
@@ -125,7 +125,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X):
+    def transform(self, X: Any) -> Any:
         """Transform the input by selecting features.
 
         Applies the fitted binning transformation followed by feature selection
@@ -146,7 +146,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         X_binned = self.binner_.transform(X)
         return self.selector_.transform(X_binned)
 
-    def get_support(self, indices: bool = False):
+    def get_support(self, indices: bool = False) -> Any:
         """Get selected feature indices or boolean mask.
 
         Args:
@@ -178,8 +178,8 @@ class BinningPipeline:
         guidance_column: Union[str, int],
         task_type: str = "classification",
         tree_params: Optional[Dict] = None,
-        final_estimator=None,
-    ):
+        final_estimator: Any = None,
+    ) -> Any:
         """Create a pipeline with supervised binning.
 
         Creates a scikit-learn pipeline that uses supervised binning as the first
@@ -209,7 +209,9 @@ class BinningPipeline:
         return binner
 
 
-def make_binning_scorer(binning_method: str = "supervised", binning_params: Optional[Dict] = None):
+def make_binning_scorer(
+    binning_method: str = "supervised", binning_params: Optional[Dict] = None
+) -> Any:
     """Create a scorer that includes binning in the evaluation.
 
     Creates a scikit-learn compatible scorer that applies binning to the data
@@ -228,7 +230,8 @@ def make_binning_scorer(binning_method: str = "supervised", binning_params: Opti
     Raises:
         ValueError: If binning_method is not recognized.
     """
-    def binning_score(estimator, X, y):
+
+    def binning_score(estimator: Any, X: Any, y: Any) -> Any:
         """Score function that applies binning before evaluation.
 
         This nested function performs the actual scoring by first applying

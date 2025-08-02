@@ -60,7 +60,7 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         bin_edges: Optional[BinEdgesDict] = None,
         bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize KMeansBinning transformer.
 
@@ -266,7 +266,7 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         edges = []
 
         # First edge: extend below the minimum centroid
-        data_min = np.min(clean_data)
+        data_min: float = np.min(clean_data)
         if centroids[0] > data_min:
             edges.append(data_min)
         else:
@@ -280,7 +280,7 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
             edges.append(midpoint)
 
         # Last edge: extend above the maximum centroid
-        data_max = np.max(clean_data)
+        data_max: float = np.max(clean_data)
         if centroids[-1] < data_max:
             edges.append(data_max)
         else:

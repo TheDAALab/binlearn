@@ -58,7 +58,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         bin_edges: Optional[BinEdgesDict] = None,
         bin_representatives: Optional[BinEdgesDict] = None,
         fit_jointly: Optional[bool] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize EqualWidthBinning transformer.
 
@@ -204,8 +204,8 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             # Create a default range for all-NaN columns
             return 0.0, 1.0
 
-        min_val = np.nanmin(x_col)
-        max_val = np.nanmax(x_col)
+        min_val: float = np.nanmin(x_col)
+        max_val: float = np.nanmax(x_col)
 
         if not (np.isfinite(min_val) and np.isfinite(max_val)):
             # This can happen if there are inf values

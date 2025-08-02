@@ -67,7 +67,7 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
         clip: Optional[bool] = None,
         preserve_dataframe: Optional[bool] = None,
         fit_jointly: Optional[bool] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize ManualIntervalBinning transformer.
 

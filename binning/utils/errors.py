@@ -93,7 +93,7 @@ class ValidationMixin:
         # if array.size == 0:
         #     raise ValueError(f"{name} is empty")
 
-        return arr
+        return arr  # type: ignore[no-any-return]
 
     @staticmethod
     def validate_column_specification(columns: Any, data_shape: tuple) -> List[Any]:
@@ -106,7 +106,7 @@ class ValidationMixin:
             columns = [columns]
 
         # Validate each column
-        validated_columns = []
+        validated_columns: List[Any] = []
         for col in columns:
             if isinstance(col, str):
                 validated_columns.append(col)

@@ -80,7 +80,7 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
         bin_spec: FlexibleBinSpec,
         bin_representatives: Optional[BinEdgesDict] = None,
         preserve_dataframe: Optional[bool] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Initialize ManualFlexibleBinning transformer.
 

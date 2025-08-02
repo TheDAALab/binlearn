@@ -1,6 +1,6 @@
 """Sklearn integration utilities for binning methods."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 # pylint: disable=too-few-public-methods
@@ -29,7 +29,7 @@ class SklearnCompatibilityMixin:
             },
         }
 
-    def _check_feature_names(self, X, reset: bool = False) -> List[str]:
+    def _check_feature_names(self, X: Any, reset: bool = False) -> List[str]:
         """Check and store feature names from input."""
         feature_names = None
 

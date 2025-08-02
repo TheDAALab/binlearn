@@ -69,7 +69,7 @@ class GeneralBinningBase(
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
         guidance_columns: GuidanceColumns = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """Initialize the base binning transformer.
 
@@ -110,11 +110,11 @@ class GeneralBinningBase(
 
         # Internal state
         self._fitted = False
-        self._binning_columns = None
-        self._guidance_columns = None
-        self._original_columns = None
-        self._n_features_in = None
-        self._feature_names_in = None
+        self._binning_columns: OptionalColumnList = None
+        self._guidance_columns: OptionalColumnList = None
+        self._original_columns: OptionalColumnList = None
+        self._n_features_in: int | None = None
+        self._feature_names_in: OptionalColumnList = None
 
     def _prepare_input(self, X: ArrayLike) -> tuple[np.ndarray, ColumnList]:
         """Prepare input array and determine column identifiers.
@@ -222,7 +222,7 @@ class GeneralBinningBase(
 
         return X_binning, X_guidance, binning_columns, guidance_columns
 
-    def fit(self, X: Any, y: Any = None, **fit_params) -> GeneralBinningBase:
+    def fit(self, X: Any, y: Any = None, **fit_params: Any) -> GeneralBinningBase:
         """Universal fit method with guidance support.
 
         Fits the binning transformer to the input data. Handles both guided and
@@ -435,7 +435,7 @@ class GeneralBinningBase(
     # Abstract methods to be implemented by subclasses
     @abstractmethod
     def _fit_per_column(
-        self, X: Any, columns: ColumnList, guidance_data: ArrayLike | None = None, **fit_params
+        self, X: Any, columns: ColumnList, guidance_data: ArrayLike | None = None, **fit_params: Any
     ) -> GeneralBinningBase:
         """Fit bins per column with optional guidance.
 
@@ -469,7 +469,7 @@ class GeneralBinningBase(
         raise NotImplementedError("Subclasses must implement _fit_per_column method.")
 
     @abstractmethod
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
+    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
         """Fit bins jointly across all columns.
 
         Abstract method that must be implemented by subclasses to handle joint
@@ -614,7 +614,7 @@ class GeneralBinningBase(
             fitted_params = self._get_fitted_params()
             params.update(fitted_params)
 
-        return params
+        return params  # type: ignore[no-any-return]
 
     def _get_fitted_params(self) -> dict[str, Any]:
         """Get fitted parameters that should be transferred to new instances.
@@ -665,7 +665,7 @@ class GeneralBinningBase(
 
         return fitted_params
 
-    def set_params(self, **params) -> GeneralBinningBase:
+    def set_params(self, **params: Any) -> GeneralBinningBase:
         """Set parameters with automatic handling and validation.
 
         Sets parameters on the estimator with intelligent handling of parameter
@@ -718,7 +718,7 @@ class GeneralBinningBase(
         # Validate all parameters after setting them
         self._validate_params()
 
-        return result
+        return result  # type: ignore[no-any-return]
 
     def _handle_bin_params(self, params: dict[str, Any]) -> bool:
         """Handle all parameter changes automatically.
@@ -850,7 +850,7 @@ class GeneralBinningBase(
         return self._n_features_in
 
     @property
-    def feature_names_in_(self) -> OptionalColumnList:
+    def feature_names_in_(self) -> OptionalColumnList:  # type: ignore[override]
         """Feature names seen during fit.
 
         Provides sklearn-compatible access to the feature names (column names)
