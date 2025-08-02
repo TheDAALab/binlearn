@@ -21,7 +21,7 @@ validation, and transformation while maintaining full sklearn compatibility.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -198,7 +198,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             ) from e
 
     @property
-    def bin_spec(self) -> Optional[FlexibleBinSpec]:
+    def bin_spec(self) -> FlexibleBinSpec | None:
         """Get the pre-provided bin specification parameter.
 
         Returns:
@@ -208,7 +208,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         return getattr(self, "_bin_spec_param", None)
 
     @bin_spec.setter
-    def bin_spec(self, value: Optional[FlexibleBinSpec]) -> None:
+    def bin_spec(self, value: FlexibleBinSpec | None) -> None:
         """Set bin specification and update internal state.
 
         Args:
@@ -224,7 +224,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             self._fitted = False  # Reset fitted state when bin_spec changes
 
     @property
-    def bin_representatives(self) -> Optional[BinEdgesDict]:
+    def bin_representatives(self) -> BinEdgesDict | None:
         """Get the pre-provided bin representatives parameter.
 
         Returns:
@@ -234,7 +234,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         return getattr(self, "_bin_representatives_param", None)
 
     @bin_representatives.setter
-    def bin_representatives(self, value: Optional[BinEdgesDict]) -> None:
+    def bin_representatives(self, value: BinEdgesDict | None) -> None:
         """Set bin representatives and update internal state.
 
         Args:

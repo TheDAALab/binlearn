@@ -7,7 +7,7 @@ with support for pandas and polars DataFrames.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -87,11 +87,11 @@ def return_like_input(
 
 def _determine_columns(
     X: Any,
-    col_names: Optional[List[Any]],
+    col_names: list[Any] | None,
     fitted: bool,
-    original_columns: Optional[List[Any]],
-    arr_shape: Tuple[int, ...],
-) -> List[Any]:
+    original_columns: list[Any] | None,
+    arr_shape: tuple[int, ...],
+) -> list[Any]:
     """Helper function to determine column identifiers.
 
     Parameters

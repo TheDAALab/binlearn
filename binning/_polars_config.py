@@ -3,7 +3,7 @@
 This module attempts to import polars and sets a flag indicating its availability.
 """
 
-from typing import Optional, Any
+from typing import Any, Optional
 
 # Initialize variables
 pl: Optional[Any] = None

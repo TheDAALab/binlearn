@@ -6,7 +6,7 @@ This module provides utility functions for working with traditional interval bin
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -108,7 +108,7 @@ def validate_bin_representatives_format(bin_representatives: Any, bin_edges: Any
                 )
 
 
-def validate_bins(bin_spec: Optional[BinEdgesDict], bin_reps: Optional[BinRepsDict]) -> None:
+def validate_bins(bin_spec: BinEdgesDict | None, bin_reps: BinRepsDict | None) -> None:
     """Validate bin specifications and representatives.
 
     Args:

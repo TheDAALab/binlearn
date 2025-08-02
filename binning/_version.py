@@ -5,7 +5,7 @@ __version__ = "0.2.1.dev0+gd7882f2.d20250801"
 __version_tuple__ = (0, 2, 1, "dev0", "gd7882f2.d20250801")
 
 
-from typing import Dict, List, Union
+from typing import Dict, Union
 
 
 def get_version() -> str:
