@@ -175,6 +175,7 @@ class ValidationMixin:
             missing_mask = np.isnan(data)
         else:
             # For object/string data, check for None and 'nan' strings
+            x: Any
             missing_mask = np.array(
                 [
                     x is None or (isinstance(x, str) and x.lower() in ["nan", "na", "null", ""])

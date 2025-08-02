@@ -12,6 +12,7 @@ POLARS_AVAILABLE = False
 try:
     # pylint: disable=import-error,unused-import
     import polars  # pragma: no cover
+
     pl = polars  # pragma: no cover
 
     POLARS_AVAILABLE = True  # pragma: no cover

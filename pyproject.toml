@@ -249,8 +249,10 @@ module = [
     "kmeans1d.*",
     "scipy.*",
     "sklearn.*",
+    "binning._version",
 ]
 ignore_missing_imports = true
+ignore_errors = true
 
 [tool.coverage.run]
 source = ["binning"]
