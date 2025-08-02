@@ -48,6 +48,8 @@ tests = [
     "pytest>=6.0",
     "pytest-cov>=2.10",
     "pytest-xdist>=2.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
 ]
 docs = [
     "sphinx>=4.0",
