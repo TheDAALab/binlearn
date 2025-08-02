@@ -34,6 +34,14 @@ jobs:
       run: |
         python -c "import binning; print(f'🏷️  Version: {binning.__version__}')"
 
+    - name: Run ruff linting
+      run: |
+        ruff check binning/
+
+    - name: Run mypy type checking
+      run: |
+        mypy binning/ --ignore-missing-imports
+
     - name: Test with pytest
       run: |
         pytest --cov=binning --cov-report=xml --cov-report=term-missing
