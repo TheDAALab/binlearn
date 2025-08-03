@@ -23,35 +23,19 @@ Base Classes
 .. toctree::
    :maxdepth: 2
    
-   base/general_binning_base
-   base/interval_binning_base
-   base/flexible_binning_base
-   base/supervised_binning_base
+   base
 
 Utilities
 ---------
 
-.. toctree::
-   :maxdepth: 2
-   
-   utils/types
-   utils/errors
-   utils/constants
-   utils/data_handling
+*Utility documentation is available in the source code.*
 
 Tools
 -----
 
-.. toctree::
-   :maxdepth: 2
-   
-   tools/integration
-   tools/validation
+*Tool documentation is available in the source code.*
 
 Configuration
 -------------
 
-.. toctree::
-   :maxdepth: 2
-   
-   config/configuration
+*Configuration documentation is available in the source code.*

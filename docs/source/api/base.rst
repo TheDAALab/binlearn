@@ -1,5 +1,5 @@
 Base Classes API
-===============
+================
 
 The base classes provide the foundation for all binning methods in the framework.
 
@@ -19,18 +19,18 @@ Class Hierarchy
 
 .. code-block:: text
 
-   BaseBinner (ABC)
-   ├── UnsupervisedBinner
-   ├── SupervisedBinner  
-   └── GuidedBinner
+   GeneralBinningBase (ABC)
+   ├── IntervalBinningBase
+   ├── FlexibleBinningBase
+   └── SupervisedBinningBase
 
 Base Classes
 ------------
 
-BaseBinner
-~~~~~~~~~~
+GeneralBinningBase
+~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: BaseBinner
+.. autoclass:: GeneralBinningBase
    :members:
    :inherited-members:
    :show-inheritance:
@@ -49,41 +49,45 @@ BaseBinner
    
    All subclasses must implement:
    
-   * ``_fit_column(column_data, column_index, **kwargs)``
-   * ``_transform_column(column_data, column_index)``
+   * ``_fit_per_column(X, columns, guidance_data=None, **kwargs)``
+   * ``_fit_jointly(X, columns, **kwargs)``
+   * ``_transform_columns(X, columns)``
+   * ``_inverse_transform_columns(X, columns)``
 
    **Usage Example:**
    
    .. code-block:: python
    
-      # BaseBinner is abstract - use concrete implementations
+      # GeneralBinningBase is abstract - use concrete implementations
       from binlearn.methods import EqualWidthBinning
       
       binner = EqualWidthBinning(n_bins=5)
       X_binned = binner.fit_transform(X)
 
-UnsupervisedBinner  
-~~~~~~~~~~~~~~~~~~
+IntervalBinningBase  
+~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: UnsupervisedBinner  
+.. autoclass:: IntervalBinningBase  
    :members:
    :inherited-members:
    :show-inheritance:
 
-   Base class for unsupervised binning methods that don't require target variables.
+   Base class for interval-based binning methods that create continuous ranges.
 
    **Characteristics:**
    
-   * Fits on input features only
-   * No target variable required
-   * Suitable for exploratory data analysis
-   * Can be used in unsupervised learning pipelines
+   * Creates interval bins with defined edges
+   * Handles continuous numeric data
+   * Supports inverse transformation
+   * Provides bin edge and representative value access
 
    **Subclasses:**
    
    * :class:`~binlearn.methods.EqualWidthBinning`
    * :class:`~binlearn.methods.EqualFrequencyBinning`
-   * :class:`~binlearn.methods.ManualBinning`
+   * :class:`~binlearn.methods.EqualWidthMinimumWeightBinning`
+   * :class:`~binlearn.methods.KMeansBinning`
+   * :class:`~binlearn.methods.ManualIntervalBinning`
 
    **Usage Example:**
    
@@ -92,12 +96,47 @@ UnsupervisedBinner
       from binlearn.methods import EqualFrequencyBinning
       
       binner = EqualFrequencyBinning(n_bins=4)
-      X_binned = binner.fit_transform(X)  # No y required
+      X_binned = binner.fit_transform(X)
 
-SupervisedBinner
-~~~~~~~~~~~~~~~~
+FlexibleBinningBase
+~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: SupervisedBinner
+.. autoclass:: FlexibleBinningBase
+   :members:
+   :inherited-members:
+   :show-inheritance:
+
+   Base class for flexible binning methods that support arbitrary value groupings.
+
+   **Characteristics:**
+   
+   * Supports flexible bin definitions
+   * Handles both numeric and categorical data
+   * Allows custom value-to-bin mappings
+   * Supports variable-width bins
+
+   **Subclasses:**
+   
+   * :class:`~binlearn.methods.ManualFlexibleBinning`
+   * :class:`~binlearn.methods.OneHotBinning`
+
+   **Usage Example:**
+   
+   .. code-block:: python
+   
+      from binlearn.methods import ManualFlexibleBinning
+      
+      bin_spec = {
+          'column1': {'low': [1, 2, 3], 'high': [4, 5, 6]},
+          'column2': {'A': ['a', 'b'], 'B': ['c', 'd']}
+      }
+      binner = ManualFlexibleBinning(bin_spec=bin_spec)
+      X_binned = binner.fit_transform(X)
+
+SupervisedBinningBase
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: SupervisedBinningBase
    :members:
    :inherited-members:
    :show-inheritance:
@@ -122,37 +161,7 @@ SupervisedBinner
       from binlearn.methods import SupervisedBinning
       
       binner = SupervisedBinning(n_bins=5, criterion='entropy')
-      X_binned = binner.fit_transform(X, y)  # y required
-
-GuidedBinner
-~~~~~~~~~~~~
-
-.. autoclass:: GuidedBinner
-   :members:
-   :inherited-members:
-   :show-inheritance:
-
-   Base class for binning methods that use additional guidance data (e.g., weights, importance scores).
-
-   **Characteristics:**
-   
-   * Uses guidance data to influence binning decisions
-   * Guidance data passed via ``guidance_data`` parameter
-   * Enables weight-constrained or importance-aware binning
-   * Flexible guidance data interpretation
-
-   **Subclasses:**
-   
-   * :class:`~binlearn.methods.EqualWidthMinimumWeightBinning`
-
-   **Usage Example:**
-   
-   .. code-block:: python
-   
-      from binlearn.methods import EqualWidthMinimumWeightBinning
-      
-      binner = EqualWidthMinimumWeightBinning(n_bins=5, minimum_weight=10.0)
-      X_binned = binner.fit_transform(X, guidance_data=sample_weights)
+      X_binned = binner.fit_transform(X, y)
 
 Common Parameters
 -----------------
@@ -302,39 +311,76 @@ Validate and preprocess input data.
 * **kwargs_validated** : dict
   Validated additional data.
 
-_fit_column(column_data, column_index, **kwargs)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_fit_per_column(X, columns, guidance_data=None, **kwargs)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Fit binning parameters for a single column. **Must be implemented by subclasses.**
+Fit binning parameters per column. **Must be implemented by subclasses.**
 
 **Parameters:**
 
-* **column_data** : array-like of shape (n_samples,)
-  Data for single column.
+* **X** : array-like of shape (n_samples, n_columns)
+  Input data for binning columns.
 
-* **column_index** : int
-  Index of the column being fitted.
+* **columns** : list
+  Column identifiers.
+
+* **guidance_data** : array-like, optional
+  Additional guidance data.
 
 * **kwargs** : dict
-  Additional parameters (e.g., target data, guidance data).
+  Additional parameters.
 
-_transform_column(column_data, column_index)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+_fit_jointly(X, columns, **kwargs)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Transform a single column using fitted parameters. **Must be implemented by subclasses.**
+Fit binning parameters jointly across columns. **Must be implemented by subclasses.**
 
 **Parameters:**
 
-* **column_data** : array-like of shape (n_samples,)
-  Data for single column to transform.
+* **X** : array-like of shape (n_samples, n_columns) 
+  Input data for all columns.
 
-* **column_index** : int
-  Index of the column being transformed.
+* **columns** : list
+  Column identifiers.
+
+* **kwargs** : dict
+  Additional parameters.
+
+_transform_columns(X, columns)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Transform columns using fitted parameters. **Must be implemented by subclasses.**
+
+**Parameters:**
+
+* **X** : array-like of shape (n_samples, n_columns)
+  Data to transform.
+
+* **columns** : list
+  Column identifiers.
 
 **Returns:**
 
-* **binned_column** : array-like of shape (n_samples,)
-  Binned values for the column.
+* **binned_data** : array-like of shape (n_samples, n_columns)
+  Binned values.
+
+_inverse_transform_columns(X, columns)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inverse transform from bin indices to representative values. **Must be implemented by subclasses.**
+
+**Parameters:**
+
+* **X** : array-like of shape (n_samples, n_columns)
+  Binned data to inverse transform.
+
+* **columns** : list
+  Column identifiers.
+
+**Returns:**
+
+* **recovered_data** : array-like of shape (n_samples, n_columns)
+  Representative values.
 
 _detect_framework(X)
 ~~~~~~~~~~~~~~~~~~~~

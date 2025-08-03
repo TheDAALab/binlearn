@@ -95,19 +95,13 @@ Contents
    :maxdepth: 2
    :caption: Tutorials
    
-   tutorials/basic_binning
-   tutorials/advanced_techniques
-   tutorials/sklearn_integration
-   tutorials/dataframe_usage
+   tutorials/index
 
 .. toctree::
    :maxdepth: 2
    :caption: Examples
    
-   examples/equal_width_binning
-   examples/equal_frequency_binning
-   examples/supervised_binning
-   examples/weight_constrained_binning
+   examples/index
 
 .. toctree::
    :maxdepth: 3
@@ -120,8 +114,6 @@ Contents
    :caption: Development
    
    contributing
-   changelog
-   license
 
 Indices and tables
 ==================
