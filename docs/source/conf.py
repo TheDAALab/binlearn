@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Binning Framework"
+project = "binlearn - Binning and Discretization Library"
 copyright = "2025, TheDAALab"
 author = "TheDAALab"
 release = "1.0.0"

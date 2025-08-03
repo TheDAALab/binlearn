@@ -62,7 +62,7 @@ Age Group Binning
 
    import numpy as np
    import pandas as pd
-   from binning.methods import ManualIntervalBinning
+   from binlearn.methods import ManualIntervalBinning
    
    # Create sample age data
    np.random.seed(42)
@@ -219,7 +219,7 @@ Product Category Grouping
 
    import numpy as np
    import pandas as pd
-   from binning.methods import ManualFlexibleBinning
+   from binlearn.methods import ManualFlexibleBinning
    
    # Create sample product data
    np.random.seed(42)

@@ -31,7 +31,7 @@ Basic Usage
 .. code-block:: python
 
    import numpy as np
-   from binning.methods import EqualWidthMinimumWeightBinning
+   from binlearn.methods import EqualWidthMinimumWeightBinning
    
    # Create sample data
    X = np.array([[1, 10], [2, 11], [3, 12], [4, 13], [5, 14]])

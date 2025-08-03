@@ -25,9 +25,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binning.methods._equal_frequency_binning import EqualFrequencyBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binlearn.methods._equal_frequency_binning import EqualFrequencyBinning
+from binlearn.utils.errors import ConfigurationError, DataQualityWarning
 
 
 class TestEqualFrequencyBinning:
@@ -158,7 +158,7 @@ class TestEqualFrequencyBinning:
 
         assert X_binned.shape == X.shape
         # NaN values should be replaced with MISSING_VALUE (-1)
-        from binning.utils.constants import MISSING_VALUE
+        from binlearn.utils.constants import MISSING_VALUE
 
         assert X_binned[1, 0] == MISSING_VALUE
         assert X_binned[2, 1] == MISSING_VALUE
@@ -177,7 +177,7 @@ class TestEqualFrequencyBinning:
         # First column should be binned normally
         assert not np.all(X_binned[:, 0] == -1)
         # Second column should be all MISSING_VALUE (-1)
-        from binning.utils.constants import MISSING_VALUE
+        from binlearn.utils.constants import MISSING_VALUE
 
         assert np.all(X_binned[:, 1] == MISSING_VALUE)
 
@@ -316,7 +316,7 @@ class TestEqualFrequencyBinningDataTypes:
         assert isinstance(df_binned, pd.DataFrame)
         assert df_binned.shape == df.shape
         # NaN values should be replaced with MISSING_VALUE (-1)
-        from binning.utils.constants import MISSING_VALUE
+        from binlearn.utils.constants import MISSING_VALUE
 
         assert df_binned.iloc[2, 0] == MISSING_VALUE
         assert df_binned.iloc[1, 1] == MISSING_VALUE
@@ -529,7 +529,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
             raise ValueError("Simulated quantile calculation failure")
 
         # Patch np.quantile to raise an exception
-        import binning.methods._equal_frequency_binning as efb_module
+        import binlearn.methods._equal_frequency_binning as efb_module
 
         efb_module.np.quantile = failing_quantile
 
@@ -564,7 +564,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
             raise IndexError("Simulated index error in quantile calculation")
 
         # Patch np.quantile to raise an exception
-        import binning.methods._equal_frequency_binning as efb_module
+        import binlearn.methods._equal_frequency_binning as efb_module
 
         efb_module.np.quantile = failing_quantile_index_error
 

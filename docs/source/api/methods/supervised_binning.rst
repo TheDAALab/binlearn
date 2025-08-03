@@ -67,7 +67,7 @@ columns : list[str | int] | None, default=None
     Specific columns to bin. If None, bins all columns.
 
 guidance_columns : list[str | int] | None, default=None
-    Columns to exclude from binning (used as guidance only).
+    Columns to exclude from binlearn (used as guidance only).
 
 preserve_dataframe : bool | None, default=None
     Whether to preserve the input DataFrame format. If None, auto-detects.
@@ -112,7 +112,7 @@ Basic Classification Example
 
    import numpy as np
    import pandas as pd
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    from sklearn.datasets import make_classification
    
    # Create sample classification data
@@ -145,7 +145,7 @@ Binary Classification with Comparison
 
 .. code-block:: python
 
-   from binning.methods import SupervisedBinning, EqualWidthBinning
+   from binlearn.methods import SupervisedBinning, EqualWidthBinning
    from sklearn.model_selection import cross_val_score
    from sklearn.ensemble import RandomForestClassifier
    
@@ -198,7 +198,7 @@ Multi-class Classification
 .. code-block:: python
 
    from sklearn.datasets import make_classification
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    
    # Create multi-class dataset
    X, y = make_classification(n_samples=1500, n_features=4, n_classes=3,
@@ -260,7 +260,7 @@ Feature Analysis and Selection
 
 .. code-block:: python
 
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    from sklearn.metrics import mutual_info_score
    
    # Create dataset with some irrelevant features

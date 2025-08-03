@@ -24,9 +24,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binning.methods._manual_interval_binning import ManualIntervalBinning
-from binning.utils.errors import BinningError, ConfigurationError
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binlearn.methods._manual_interval_binning import ManualIntervalBinning
+from binlearn.utils.errors import BinningError, ConfigurationError
 
 try:
     from scipy import sparse
@@ -430,7 +430,7 @@ class TestManualIntervalBinningSklearnIntegration:
         X = np.array([[5, 12, 100], [15, 25, 200]])
         result = ct.fit_transform(X)
 
-        # Should have 2 columns from binning
+        # Should have 2 columns from binlearn
         assert result.shape[1] == 2
 
     def test_sklearn_get_set_params(self):

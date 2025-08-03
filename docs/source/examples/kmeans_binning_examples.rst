@@ -9,7 +9,7 @@ This page demonstrates the use of `KMeansBinning` for creating bins based on dat
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import KMeansBinning, EqualWidthBinning, EqualFrequencyBinning
+from binlearn import KMeansBinning, EqualWidthBinning, EqualFrequencyBinning
 
 # Create data with natural clusters
 np.random.seed(42)
@@ -61,7 +61,7 @@ plt.show()
 
 ```python
 import numpy as np
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 import matplotlib.pyplot as plt
 
 # Create 2D data with natural clusters
@@ -122,7 +122,7 @@ plt.show()
 ```python
 import numpy as np
 import pandas as pd
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 import matplotlib.pyplot as plt
 
 # Simulate customer behavior data
@@ -261,7 +261,7 @@ plt.show()
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 from sklearn.datasets import load_sample_image
 
 # Load a sample image
@@ -336,7 +336,7 @@ for n_colors in color_levels:
 ```python
 import numpy as np
 import pandas as pd
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 import matplotlib.pyplot as plt
 
 # Simulate stock price movements
@@ -447,7 +447,7 @@ plt.show()
 
 ```python
 import numpy as np
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 import matplotlib.pyplot as plt
 
 # Create data with unknown number of natural clusters
@@ -534,7 +534,7 @@ print(f"Best silhouette score: {max(silhouette_scores):.3f}")
 
 ```python
 import numpy as np
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
@@ -659,7 +659,7 @@ plt.show()
 
 ```python
 import numpy as np
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score
@@ -733,7 +733,7 @@ print(importance_df.head(10))
 ```python
 import numpy as np
 import time
-from binning import KMeansBinning
+from binlearn import KMeansBinning
 
 def benchmark_kmeans_binning():
     """Benchmark K-means binning with different dataset sizes and dimensions."""
@@ -775,7 +775,7 @@ benchmark_kmeans_binning()
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import KMeansBinning, EqualWidthBinning, EqualFrequencyBinning
+from binlearn import KMeansBinning, EqualWidthBinning, EqualFrequencyBinning
 
 # Create different data distributions to demonstrate when K-means is best
 

@@ -37,13 +37,13 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         quantile_range (tuple, optional): Custom quantile range for binning.
         clip (bool, optional): Whether to clip values outside bin range.
         columns (list, optional): Specific columns to bin.
-        guidance_columns (list, optional): Columns to exclude from binning.
+        guidance_columns (list, optional): Columns to exclude from binlearn.
         preserve_dataframe (bool): Whether to preserve DataFrame format.
         _bin_edges (dict): Computed bin edges after fitting.
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import EqualFrequencyBinning
+        >>> from binlearn.methods import EqualFrequencyBinning
         >>> X = np.random.rand(100, 3)
         >>> binner = EqualFrequencyBinning(n_bins=5)
         >>> X_binned = binner.fit_transform(X)

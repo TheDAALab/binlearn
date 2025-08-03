@@ -30,7 +30,7 @@ from unittest.mock import patch
 
 import pytest
 
-from binning.config import (
+from binlearn.config import (
     BinningConfig,
     ConfigContext,
     ConfigManager,

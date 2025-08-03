@@ -9,7 +9,7 @@ This page demonstrates the use of `ManualFlexibleBinning` for creating bins with
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import ManualFlexibleBinning, ManualIntervalBinning
+from binlearn import ManualFlexibleBinning, ManualIntervalBinning
 
 # Create multi-feature dataset with different characteristics
 np.random.seed(42)
@@ -137,7 +137,7 @@ for i, feature_name in enumerate(feature_names):
 
 ```python
 import numpy as np
-from binning import ManualFlexibleBinning, EqualWidthBinning
+from binlearn import ManualFlexibleBinning, EqualWidthBinning
 
 # Create dataset with mixed feature types
 np.random.seed(42)
@@ -265,7 +265,7 @@ plt.show()
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualFlexibleBinning
+from binlearn import ManualFlexibleBinning
 import matplotlib.pyplot as plt
 
 # Simulate e-commerce customer dataset
@@ -503,7 +503,7 @@ for segment, recommendation in recommendations.items():
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualFlexibleBinning
+from binlearn import ManualFlexibleBinning
 
 # Simulate healthcare patient dataset
 np.random.seed(42)
@@ -691,7 +691,7 @@ for category, recommendation in recommendations.items():
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualFlexibleBinning
+from binlearn import ManualFlexibleBinning
 
 # Simulate investment portfolio data
 np.random.seed(42)
@@ -897,7 +897,7 @@ for style, ratio in risk_adj_performance.items():
 
 ```python
 import numpy as np
-from binning import ManualFlexibleBinning
+from binlearn import ManualFlexibleBinning
 
 # Demonstrate combining different binning approaches within one dataset
 np.random.seed(42)
@@ -1026,7 +1026,7 @@ plt.show()
 
 ```python
 import numpy as np
-from binning import ManualFlexibleBinning
+from binlearn import ManualFlexibleBinning
 
 # Demonstrate updating binning configurations based on data analysis
 np.random.seed(42)

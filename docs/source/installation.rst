@@ -4,7 +4,7 @@ Installation
 Requirements
 ------------
 
-The Binning Framework requires Python 3.8 or later and has the following dependencies:
+The binlearn library requires Python 3.8 or later and has the following dependencies:
 
 Required Dependencies
 ~~~~~~~~~~~~~~~~~~~~~
@@ -21,7 +21,7 @@ Optional Dependencies
 Install from PyPI
 -----------------
 
-The easiest way to install the Binning Framework is using pip:
+The easiest way to install the binlearn library is using pip:
 
 .. code-block:: bash
 
@@ -56,11 +56,11 @@ To verify your installation, run:
 
 .. code-block:: python
 
-   import binning
+   import binlearn
    print(binning.__version__)
    
    # Test basic functionality
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    import numpy as np
    
    X = np.random.rand(10, 2)

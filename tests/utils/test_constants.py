@@ -1,5 +1,5 @@
 """Tests for constants module."""
-from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
+from binlearn.utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
 
 
 class TestConstants:

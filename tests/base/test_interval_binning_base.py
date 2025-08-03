@@ -4,10 +4,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from binning import PANDAS_AVAILABLE, pd
-from binning.base._interval_binning_base import IntervalBinningBase
-from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE
-from binning.utils.errors import BinningError, ConfigurationError, DataQualityWarning
+from binlearn import PANDAS_AVAILABLE, pd
+from binlearn.base._interval_binning_base import IntervalBinningBase
+from binlearn.utils.constants import ABOVE_RANGE, BELOW_RANGE
+from binlearn.utils.errors import BinningError, ConfigurationError, DataQualityWarning
 
 
 class DummyIntervalBinning(IntervalBinningBase):
@@ -279,7 +279,7 @@ def test_inverse_transform_columns_missing_key():
 
 def test_inverse_transform_columns_all_special_values():
     """Test _inverse_transform_columns when all values are special (nan, inf, etc)."""
-    from binning.utils.constants import ABOVE_RANGE, MISSING_VALUE
+    from binlearn.utils.constants import ABOVE_RANGE, MISSING_VALUE
 
     obj = DummyIntervalBinning()
     obj._bin_reps = {0: [1.0, 2.0, 3.0]}
@@ -296,7 +296,7 @@ def test_inverse_transform_columns_all_special_values():
     assert result[2, 0] == np.inf  # ABOVE_RANGE -> inf
 
 
-@patch("binning.base._interval_binning_base.validate_bins")
+@patch("binlearn.base._interval_binning_base.validate_bins")
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
     obj = DummyIntervalBinning()
@@ -314,7 +314,7 @@ def test_finalize_fitting_error():
     obj._bin_edges = {0: [0, 1, 2]}
     obj._bin_reps = {0: [0.5, 1.5]}
 
-    with patch("binning.base._interval_binning_base.validate_bins") as mock_validate:
+    with patch("binlearn.base._interval_binning_base.validate_bins") as mock_validate:
         mock_validate.side_effect = Exception("Validation error")
 
         with pytest.raises(Exception, match="Validation error"):
@@ -576,9 +576,9 @@ def test_finalize_fitting_default_representatives():
     obj._bin_edges = {0: [0, 1, 2], 1: [0, 1, 2]}
     obj._bin_reps = {0: [0.5, 1.5]}  # Missing reps for column 1
 
-    with patch("binning.base._interval_binning_base.default_representatives") as mock_default:
+    with patch("binlearn.base._interval_binning_base.default_representatives") as mock_default:
         mock_default.return_value = [0.5, 1.5]
-        with patch("binning.base._interval_binning_base.validate_bins"):
+        with patch("binlearn.base._interval_binning_base.validate_bins"):
             obj._finalize_fitting()
 
         # Should generate default reps for column 1
@@ -658,7 +658,7 @@ def test_lookup_bin_widths_method():
 
 def test_lookup_bin_widths_all_invalid():
     """Test lookup_bin_widths when all bin indices are invalid."""
-    from binning.utils.constants import MISSING_VALUE
+    from binlearn.utils.constants import MISSING_VALUE
 
     obj = DummyIntervalBinning()
     obj._bin_edges = {0: [0, 1, 3]}  # Valid bin indices: 0, 1
@@ -727,7 +727,7 @@ def test_process_user_specifications_non_binning_exception():
     obj.bin_edges = {0: [0, 1, 2]}
 
     # Mock to raise a non-BinningError exception
-    with patch("binning.base._interval_binning_base.validate_bin_edges_format") as mock_validate:
+    with patch("binlearn.base._interval_binning_base.validate_bin_edges_format") as mock_validate:
         mock_validate.side_effect = RuntimeError("Some unexpected runtime error")
 
         with pytest.raises(ConfigurationError, match="Failed to process bin specifications"):
@@ -747,22 +747,22 @@ def test_set_sklearn_attributes_from_specs_with_guidance_columns():
     """Test _set_sklearn_attributes_from_specs with guidance columns - covers line 212->211."""
     # Test with single guidance column (string)
     bin_edges = {0: [0, 1, 2], 1: [0, 5, 10]}
-    obj = DummyIntervalBinning(bin_edges=bin_edges, guidance_columns='target')
+    obj = DummyIntervalBinning(bin_edges=bin_edges, guidance_columns="target")
 
     # Should include both binning columns (0, 1) and guidance column ('target')
-    expected_features = [0, 1, 'target']
+    expected_features = [0, 1, "target"]
     assert obj._feature_names_in == expected_features
     assert obj._n_features_in == 3
 
     # Test with list of guidance columns
-    obj2 = DummyIntervalBinning(bin_edges=bin_edges, guidance_columns=['target1', 'target2'])
-    expected_features2 = [0, 1, 'target1', 'target2']
+    obj2 = DummyIntervalBinning(bin_edges=bin_edges, guidance_columns=["target1", "target2"])
+    expected_features2 = [0, 1, "target1", "target2"]
     assert obj2._feature_names_in == expected_features2
     assert obj2._n_features_in == 4
 
     # Test when guidance column is already in binning columns (shouldn't duplicate)
-    bin_edges_overlap = {0: [0, 1, 2], 'target': [0, 5, 10]}
-    obj3 = DummyIntervalBinning(bin_edges=bin_edges_overlap, guidance_columns='target')
-    expected_features3 = [0, 'target']  # 'target' shouldn't be duplicated
+    bin_edges_overlap = {0: [0, 1, 2], "target": [0, 5, 10]}
+    obj3 = DummyIntervalBinning(bin_edges=bin_edges_overlap, guidance_columns="target")
+    expected_features3 = [0, "target"]  # 'target' shouldn't be duplicated
     assert obj3._feature_names_in == expected_features3
     assert obj3._n_features_in == 2

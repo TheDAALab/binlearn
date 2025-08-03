@@ -65,7 +65,7 @@ class OneHotBinning(ReprMixin, FlexibleBinningBase):
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import OneHotBinning
+        >>> from binlearn.methods import OneHotBinning
         >>> X = np.array([[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]])
         >>> binner = OneHotBinning(max_unique_values=50)
         >>> X_binned = binner.fit_transform(X)

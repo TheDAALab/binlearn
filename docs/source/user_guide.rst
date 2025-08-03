@@ -1,12 +1,12 @@
 User Guide
 ==========
 
-This comprehensive guide covers all aspects of using the Binning Framework effectively.
+This comprehensive guide covers all aspects of using the binlearn library effectively.
 
 Overview
 --------
 
-The Binning Framework is a comprehensive library for data binning and discretization. It provides multiple binning strategies, each optimized for different use cases and data characteristics.
+The binlearn library is a comprehensive library for data binning and discretization. It provides multiple binning strategies, each optimized for different use cases and data characteristics.
 
 Core Concepts
 -------------
@@ -56,7 +56,7 @@ Creates bins of equal width across the data range.
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    binner = EqualWidthBinning(n_bins=5, bin_range=(0, 100))
    X_binned = binner.fit_transform(X)
@@ -79,7 +79,7 @@ Creates bins with approximately equal number of samples.
 
 .. code-block:: python
 
-   from binning.methods import EqualFrequencyBinning
+   from binlearn.methods import EqualFrequencyBinning
    
    binner = EqualFrequencyBinning(n_bins=5)
    X_binned = binner.fit_transform(X)
@@ -102,7 +102,7 @@ Equal-width binning with minimum weight constraints from guidance data.
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthMinimumWeightBinning
+   from binlearn.methods import EqualWidthMinimumWeightBinning
    
    binner = EqualWidthMinimumWeightBinning(n_bins=5, minimum_weight=10.0)
    X_binned = binner.fit_transform(X, guidance_data=weights)
@@ -126,7 +126,7 @@ Uses target variable information to optimize bin boundaries.
 
 .. code-block:: python
 
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    
    binner = SupervisedBinning(n_bins=5, criterion='entropy')
    X_binned = binner.fit_transform(X, y)
@@ -150,7 +150,7 @@ Allows custom specification of bin boundaries.
 
 .. code-block:: python
 
-   from binning.methods import ManualBinning
+   from binlearn.methods import ManualBinning
    
    custom_bins = {0: [0, 25, 50, 75, 100]}  # Custom boundaries for column 0
    binner = ManualBinning(bin_edges=custom_bins)
@@ -205,7 +205,7 @@ Basic usage with NumPy arrays:
 .. code-block:: python
 
    import numpy as np
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    X = np.random.rand(100, 3) * 100  # 3 features
    binner = EqualWidthBinning(n_bins=5)
@@ -219,7 +219,7 @@ Seamless integration with pandas:
 .. code-block:: python
 
    import pandas as pd
-   from binning.methods import EqualFrequencyBinning
+   from binlearn.methods import EqualFrequencyBinning
    
    df = pd.DataFrame({
        'age': np.random.normal(35, 10, 1000),
@@ -238,7 +238,7 @@ Support for Polars DataFrames:
 .. code-block:: python
 
    import polars as pl
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    df = pl.DataFrame({
        'feature1': np.random.rand(1000),
@@ -261,7 +261,7 @@ Use binning in sklearn pipelines:
    from sklearn.pipeline import Pipeline
    from sklearn.preprocessing import StandardScaler
    from sklearn.ensemble import RandomForestClassifier
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    pipeline = Pipeline([
        ('binning', EqualWidthBinning(n_bins=10)),
@@ -280,7 +280,7 @@ Apply different binning to different columns:
 .. code-block:: python
 
    from sklearn.compose import ColumnTransformer
-   from binning.methods import EqualWidthBinning, EqualFrequencyBinning
+   from binlearn.methods import EqualWidthBinning, EqualFrequencyBinning
    
    preprocessor = ColumnTransformer([
        ('numerical_equal_width', EqualWidthBinning(n_bins=5), ['age', 'income']),
@@ -315,7 +315,7 @@ Configuration Errors
 
 .. code-block:: python
 
-   from binning.utils.errors import ConfigurationError
+   from binlearn.utils.errors import ConfigurationError
    
    try:
        # Invalid configuration
@@ -328,7 +328,7 @@ Data Quality Warnings
 
 .. code-block:: python
 
-   from binning.utils.errors import DataQualityWarning
+   from binlearn.utils.errors import DataQualityWarning
    import warnings
    
    # Set up warning handling
@@ -344,7 +344,7 @@ Fitting Errors
 
 .. code-block:: python
 
-   from binning.utils.errors import FittingError
+   from binlearn.utils.errors import FittingError
    
    try:
        # Insufficient data for binning
@@ -390,7 +390,7 @@ Handle Missing Values
 .. code-block:: python
 
    # Check for missing values in results
-   from binning.utils.constants import MISSING_VALUE
+   from binlearn.utils.constants import MISSING_VALUE
    
    n_missing = np.sum(X_binned == MISSING_VALUE)
    print(f"Missing values in binned data: {n_missing}")

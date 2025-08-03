@@ -74,7 +74,7 @@ Basic Usage with Discrete Data
 
    import numpy as np
    import pandas as pd
-   from binning.methods import OneHotBinning
+   from binlearn.methods import OneHotBinning
    
    # Create sample discrete data
    np.random.seed(42)
@@ -139,7 +139,7 @@ Comparison with Other Binning Methods
 
 .. code-block:: python
 
-   from binning.methods import OneHotBinning, EqualWidthBinning, EqualFrequencyBinning
+   from binlearn.methods import OneHotBinning, EqualWidthBinning, EqualFrequencyBinning
    
    # Create mixed data: some discrete, some continuous
    np.random.seed(42)
@@ -434,7 +434,7 @@ Common Issues and Solutions
 
    # Problem: Transform data has values not seen during fit
    
-   # Solution: The binning framework should handle this
+   # Solution: The binlearn library should handle this
    # But check the implementation for unknown value handling
    
    # Manual solution: Preprocess to handle unknowns

@@ -9,7 +9,7 @@ This page demonstrates the use of `ManualIntervalBinning` for creating bins with
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import ManualIntervalBinning, EqualWidthBinning
+from binlearn import ManualIntervalBinning, EqualWidthBinning
 
 # Create sample data
 np.random.seed(42)
@@ -122,7 +122,7 @@ for i, (start, end) in enumerate(custom_intervals):
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 
 # Create multi-feature dataset
 np.random.seed(42)
@@ -223,7 +223,7 @@ print(crosstab)
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 import matplotlib.pyplot as plt
 
 # Simulate student scores
@@ -368,7 +368,7 @@ print(f"Distinction (A grade): {distinction_rate:.1f}%")
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 import matplotlib.pyplot as plt
 
 # Simulate patient risk assessment data
@@ -562,7 +562,7 @@ print(high_risk_patients[['blood_pressure', 'cholesterol', 'glucose', 'total_ris
 ```python
 import numpy as np
 import pandas as pd
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 
 # Simulate credit scoring dataset
 np.random.seed(42)
@@ -687,7 +687,7 @@ print(risk_analysis.round(3))
 
 ```python
 import numpy as np
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 import matplotlib.pyplot as plt
 
 # Create data that might require interval adjustment
@@ -813,7 +813,7 @@ plt.show()
 
 ```python
 import numpy as np
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 import matplotlib.pyplot as plt
 
 # Create data with outliers and edge cases
@@ -1025,7 +1025,7 @@ print("  - Highly skewed distributions without domain knowledge")
 
 # Demonstrate best practices
 import numpy as np
-from binning import ManualIntervalBinning
+from binlearn import ManualIntervalBinning
 
 # Best Practice 1: Document your interval choices
 def create_documented_binner(intervals, descriptions):

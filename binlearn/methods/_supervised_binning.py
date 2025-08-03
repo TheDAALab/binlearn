@@ -52,7 +52,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import SupervisedBinning
+        >>> from binlearn.methods import SupervisedBinning
         >>> X = np.random.rand(100, 4)  # Features + target in last column
         >>> binner = SupervisedBinning(guidance_columns=[3])
         >>> X_binned = binner.fit_transform(X)
@@ -112,7 +112,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         Example:
             >>> import numpy as np
-            >>> from binning.methods import SupervisedBinning
+            >>> from binlearn.methods import SupervisedBinning
             >>> X = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 15.0], [4.0, 25.0]])
             >>> y = np.array([0, 0, 1, 1])  # Target for guidance
             >>> binner = SupervisedBinning(

@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from binning.utils.errors import (
+from binlearn.utils.errors import (
     BinningError,
     BinningWarning,
     ConfigurationError,
@@ -208,7 +208,7 @@ class TestValidationMixin:
         with pytest.raises(InvalidDataError, match="Guidance columns cannot overlap"):
             ValidationMixin.validate_guidance_columns([0, 2], [0, 1], (10, 3))
 
-    @patch("binning.utils.errors.get_config")
+    @patch("binlearn.utils.errors.get_config")
     def test_check_data_quality_warnings_disabled(self, mock_get_config):
         """Test check_data_quality with warnings disabled."""
         mock_config = Mock()
@@ -227,7 +227,7 @@ class TestValidationMixin:
         # Verify that get_config was called
         mock_get_config.assert_called_once()
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_missing_values(self, mock_get_config):
         """Test check_data_quality with missing values."""
         mock_config = Mock()
@@ -244,7 +244,7 @@ class TestValidationMixin:
             assert issubclass(w[0].category, DataQualityWarning)
             assert "75.0% missing values" in str(w[0].message)
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_infinite_values(self, mock_get_config):
         """Test check_data_quality with infinite values."""
         mock_config = Mock()
@@ -260,7 +260,7 @@ class TestValidationMixin:
             assert issubclass(w[0].category, DataQualityWarning)
             assert "infinite values" in str(w[0].message)
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_constant_column(self, mock_get_config):
         """Test check_data_quality with constant column."""
         mock_config = Mock()
@@ -278,7 +278,7 @@ class TestValidationMixin:
             assert "Column 1" in str(w[0].message)
             assert "constant" in str(w[0].message)
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_string_missing_values(self, mock_get_config):
         """Test check_data_quality with string data containing missing values."""
         mock_config = Mock()
@@ -295,7 +295,7 @@ class TestValidationMixin:
             assert issubclass(w[0].category, DataQualityWarning)
             assert "60.0% missing values" in str(w[0].message)
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_complex_dtype_exception(self, mock_get_config):
         """Test check_data_quality with complex dtype that raises exceptions."""
         mock_config = Mock()
@@ -308,7 +308,7 @@ class TestValidationMixin:
         # Should not raise exception, just skip checks
         ValidationMixin.check_data_quality(complex_data, "test")
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_type_error_exception(self, mock_get_config):
         """Test check_data_quality with data that triggers TypeError in missing value check."""
         mock_config = Mock()
@@ -322,7 +322,7 @@ class TestValidationMixin:
         # Should not raise exception, just skip checks
         ValidationMixin.check_data_quality(special_data, "test")
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_inf_exception(self, mock_get_config):
         """Test check_data_quality with infinite value check exception."""
         mock_config = Mock()
@@ -336,7 +336,7 @@ class TestValidationMixin:
             # Should not raise exception, just skip checks
             ValidationMixin.check_data_quality(np.array([1, 2, 3]), "test")
 
-    @patch("binning.config.get_config")
+    @patch("binlearn.config.get_config")
     def test_check_data_quality_complex_dtype_skip(self, mock_get_config):
         """Test check_data_quality skips complex dtypes."""
         mock_config = Mock()

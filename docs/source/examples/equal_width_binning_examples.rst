@@ -8,7 +8,7 @@ This page provides comprehensive examples of using `EqualWidthBinning` for diffe
 
 ```python
 import numpy as np
-from binning.methods import EqualWidthBinning
+from binlearn.methods import EqualWidthBinning
 
 # Create sample data
 np.random.seed(42)
@@ -36,7 +36,7 @@ Number of bins created: 5
 
 ```python
 import numpy as np
-from binning.methods import EqualWidthBinning
+from binlearn.methods import EqualWidthBinning
 
 # Create multi-dimensional dataset
 np.random.seed(42)
@@ -65,7 +65,7 @@ for i in range(3):
 ```python
 import numpy as np
 import pandas as pd
-from binning.methods import EqualWidthBinning
+from binlearn.methods import EqualWidthBinning
 import matplotlib.pyplot as plt
 
 # Simulate customer data
@@ -140,7 +140,7 @@ plt.show()
 ```python
 import numpy as np
 import pandas as pd
-from binning import EqualWidthBinning
+from binlearn import EqualWidthBinning
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
@@ -228,7 +228,7 @@ print(classification_report(y_test, y_pred_binned))
 
 ```python
 import numpy as np
-from binning import EqualWidthBinning
+from binlearn import EqualWidthBinning
 
 # Create data with known characteristics
 np.random.seed(42)
@@ -259,7 +259,7 @@ print(reasonable_binner.bin_edges_[0])
 
 ```python
 import numpy as np
-from binning import EqualWidthBinning
+from binlearn import EqualWidthBinning
 import matplotlib.pyplot as plt
 
 # Create data with outliers
@@ -325,7 +325,7 @@ plt.show()
 ```python
 import pandas as pd
 import numpy as np
-from binning import EqualWidthBinning
+from binlearn import EqualWidthBinning
 
 # Create sample DataFrame
 np.random.seed(42)
@@ -371,7 +371,7 @@ for col in numerical_cols:
 ```python
 import numpy as np
 import time
-from binning import EqualWidthBinning
+from binlearn import EqualWidthBinning
 
 # Test with different dataset sizes
 sizes = [1000, 10000, 100000, 1000000]
@@ -400,7 +400,7 @@ for size in sizes:
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import EqualWidthBinning
+from binlearn import EqualWidthBinning
 
 # Create sample data
 np.random.seed(42)

@@ -1,7 +1,7 @@
 Contributing Guide
 =================
 
-We welcome contributions to the Binning Framework! This guide explains how to contribute effectively.
+We welcome contributions to the binlearn library! This guide explains how to contribute effectively.
 
 Getting Started
 ---------------
@@ -175,7 +175,7 @@ Step-by-Step Guide
 
    .. code-block:: python
 
-      from binning.base import UnsupervisedBinner
+      from binlearn.base import UnsupervisedBinner
       import numpy as np
       
       class MyNewBinning(UnsupervisedBinner):
@@ -193,7 +193,7 @@ Step-by-Step Guide
               
           Examples
           --------
-          >>> from binning.methods import MyNewBinning
+          >>> from binlearn.methods import MyNewBinning
           >>> binner = MyNewBinning(n_bins=4)
           >>> X_binned = binner.fit_transform(X)
           """
@@ -232,7 +232,7 @@ Step-by-Step Guide
       # In tests/methods/test_my_new_binning.py
       import pytest
       import numpy as np
-      from binning.methods import MyNewBinning
+      from binlearn.methods import MyNewBinning
       
       class TestMyNewBinning:
           """Test suite for MyNewBinning."""
@@ -440,4 +440,4 @@ Development Resources
    * ``setup.cfg`` - Tool configurations
    * ``pytest.ini`` - Test configuration
 
-Thank you for contributing to the Binning Framework!
+Thank you for contributing to the binlearn library!

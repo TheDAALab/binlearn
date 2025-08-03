@@ -20,9 +20,9 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from binning import PANDAS_AVAILABLE, pd
-from binning.base._general_binning_base import GeneralBinningBase
-from binning.utils.errors import BinningError
+from binlearn import PANDAS_AVAILABLE, pd
+from binlearn.base._general_binning_base import GeneralBinningBase
+from binlearn.utils.errors import BinningError
 
 
 class DummyGeneralBinning(GeneralBinningBase):
@@ -387,7 +387,7 @@ def test_get_params_missing_attributes():
     obj = DummyGeneralBinning()
 
     # Mock safe_get_class_parameters to return a parameter that doesn't exist on the object
-    with patch("binning.base._general_binning_base.safe_get_class_parameters") as mock_params:
+    with patch("binlearn.base._general_binning_base.safe_get_class_parameters") as mock_params:
         mock_params.return_value = ["preserve_dataframe", "nonexistent_param"]
 
         params = obj.get_params()
@@ -451,7 +451,7 @@ def test_get_fitted_params_missing_attributes():
     obj = DummyGeneralBinning()
 
     # Mock safe_get_class_parameters to return a parameter that doesn't exist on the object
-    with patch("binning.base._general_binning_base.safe_get_class_parameters") as mock_params:
+    with patch("binlearn.base._general_binning_base.safe_get_class_parameters") as mock_params:
         mock_params.return_value = ["preserve_dataframe", "nonexistent_fitted_param"]
 
         params = obj._get_fitted_params()
@@ -494,7 +494,7 @@ def test_transform_empty_binning_columns():
     assert result.shape == (2, 0)  # No columns to transform
 
 
-@patch("binning.base._general_binning_base.prepare_input_with_columns")
+@patch("binlearn.base._general_binning_base.prepare_input_with_columns")
 def test_prepare_input_mock(mock_prepare):
     """Test _prepare_input calls correct function."""
     mock_prepare.return_value = (np.array([[1, 2]]), [0, 1])

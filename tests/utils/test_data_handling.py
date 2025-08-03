@@ -24,7 +24,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 
-from binning.utils.data_handling import (
+from binlearn.utils.data_handling import (
     _determine_columns,
     _is_pandas_df,
     _is_polars_df,
@@ -48,7 +48,7 @@ class TestIsPandasDf:
         Verifies that the function returns True when given a genuine
         pandas DataFrame and pandas is available.
         """
-        with patch("binning._pandas_config.pd") as mock_pd:
+        with patch("binlearn._pandas_config.pd") as mock_pd:
             # Mock pandas DataFrame
             mock_df = Mock()
             mock_pd.DataFrame = type(mock_df)
@@ -63,7 +63,7 @@ class TestIsPandasDf:
         Verifies that the function returns False when pandas is None
         (indicating pandas is not installed or available).
         """
-        with patch("binning._pandas_config.pd", None):
+        with patch("binlearn._pandas_config.pd", None):
             result = _is_pandas_df(Mock())
             assert result is False
 
@@ -73,7 +73,7 @@ class TestIsPandasDf:
         Verifies that the function returns False when given objects
         that are not pandas DataFrames, even when pandas is available.
         """
-        with patch("binning._pandas_config.pd") as mock_pd:
+        with patch("binlearn._pandas_config.pd") as mock_pd:
             mock_pd.DataFrame = type(Mock())
 
             result = _is_pandas_df("not a dataframe")
@@ -85,7 +85,7 @@ class TestIsPolarsDF:
 
     def test_with_polars_dataframe(self):
         """Test with actual polars DataFrame."""
-        with patch("binning._polars_config.pl") as mock_pl:
+        with patch("binlearn._polars_config.pl") as mock_pl:
             # Mock polars DataFrame
             mock_df = Mock()
             mock_pl.DataFrame = type(mock_df)
@@ -96,13 +96,13 @@ class TestIsPolarsDF:
 
     def test_with_polars_none(self):
         """Test when polars is None (not available)."""
-        with patch("binning._polars_config.pl", None):
+        with patch("binlearn._polars_config.pl", None):
             result = _is_polars_df(Mock())
             assert result is False
 
     def test_with_non_dataframe(self):
         """Test with non-DataFrame object."""
-        with patch("binning._polars_config.pl") as mock_pl:
+        with patch("binlearn._polars_config.pl") as mock_pl:
             mock_pl.DataFrame = type(Mock())
 
             result = _is_polars_df("not a dataframe")
@@ -114,7 +114,7 @@ class TestPrepareArray:
 
     def test_with_pandas_dataframe(self):
         """Test prepare_array with pandas DataFrame."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=True):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=True):
             mock_df = Mock()
             mock_df.columns = ["A", "B", "C"]
             mock_df.index = [0, 1, 2]
@@ -131,8 +131,8 @@ class TestPrepareArray:
 
     def test_with_polars_dataframe(self):
         """Test prepare_array with polars DataFrame."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=True):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=True):
                 mock_df = Mock()
                 mock_df.columns = ["X", "Y"]
                 mock_array = np.array([[1, 2], [3, 4]])
@@ -146,8 +146,8 @@ class TestPrepareArray:
 
     def test_with_numpy_array_2d(self):
         """Test prepare_array with 2D numpy array."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=False):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=False):
                 input_array = np.array([[1, 2], [3, 4]])
 
                 arr, columns, index = prepare_array(input_array)
@@ -158,8 +158,8 @@ class TestPrepareArray:
 
     def test_with_scalar_array(self):
         """Test prepare_array with 0D array (scalar)."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=False):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=False):
                 input_scalar = np.array(5)
 
                 arr, columns, index = prepare_array(input_scalar)
@@ -171,8 +171,8 @@ class TestPrepareArray:
 
     def test_with_1d_array(self):
         """Test prepare_array with 1D array."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=False):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=False):
                 input_array = np.array([1, 2, 3])
 
                 arr, columns, index = prepare_array(input_array)
@@ -197,8 +197,8 @@ class TestReturnLikeInput:
 
     def test_pandas_dataframe_preserve_true(self):
         """Test preserving pandas DataFrame format."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=True):
-            with patch("binning._pandas_config.pd") as mock_pd:
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=True):
+            with patch("binlearn._pandas_config.pd") as mock_pd:
                 # Setup mocks
                 mock_df_class = Mock()
                 mock_pd.DataFrame = mock_df_class
@@ -216,8 +216,8 @@ class TestReturnLikeInput:
 
     def test_pandas_dataframe_with_custom_columns(self):
         """Test pandas DataFrame with custom columns."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=True):
-            with patch("binning._pandas_config.pd") as mock_pd:
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=True):
+            with patch("binlearn._pandas_config.pd") as mock_pd:
                 mock_df_class = Mock()
                 mock_pd.DataFrame = mock_df_class
                 mock_pd.return_value = mock_pd
@@ -236,8 +236,8 @@ class TestReturnLikeInput:
 
     def test_pandas_dataframe_pd_none(self):
         """Test pandas DataFrame when pd is None."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=True):
-            with patch("binning._pandas_config.pd", None):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=True):
+            with patch("binlearn._pandas_config.pd", None):
                 arr = np.array([[1, 2], [3, 4]])
                 original_input = Mock()
 
@@ -247,9 +247,9 @@ class TestReturnLikeInput:
 
     def test_polars_dataframe_preserve_true(self):
         """Test preserving polars DataFrame format."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=True):
-                with patch("binning._polars_config.pl") as mock_pl:
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=True):
+                with patch("binlearn._polars_config.pl") as mock_pl:
                     mock_df_class = Mock()
                     mock_pl.DataFrame = mock_df_class
                     mock_pl.return_value = mock_pl
@@ -264,9 +264,9 @@ class TestReturnLikeInput:
 
     def test_polars_dataframe_with_custom_columns(self):
         """Test polars DataFrame with custom columns."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=True):
-                with patch("binning._polars_config.pl") as mock_pl:
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=True):
+                with patch("binlearn._polars_config.pl") as mock_pl:
                     mock_df_class = Mock()
                     mock_pl.DataFrame = mock_df_class
                     mock_pl.return_value = mock_pl
@@ -284,9 +284,9 @@ class TestReturnLikeInput:
 
     def test_polars_dataframe_pl_none(self):
         """Test polars DataFrame when pl is None."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=True):
-                with patch("binning._polars_config.pl", None):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=True):
+                with patch("binlearn._polars_config.pl", None):
                     arr = np.array([[1, 2], [3, 4]])
                     original_input = Mock()
 
@@ -296,8 +296,8 @@ class TestReturnLikeInput:
 
     def test_non_dataframe_preserve_true(self):
         """Test with non-DataFrame input and preserve_dataframe=True."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=False):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=False):
                 arr = np.array([[1, 2], [3, 4]])
                 original_input = np.array([[5, 6], [7, 8]])
 
@@ -357,8 +357,8 @@ class TestPrepareInputWithColumns:
 
     def test_basic_functionality(self):
         """Test basic functionality."""
-        with patch("binning.utils.data_handling.prepare_array") as mock_prepare:
-            with patch("binning.utils.data_handling._determine_columns") as mock_determine:
+        with patch("binlearn.utils.data_handling.prepare_array") as mock_prepare:
+            with patch("binlearn.utils.data_handling._determine_columns") as mock_determine:
                 # Setup mocks
                 mock_array = np.array([[1, 2], [3, 4]])
                 mock_prepare.return_value = (mock_array, ["A", "B"], None)
@@ -376,8 +376,8 @@ class TestPrepareInputWithColumns:
 
     def test_with_fitted_and_original_columns(self):
         """Test with fitted=True and original_columns."""
-        with patch("binning.utils.data_handling.prepare_array") as mock_prepare:
-            with patch("binning.utils.data_handling._determine_columns") as mock_determine:
+        with patch("binlearn.utils.data_handling.prepare_array") as mock_prepare:
+            with patch("binlearn.utils.data_handling._determine_columns") as mock_determine:
                 mock_array = np.array([[1, 2], [3, 4]])
                 mock_prepare.return_value = (mock_array, None, None)
                 mock_determine.return_value = [0, 1]
@@ -403,8 +403,8 @@ class TestAdditionalCoverage:
 
     def test_numpy_asarray_coverage(self):
         """Test to ensure numpy.asarray is called in prepare_array."""
-        with patch("binning.utils.data_handling._is_pandas_df", return_value=False):
-            with patch("binning.utils.data_handling._is_polars_df", return_value=False):
+        with patch("binlearn.utils.data_handling._is_pandas_df", return_value=False):
+            with patch("binlearn.utils.data_handling._is_polars_df", return_value=False):
                 with patch("numpy.asarray") as mock_asarray:
                     input_list = [[1, 2], [3, 4]]
                     expected_array = np.array(input_list)

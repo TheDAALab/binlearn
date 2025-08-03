@@ -1,12 +1,12 @@
 Tutorials
 =========
 
-Learn how to use the Binning Framework effectively with these comprehensive tutorials.
+Learn how to use the binlearn library effectively with these comprehensive tutorials.
 
 Getting Started
 ---------------
 
-If you're new to the Binning Framework, start with these foundational tutorials:
+If you're new to the binlearn library, start with these foundational tutorials:
 
 .. toctree::
    :maxdepth: 1

@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 
-from binning import _pandas_config, _polars_config
+from binlearn import _pandas_config, _polars_config
 
 from .types import ArrayLike, OptionalColumnList
 

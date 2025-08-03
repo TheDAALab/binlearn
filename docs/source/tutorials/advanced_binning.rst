@@ -14,8 +14,8 @@ You can create custom binning strategies by inheriting from the base classes:
 .. code-block:: python
 
    import numpy as np
-   from binning.base import BaseBinner
-   from binning.utils.constants import MISSING_VALUE
+   from binlearn.base import BaseBinner
+   from binlearn.utils.constants import MISSING_VALUE
    
    class PercentileBinning(BaseBinner):
        """Custom binner using specific percentiles."""
@@ -82,7 +82,7 @@ Combine multiple binning strategies for complex preprocessing:
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthBinning, EqualFrequencyBinning
+   from binlearn.methods import EqualWidthBinning, EqualFrequencyBinning
    from sklearn.preprocessing import StandardScaler
    
    class MultiStageBinner:
@@ -123,7 +123,7 @@ Automatically determine optimal bin count based on data characteristics:
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    from scipy.stats import entropy
    
    class AdaptiveBinner:
@@ -210,7 +210,7 @@ Handle datasets with mixed numeric and categorical variables:
 
 .. code-block:: python
 
-   from binning.methods import EqualFrequencyBinning
+   from binlearn.methods import EqualFrequencyBinning
    from sklearn.preprocessing import LabelEncoder
    
    # Create mixed data

@@ -1,7 +1,7 @@
 Basic Binning Tutorial
 =====================
 
-This tutorial provides a hands-on introduction to the Binning Framework. You'll learn how to use different binning methods with real examples.
+This tutorial provides a hands-on introduction to the binlearn library. You'll learn how to use different binning methods with real examples.
 
 Getting Started
 ---------------
@@ -13,7 +13,7 @@ First, let's import the necessary libraries and generate some sample data:
    import numpy as np
    import pandas as pd
    import matplotlib.pyplot as plt
-   from binning.methods import (
+   from binlearn.methods import (
        EqualWidthBinning, 
        EqualFrequencyBinning,
        EqualWidthMinimumWeightBinning,
@@ -236,7 +236,7 @@ The framework handles missing values gracefully:
    df_binned_missing = binner.fit_transform(df_with_missing)
    
    # Check how missing values are handled
-   from binning.utils.constants import MISSING_VALUE
+   from binlearn.utils.constants import MISSING_VALUE
    
    print(f"Original missing values: {df_with_missing['age'].isna().sum()}")
    print(f"Missing values in binned data: {(df_binned_missing['age'] == MISSING_VALUE).sum()}")

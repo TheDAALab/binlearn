@@ -45,7 +45,7 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import ManualIntervalBinning
+        >>> from binlearn.methods import ManualIntervalBinning
         >>>
         >>> # Define custom bin edges for features
         >>> edges = {

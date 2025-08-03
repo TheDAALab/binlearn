@@ -1,5 +1,5 @@
 """
-General base class for all binning methods in the binning package.
+General base class for all binning methods in the binlearn library.
 
 This module provides the foundational GeneralBinningBase class that all binning
 transformers inherit from. It handles common functionality like data validation,
@@ -58,7 +58,7 @@ class GeneralBinningBase(
 
     Example:
         >>> # This is an abstract class, use a concrete implementation
-        >>> from binning.methods import EqualWidthBinning
+        >>> from binlearn.methods import EqualWidthBinning
         >>> binner = EqualWidthBinning(n_bins=5, preserve_dataframe=True)
         >>> X_binned = binner.fit_transform(X)
     """

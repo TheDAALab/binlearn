@@ -22,9 +22,9 @@ Test Classes:
 import numpy as np
 import pytest
 
-from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binning.methods._onehot_binning import OneHotBinning
-from binning.utils.errors import BinningError
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binlearn.methods._onehot_binning import OneHotBinning
+from binlearn.utils.errors import BinningError
 
 try:
     from scipy import sparse

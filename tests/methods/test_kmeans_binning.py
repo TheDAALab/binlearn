@@ -26,9 +26,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binning.methods._kmeans_binning import KMeansBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binlearn.methods._kmeans_binning import KMeansBinning
+from binlearn.utils.errors import ConfigurationError, DataQualityWarning
 
 
 class TestKMeansBinning:
@@ -148,7 +148,7 @@ class TestKMeansBinning:
         # First column should be binned normally
         assert not np.all(X_binned[:, 0] == -1)
         # Second column should be all MISSING_VALUE (-1)
-        from binning.utils.constants import MISSING_VALUE
+        from binlearn.utils.constants import MISSING_VALUE
 
         assert np.all(X_binned[:, 1] == MISSING_VALUE)
 

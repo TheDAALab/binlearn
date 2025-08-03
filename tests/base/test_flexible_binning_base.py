@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from binning.base._flexible_binning_base import FlexibleBinningBase
+from binlearn.base._flexible_binning_base import FlexibleBinningBase
 
 
 class DummyFlexibleBinning(FlexibleBinningBase):
@@ -192,7 +192,7 @@ def test_calculate_flexible_bins_abstract():
     assert result == ([0], [0.0])  # New simplified format
 
 
-@patch("binning.base._flexible_binning_base.find_flexible_bin_for_value")
+@patch("binlearn.base._flexible_binning_base.find_flexible_bin_for_value")
 def test_get_column_key_direct_match(mock_find):
     """Test _get_column_key with direct match."""
     obj = DummyFlexibleBinning()
@@ -229,8 +229,8 @@ def test_get_column_key_no_match():
         obj._get_column_key(target_col, available_keys, col_index)
 
 
-@patch("binning.base._flexible_binning_base.transform_value_to_flexible_bin")
-@patch("binning.base._flexible_binning_base.MISSING_VALUE", 999)
+@patch("binlearn.base._flexible_binning_base.transform_value_to_flexible_bin")
+@patch("binlearn.base._flexible_binning_base.MISSING_VALUE", 999)
 def test_transform_columns(mock_transform):
     """Test _transform_columns method."""
     mock_transform.return_value = 0  # Return bin index 0
@@ -261,7 +261,7 @@ def test_transform_columns_missing_key():
         obj._transform_columns(X, columns)
 
 
-@patch("binning.base._flexible_binning_base.validate_flexible_bins")
+@patch("binlearn.base._flexible_binning_base.validate_flexible_bins")
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
     obj = DummyFlexibleBinning()
@@ -279,7 +279,7 @@ def test_finalize_fitting_error():
     obj._bin_spec = {0: [1]}  # New simplified format
     obj._bin_reps = {0: [1.0]}
 
-    with patch("binning.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
+    with patch("binlearn.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
         mock_validate.side_effect = Exception("Validation error")
 
         # The method doesn't wrap exceptions, so expect raw Exception
@@ -296,7 +296,7 @@ def test_calculate_flexible_bins_jointly_abstract():
     assert result == ([0], [0.0])  # New simplified format
 
 
-@patch("binning.base._flexible_binning_base.return_like_input")
+@patch("binlearn.base._flexible_binning_base.return_like_input")
 def test_inverse_transform_columns(mock_return):
     """Test _inverse_transform_columns method."""
     mock_return.return_value = np.array([[1.0, 2.0]])
@@ -328,7 +328,7 @@ def test_inverse_transform_columns_missing_key():
 
 def test_inverse_transform_columns_all_missing():
     """Test _inverse_transform_columns when all values are missing."""
-    from binning.utils.constants import MISSING_VALUE
+    from binlearn.utils.constants import MISSING_VALUE
 
     obj = DummyFlexibleBinning()
     obj._bin_reps = {0: [1.0, 2.0]}
@@ -381,10 +381,10 @@ def test_finalize_fitting_with_missing_reps():
     obj._bin_reps = {0: [1.0]}  # Missing reps for column 1
 
     with patch(
-        "binning.base._flexible_binning_base.generate_default_flexible_representatives"
+        "binlearn.base._flexible_binning_base.generate_default_flexible_representatives"
     ) as mock_gen:
         mock_gen.return_value = [2.0]
-        with patch("binning.base._flexible_binning_base.validate_flexible_bins"):
+        with patch("binlearn.base._flexible_binning_base.validate_flexible_bins"):
             obj._finalize_fitting()
 
         # Should generate reps for column 1 only
@@ -407,7 +407,7 @@ def test_generate_default_flexible_representatives():
     obj = DummyFlexibleBinning()
 
     with patch(
-        "binning.base._flexible_binning_base.generate_default_flexible_representatives"
+        "binlearn.base._flexible_binning_base.generate_default_flexible_representatives"
     ) as mock_gen:
         mock_gen.return_value = [1.0, 2.0]
 
@@ -425,10 +425,10 @@ def test_lookup_bin_widths():
     with patch.object(obj, "_prepare_input") as mock_prepare:
         mock_prepare.return_value = (np.array([[0, 1]]), [0])
 
-        with patch("binning.base._flexible_binning_base.calculate_flexible_bin_width") as mock_calc:
+        with patch("binlearn.base._flexible_binning_base.calculate_flexible_bin_width") as mock_calc:
             mock_calc.return_value = 2.0
 
-            with patch("binning.base._flexible_binning_base.return_like_input") as mock_return:
+            with patch("binlearn.base._flexible_binning_base.return_like_input") as mock_return:
                 mock_return.return_value = np.array([[2.0]])
 
                 bin_indices = np.array([[0]])
@@ -445,10 +445,10 @@ def test_lookup_bin_widths_missing_value():
     obj._bin_spec = {0: [1]}  # New simplified format
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
-        with patch("binning.base._flexible_binning_base.MISSING_VALUE", 999):
+        with patch("binlearn.base._flexible_binning_base.MISSING_VALUE", 999):
             mock_prepare.return_value = (np.array([[999]]), [0])  # Missing value
 
-            with patch("binning.base._flexible_binning_base.return_like_input") as mock_return:
+            with patch("binlearn.base._flexible_binning_base.return_like_input") as mock_return:
                 mock_return.return_value = np.array([[np.nan]])
 
                 bin_indices = np.array([[999]])
@@ -467,7 +467,7 @@ def test_lookup_bin_widths_out_of_bounds():
         # Bin index 5 is out of bounds (only have indices 0 and 1)
         mock_prepare.return_value = (np.array([[5]]), [0])
 
-        with patch("binning.base._flexible_binning_base.return_like_input") as mock_return:
+        with patch("binlearn.base._flexible_binning_base.return_like_input") as mock_return:
             mock_return.return_value = np.array([[np.nan]])
 
             bin_indices = np.array([[5]])
@@ -492,7 +492,7 @@ def test_deprecated_validate_flexible_bins():
     """Test deprecated _validate_flexible_bins method."""
     obj = DummyFlexibleBinning()
 
-    with patch("binning.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
+    with patch("binlearn.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
         bin_spec = {0: [1]}  # New simplified format
         bin_reps = {0: [1.0]}
 
@@ -504,7 +504,7 @@ def test_deprecated_is_missing_value():
     """Test deprecated _is_missing_value method."""
     obj = DummyFlexibleBinning()
 
-    with patch("binning.base._flexible_binning_base.is_missing_value") as mock_missing:
+    with patch("binlearn.base._flexible_binning_base.is_missing_value") as mock_missing:
         mock_missing.return_value = True
 
         result = obj._is_missing_value(np.nan)
@@ -516,7 +516,7 @@ def test_deprecated_find_bin_for_value():
     """Test deprecated _find_bin_for_value method."""
     obj = DummyFlexibleBinning()
 
-    with patch("binning.base._flexible_binning_base.find_flexible_bin_for_value") as mock_find:
+    with patch("binlearn.base._flexible_binning_base.find_flexible_bin_for_value") as mock_find:
         mock_find.return_value = 1
 
         bin_defs = [1, 2]  # New simplified format
@@ -537,7 +537,7 @@ def test_inverse_transform():
         with patch.object(obj, "_inverse_transform_columns") as mock_inverse:
             mock_inverse.return_value = np.array([[1.0]])
 
-            with patch("binning.base._flexible_binning_base.return_like_input") as mock_return:
+            with patch("binlearn.base._flexible_binning_base.return_like_input") as mock_return:
                 mock_return.return_value = np.array([[1.0]])
 
                 X = np.array([[0]])
@@ -760,23 +760,23 @@ def test_set_sklearn_attributes_from_specs_with_guidance_columns():
     """Test _set_sklearn_attributes_from_specs with guidance columns - covers lines 217-225."""
     # Test with single guidance column (string)
     bin_spec = {0: [1], 1: [2]}
-    obj = DummyFlexibleBinning(bin_spec=bin_spec, guidance_columns='target')
+    obj = DummyFlexibleBinning(bin_spec=bin_spec, guidance_columns="target")
 
     # Should include both binning columns (0, 1) and guidance column ('target')
-    expected_features = [0, 1, 'target']
+    expected_features = [0, 1, "target"]
     assert obj._feature_names_in == expected_features
     assert obj._n_features_in == 3
 
     # Test with list of guidance columns
-    obj2 = DummyFlexibleBinning(bin_spec=bin_spec, guidance_columns=['target1', 'target2'])
-    expected_features2 = [0, 1, 'target1', 'target2']
+    obj2 = DummyFlexibleBinning(bin_spec=bin_spec, guidance_columns=["target1", "target2"])
+    expected_features2 = [0, 1, "target1", "target2"]
     assert obj2._feature_names_in == expected_features2
     assert obj2._n_features_in == 4
 
     # Test when guidance column is already in binning columns (shouldn't duplicate)
-    bin_spec_overlap = {0: [1], 'target': [2]}
-    obj3 = DummyFlexibleBinning(bin_spec=bin_spec_overlap, guidance_columns='target')
-    expected_features3 = [0, 'target']  # 'target' shouldn't be duplicated
+    bin_spec_overlap = {0: [1], "target": [2]}
+    obj3 = DummyFlexibleBinning(bin_spec=bin_spec_overlap, guidance_columns="target")
+    expected_features3 = [0, "target"]  # 'target' shouldn't be duplicated
     assert obj3._feature_names_in == expected_features3
     assert obj3._n_features_in == 2
 
@@ -795,19 +795,18 @@ def test_get_fitted_params_with_none_attributes():
     obj._bin_spec = {0: [1]}
     obj._bin_reps = None
     params = obj._get_fitted_params()
-    assert 'bin_spec' in params
-    assert 'bin_representatives' not in params
+    assert "bin_spec" in params
+    assert "bin_representatives" not in params
 
     # Test when _bin_reps exists but _bin_spec is None
     obj._bin_spec = None
     obj._bin_reps = {0: [1.0]}
     params = obj._get_fitted_params()
-    assert 'bin_spec' not in params
-    assert 'bin_representatives' in params
+    assert "bin_spec" not in params
+    assert "bin_representatives" in params
 
     # Test when neither attribute exists at all
-    delattr(obj, '_bin_spec')
-    delattr(obj, '_bin_reps')
+    delattr(obj, "_bin_spec")
+    delattr(obj, "_bin_reps")
     params = obj._get_fitted_params()
     assert params == {}
-

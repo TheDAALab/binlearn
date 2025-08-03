@@ -8,7 +8,7 @@ The base classes provide the foundation for all binning methods in the framework
 Overview
 --------
 
-The Binning Framework uses a hierarchical class structure to provide consistent interfaces and shared functionality across all binning methods. Understanding these base classes is essential for:
+The binlearn library uses a hierarchical class structure to provide consistent interfaces and shared functionality across all binning methods. Understanding these base classes is essential for:
 
 * Using the framework effectively
 * Creating custom binning methods
@@ -57,7 +57,7 @@ BaseBinner
    .. code-block:: python
    
       # BaseBinner is abstract - use concrete implementations
-      from binning.methods import EqualWidthBinning
+      from binlearn.methods import EqualWidthBinning
       
       binner = EqualWidthBinning(n_bins=5)
       X_binned = binner.fit_transform(X)
@@ -89,7 +89,7 @@ UnsupervisedBinner
    
    .. code-block:: python
    
-      from binning.methods import EqualFrequencyBinning
+      from binlearn.methods import EqualFrequencyBinning
       
       binner = EqualFrequencyBinning(n_bins=4)
       X_binned = binner.fit_transform(X)  # No y required
@@ -119,7 +119,7 @@ SupervisedBinner
    
    .. code-block:: python
    
-      from binning.methods import SupervisedBinning
+      from binlearn.methods import SupervisedBinning
       
       binner = SupervisedBinning(n_bins=5, criterion='entropy')
       X_binned = binner.fit_transform(X, y)  # y required
@@ -149,7 +149,7 @@ GuidedBinner
    
    .. code-block:: python
    
-      from binning.methods import EqualWidthMinimumWeightBinning
+      from binlearn.methods import EqualWidthMinimumWeightBinning
       
       binner = EqualWidthMinimumWeightBinning(n_bins=5, minimum_weight=10.0)
       X_binned = binner.fit_transform(X, guidance_data=sample_weights)
@@ -361,7 +361,7 @@ To create a custom binning method, inherit from the appropriate base class:
 
 .. code-block:: python
 
-   from binning.base import UnsupervisedBinner
+   from binlearn.base import UnsupervisedBinner
    import numpy as np
    
    class CustomBinner(UnsupervisedBinner):
@@ -432,7 +432,7 @@ Example custom error handling:
 
 .. code-block:: python
 
-   from binning.utils.errors import ConfigurationError, FittingError
+   from binlearn.utils.errors import ConfigurationError, FittingError
    
    def _fit_column(self, column_data, column_index, **kwargs):
        if self.custom_param <= 0:

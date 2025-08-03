@@ -36,13 +36,13 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         bin_range (tuple, optional): Custom range for binning.
         clip (bool, optional): Whether to clip values outside bin range.
         columns (list, optional): Specific columns to bin.
-        guidance_columns (list, optional): Columns to exclude from binning.
+        guidance_columns (list, optional): Columns to exclude from binlearn.
         preserve_dataframe (bool): Whether to preserve DataFrame format.
         bin_edges_ (dict): Computed bin edges after fitting.
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import EqualWidthBinning
+        >>> from binlearn.methods import EqualWidthBinning
         >>> X = np.random.rand(100, 3)
         >>> binner = EqualWidthBinning(n_bins=5)
         >>> X_binned = binner.fit_transform(X)

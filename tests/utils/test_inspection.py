@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from binning.base import GeneralBinningBase
-from binning.methods import EqualWidthBinning
-from binning.utils import (
+from binlearn.base import GeneralBinningBase
+from binlearn.methods import EqualWidthBinning
+from binlearn.utils import (
     get_class_parameters,
     get_constructor_info,
     safe_get_class_parameters,
@@ -193,21 +193,21 @@ class TestSafeGetClassParameters:
         params = safe_get_class_parameters(MockClass, fallback=["custom_fallback"])
         assert set(params) == {"param1", "param2"}  # Should still succeed
 
-    @patch("binning.utils.inspection.get_class_parameters")
+    @patch("binlearn.utils.inspection.get_class_parameters")
     def test_fallback_on_value_error(self, mock_get_params):
         """Test fallback when ValueError is raised."""
         mock_get_params.side_effect = ValueError("Test error")
         params = safe_get_class_parameters(MockClass)
         assert params == []  # Default fallback
 
-    @patch("binning.utils.inspection.get_class_parameters")
+    @patch("binlearn.utils.inspection.get_class_parameters")
     def test_fallback_on_type_error(self, mock_get_params):
         """Test fallback when TypeError is raised."""
         mock_get_params.side_effect = TypeError("Test error")
         params = safe_get_class_parameters(MockClass, fallback=["fallback_param"])
         assert params == ["fallback_param"]
 
-    @patch("binning.utils.inspection.get_class_parameters")
+    @patch("binlearn.utils.inspection.get_class_parameters")
     def test_other_exceptions_propagate(self, mock_get_params):
         """Test that other exceptions are not caught."""
         mock_get_params.side_effect = RuntimeError("Test error")
@@ -229,21 +229,21 @@ class TestSafeGetConstructorInfo:
         info = safe_get_constructor_info(MockClass, fallback={"custom": "fallback"})
         assert "param1" in info  # Should still succeed
 
-    @patch("binning.utils.inspection.get_constructor_info")
+    @patch("binlearn.utils.inspection.get_constructor_info")
     def test_fallback_on_value_error(self, mock_get_info):
         """Test fallback when ValueError is raised."""
         mock_get_info.side_effect = ValueError("Test error")
         info = safe_get_constructor_info(MockClass)
         assert info == {}  # Default fallback
 
-    @patch("binning.utils.inspection.get_constructor_info")
+    @patch("binlearn.utils.inspection.get_constructor_info")
     def test_fallback_on_type_error(self, mock_get_info):
         """Test fallback when TypeError is raised."""
         mock_get_info.side_effect = TypeError("Test error")
         info = safe_get_constructor_info(MockClass, fallback={"fallback": "value"})
         assert info == {"fallback": "value"}
 
-    @patch("binning.utils.inspection.get_constructor_info")
+    @patch("binlearn.utils.inspection.get_constructor_info")
     def test_other_exceptions_propagate(self, mock_get_info):
         """Test that other exceptions are not caught."""
         mock_get_info.side_effect = RuntimeError("Test error")

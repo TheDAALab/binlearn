@@ -9,7 +9,7 @@ This page demonstrates the use of `EqualFrequencyBinning` for creating bins with
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import EqualWidthBinning, EqualFrequencyBinning
+from binlearn import EqualWidthBinning, EqualFrequencyBinning
 
 # Create skewed data to highlight differences
 np.random.seed(42)
@@ -56,7 +56,7 @@ plt.show()
 
 ```python
 import numpy as np
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 
 # Create multi-dimensional data with different distributions
 np.random.seed(42)
@@ -91,7 +91,7 @@ for i in range(3):
 ```python
 import numpy as np
 import pandas as pd
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 import matplotlib.pyplot as plt
 
 # Simulate customer lifetime value data (typically skewed)
@@ -160,7 +160,7 @@ plt.show()
 ```python
 import numpy as np
 import pandas as pd
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score
@@ -261,7 +261,7 @@ print(classification_report(y_test, y_pred_binned))
 ```python
 import numpy as np
 import pandas as pd
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 import matplotlib.pyplot as plt
 
 # Simulate survey response data (satisfaction scores)
@@ -353,7 +353,7 @@ plt.show()
 ```python
 import numpy as np
 import pandas as pd
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 
 # Create data with missing values
 np.random.seed(42)
@@ -401,7 +401,7 @@ print("Imputed data quantiles:", binner_imputed.quantiles_[0])
 
 ```python
 import numpy as np
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 
 # Create heavily skewed data
 np.random.seed(42)
@@ -435,7 +435,7 @@ for n_bins in bin_counts:
 
 ```python
 import numpy as np
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
@@ -479,7 +479,7 @@ print(f"Binned features CV score: {cv_scores.mean():.3f} (+/- {cv_scores.std() *
 ```python
 import numpy as np
 import time
-from binning import EqualFrequencyBinning
+from binlearn import EqualFrequencyBinning
 
 def benchmark_equal_frequency_binning():
     """Benchmark equal frequency binning with different dataset sizes."""
@@ -522,7 +522,7 @@ benchmark_results = benchmark_equal_frequency_binning()
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning import EqualWidthBinning, EqualFrequencyBinning
+from binlearn import EqualWidthBinning, EqualFrequencyBinning
 
 # Demonstrate scenarios where equal frequency is preferred
 

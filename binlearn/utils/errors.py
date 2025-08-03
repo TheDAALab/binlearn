@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, cast
 
 import numpy as np
 
-from binning.config import get_config
+from binlearn.config import get_config
 
 
 class BinningError(Exception):

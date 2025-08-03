@@ -4,8 +4,8 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from binning.base._supervised_binning_base import SupervisedBinningBase
-from binning.utils.errors import ConfigurationError, DataQualityWarning, ValidationError
+from binlearn.base._supervised_binning_base import SupervisedBinningBase
+from binlearn.utils.errors import ConfigurationError, DataQualityWarning, ValidationError
 
 
 class DummySupervisedBinning(SupervisedBinningBase):
@@ -684,7 +684,7 @@ def test_dummy_methods_coverage():
 
 def test_create_tree_template_invalid_params():
     """Test _create_tree_template with invalid tree_params that cause TypeError."""
-    from binning.utils.errors import ConfigurationError
+    from binlearn.utils.errors import ConfigurationError
 
     # Create object with invalid tree parameters that will cause TypeError
     obj = DummySupervisedBinning(task_type="classification")

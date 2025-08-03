@@ -86,7 +86,7 @@ Basic Usage Example
 
    import numpy as np
    import pandas as pd
-   from binning.methods import KMeansBinning
+   from binlearn.methods import KMeansBinning
    
    # Create sample data with natural clusters
    np.random.seed(42)
@@ -117,7 +117,7 @@ Comparison with Equal-Width Binning
 .. code-block:: python
 
    import matplotlib.pyplot as plt
-   from binning.methods import KMeansBinning, EqualWidthBinning
+   from binlearn.methods import KMeansBinning, EqualWidthBinning
    
    # Create multi-modal data
    np.random.seed(42)
@@ -176,7 +176,7 @@ Multi-Feature Dataset Analysis
 .. code-block:: python
 
    from sklearn.datasets import make_blobs
-   from binning.methods import KMeansBinning
+   from binlearn.methods import KMeansBinning
    
    # Create multi-feature dataset with natural clusters
    X, y = make_blobs(n_samples=1000, centers=4, n_features=3, 

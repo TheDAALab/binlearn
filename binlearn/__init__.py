@@ -20,7 +20,7 @@ Main Components:
     Integration: Feature selection, pipeline utilities, scoring functions
 
 Example:
-    >>> from binning import EqualWidthBinning
+    >>> from binlearn import EqualWidthBinning
     >>> import numpy as np
     >>> X = np.random.rand(100, 3)
     >>> binner = EqualWidthBinning(n_bins=5)

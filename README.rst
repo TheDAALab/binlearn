@@ -1,12 +1,12 @@
 ===============================
-Binning Framework
+binlearn - Binning and Discretization Library
 ===============================
 
 .. image:: https://img.shields.io/badge/python-3.8%2B-blue
     :alt: Python Version
 
-.. image:: https://github.com/TheDAALab/binning/workflows/Build%20&%20Test/badge.svg
-    :target: https://github.com/TheDAALab/binning/actions/workflows/build.yml
+.. image:: https://github.com/TheDAALab/binlearn/workflows/Build%20&%20Test/badge.svg
+    :target: https://github.com/TheDAALab/binlearn/actions/workflows/build.yml
     :alt: Build Status
 
 .. image:: https://img.shields.io/badge/license-MIT-green
@@ -24,7 +24,7 @@ Binning Framework
 .. image:: https://img.shields.io/badge/coverage-100%25-brightgreen
     :alt: Test Coverage
 
-A modern, type-safe Python framework for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
+A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
 
 🚀 **Key Features**
 -------------------
@@ -57,7 +57,7 @@ A modern, type-safe Python framework for data binning and discretization with co
 
 .. code-block:: bash
 
-   pip install binning
+   pip install binlearn
 
 🔥 **Quick Start**
 ------------------
@@ -66,7 +66,7 @@ A modern, type-safe Python framework for data binning and discretization with co
 
    import numpy as np
    import pandas as pd
-   from binning.methods import EqualWidthBinning, SupervisedBinning
+   from binlearn.methods import EqualWidthBinning, SupervisedBinning
    
    # Create sample data
    data = pd.DataFrame({
@@ -88,7 +88,7 @@ A modern, type-safe Python framework for data binning and discretization with co
 
 .. code-block:: python
 
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    from sklearn.datasets import make_classification
    from sklearn.model_selection import train_test_split
    
@@ -117,7 +117,7 @@ A modern, type-safe Python framework for data binning and discretization with co
 
    from sklearn.pipeline import Pipeline
    from sklearn.ensemble import RandomForestClassifier
-   from binning.methods import EqualFrequencyBinning
+   from binlearn.methods import EqualFrequencyBinning
    
    # Create ML pipeline with binning preprocessing
    pipeline = Pipeline([
@@ -179,7 +179,7 @@ A modern, type-safe Python framework for data binning and discretization with co
 .. code-block:: bash
 
    # Clone repository
-   git clone https://github.com/TheDAALab/binning.git
+   git clone https://github.com/TheDAALab/binlearn.git
    cd binning
    
    # Install in development mode with all dependencies
@@ -233,14 +233,14 @@ We welcome contributions! Here's how to get started:
 � **Links**
 ------------
 
-* **GitHub Repository**: https://github.com/TheDAALab/binning
-* **Issue Tracker**: https://github.com/TheDAALab/binning/issues
-* **Documentation**: https://binning.readthedocs.io/
+* **GitHub Repository**: https://github.com/TheDAALab/binlearn
+* **Issue Tracker**: https://github.com/TheDAALab/binlearn/issues
+* **Documentation**: https://binlearn.readthedocs.io/
 
 📄 **License**
 --------------
 
-This project is licensed under the MIT License. See the `LICENSE <https://github.com/TheDAALab/binning/blob/main/LICENSE>`_ file for details.
+This project is licensed under the MIT License. See the `LICENSE <https://github.com/TheDAALab/binlearn/blob/main/LICENSE>`_ file for details.
 
 ---
 

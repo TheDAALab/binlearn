@@ -1,7 +1,7 @@
 """
 Type aliases for the binning framework.
 
-This module provides standardized type aliases used throughout the binning package
+This module provides standardized type aliases used throughout the binlearn library
 to improve code readability and maintainability.
 """
 

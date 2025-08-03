@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from binning.utils.sklearn_integration import SklearnCompatibilityMixin
+from binlearn.utils.sklearn_integration import SklearnCompatibilityMixin
 
 
 class TestSklearnCompatibilityMixin:

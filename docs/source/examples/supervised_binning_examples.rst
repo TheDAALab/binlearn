@@ -9,7 +9,7 @@ This page demonstrates the use of `SupervisedBinning` for creating bins that are
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
-from binning.methods import SupervisedBinning, EqualWidthBinning, EqualFrequencyBinning
+from binlearn.methods import SupervisedBinning, EqualWidthBinning, EqualFrequencyBinning
 
 # Create data with clear relationship to target
 np.random.seed(42)
@@ -101,7 +101,7 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
-from binning.methods import SupervisedBinning
+from binlearn.methods import SupervisedBinning
 
 # Create classification dataset
 X, y = make_classification(
@@ -214,7 +214,7 @@ print(f"MSE improvement: {mse_orig - mse_binned:.3f}")
 
 ```python
 import pandas as pd
-from binning.methods import SupervisedBinning
+from binlearn.methods import SupervisedBinning
 
 # Create DataFrame with mixed data types
 df = pd.DataFrame({
@@ -252,7 +252,7 @@ for col in numeric_cols:
 ### Advanced: Custom Tree Parameters
 
 ```python
-from binning.methods import SupervisedBinning
+from binlearn.methods import SupervisedBinning
 from sklearn.datasets import load_wine
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier

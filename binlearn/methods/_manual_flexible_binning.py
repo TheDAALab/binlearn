@@ -49,7 +49,7 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import ManualFlexibleBinning
+        >>> from binlearn.methods import ManualFlexibleBinning
         >>>
         >>> # Define mixed numeric bin specifications
         >>> specs = {

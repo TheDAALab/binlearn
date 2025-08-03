@@ -18,7 +18,7 @@ Simple Weight-Constrained Binning
 
    import numpy as np
    import pandas as pd
-   from binning.methods import EqualWidthMinimumWeightBinning
+   from binlearn.methods import EqualWidthMinimumWeightBinning
    
    # Generate sample data
    np.random.seed(42)
@@ -313,7 +313,7 @@ Handling Missing Values
 
 .. code-block:: python
 
-   from binning.utils.constants import MISSING_VALUE
+   from binlearn.utils.constants import MISSING_VALUE
    
    # Data with missing values
    data_with_missing = pd.DataFrame({

@@ -10,9 +10,9 @@ error handling, and edge cases.
 import numpy as np
 import pytest
 
-from binning import PANDAS_AVAILABLE, pd
-from binning.methods import ManualFlexibleBinning
-from binning.utils.errors import BinningError, ConfigurationError
+from binlearn import PANDAS_AVAILABLE, pd
+from binlearn.methods import ManualFlexibleBinning
+from binlearn.utils.errors import BinningError, ConfigurationError
 
 
 class TestManualFlexibleBinningInitialization:

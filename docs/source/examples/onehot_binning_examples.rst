@@ -9,7 +9,7 @@ This page demonstrates the use of `OneHotBinning` for creating binary indicator 
 ```python
 import numpy as np
 import pandas as pd
-from binning import OneHotBinning, EqualWidthBinning
+from binlearn import OneHotBinning, EqualWidthBinning
 import matplotlib.pyplot as plt
 
 # Create sample data
@@ -52,7 +52,7 @@ print(df)
 ```python
 import numpy as np
 import pandas as pd
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 
 # Create multi-dimensional data
 np.random.seed(42)
@@ -101,7 +101,7 @@ print(df_onehot)
 ```python
 import numpy as np
 import pandas as pd
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score
@@ -213,7 +213,7 @@ print(importance_df.head(10))
 ```python
 import numpy as np
 import pandas as pd
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
@@ -335,7 +335,7 @@ for feature in feature_names_onehot[:10]:  # Show top 10
 ```python
 import numpy as np
 import pandas as pd
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
@@ -431,7 +431,7 @@ for i, feature in enumerate(numerical_features):
 
 ```python
 import numpy as np
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 from scipy.sparse import csr_matrix
 import pandas as pd
 
@@ -490,7 +490,7 @@ print("\\nSuccessfully trained model with sparse one-hot features!")
 ```python
 import numpy as np
 import pandas as pd
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -586,7 +586,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from binning import OneHotBinning
+from binlearn import OneHotBinning
 
 # Create dataset for visualization
 np.random.seed(42)

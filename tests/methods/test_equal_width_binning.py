@@ -25,9 +25,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binning.methods._equal_width_binning import EqualWidthBinning
-from binning.utils.errors import ConfigurationError, DataQualityWarning
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binlearn.methods._equal_width_binning import EqualWidthBinning
+from binlearn.utils.errors import ConfigurationError, DataQualityWarning
 
 try:
     from scipy import sparse

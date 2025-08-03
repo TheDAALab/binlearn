@@ -1,12 +1,12 @@
 Quick Start
 ===========
 
-This guide will help you get started with the Binning Framework quickly.
+This guide will help you get started with the binlearn library quickly.
 
 Installation
 ------------
 
-Install the binning framework using pip:
+Install the binlearn library using pip:
 
 .. code-block:: bash
 
@@ -20,7 +20,7 @@ Here's a simple example showing how to use equal-width binning:
 .. code-block:: python
 
    import numpy as np
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Create sample data
    X = np.array([[1.2, 10.5], 
@@ -72,7 +72,7 @@ The framework supports advanced binning methods like weight-constrained binning:
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthMinimumWeightBinning
+   from binlearn.methods import EqualWidthMinimumWeightBinning
    
    # Sample data with associated weights
    X = np.array([[1, 10], [2, 11], [3, 12], [4, 13], [5, 14], [6, 15]])
@@ -97,7 +97,7 @@ The framework works seamlessly with pandas DataFrames and preserves column names
 .. code-block:: python
 
    import pandas as pd
-   from binning.methods import EqualFrequencyBinning
+   from binlearn.methods import EqualFrequencyBinning
    
    # Create DataFrame
    df = pd.DataFrame({
@@ -124,7 +124,7 @@ You can bin specific columns while leaving others unchanged:
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Bin only specific columns
    binner = EqualWidthBinning(n_bins=3, columns=['age', 'income'])
@@ -144,7 +144,7 @@ Use binning transformers in sklearn pipelines with full compatibility:
    from sklearn.preprocessing import StandardScaler
    from sklearn.ensemble import RandomForestClassifier
    from sklearn.model_selection import train_test_split
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Create sample classification data
    from sklearn.datasets import make_classification
@@ -171,7 +171,7 @@ Use supervised binning for better predictive performance:
 
 .. code-block:: python
 
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    
    # Create supervised binner
    sup_binner = SupervisedBinning(
@@ -228,7 +228,7 @@ Here are some common usage patterns:
 .. code-block:: python
 
    # Reduce dimensionality while preserving information
-   from binning.methods import EqualFrequencyBinning
+   from binlearn.methods import EqualFrequencyBinning
    
    binner = EqualFrequencyBinning(n_bins=10)
    X_preprocessed = binner.fit_transform(X_continuous)
@@ -238,7 +238,7 @@ Here are some common usage patterns:
 .. code-block:: python
 
    # Create categorical features from continuous ones
-   from binning.methods import SupervisedBinning
+   from binlearn.methods import SupervisedBinning
    
    binner = SupervisedBinning(n_bins=5)
    X_categorical = binner.fit_transform(X, y)
@@ -248,7 +248,7 @@ Here are some common usage patterns:
 .. code-block:: python
 
    # Discretize for easier analysis and visualization
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    binner = EqualWidthBinning(n_bins=7)
    data_binned = binner.fit_transform(continuous_data)

@@ -44,7 +44,7 @@ columns : list[str | int] | None, default=None
     Specific columns to bin. If None, bins all columns.
 
 guidance_columns : list[str | int] | None, default=None
-    Columns to exclude from binning (used as guidance only).
+    Columns to exclude from binlearn (used as guidance only).
 
 preserve_dataframe : bool | None, default=None
     Whether to preserve the input DataFrame format. If None, auto-detects.
@@ -71,7 +71,7 @@ Basic Usage
 
    import numpy as np
    import pandas as pd
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Create sample data
    data = pd.DataFrame({
@@ -99,7 +99,7 @@ Different Bins Per Feature
 .. code-block:: python
 
    import numpy as np
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Create sample data with different scales
    X = np.random.rand(100, 3) * [100, 1000, 10]  # Different scales
@@ -122,7 +122,7 @@ Working with NumPy Arrays
 .. code-block:: python
 
    import numpy as np
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Create sample data
    X = np.array([[1, 10], [2, 20], [3, 30], [4, 40], [5, 50]])
@@ -139,7 +139,7 @@ Custom Range Binning
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Focus on a specific age range
    binner = EqualWidthBinning(
@@ -163,7 +163,7 @@ Sklearn Pipeline Integration
    from sklearn.pipeline import Pipeline
    from sklearn.preprocessing import StandardScaler
    from sklearn.ensemble import RandomForestClassifier
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Create a preprocessing pipeline
    pipeline = Pipeline([
@@ -181,7 +181,7 @@ Handling Different Data Types
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthBinning
+   from binlearn.methods import EqualWidthBinning
    
    # Mixed data types
    mixed_data = pd.DataFrame({

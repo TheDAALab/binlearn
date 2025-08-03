@@ -1,7 +1,7 @@
 """
 Utility functions for the binning framework.
 
-This module consolidates all utility functions used throughout the binning package,
+This module consolidates all utility functions used throughout the binlearn library,
 organized into logical submodules for better maintainability and discoverability.
 """
 

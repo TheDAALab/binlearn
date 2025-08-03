@@ -71,7 +71,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
     Example:
         >>> # This is an abstract class, use a concrete implementation
-        >>> from binning.methods import EqualWidthBinning
+        >>> from binlearn.methods import EqualWidthBinning
         >>> binner = EqualWidthBinning(n_bins=5, clip=True)
         >>> X_binned = binner.fit_transform(X)
     """

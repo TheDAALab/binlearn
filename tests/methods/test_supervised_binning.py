@@ -11,9 +11,9 @@ import pytest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from binning import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binning.methods._supervised_binning import SupervisedBinning
-from binning.utils.errors import (
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
+from binlearn.methods._supervised_binning import SupervisedBinning
+from binlearn.utils.errors import (
     ConfigurationError,
     DataQualityWarning,
     FittingError,
@@ -997,7 +997,7 @@ class TestSupervisedBinningParameterRoundtrip:
         """Test edge deduplication logic with float tolerance - covers both branches."""
         import numpy as np
 
-        from binning.config import get_config
+        from binlearn.config import get_config
 
         # TEST CASE 1: Normal tolerance (TRUE branch - edges kept)
         x_data = np.array([0.0, 1.0, 2.0, 3.0, 4.0])

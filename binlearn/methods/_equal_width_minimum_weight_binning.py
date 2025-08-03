@@ -48,7 +48,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
     Example:
         >>> import numpy as np
-        >>> from binning.methods import EqualWidthMinimumWeightBinning
+        >>> from binlearn.methods import EqualWidthMinimumWeightBinning
         >>> X = np.random.rand(100, 2)
         >>> weights = np.random.rand(100)  # guidance column with weights
         >>> binner = EqualWidthMinimumWeightBinning(n_bins=5, minimum_weight=10.0)
@@ -151,7 +151,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
         Args:
             x_col (np.ndarray): Data for binning with shape (n_samples,).
-                May contain NaN values which are excluded from binning calculations.
+                May contain NaN values which are excluded from binlearn calculations.
             col_id (Any): Column identifier (name or index) for error reporting
                 and logging purposes.
             guidance_data (Optional[np.ndarray], optional): Weight values for each

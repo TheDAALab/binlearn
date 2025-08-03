@@ -5,14 +5,14 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from binning.utils.bin_operations import (
+from binlearn.utils.bin_operations import (
     create_bin_masks,
     default_representatives,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
 )
-from binning.utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
+from binlearn.utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
 
 
 class TestValidateBinEdgesFormat:

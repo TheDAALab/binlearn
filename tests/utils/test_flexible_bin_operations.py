@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from binning.utils.constants import MISSING_VALUE
-from binning.utils.flexible_bin_operations import (
+from binlearn.utils.constants import MISSING_VALUE
+from binlearn.utils.flexible_bin_operations import (
     calculate_flexible_bin_width,
     find_flexible_bin_for_value,
     generate_default_flexible_representatives,
