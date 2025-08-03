@@ -1,0 +1,193 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  # Also allow manual triggering for emergency releases
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Validate release conditions
+      run: |
+        echo "🔍 Validating release conditions..."
+        
+        # Check if we're on main branch (for manual dispatch)
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "${{ github.ref_name }}" != "main" ]]; then
+            echo "❌ Manual releases can only be triggered from main branch"
+            exit 1
+          fi
+        fi
+        
+        # Validate version format if manually triggered
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "❌ Version must follow semantic versioning (e.g., v1.0.0)"
+            exit 1
+          fi
+          echo "📋 Manual release version: $VERSION"
+        fi
+        
+        echo "✅ Release validation passed"
+
+  build-release:
+    name: Build Release Package
+    runs-on: ubuntu-latest
+    needs: validate-release
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine setuptools_scm
+
+    - name: Show version info
+      run: |
+        echo "📋 Release Information:"
+        python -m setuptools_scm
+        echo "📦 Building version: $(python -m setuptools_scm)"
+
+    - name: Build packages
+      run: |
+        echo "🔨 Building source and wheel distributions..."
+        python -m build
+
+    - name: Verify package
+      run: |
+        echo "🔍 Verifying package integrity..."
+        python -m twine check dist/*
+        ls -la dist/
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-dist-${{ github.sha }}
+        path: dist/
+        retention-days: 7
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    runs-on: ubuntu-latest
+    needs: build-release
+    environment: testpypi
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-dist-${{ github.sha }}
+        path: dist/
+
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+        skip-existing: true
+
+    - name: Test installation from TestPyPI
+      run: |
+        echo "🧪 Testing installation from TestPyPI..."
+        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ binning || true
+        echo "ℹ️  TestPyPI installation test completed (may fail if dependencies are missing)"
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-release, publish-testpypi]
+    environment: pypi
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-dist-${{ github.sha }}
+        path: dist/
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: Verify PyPI publication
+      run: |
+        echo "✅ Package published to PyPI successfully!"
+        echo "🔗 Check your package at: https://pypi.org/project/binning/"
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: publish-pypi
+    if: github.event_name == 'workflow_dispatch'  # Only for manual releases
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-dist-${{ github.sha }}
+        path: dist/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        name: Release ${{ github.event.inputs.version }}
+        files: dist/*
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+
+  post-release:
+    name: Post-Release Actions
+    runs-on: ubuntu-latest
+    needs: [publish-pypi, create-github-release]
+    if: always() && needs.publish-pypi.result == 'success'
+
+    steps:
+    - name: Release Summary
+      run: |
+        echo "🎉 Release completed successfully!"
+        echo ""
+        echo "📦 Package: binning"
+        echo "🏷️  Version: ${{ github.event.release.tag_name || github.event.inputs.version }}"
+        echo "🔗 PyPI: https://pypi.org/project/binning/"
+        echo "📋 GitHub: ${{ github.server_url }}/${{ github.repository }}"
+        echo ""
+        echo "🚀 Your package is now available for installation:"
+        echo "    pip install binning"

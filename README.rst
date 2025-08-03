@@ -5,6 +5,10 @@ Binning Framework
 .. image:: https://img.shields.io/badge/python-3.8%2B-blue
     :alt: Python Version
 
+.. image:: https://github.com/TheDAALab/binning/workflows/Build%20&%20Test/badge.svg
+    :target: https://github.com/TheDAALab/binning/actions/workflows/build.yml
+    :alt: Build Status
+
 .. image:: https://img.shields.io/badge/license-MIT-green
     :alt: License
 
