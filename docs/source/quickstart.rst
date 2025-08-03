@@ -3,6 +3,15 @@ Quick Start
 
 This guide will help you get started with the Binning Framework quickly.
 
+Installation
+------------
+
+Install the binning framework using pip:
+
+.. code-block:: bash
+
+   pip install binning
+
 Basic Example
 -------------
 
@@ -28,11 +37,38 @@ Here's a simple example showing how to use equal-width binning:
    print(X)
    print("\nBinned data:")
    print(X_binned)
+   print("\nBin edges:")
+   print(binner.bin_edges_)
+
+Available Binning Methods
+-------------------------
+
+The framework provides several binning methods for different use cases:
+
+**Interval-based Methods:**
+
+* :class:`~binning.methods.EqualWidthBinning` - Equal-width intervals
+* :class:`~binning.methods.EqualFrequencyBinning` - Equal-frequency (quantile) bins  
+* :class:`~binning.methods.KMeansBinning` - K-means clustering-based bins
+* :class:`~binning.methods.EqualWidthMinimumWeightBinning` - Weight-constrained equal-width bins
+
+**Flexible Methods:**
+
+* :class:`~binning.methods.ManualFlexibleBinning` - Custom bin definitions with mixed types
+* :class:`~binning.methods.ManualIntervalBinning` - Custom interval bins
+
+**Categorical Methods:**
+
+* :class:`~binning.methods.OneHotBinning` - One-hot encoding for categorical data
+
+**Supervised Methods:**
+
+* :class:`~binning.methods.SupervisedBinning` - Decision tree-based supervised binning
 
 Weight-Constrained Binning
 --------------------------
 
-The framework also supports advanced binning methods like weight-constrained binning:
+The framework supports advanced binning methods like weight-constrained binning:
 
 .. code-block:: python
 
@@ -56,7 +92,7 @@ The framework also supports advanced binning methods like weight-constrained bin
 DataFrame Support
 -----------------
 
-The framework works seamlessly with pandas DataFrames:
+The framework works seamlessly with pandas DataFrames and preserves column names:
 
 .. code-block:: python
 
@@ -65,39 +101,90 @@ The framework works seamlessly with pandas DataFrames:
    
    # Create DataFrame
    df = pd.DataFrame({
-       'feature1': np.random.normal(50, 15, 100),
-       'feature2': np.random.exponential(2, 100),
-       'feature3': np.random.uniform(0, 100, 100)
+       'age': np.random.normal(35, 10, 100),
+       'income': np.random.exponential(50000, 100),
+       'score': np.random.uniform(0, 100, 100)
    })
    
-   # Apply binning with DataFrame preservation
+   # Apply binning with DataFrame preservation  
    binner = EqualFrequencyBinning(n_bins=5, preserve_dataframe=True)
    df_binned = binner.fit_transform(df)
    
+   print("Original DataFrame:")
+   print(df.head())
+   print("\nBinned DataFrame:")
    print(df_binned.head())
+   print("\nBin edges for 'age' column:")
+   print(binner.bin_edges_['age'])
+
+Selective Column Binning
+------------------------
+
+You can bin specific columns while leaving others unchanged:
+
+.. code-block:: python
+
+   from binning.methods import EqualWidthBinning
+   
+   # Bin only specific columns
+   binner = EqualWidthBinning(n_bins=3, columns=['age', 'income'])
+   df_selective = binner.fit_transform(df)
+   
+   print("Only 'age' and 'income' columns were binned")
+   print(df_selective.head())
 
 Sklearn Integration
 -------------------
 
-Use binning transformers in sklearn pipelines:
+Use binning transformers in sklearn pipelines with full compatibility:
 
 .. code-block:: python
 
    from sklearn.pipeline import Pipeline
    from sklearn.preprocessing import StandardScaler
-   from sklearn.linear_model import LogisticRegression
+   from sklearn.ensemble import RandomForestClassifier
+   from sklearn.model_selection import train_test_split
    from binning.methods import EqualWidthBinning
    
-   # Create pipeline
+   # Create sample classification data
+   from sklearn.datasets import make_classification
+   X, y = make_classification(n_samples=1000, n_features=4, n_classes=2, 
+                             random_state=42)
+   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+   
+   # Create pipeline with binning
    pipeline = Pipeline([
        ('binning', EqualWidthBinning(n_bins=5)),
        ('scaling', StandardScaler()),
-       ('classifier', LogisticRegression())
+       ('classifier', RandomForestClassifier(random_state=42))
    ])
    
-   # Use in your ML workflow
-   # pipeline.fit(X_train, y_train)
-   # predictions = pipeline.predict(X_test)
+   # Fit and evaluate
+   pipeline.fit(X_train, y_train)
+   accuracy = pipeline.score(X_test, y_test)
+   print(f"Pipeline accuracy: {accuracy:.3f}")
+
+Supervised Binning Example
+--------------------------
+
+Use supervised binning for better predictive performance:
+
+.. code-block:: python
+
+   from binning.methods import SupervisedBinning
+   
+   # Create supervised binner
+   sup_binner = SupervisedBinning(
+       n_bins=4,
+       task_type='classification',
+       tree_params={'max_depth': 3, 'min_samples_leaf': 10}
+   )
+   
+   # Fit with target variable
+   X_supervised = sup_binner.fit_transform(X_train, guidance_data=y_train)
+   
+   print("Supervised binning considers target variable for optimal bin boundaries")
+   print(f"Bin edges: {sup_binner.bin_edges_}")
 
 Key Concepts
 ------------

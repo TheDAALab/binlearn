@@ -13,16 +13,17 @@ SupervisedBinning
 Overview
 --------
 
-SupervisedBinning uses decision tree-based algorithms to find optimal split points that best separate different target classes. Unlike unsupervised methods, it takes into account the relationship between features and the target variable.
+SupervisedBinning uses decision tree-based algorithms to find optimal split points that best separate different target classes or minimize regression error. Unlike unsupervised methods, it takes into account the relationship between features and the target variable.
 
 **Key Characteristics:**
 
 * ✅ **Target-aware** - Optimizes bins for predictive performance
-* ✅ **Information-theoretic** - Maximizes information gain
-* ✅ **Adaptive boundaries** - Bin edges adapt to data patterns
-* ✅ **Feature selection** - Can identify irrelevant features
+* ✅ **Information-theoretic** - Maximizes information gain (classification) or minimizes variance (regression)
+* ✅ **Adaptive boundaries** - Bin edges adapt to data patterns and target relationships
+* ✅ **Feature selection** - Can identify irrelevant features through split quality
+* ✅ **Flexible** - Supports both classification and regression tasks
 * ❌ **Requires target** - Cannot be used for unsupervised tasks
-* ❌ **Overfitting risk** - May overfit to training data
+* ❌ **Overfitting risk** - May overfit to training data without proper regularization
 
 Algorithm Details
 -----------------
@@ -30,15 +31,19 @@ Algorithm Details
 The algorithm works by:
 
 1. **Building decision trees** for each feature independently
-2. **Finding split points** that maximize information gain
+2. **Finding split points** that maximize information gain (classification) or minimize MSE (regression)
 3. **Extracting bin boundaries** from tree splits
-4. **Limiting depth** to control number of bins
+4. **Limiting complexity** through tree parameters to control number of bins
 
-**Information Gain Formula:**
+**Information Gain Formula (Classification):**
    IG(S, A) = H(S) - Σ(|Sv|/|S| × H(Sv))
+
+**MSE Reduction Formula (Regression):**
+   MSE_reduction = MSE(S) - Σ(|Sv|/|S| × MSE(Sv))
 
 Where:
 - H(S) is entropy of the target variable
+- MSE(S) is mean squared error of the target variable  
 - Sv are subsets created by splitting on attribute A
 
 Parameters
@@ -47,7 +52,25 @@ Parameters
 n_bins : int, default=5
     Maximum number of bins to create per feature.
 
-criterion : str, default='entropy'
+task_type : {'classification', 'regression'}, default='classification'
+    Type of supervised learning task.
+
+tree_params : dict | None, default=None
+    Additional parameters for the decision tree. Common parameters include:
+    
+    * 'max_depth': Maximum depth of the tree
+    * 'min_samples_split': Minimum samples required to split a node
+    * 'min_samples_leaf': Minimum samples required at a leaf node
+    * 'random_state': Random state for reproducibility
+
+columns : list[str | int] | None, default=None
+    Specific columns to bin. If None, bins all columns.
+
+guidance_columns : list[str | int] | None, default=None
+    Columns to exclude from binning (used as guidance only).
+
+preserve_dataframe : bool | None, default=None
+    Whether to preserve the input DataFrame format. If None, auto-detects.
     Splitting criterion for decision trees:
     - 'entropy': Information gain based on entropy
     - 'gini': Gini impurity reduction

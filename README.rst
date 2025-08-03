@@ -2,79 +2,58 @@
 Binning Framework
 ===============================
 
-.. image:: https://img.shields.io/pypi/v/binning-framework.svg
-    :target: https://pypi.python.org/pypi/binning-framework
-    :alt: PyPI Version
+.. image:: https://img.shields.io/badge/python-3.8%2B-blue
+    :alt: Python Version
 
-.. image:: https://img.shields.io/pypi/pyversions/binning-framework.svg
-    :target: https://pypi.python.org/pypi/binning-framework
-    :alt: Python Versions
-
-.. image:: https://github.com/TheDAALab/binning/workflows/CI/badge.svg
-    :target: https://github.com/TheDAALab/binning/actions
-    :alt: CI Status
-
-.. image:: https://codecov.io/gh/TheDAALab/binning/branch/main/graph/badge.svg
-    :target: https://codecov.io/gh/TheDAALab/binning
-    :alt: Code Coverage
-
-.. image:: https://readthedocs.org/projects/binning-framework/badge/?version=latest
-    :target: https://binning-framework.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/psf/black
-    :alt: Code Style: Black
-
-.. image:: https://img.shields.io/github/license/TheDAALab/binning.svg
-    :target: https://github.com/TheDAALab/binning/blob/main/LICENSE
+.. image:: https://img.shields.io/badge/license-MIT-green
     :alt: License
 
-.. image:: https://img.shields.io/pypi/dm/binning-framework.svg
-    :target: https://pypi.python.org/pypi/binning-framework
-    :alt: Monthly Downloads
+.. image:: https://img.shields.io/badge/code%20quality-ruff-black
+    :alt: Code Quality - Ruff
 
-.. image:: https://img.shields.io/github/stars/TheDAALab/binning.svg?style=social&label=Star
-    :target: https://github.com/TheDAALab/binning
-    :alt: GitHub Stars
+.. image:: https://img.shields.io/badge/type%20checking-mypy-blue
+    :alt: Type Checking - MyPy
 
-A comprehensive, high-performance Python framework for data binning and discretization with advanced algorithms, seamless integration with pandas/polars/numpy, and scikit-learn compatibility.
+.. image:: https://img.shields.io/badge/tests-837%20passed-green
+    :alt: Test Results
+
+.. image:: https://img.shields.io/badge/coverage-100%25-brightgreen
+    :alt: Test Coverage
+
+A modern, type-safe Python framework for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
 
 🚀 **Key Features**
 -------------------
 
-✨ **Multiple Binning Algorithms**
-  * **EqualWidthBinning** - Uniform bin widths
-  * **EqualFrequencyBinning** - Balanced sample distributions  
+✨ **Multiple Binning Methods**
+  * **EqualWidthBinning** - Equal-width intervals across data range
+  * **EqualFrequencyBinning** - Equal-frequency (quantile-based) bins  
+  * **KMeansBinning** - K-means clustering-based discretization
   * **EqualWidthMinimumWeightBinning** - Weight-constrained equal-width binning
-  * **SupervisedBinning** - Target-aware discretization
-  * **ManualBinning** - Custom boundary specification
+  * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
+  * **ManualIntervalBinning** - Custom interval boundary specification
+  * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
+  * **OneHotBinning** - One-hot encoding for categorical data
 
 🔧 **Framework Integration**
-  * **Pandas DataFrames** - Native support with type preservation
-  * **Polars DataFrames** - High-performance columnar operations
-  * **NumPy Arrays** - Efficient numerical computing
-  * **Scikit-learn Pipelines** - Seamless ML workflow integration
+  * **Pandas DataFrames** - Native support with column name preservation
+  * **Polars DataFrames** - High-performance columnar data support (optional)
+  * **NumPy Arrays** - Efficient numerical array processing
+  * **Scikit-learn Pipelines** - Full transformer compatibility
 
-⚡ **Performance & Scalability**
-  * Optimized algorithms for large datasets
-  * Memory-efficient processing
-  * Parallel computation support
-  * Lazy evaluation where possible
+⚡ **Modern Code Quality**
+  * **Type Safety** - 100% mypy compliance with comprehensive type annotations
+  * **Code Quality** - 100% ruff compliance with modern Python syntax
+  * **Error Handling** - Comprehensive validation with helpful error messages and suggestions
+  * **Test Coverage** - 100% code coverage with 837 comprehensive tests
+  * **Documentation** - Extensive examples and API documentation
 
-🎯 **Advanced Capabilities**
-  * Weight-constrained binning with guidance data
-  * Missing value handling
-  * Robust error handling and validation
-  * Comprehensive test coverage (100%)
-  * Type hints and documentation
-
-📦 **Quick Install**
---------------------
+📦 **Installation**
+-------------------
 
 .. code-block:: bash
 
-   pip install binning-framework
+   pip install binning
 
 🔥 **Quick Start**
 ------------------
@@ -83,64 +62,49 @@ A comprehensive, high-performance Python framework for data binning and discreti
 
    import numpy as np
    import pandas as pd
-   from binning.methods import EqualWidthBinning, EqualFrequencyBinning
+   from binning.methods import EqualWidthBinning, SupervisedBinning
    
-   # Sample data
+   # Create sample data
    data = pd.DataFrame({
        'age': np.random.normal(35, 10, 1000),
        'income': np.random.lognormal(10, 0.5, 1000),
-       'score': np.random.beta(2, 5, 1000) * 100
+       'score': np.random.uniform(0, 100, 1000)
    })
    
-   # Equal-width binning
-   ew_binner = EqualWidthBinning(n_bins=5, preserve_dataframe=True)
-   data_binned = ew_binner.fit_transform(data)
-   
-   # Equal-frequency binning for skewed data
-   ef_binner = EqualFrequencyBinning(n_bins=4, preserve_dataframe=True)
-   data_balanced = ef_binner.fit_transform(data)
+   # Equal-width binning with DataFrame preservation
+   binner = EqualWidthBinning(n_bins=5, preserve_dataframe=True)
+   data_binned = binner.fit_transform(data)
    
    print(f"Original shape: {data.shape}")
-   print(f"Binned unique values per column:")
-   for col in data.columns:
-       print(f"  {col}: {len(data_binned[col].unique())} bins")
+   print(f"Binned shape: {data_binned.shape}")
+   print(f"Bin edges for age: {binner.bin_edges_['age']}")
 
-🎯 **Advanced Example: Weight-Constrained Binning**
----------------------------------------------------
+🎯 **Supervised Binning Example**
+---------------------------------
 
 .. code-block:: python
 
-   from binning.methods import EqualWidthMinimumWeightBinning
+   from binning.methods import SupervisedBinning
+   from sklearn.datasets import make_classification
+   from sklearn.model_selection import train_test_split
    
-   # Customer data with importance weights
-   customers = pd.DataFrame({
-       'age': np.random.normal(40, 15, 2000),
-       'spend': np.random.lognormal(8, 1, 2000),
-       'loyalty': np.random.beta(3, 2, 2000) * 100
-   })
+   # Create classification dataset
+   X, y = make_classification(n_samples=1000, n_features=4, n_classes=2, random_state=42)
+   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
    
-   # Revenue-based importance weights
-   revenue_weights = np.random.lognormal(6, 1.5, 2000)
-   
-   # Create segments ensuring minimum revenue per bin
-   segmenter = EqualWidthMinimumWeightBinning(
-       n_bins=6, 
-       minimum_weight=1000.0,  # Minimum total revenue per segment
-       preserve_dataframe=True
+   # Create supervised binner that considers target variable
+   sup_binner = SupervisedBinning(
+       n_bins=4,
+       task_type='classification',
+       tree_params={'max_depth': 3, 'min_samples_leaf': 20}
    )
    
-   customer_segments = segmenter.fit_transform(
-       customers, 
-       guidance_data=revenue_weights
-   )
+   # Fit using guidance data (target variable)
+   X_train_binned = sup_binner.fit_transform(X_train, guidance_data=y_train)
+   X_test_binned = sup_binner.transform(X_test)
    
-   # Analyze segments
-   for segment_id in sorted(customer_segments['age'].unique()):
-       mask = customer_segments['age'] == segment_id
-       segment_revenue = revenue_weights[mask].sum()
-       segment_size = mask.sum()
-       print(f"Segment {segment_id}: {segment_size} customers, "
-             f"${segment_revenue:,.0f} revenue")
+   print(f"Supervised binning created bins optimized for target separation")
+   print(f"Bin edges per feature: {[len(edges)-1 for edges in sup_binner.bin_edges_.values()]}")
 
 🛠️ **Scikit-learn Integration**
 -------------------------------
@@ -151,65 +115,62 @@ A comprehensive, high-performance Python framework for data binning and discreti
    from sklearn.ensemble import RandomForestClassifier
    from binning.methods import EqualFrequencyBinning
    
-   # Create ML pipeline with binning
+   # Create ML pipeline with binning preprocessing
    pipeline = Pipeline([
        ('binning', EqualFrequencyBinning(n_bins=5)),
-       ('classifier', RandomForestClassifier(n_estimators=100))
+       ('classifier', RandomForestClassifier(random_state=42))
    ])
    
-   # Train and predict
+   # Train and evaluate
    pipeline.fit(X_train, y_train)
-   y_pred = pipeline.predict(X_test)
+   accuracy = pipeline.score(X_test, y_test)
+   print(f"Pipeline accuracy: {accuracy:.3f}")
 
-📚 **Documentation**
---------------------
+📚 **Available Methods**
+------------------------
 
-* 📖 **Full Documentation**: https://binning-framework.readthedocs.io/
-* 🎓 **Tutorials**: https://binning-framework.readthedocs.io/en/latest/tutorials/
-* 📋 **API Reference**: https://binning-framework.readthedocs.io/en/latest/api/
-* 🔍 **Examples**: https://binning-framework.readthedocs.io/en/latest/examples/
+**Interval-based Methods:**
 
-🎯 **Use Cases**
-----------------
+* ``EqualWidthBinning`` - Creates bins of equal width across the data range
+* ``EqualFrequencyBinning`` - Creates bins with approximately equal number of samples  
+* ``KMeansBinning`` - Uses K-means clustering to determine bin boundaries
+* ``EqualWidthMinimumWeightBinning`` - Equal-width bins with weight constraints
 
-**Data Preprocessing**
-  * Feature engineering for machine learning
-  * Noise reduction in continuous variables
-  * Memory optimization through discretization
+**Flexible Methods:**
 
-**Business Analytics**
-  * Customer segmentation with revenue constraints
-  * Risk scoring and credit analysis
-  * Market research and survey analysis
+* ``ManualIntervalBinning`` - Specify custom interval boundaries
+* ``ManualFlexibleBinning`` - Define mixed interval and singleton bins
 
-**Scientific Computing**
-  * Experimental data analysis
-  * Statistical modeling preparation
-  * Quality control in manufacturing
+**Categorical Methods:**
 
-**Financial Applications**
-  * Portfolio risk assessment
-  * Trading signal generation
-  * Regulatory compliance reporting
+* ``OneHotBinning`` - One-hot encoding for categorical variables
 
-⚙️ **Supported Environments**
------------------------------
+**Supervised Methods:**
 
-**Python Versions**: 3.8, 3.9, 3.10, 3.11, 3.12
+* ``SupervisedBinning`` - Decision tree-based binning optimized for target variables (classification and regression)
+
+⚙️ **Requirements**
+-------------------
+
+**Python Versions**: 3.8, 3.9, 3.10, 3.11, 3.12, 3.13
 
 **Core Dependencies**:
-  * NumPy >= 1.20.0
-  * Pandas >= 1.3.0
+  * NumPy >= 1.21.0
+  * SciPy >= 1.7.0
   * Scikit-learn >= 1.0.0
+  * kmeans1d >= 0.3.0
 
 **Optional Dependencies**:
+  * Pandas >= 1.3.0 (for DataFrame support)
   * Polars >= 0.15.0 (for Polars DataFrame support)
-  * Matplotlib >= 3.5.0 (for examples and tutorials)
 
-**Operating Systems**: Linux, macOS, Windows
+**Development Dependencies**:
+  * pytest >= 6.0 (for testing)
+  * ruff >= 0.1.0 (for linting and formatting)
+  * mypy >= 1.0.0 (for type checking)
 
-🧪 **Development & Testing**
-----------------------------
+🧪 **Development Setup**
+------------------------
 
 .. code-block:: bash
 
@@ -217,132 +178,80 @@ A comprehensive, high-performance Python framework for data binning and discreti
    git clone https://github.com/TheDAALab/binning.git
    cd binning
    
-   # Install in development mode
-   pip install -e .
-   pip install -r requirements-dev.txt
+   # Install in development mode with all dependencies
+   pip install -e ".[tests,dev,pandas,polars]"
    
-   # Run tests with coverage
-   pytest --cov=binning --cov-report=html
+   # Run all tests
+   pytest
+   
+   # Run code quality checks
+   ruff check binning/
+   mypy binning/ --ignore-missing-imports
    
    # Build documentation
    cd docs && make html
 
-🏆 **Quality Assurance**
-------------------------
+🏆 **Code Quality Standards**
+-----------------------------
 
-* ✅ **100% Test Coverage** - Comprehensive test suite
-* ✅ **Type Hints** - Full type annotation support
-* ✅ **Code Formatting** - Black and isort for consistent style  
-* ✅ **Linting** - Flake8 for code quality
-* ✅ **Documentation** - Comprehensive docs with examples
-* ✅ **CI/CD** - Automated testing and deployment
+* ✅ **100% Test Coverage** - Comprehensive test suite with 837 tests
+* ✅ **100% Type Safety** - Complete mypy compliance with modern type annotations
+* ✅ **100% Code Quality** - Full ruff compliance with modern Python standards
+* ✅ **Comprehensive Documentation** - Detailed API docs and examples
+* ✅ **Modern Python** - Uses latest Python features and best practices
+* ✅ **Robust Error Handling** - Helpful error messages with actionable suggestions
 
 🤝 **Contributing**
 -------------------
 
-We welcome contributions! Please see our `Contributing Guide <https://binning-framework.readthedocs.io/en/latest/contributing.html>`_ for details.
+We welcome contributions! Here's how to get started:
 
-**Quick Contribution Steps**:
-
-1. Fork the repository
-2. Create a feature branch: ``git checkout -b feature/amazing-feature``
+1. Fork the repository on GitHub
+2. Create a feature branch: ``git checkout -b feature/your-feature``
 3. Make your changes and add tests
-4. Ensure tests pass: ``pytest``
+4. Ensure all quality checks pass:
+   
+   .. code-block:: bash
+   
+      pytest                                    # Run tests
+      ruff check binning/                       # Check code quality  
+      mypy binning/ --ignore-missing-imports    # Check types
+
 5. Submit a pull request
 
-**Types of Contributions Welcome**:
+**Areas for Contribution**:
   * 🐛 Bug reports and fixes
   * ✨ New binning algorithms
   * 📚 Documentation improvements
-  * 🎯 Performance optimizations
   * 🧪 Additional test cases
+  * 🎯 Performance optimizations
 
+� **Links**
+------------
 
-🎓 **Research & Citations**
----------------------------
-
-If you use this framework in academic research, please cite:
-
-.. code-block:: bibtex
-
-   @software{binning_framework,
-     title={Binning Framework: Advanced Data Discretization for Python},
-     author={TheDAALab},
-     year={2025},
-     url={https://github.com/TheDAALab/binning},
-     version={1.0.0}
-   }
-
-📊 **Success Stories**
-----------------------
-
-
-🔮 **Roadmap**
---------------
-
-**Upcoming Features**:
-  * 🧠 Adaptive binning with automatic parameter selection
-  * 🔄 Streaming data support for real-time applications  
-  * 🎯 GPU acceleration for large-scale processing
-  * 📊 Built-in visualization tools
-  * 🌐 Distributed computing support (Dask integration)
-  * 🔗 More supervised binning algorithms
-
-**Version 1.1** (Q3 2025):
-  * Entropy-based binning
-  * Bayesian optimization for parameter tuning
-  * Enhanced categorical data support
-
-**Version 1.2** (Q4 2025):
-  * Time series binning capabilities
-  * Interactive visualization dashboard
-  * Cloud deployment templates
-
-📞 **Support & Community**
---------------------------
-
-* 🐛 **Bug Reports**: `GitHub Issues <https://github.com/TheDAALab/binning/issues>`_
-* 💬 **Discussions**: `GitHub Discussions <https://github.com/TheDAALab/binning/discussions>`_
-* 📧 **Email**: binning-support@thedaalab.org
-* 💼 **LinkedIn**: `TheDAALab <https://linkedin.com/company/thedaalab>`_
-* 🐦 **Twitter**: `@TheDAALab <https://twitter.com/thedaalab>`_
-
-⭐ **Star History**
--------------------
-
-.. image:: https://api.star-history.com/svg?repos=TheDAALab/binning&type=Date
-    :target: https://star-history.com/#TheDAALab/binning&Date
+* **GitHub Repository**: https://github.com/TheDAALab/binning
+* **Issue Tracker**: https://github.com/TheDAALab/binning/issues
+* **Documentation**: https://binning.readthedocs.io/
 
 📄 **License**
 --------------
 
-This project is licensed under the MIT License - see the `LICENSE <https://github.com/TheDAALab/binning/blob/main/LICENSE>`_ file for details.
-
-**MIT License Summary**:
-  * ✅ Commercial use allowed
-  * ✅ Modification allowed  
-  * ✅ Distribution allowed
-  * ✅ Private use allowed
-  * ❌ No liability or warranty
+This project is licensed under the MIT License. See the `LICENSE <https://github.com/TheDAALab/binning/blob/main/LICENSE>`_ file for details.
 
 ---
 
-**Made with ❤️ by TheDAALab**
+**Developed by TheDAALab** 
 
-*Empowering data scientists and researchers with advanced discretization tools for better insights and model performance.*
+*A modern, type-safe binning framework for Python data science workflows.*
 
 .. image:: https://img.shields.io/badge/Powered%20by-Python-blue.svg
-    :target: https://www.python.org/
     :alt: Powered by Python
 
 .. image:: https://img.shields.io/badge/Built%20with-NumPy-orange.svg
-    :target: https://numpy.org/
     :alt: Built with NumPy
 
 .. image:: https://img.shields.io/badge/Compatible%20with-Pandas-green.svg
-    :target: https://pandas.pydata.org/
     :alt: Compatible with Pandas
 
 .. image:: https://img.shields.io/badge/Integrates%20with-Scikit--learn-red.svg
-    :target: https://scikit-learn.org/
     :alt: Integrates with Scikit-learn

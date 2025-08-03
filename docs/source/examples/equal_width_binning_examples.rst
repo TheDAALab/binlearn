@@ -8,7 +8,7 @@ This page provides comprehensive examples of using `EqualWidthBinning` for diffe
 
 ```python
 import numpy as np
-from binning import EqualWidthBinning
+from binning.methods import EqualWidthBinning
 
 # Create sample data
 np.random.seed(42)
@@ -21,6 +21,7 @@ binned_ages = binner.fit_transform(ages)
 print("Original data range:", ages.min(), "to", ages.max())
 print("Bin edges:", binner.bin_edges_[0])
 print("Sample binned values:", binned_ages[:10].flatten())
+print("Number of bins created:", len(binner.bin_edges_[0]) - 1)
 ```
 
 **Output:**
@@ -28,13 +29,14 @@ print("Sample binned values:", binned_ages[:10].flatten())
 Original data range: 3.64 to 68.15
 Bin edges: [ 3.64 16.54 29.44 42.34 55.24 68.15]
 Sample binned values: [2 3 2 4 2 1 2 3 1 2]
+Number of bins created: 5
 ```
 
 ### Multi-dimensional Data
 
 ```python
 import numpy as np
-from binning import EqualWidthBinning
+from binning.methods import EqualWidthBinning
 
 # Create multi-dimensional dataset
 np.random.seed(42)
@@ -49,6 +51,11 @@ print("Binned data shape:", binned_data.shape)
 print("Bin edges for feature 0:", binner.bin_edges_[0])
 print("Bin edges for feature 1:", binner.bin_edges_[1])
 print("Bin edges for feature 2:", binner.bin_edges_[2])
+
+# Show actual number of bins created per feature
+for i in range(3):
+    n_bins = len(binner.bin_edges_[i]) - 1
+    print(f"Feature {i}: {n_bins} bins created")
 ```
 
 ## Real-world Examples
@@ -58,7 +65,7 @@ print("Bin edges for feature 2:", binner.bin_edges_[2])
 ```python
 import numpy as np
 import pandas as pd
-from binning import EqualWidthBinning
+from binning.methods import EqualWidthBinning
 import matplotlib.pyplot as plt
 
 # Simulate customer data
@@ -70,27 +77,30 @@ young_adults = np.random.normal(25, 3, 600)
 adults = np.random.normal(40, 8, 800)
 seniors = np.random.normal(60, 5, 600)
 ages = np.concatenate([young_adults, adults, seniors])
-ages = np.clip(ages, 18, 80).reshape(-1, 1)
+ages = np.clip(ages, 18, 80)
 
-# Create age groups using equal width binning
-age_binner = EqualWidthBinning(n_bins=6)
-age_groups = age_binner.fit_transform(ages)
+# Create DataFrame
+df = pd.DataFrame({'age': ages})
 
-# Create DataFrame for analysis
-df = pd.DataFrame({
-    'age': ages.flatten(),
-    'age_group': age_groups.flatten()
-})
+# Create age groups using equal width binning with DataFrame preservation
+age_binner = EqualWidthBinning(n_bins=6, preserve_dataframe=True)
+df_binned = age_binner.fit_transform(df)
 
-# Define group labels
-group_labels = ['18-28', '28-38', '38-48', '48-58', '58-68', '68-78']
+# Get bin edges for labeling
+age_edges = age_binner.bin_edges_['age']
+group_labels = [f'{age_edges[i]:.0f}-{age_edges[i+1]:.0f}' 
+                for i in range(len(age_edges)-1)]
+
+# Map bin numbers to labels
+df['age_group'] = df_binned['age']
 df['age_group_label'] = df['age_group'].map(
     {i: label for i, label in enumerate(group_labels)}
 )
 
 # Analyze distribution
 print("Age Group Distribution:")
-print(df['age_group_label'].value_counts().sort_index())
+distribution = df['age_group_label'].value_counts().sort_index()
+print(distribution)
 
 # Plotting
 plt.figure(figsize=(12, 5))
@@ -98,6 +108,19 @@ plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
 plt.hist(ages, bins=30, alpha=0.7, edgecolor='black')
 plt.title('Original Age Distribution')
+plt.xlabel('Age')
+plt.ylabel('Frequency')
+
+plt.subplot(1, 2, 2)
+distribution.plot(kind='bar', alpha=0.7, edgecolor='black')
+plt.title('Binned Age Groups')
+plt.xlabel('Age Group')
+plt.ylabel('Count')
+plt.xticks(rotation=45)
+
+plt.tight_layout()
+plt.show()
+```
 plt.xlabel('Age')
 plt.ylabel('Frequency')
 

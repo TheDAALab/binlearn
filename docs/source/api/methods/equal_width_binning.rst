@@ -23,32 +23,43 @@ EqualWidthBinning creates bins by dividing the range [min, max] of each feature 
 * ✅ **Simple and intuitive** - Easy to understand and interpret
 * ✅ **Preserves distribution shape** - Maintains the original data distribution
 * ✅ **Consistent bin sizes** - All bins have the same width
+* ✅ **Fast computation** - Efficient O(n) time complexity
 * ❌ **Sensitive to outliers** - Extreme values can create many empty bins
 * ❌ **Uneven sample distribution** - Some bins may have very few samples
 
 Parameters
 ----------
 
-n_bins : int, default=5
-    Number of bins to create for each feature.
+n_bins : int or list[int], default=5
+    Number of bins to create. If int, same number of bins for all features.
+    If list, specifies bins per feature.
 
-bin_range : tuple of (min, max), optional
-    Custom range for binning. If None, uses the data range.
+bin_range : tuple[float, float] | None, default=None
+    Custom range for binning as (min, max). If None, uses the data range.
 
 clip : bool, default=False
     Whether to clip out-of-range values to the nearest bin edge.
 
-preserve_dataframe : bool, optional
-    Whether to preserve the input DataFrame format. If None, auto-detects.
+columns : list[str | int] | None, default=None
+    Specific columns to bin. If None, bins all columns.
 
-fit_jointly : bool, default=True
-    Whether to use the same binning parameters across all features.
+guidance_columns : list[str | int] | None, default=None
+    Columns to exclude from binning (used as guidance only).
+
+preserve_dataframe : bool | None, default=None
+    Whether to preserve the input DataFrame format. If None, auto-detects.
 
 Attributes
 ----------
 
-_bin_edges : dict
+bin_edges_ : dict[str | int, np.ndarray]
     Fitted bin edges for each column after calling fit().
+
+n_bins_ : dict[str | int, int]
+    Actual number of bins created for each column.
+
+fitted_ : bool
+    Whether the transformer has been fitted to data.
 
 Examples
 --------
@@ -69,19 +80,41 @@ Basic Usage
    })
    
    # Create equal-width bins
-   binner = EqualWidthBinning(n_bins=3)
+   binner = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
    binned_data = binner.fit_transform(data)
    
    print("Original data:")
-   print(data)
+   print(data.head())
    print("\nBinned data:")
-   print(binned_data)
+   print(binned_data.head())
    
    # Check bin edges
    print("\nBin edges:")
-   for col_idx, edges in binner._bin_edges.items():
-       col_name = data.columns[col_idx]
-       print(f"{col_name}: {edges}")
+   for column, edges in binner.bin_edges_.items():
+       print(f"{column}: {edges}")
+
+Different Bins Per Feature
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+   import numpy as np
+   from binning.methods import EqualWidthBinning
+   
+   # Create sample data with different scales
+   X = np.random.rand(100, 3) * [100, 1000, 10]  # Different scales
+   
+   # Use different number of bins for each feature
+   binner = EqualWidthBinning(n_bins=[3, 5, 2])
+   X_binned = binner.fit_transform(X)
+   
+   print(f"Original shape: {X.shape}")
+   print(f"Binned shape: {X_binned.shape}")
+   
+   # Display bin information
+   for i in range(X.shape[1]):
+       edges = binner.bin_edges_[i]
+       print(f"Feature {i}: {len(edges)-1} bins, range [{edges[0]:.2f}, {edges[-1]:.2f}]")
 
 Working with NumPy Arrays
 ~~~~~~~~~~~~~~~~~~~~~~~~~
