@@ -182,8 +182,39 @@ class IntervalBinningBase(GeneralBinningBase):
                 # Store columns for later reference
                 self._original_columns = list(self._bin_edges.keys())
 
+                # Set sklearn attributes based on bin_edges and guidance_columns
+                self._set_sklearn_attributes_from_specs()
+
         except ValueError as e:
             raise ConfigurationError(str(e)) from e
+
+    def _set_sklearn_attributes_from_specs(self) -> None:
+        """Set sklearn attributes (n_features_in_, feature_names_in_) from bin specifications.
+
+        Derives the sklearn-compatible attributes from the provided bin specifications
+        and guidance columns. This enables parameter transfer workflows where an instance
+        is created with pre-computed bins.
+        """
+        if self.bin_edges is not None:
+            # Get column names/indices from bin_edges
+            binning_columns = list(self.bin_edges.keys())
+
+            # Add guidance columns if specified
+            all_features = binning_columns.copy()
+            if self.guidance_columns is not None:
+                guidance_cols = (
+                    [self.guidance_columns]
+                    if not isinstance(self.guidance_columns, list)
+                    else self.guidance_columns
+                )
+                # Add guidance columns that aren't already in binning columns
+                for col in guidance_cols:
+                    if col not in all_features:
+                        all_features.append(col)
+
+            # Set sklearn attributes
+            self._feature_names_in = all_features
+            self._n_features_in = len(all_features)
 
     @property
     def bin_edges(self) -> BinEdgesDict | None:

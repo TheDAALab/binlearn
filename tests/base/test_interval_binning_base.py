@@ -732,3 +732,37 @@ def test_process_user_specifications_non_binning_exception():
 
         with pytest.raises(ConfigurationError, match="Failed to process bin specifications"):
             obj._process_user_specifications([0])
+
+
+def test_set_sklearn_attributes_from_specs_with_none_bin_edges():
+    """Test _set_sklearn_attributes_from_specs when bin_edges is None - covers line 198->exit."""
+    obj = DummyIntervalBinning()  # bin_edges is None by default
+    # This should not set any sklearn attributes
+    obj._set_sklearn_attributes_from_specs()
+    assert obj._feature_names_in is None
+    assert obj._n_features_in is None
+
+
+def test_set_sklearn_attributes_from_specs_with_guidance_columns():
+    """Test _set_sklearn_attributes_from_specs with guidance columns - covers line 212->211."""
+    # Test with single guidance column (string)
+    bin_edges = {0: [0, 1, 2], 1: [0, 5, 10]}
+    obj = DummyIntervalBinning(bin_edges=bin_edges, guidance_columns='target')
+
+    # Should include both binning columns (0, 1) and guidance column ('target')
+    expected_features = [0, 1, 'target']
+    assert obj._feature_names_in == expected_features
+    assert obj._n_features_in == 3
+
+    # Test with list of guidance columns
+    obj2 = DummyIntervalBinning(bin_edges=bin_edges, guidance_columns=['target1', 'target2'])
+    expected_features2 = [0, 1, 'target1', 'target2']
+    assert obj2._feature_names_in == expected_features2
+    assert obj2._n_features_in == 4
+
+    # Test when guidance column is already in binning columns (shouldn't duplicate)
+    bin_edges_overlap = {0: [0, 1, 2], 'target': [0, 5, 10]}
+    obj3 = DummyIntervalBinning(bin_edges=bin_edges_overlap, guidance_columns='target')
+    expected_features3 = [0, 'target']  # 'target' shouldn't be duplicated
+    assert obj3._feature_names_in == expected_features3
+    assert obj3._n_features_in == 2

@@ -745,3 +745,69 @@ def test_dummy_flexible_binning_repr_and_properties():
     obj.bin_representatives = {1: [2.0]}
     assert obj.bin_spec == {1: [2]}
     assert obj.bin_representatives == {1: [2.0]}
+
+
+def test_set_sklearn_attributes_from_specs_with_none_bin_spec():
+    """Test _set_sklearn_attributes_from_specs when bin_spec is None - covers line 210->exit."""
+    obj = DummyFlexibleBinning()  # bin_spec is None by default
+    # This should not set any sklearn attributes
+    obj._set_sklearn_attributes_from_specs()
+    assert obj._feature_names_in is None
+    assert obj._n_features_in is None
+
+
+def test_set_sklearn_attributes_from_specs_with_guidance_columns():
+    """Test _set_sklearn_attributes_from_specs with guidance columns - covers lines 217-225."""
+    # Test with single guidance column (string)
+    bin_spec = {0: [1], 1: [2]}
+    obj = DummyFlexibleBinning(bin_spec=bin_spec, guidance_columns='target')
+
+    # Should include both binning columns (0, 1) and guidance column ('target')
+    expected_features = [0, 1, 'target']
+    assert obj._feature_names_in == expected_features
+    assert obj._n_features_in == 3
+
+    # Test with list of guidance columns
+    obj2 = DummyFlexibleBinning(bin_spec=bin_spec, guidance_columns=['target1', 'target2'])
+    expected_features2 = [0, 1, 'target1', 'target2']
+    assert obj2._feature_names_in == expected_features2
+    assert obj2._n_features_in == 4
+
+    # Test when guidance column is already in binning columns (shouldn't duplicate)
+    bin_spec_overlap = {0: [1], 'target': [2]}
+    obj3 = DummyFlexibleBinning(bin_spec=bin_spec_overlap, guidance_columns='target')
+    expected_features3 = [0, 'target']  # 'target' shouldn't be duplicated
+    assert obj3._feature_names_in == expected_features3
+    assert obj3._n_features_in == 2
+
+
+def test_get_fitted_params_with_none_attributes():
+    """Test _get_fitted_params when _bin_spec or _bin_reps are None - covers lines 715->718, 718->721."""
+    obj = DummyFlexibleBinning()
+
+    # Test when both are None
+    obj._bin_spec = None
+    obj._bin_reps = None
+    params = obj._get_fitted_params()
+    assert params == {}
+
+    # Test when _bin_spec exists but _bin_reps is None
+    obj._bin_spec = {0: [1]}
+    obj._bin_reps = None
+    params = obj._get_fitted_params()
+    assert 'bin_spec' in params
+    assert 'bin_representatives' not in params
+
+    # Test when _bin_reps exists but _bin_spec is None
+    obj._bin_spec = None
+    obj._bin_reps = {0: [1.0]}
+    params = obj._get_fitted_params()
+    assert 'bin_spec' not in params
+    assert 'bin_representatives' in params
+
+    # Test when neither attribute exists at all
+    delattr(obj, '_bin_spec')
+    delattr(obj, '_bin_reps')
+    params = obj._get_fitted_params()
+    assert params == {}
+

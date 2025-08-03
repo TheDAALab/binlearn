@@ -175,6 +175,9 @@ class FlexibleBinningBase(GeneralBinningBase):
                 # Store columns for later reference
                 self._original_columns = list(self._bin_spec.keys())
 
+                # Set sklearn attributes based on bin_spec and guidance_columns
+                self._set_sklearn_attributes_from_specs()
+
         except ValueError as e:
             error_msg = str(e)
             # Some specific validation errors should be ConfigurationError
@@ -196,6 +199,34 @@ class FlexibleBinningBase(GeneralBinningBase):
             raise ValueError(
                 f"Failed to process provided flexible bin specifications: {error_msg}"
             ) from e
+
+    def _set_sklearn_attributes_from_specs(self) -> None:
+        """Set sklearn attributes (n_features_in_, feature_names_in_) from bin specifications.
+
+        Derives the sklearn-compatible attributes from the provided bin specifications
+        and guidance columns. This enables parameter transfer workflows where an instance
+        is created with pre-computed bins.
+        """
+        if self.bin_spec is not None:
+            # Get column names/indices from bin_spec
+            binning_columns = list(self.bin_spec.keys())
+
+            # Add guidance columns if specified
+            all_features = binning_columns.copy()
+            if self.guidance_columns is not None:
+                guidance_cols = (
+                    [self.guidance_columns]
+                    if not isinstance(self.guidance_columns, list)
+                    else self.guidance_columns
+                )
+                # Add guidance columns that aren't already in binning columns
+                for col in guidance_cols:
+                    if col not in all_features:
+                        all_features.append(col)
+
+            # Set sklearn attributes
+            self._feature_names_in = all_features
+            self._n_features_in = len(all_features)
 
     @property
     def bin_spec(self) -> FlexibleBinSpec | None:
@@ -666,6 +697,28 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         self._check_fitted()
         return get_flexible_bin_count(self._bin_spec)
+
+    def _get_fitted_params(self) -> dict[str, Any]:
+        """Get fitted parameters for flexible-based binning methods.
+
+        Extracts fitted parameters that enable parameter transfer workflows.
+        For flexible-based methods, this includes bin specifications and representatives.
+
+        Returns:
+            Dict[str, Any]: Fitted parameters including:
+                - bin_spec: Learned bin specifications for each column
+                - bin_representatives: Representative values for each bin
+        """
+        fitted_params = {}
+
+        # Include flexible-specific fitted parameters
+        if hasattr(self, "_bin_spec") and self._bin_spec is not None:
+            fitted_params["bin_spec"] = self._bin_spec
+
+        if hasattr(self, "_bin_reps") and self._bin_reps is not None:
+            fitted_params["bin_representatives"] = self._bin_reps
+
+        return fitted_params
 
     # Properties for sklearn compatibility
     @property
