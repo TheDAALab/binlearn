@@ -408,7 +408,7 @@ class GeneralBinningBase(
                     else self.guidance_columns
                 )
                 expected_binning_cols = total_features - len(guidance_cols)
-                
+
                 # Input should only have binning columns for inverse transform
                 arr, columns = self._prepare_input(X)
                 if len(columns) != expected_binning_cols:
