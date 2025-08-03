@@ -1,7 +1,7 @@
 OneHotBinning
 =============
 
-.. currentmodule:: binning.methods
+.. currentmodule:: binlearn.methods
 
 .. autoclass:: OneHotBinning
    :members:

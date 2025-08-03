@@ -1,7 +1,10 @@
 Manual Binning Methods
 ======================
 
-.. currentmodule:: binning.methods
+Manual Binning
+==============
+
+.. currentmodule:: binlearn.methods
 
 This section documents the manual binning methods that allow users to specify custom bin boundaries and groupings.
 

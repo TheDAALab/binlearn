@@ -1,7 +1,7 @@
 EqualWidthMinimumWeightBinning
 ==============================
 
-.. currentmodule:: binning.methods
+.. currentmodule:: binlearn.methods
 
 .. autoclass:: EqualWidthMinimumWeightBinning
    :members:

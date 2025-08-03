@@ -1,7 +1,7 @@
 SupervisedBinning
 =================
 
-.. currentmodule:: binning.methods
+.. currentmodule:: binlearn.methods
 
 .. autoclass:: SupervisedBinning
    :members:
@@ -498,14 +498,6 @@ References
 
 * Fayyad, U., & Irani, K. (1993). Multi-interval discretization of continuous-valued attributes for classification learning. In Proceedings of the 13th international joint conference on artificial intelligence (pp. 1022-1027).
 * Dougherty, J., Kohavi, R., & Sahami, M. (1995). Supervised and unsupervised discretization of continuous features. In Machine learning proceedings 1995 (pp. 194-202).
-* Quinlan, J. R. (1986). Induction of decision trees. Machine learning, 1(1), 81-106.inning
-=================
-
-.. currentmodule:: binning.methods
-
-.. autoclass:: SupervisedBinning
-   :members:
-   :inherited-members:
-   :show-inheritance:
+* Quinlan, J. R. (1986). Induction of decision trees. Machine learning, 1(1), 81-106.
 
 Supervised binning transformer that uses target variable information to optimize bin boundaries.

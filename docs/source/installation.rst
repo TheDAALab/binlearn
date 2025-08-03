@@ -34,8 +34,8 @@ To install the latest development version from source:
 
 .. code-block:: bash
 
-   git clone https://github.com/TheDAALab/binning.git
-   cd binning
+   git clone https://github.com/TheDAALab/binlearn.git
+   cd binlearn
    pip install -e .
 
 Development Installation
@@ -45,8 +45,8 @@ For development, install with additional dependencies:
 
 .. code-block:: bash
 
-   git clone https://github.com/TheDAALab/binning.git
-   cd binning
+   git clone https://github.com/TheDAALab/binlearn.git
+   cd binlearn
    pip install -e ".[dev,test,docs]"
 
 Verify Installation
@@ -57,7 +57,7 @@ To verify your installation, run:
 .. code-block:: python
 
    import binlearn
-   print(binning.__version__)
+   print(binlearn.__version__)
    
    # Test basic functionality
    from binlearn.methods import EqualWidthBinning

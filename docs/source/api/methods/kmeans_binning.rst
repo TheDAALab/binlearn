@@ -1,7 +1,7 @@
 KMeansBinning
 =============
 
-.. currentmodule:: binning.methods
+.. currentmodule:: binlearn.methods
 
 .. autoclass:: KMeansBinning
    :members:

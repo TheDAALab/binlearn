@@ -47,23 +47,23 @@ The framework provides several binning methods for different use cases:
 
 **Interval-based Methods:**
 
-* :class:`~binning.methods.EqualWidthBinning` - Equal-width intervals
-* :class:`~binning.methods.EqualFrequencyBinning` - Equal-frequency (quantile) bins  
-* :class:`~binning.methods.KMeansBinning` - K-means clustering-based bins
-* :class:`~binning.methods.EqualWidthMinimumWeightBinning` - Weight-constrained equal-width bins
+* :class:`~binlearn.methods.EqualWidthBinning` - Equal-width intervals
+* :class:`~binlearn.methods.EqualFrequencyBinning` - Equal-frequency (quantile) bins  
+* :class:`~binlearn.methods.KMeansBinning` - K-means clustering-based bins
+* :class:`~binlearn.methods.EqualWidthMinimumWeightBinning` - Weight-constrained equal-width bins
 
 **Flexible Methods:**
 
-* :class:`~binning.methods.ManualFlexibleBinning` - Custom bin definitions with mixed types
-* :class:`~binning.methods.ManualIntervalBinning` - Custom interval bins
+* :class:`~binlearn.methods.ManualFlexibleBinning` - Custom bin definitions with mixed types
+* :class:`~binlearn.methods.ManualIntervalBinning` - Custom interval bins
 
 **Categorical Methods:**
 
-* :class:`~binning.methods.OneHotBinning` - One-hot encoding for categorical data
+* :class:`~binlearn.methods.OneHotBinning` - One-hot encoding for categorical data
 
 **Supervised Methods:**
 
-* :class:`~binning.methods.SupervisedBinning` - Decision tree-based supervised binning
+* :class:`~binlearn.methods.SupervisedBinning` - Decision tree-based supervised binning
 
 Weight-Constrained Binning
 --------------------------

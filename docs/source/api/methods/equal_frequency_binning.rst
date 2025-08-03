@@ -1,7 +1,7 @@
 EqualFrequencyBinning
 =====================
 
-.. currentmodule:: binning.methods
+.. currentmodule:: binlearn.methods
 
 .. autoclass:: EqualFrequencyBinning
    :members:

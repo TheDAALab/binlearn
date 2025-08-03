@@ -1,7 +1,7 @@
 EqualWidthBinning
 =================
 
-.. currentmodule:: binning.methods
+.. currentmodule:: binlearn.methods
 
 .. autoclass:: EqualWidthBinning
    :members:

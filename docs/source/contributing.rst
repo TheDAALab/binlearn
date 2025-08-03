@@ -168,8 +168,8 @@ Step-by-Step Guide
 
    .. code-block:: bash
 
-      # Create in binning/methods/
-      touch binning/methods/_my_new_binning.py
+      # Create in binlearn/methods/
+      touch binlearn/methods/_my_new_binning.py
 
 3. **Implement the class:**
 
@@ -217,7 +217,7 @@ Step-by-Step Guide
 
    .. code-block:: python
 
-      # In binning/methods/__init__.py
+      # In binlearn/methods/__init__.py
       from ._my_new_binning import MyNewBinning
       
       __all__ = [
@@ -255,7 +255,7 @@ Step-by-Step Guide
       MyNewBinning
       ============
       
-      .. autoclass:: binning.methods.MyNewBinning
+      .. autoclass:: binlearn.methods.MyNewBinning
          :members:
          :inherited-members:
          :show-inheritance:

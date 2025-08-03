@@ -3,7 +3,7 @@ Base Classes API
 
 The base classes provide the foundation for all binning methods in the framework.
 
-.. currentmodule:: binning.base
+.. currentmodule:: binlearn.base
 
 Overview
 --------
@@ -81,9 +81,9 @@ UnsupervisedBinner
 
    **Subclasses:**
    
-   * :class:`~binning.methods.EqualWidthBinning`
-   * :class:`~binning.methods.EqualFrequencyBinning`
-   * :class:`~binning.methods.ManualBinning`
+   * :class:`~binlearn.methods.EqualWidthBinning`
+   * :class:`~binlearn.methods.EqualFrequencyBinning`
+   * :class:`~binlearn.methods.ManualBinning`
 
    **Usage Example:**
    
@@ -113,7 +113,7 @@ SupervisedBinner
 
    **Subclasses:**
    
-   * :class:`~binning.methods.SupervisedBinning`
+   * :class:`~binlearn.methods.SupervisedBinning`
 
    **Usage Example:**
    
@@ -143,7 +143,7 @@ GuidedBinner
 
    **Subclasses:**
    
-   * :class:`~binning.methods.EqualWidthMinimumWeightBinning`
+   * :class:`~binlearn.methods.EqualWidthMinimumWeightBinning`
 
    **Usage Example:**
    
