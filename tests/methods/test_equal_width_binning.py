@@ -105,8 +105,8 @@ class TestEqualWidthBinning:
 
         # Test fit
         ewb.fit(X)
-        assert hasattr(ewb, "_bin_edges")  # Check that fitting has occurred
-        assert len(ewb._bin_edges) == 2  # Two columns
+        assert hasattr(ewb, "bin_edges_")  # Check that fitting has occurred
+        assert len(ewb.bin_edges_) == 2  # Two columns
 
         # Test transform
         X_transformed = ewb.transform(X)
@@ -141,10 +141,10 @@ class TestEqualWidthBinning:
         ewb_joint.fit(X)
 
         # Bin edges should be different
-        edges_individual_col0 = ewb_individual._bin_edges[0]
-        edges_individual_col1 = ewb_individual._bin_edges[1]
-        edges_joint_col0 = ewb_joint._bin_edges[0]
-        edges_joint_col1 = ewb_joint._bin_edges[1]
+        edges_individual_col0 = ewb_individual.bin_edges_[0]
+        edges_individual_col1 = ewb_individual.bin_edges_[1]
+        edges_joint_col0 = ewb_joint.bin_edges_[0]
+        edges_joint_col1 = ewb_joint.bin_edges_[1]
 
         # Individual: each column has its own range
         assert not np.allclose(edges_individual_col0, edges_individual_col1)
@@ -186,7 +186,7 @@ class TestEqualWidthBinning:
         X_transformed = ewb.transform(X)
 
         assert X_transformed.shape == (5, 1)
-        assert len(ewb._bin_edges) == 1
+        assert len(ewb.bin_edges_) == 1
 
     @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_dataframe(self):
@@ -285,7 +285,7 @@ class TestEqualWidthBinning:
 
         # Both columns should use the same range (0, 10)
         for col in [0, 1]:
-            edges = ewb._bin_edges[col]
+            edges = ewb.bin_edges_[col]
             assert edges[0] == 0.0
             assert edges[-1] == 10.0
 
@@ -652,8 +652,8 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         ewb.fit(X)
 
         # Should be fitted
-        assert hasattr(ewb, "_bin_edges")
-        assert hasattr(ewb, "_bin_reps")
+        assert hasattr(ewb, "bin_edges_")
+        assert hasattr(ewb, "bin_representatives_")
 
         # Change parameters via _handle_bin_params
         params = {"n_bins": 5, "bin_range": (0, 10)}
@@ -716,7 +716,7 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         assert isinstance(result_new, pd.DataFrame)
         pd.testing.assert_frame_equal(result_original, result_new)
 
-    def test_user_provided_bin_edges(self):
+    def test_user_providedbin_edges_(self):
         """Test EqualWidthBinning with user-provided bin_edges."""
         # Test data
         X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
@@ -730,8 +730,8 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
 
         # Check that the binning used the provided edges
         assert ewb._fitted is True  # Should be marked as fitted
-        assert ewb._bin_edges[0] == [0, 2, 4, 6, 8]
-        assert ewb._bin_edges[1] == [1, 3, 5, 7, 9]
+        assert ewb.bin_edges_[0] == [0, 2, 4, 6, 8]
+        assert ewb.bin_edges_[1] == [1, 3, 5, 7, 9]
 
         # Test with both bin_edges and bin_representatives
         ewb2 = EqualWidthBinning(
@@ -740,10 +740,10 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
 
         result2 = ewb2.transform(X)
         assert result2.shape == (4, 2)
-        assert ewb2._bin_reps[0] == [1, 3]
-        assert ewb2._bin_reps[1] == [1.5, 4.5]
+        assert ewb2.bin_representatives_[0] == [1, 3]
+        assert ewb2.bin_representatives_[1] == [1.5, 4.5]
 
-    def test_fit_with_user_provided_bin_edges(self):
+    def test_fit_with_user_providedbin_edges_(self):
         """Test calling fit() when bin_edges are already provided.
 
         The fit() method should always calculate bin edges from the data,
@@ -771,13 +771,13 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         _ = [2.0, 3.0, 4.0, 5.0, 6.0, 8.0]  # expected_edges_col1
 
         # Check that edges were calculated from data, not from user-provided values
-        assert len(ewb._bin_edges[0]) == 6  # 5 bins = 6 edges
-        assert len(ewb._bin_edges[1]) == 6  # 5 bins = 6 edges
+        assert len(ewb.bin_edges_[0]) == 6  # 5 bins = 6 edges
+        assert len(ewb.bin_edges_[1]) == 6  # 5 bins = 6 edges
         assert (
-            abs(ewb._bin_edges[0][0] - expected_edges_col0[0]) < 0.01
+            abs(ewb.bin_edges_[0][0] - expected_edges_col0[0]) < 0.01
         )  # First edge should be close to min value
         assert (
-            abs(ewb._bin_edges[0][-1] - expected_edges_col0[-1]) < 0.01
+            abs(ewb.bin_edges_[0][-1] - expected_edges_col0[-1]) < 0.01
         )  # Last edge should be close to max value
 
         # Should be able to transform
@@ -793,8 +793,8 @@ class TestEqualWidthBinningFitGetParamsWorkflow:
         assert ewb3._fitted is True
 
         # Should have 3 bins, so 4 edges (calculated from data, not user-provided)
-        assert len(ewb3._bin_edges[0]) == 4
-        assert len(ewb3._bin_edges[1]) == 4
+        assert len(ewb3.bin_edges_[0]) == 4
+        assert len(ewb3.bin_edges_[1]) == 4
 
 
 def test_import_availability():

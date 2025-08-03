@@ -18,7 +18,7 @@ from binlearn.utils.errors import BinningError, ConfigurationError
 class TestManualFlexibleBinningInitialization:
     """Test initialization scenarios for ManualFlexibleBinning."""
 
-    def test_init_with_basic_bin_spec(self):
+    def test_init_with_basicbin_spec_(self):
         """Test initialization with basic bin specifications."""
         bin_spec = {0: [1.5, (2, 5), (5, 10)], 1: [(0, 25), (25, 50), 50]}
 
@@ -28,7 +28,7 @@ class TestManualFlexibleBinningInitialization:
         assert binner.bin_representatives is None
         assert binner._fitted is True  # Should be fitted with provided specs
 
-    def test_init_with_bin_spec_and_representatives(self):
+    def test_init_withbin_spec__and_representatives(self):
         """Test initialization with both bin_spec and bin_representatives."""
         bin_spec = {0: [1.5, (2, 5), (5, 10)]}
         bin_representatives = {0: [1.5, 3.5, 7.5]}
@@ -59,12 +59,12 @@ class TestManualFlexibleBinningInitialization:
 
         assert binner.preserve_dataframe is True
 
-    def test_init_none_bin_spec_raises_error(self):
+    def test_init_nonebin_spec__raises_error(self):
         """Test that providing None bin_spec raises ConfigurationError."""
         with pytest.raises(ConfigurationError, match="bin_spec must be provided"):
             ManualFlexibleBinning(bin_spec=None)  # type: ignore
 
-    def test_init_missing_bin_spec_raises_error(self):
+    def test_init_missingbin_spec__raises_error(self):
         """Test that missing bin_spec raises TypeError."""
         with pytest.raises(TypeError):
             ManualFlexibleBinning()  # type: ignore
@@ -107,7 +107,7 @@ class TestManualFlexibleBinningCalculateFlexibleBins:
         with pytest.raises(BinningError, match="No bin specifications defined for column 1"):
             binner._calculate_flexible_bins(x_col, 1)
 
-    def test_calculate_flexible_bins_with_none_bin_spec(self):
+    def test_calculate_flexible_bins_with_nonebin_spec_(self):
         """Test _calculate_flexible_bins when bin_spec becomes None."""
         bin_spec = {0: [1, 2, 3]}
         binner = ManualFlexibleBinning(bin_spec=bin_spec)
@@ -166,7 +166,7 @@ class TestManualFlexibleBinningValidateParams:
         # Should not raise any exception with valid numeric bins
         binner._validate_params()
 
-    def test_validate_params_empty_bin_spec_raises_error(self):
+    def test_validate_params_emptybin_spec__raises_error(self):
         """Test that empty bin_spec raises ConfigurationError during construction."""
         with pytest.raises(ConfigurationError, match="bin_spec must be provided and non-empty"):
             ManualFlexibleBinning(bin_spec={})
@@ -353,7 +353,7 @@ class TestManualFlexibleBinningEdgeCases:
 
         assert result.shape == X.shape
 
-    def test_numeric_bin_specifications(self):
+    def test_numericbin_spec_ifications(self):
         """Test with various numeric bin specifications."""
         bin_spec = {0: [1.5, 2.7, (5, 10), 8.3]}
         binner = ManualFlexibleBinning(bin_spec=bin_spec)
@@ -571,7 +571,7 @@ class TestManualFlexibleBinningExceptionHandling:
 
         # Temporarily replace bin_spec with problematic values to test exception paths
         # We need to trigger the ValueError/TypeError exception in the float() conversion
-        original_bin_spec = binner.bin_spec
+        originalbin_spec_ = binner.bin_spec
 
         # Create a mock object that will raise ValueError when converted to float
         class BadSingleton:
@@ -629,4 +629,4 @@ class TestManualFlexibleBinningExceptionHandling:
         assert reps[0] == 0.0
 
         # Restore original bin_spec
-        binner.bin_spec = original_bin_spec
+        binner.bin_spec = originalbin_spec_

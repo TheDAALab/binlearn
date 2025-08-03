@@ -105,8 +105,8 @@ class TestEqualFrequencyBinning:
 
         # Test fit
         efb.fit(X)
-        assert hasattr(efb, "_bin_edges")
-        assert len(efb._bin_edges) == 2  # Two features
+        assert hasattr(efb, "bin_edges_")
+        assert len(efb.bin_edges_) == 2  # Two features
 
         # Test transform
         X_binned = efb.transform(X)
@@ -460,16 +460,16 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
         X = np.random.rand(15, 3)
         efb = EqualFrequencyBinning(n_bins=4)
 
-        # Before fitting - _bin_edges should exist but be empty due to __init__
-        assert hasattr(efb, "_bin_edges") and len(efb._bin_edges) == 0
+        # Before fitting - bin_edges_ should exist but be empty due to __init__
+        assert hasattr(efb, "bin_edges_") and len(efb.bin_edges_) == 0
 
         # After fitting
         efb.fit(X)
-        assert hasattr(efb, "_bin_edges")
-        assert len(efb._bin_edges) == 3  # Number of features
+        assert hasattr(efb, "bin_edges_")
+        assert len(efb.bin_edges_) == 3  # Number of features
 
         # Each column should have n_bins+1 edges
-        for col_edges in efb._bin_edges.values():
+        for col_edges in efb.bin_edges_.values():
             assert len(col_edges) == 5  # n_bins + 1
 
     def test_transform_before_fit_error(self):
@@ -489,11 +489,11 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
 
         # First fit
         efb.fit(X1)
-        edges1 = efb._bin_edges.copy()
+        edges1 = efb.bin_edges_.copy()
 
         # Second fit with different data
         efb.fit(X2)
-        edges2 = efb._bin_edges
+        edges2 = efb.bin_edges_
 
         # Edges should be different due to different data scales
         assert not np.allclose(edges1[0], edges2[0])

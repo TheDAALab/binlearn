@@ -27,8 +27,8 @@ def test_init_default():
     assert obj.clip is not None  # Should get from config
     assert obj.bin_edges is None
     assert obj.bin_representatives is None
-    assert obj._bin_edges == {}
-    assert obj._bin_reps == {}
+    assert obj.bin_edges_ == {}
+    assert obj.bin_representatives_ == {}
 
 
 def test_init_with_clip():
@@ -37,7 +37,7 @@ def test_init_with_clip():
     assert obj.clip is True
 
 
-def test_init_with_bin_edges():
+def test_init_withbin_edges_():
     """Test initialization with bin_edges provided."""
     bin_edges = {0: [0, 1, 2]}
 
@@ -92,8 +92,8 @@ def test_fit_per_column_with_existing_bins(mock_process):
     even when existing bins are present.
     """
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2]}
-    obj._bin_reps = {0: [0.5, 1.5]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
+    obj.bin_representatives_ = {0: [0.5, 1.5]}
 
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
@@ -107,10 +107,10 @@ def test_fit_per_column_with_existing_bins(mock_process):
         # Should call _calculate_bins for both columns now
         assert mock_calc.call_count == 2
         # Both columns should have bins calculated
-        assert 0 in obj._bin_edges
-        assert 1 in obj._bin_edges
-        assert 0 in obj._bin_reps
-        assert 1 in obj._bin_reps
+        assert 0 in obj.bin_edges_
+        assert 1 in obj.bin_edges_
+        assert 0 in obj.bin_representatives_
+        assert 1 in obj.bin_representatives_
 
 
 def test_fit_per_column_error_handling():
@@ -209,7 +209,7 @@ def test_get_column_key_no_match():
 def test_transform_columns_with_clip():
     """Test _transform_columns method with clipping."""
     obj = DummyIntervalBinning(clip=True)
-    obj._bin_edges = {0: [0, 1, 2], 1: [0, 1, 2]}
+    obj.bin_edges_ = {0: [0, 1, 2], 1: [0, 1, 2]}
 
     X = np.array([[0.5, 1.5], [2.5, -0.5]])  # Out-of-range values that should be clipped
     columns = [0, 1]
@@ -227,7 +227,7 @@ def test_transform_columns_with_clip():
 def test_transform_columns_without_clip():
     """Test _transform_columns method without clipping."""
     obj = DummyIntervalBinning(clip=False)
-    obj._bin_edges = {0: [0, 1, 2]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
 
     X = np.array([[0.5], [2.5]])  # Values: in-range and above-range
     columns = [0]
@@ -242,7 +242,7 @@ def test_transform_columns_without_clip():
 def test_transform_columns_missing_key():
     """Test _transform_columns with missing column key."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {}  # Empty edges
+    obj.bin_edges_ = {}  # Empty edges
 
     X = np.array([[1, 2]])
     columns = [0]
@@ -254,7 +254,7 @@ def test_transform_columns_missing_key():
 def test_inverse_transform_columns():
     """Test _inverse_transform_columns method."""
     obj = DummyIntervalBinning()
-    obj._bin_reps = {0: [0.5, 1.5], 1: [2.5, 3.5]}
+    obj.bin_representatives_ = {0: [0.5, 1.5], 1: [2.5, 3.5]}
 
     X = np.array([[0, 1], [1, 0]])
     columns = [0, 1]
@@ -268,7 +268,7 @@ def test_inverse_transform_columns():
 def test_inverse_transform_columns_missing_key():
     """Test _inverse_transform_columns with missing column key."""
     obj = DummyIntervalBinning()
-    obj._bin_reps = {}  # Empty reps
+    obj.bin_representatives_ = {}  # Empty reps
 
     X = np.array([[0]])
     columns = [0]
@@ -282,7 +282,7 @@ def test_inverse_transform_columns_all_special_values():
     from binlearn.utils.constants import ABOVE_RANGE, MISSING_VALUE
 
     obj = DummyIntervalBinning()
-    obj._bin_reps = {0: [1.0, 2.0, 3.0]}
+    obj.bin_representatives_ = {0: [1.0, 2.0, 3.0]}
 
     # All values are special - this should cover the regular_indices.any() == False branch
     X = np.array([[MISSING_VALUE], [BELOW_RANGE], [ABOVE_RANGE]])
@@ -300,19 +300,19 @@ def test_inverse_transform_columns_all_special_values():
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2]}
-    obj._bin_reps = {0: [0.5, 1.5]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
+    obj.bin_representatives_ = {0: [0.5, 1.5]}
 
     obj._finalize_fitting()
 
-    mock_validate.assert_called_once_with(obj._bin_edges, obj._bin_reps)
+    mock_validate.assert_called_once_with(obj.bin_edges_, obj.bin_representatives_)
 
 
 def test_finalize_fitting_error():
     """Test _finalize_fitting error handling."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2]}
-    obj._bin_reps = {0: [0.5, 1.5]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
+    obj.bin_representatives_ = {0: [0.5, 1.5]}
 
     with patch("binlearn.base._interval_binning_base.validate_bins") as mock_validate:
         mock_validate.side_effect = Exception("Validation error")
@@ -330,8 +330,8 @@ def test_process_user_specifications():
     obj._process_user_specifications([0, 1])
 
     # Check that bin edges and reps were set
-    assert obj._bin_edges == {0: [0, 1, 2]}
-    assert obj._bin_reps == {0: [0.5, 1.5]}
+    assert obj.bin_edges_ == {0: [0, 1, 2]}
+    assert obj.bin_representatives_ == {0: [0.5, 1.5]}
 
 
 def test_process_user_specifications_no_user_specs():
@@ -343,8 +343,8 @@ def test_process_user_specifications_no_user_specs():
     obj._process_user_specifications([0, 1])
 
     # Check that empty dicts were set
-    assert obj._bin_edges == {}
-    assert obj._bin_reps == {}
+    assert obj.bin_edges_ == {}
+    assert obj.bin_representatives_ == {}
 
 
 def test_calculate_bins_jointly_abstract():
@@ -360,8 +360,8 @@ def test_get_fitted_params():
     """Test _get_fitted_params method."""
     obj = DummyIntervalBinning()
     obj._fitted = True
-    obj._bin_edges = {0: [0, 1, 2]}
-    obj._bin_reps = {0: [0.5, 1.5]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
+    obj.bin_representatives_ = {0: [0.5, 1.5]}
 
     params = obj._get_fitted_params()
 
@@ -573,8 +573,8 @@ def test_fit_per_column_binning_error():
 def test_finalize_fitting_default_representatives():
     """Test _finalize_fitting generates default representatives for missing ones."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2], 1: [0, 1, 2]}
-    obj._bin_reps = {0: [0.5, 1.5]}  # Missing reps for column 1
+    obj.bin_edges_ = {0: [0, 1, 2], 1: [0, 1, 2]}
+    obj.bin_representatives_ = {0: [0.5, 1.5]}  # Missing reps for column 1
 
     with patch("binlearn.base._interval_binning_base.default_representatives") as mock_default:
         mock_default.return_value = [0.5, 1.5]
@@ -583,7 +583,7 @@ def test_finalize_fitting_default_representatives():
 
         # Should generate default reps for column 1
         mock_default.assert_called_once_with([0, 1, 2])
-        assert obj._bin_reps[1] == [0.5, 1.5]
+        assert obj.bin_representatives_[1] == [0.5, 1.5]
 
 
 def test_fit_jointly_string_column_reference():
@@ -595,8 +595,8 @@ def test_fit_jointly_string_column_reference():
     # Should handle string column references
     obj._fit_jointly(X, columns)
 
-    assert "col_a" in obj._bin_edges
-    assert "col_b" in obj._bin_edges
+    assert "col_a" in obj.bin_edges_
+    assert "col_b" in obj.bin_edges_
 
 
 def test_fit_jointly_binning_error():
@@ -628,8 +628,8 @@ def test_process_user_specifications_invalid_edges():
 def test_inverse_transform_method():
     """Test inverse_transform method directly."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2]}
-    obj._bin_reps = {0: [0.5, 1.5]}
+    obj.bin_edges_ = {0: [0, 1, 2]}
+    obj.bin_representatives_ = {0: [0.5, 1.5]}
     obj._fitted = True
 
     # Test inverse transform
@@ -644,7 +644,7 @@ def test_inverse_transform_method():
 def test_lookup_bin_widths_method():
     """Test lookup_bin_widths method directly."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 3]}  # Widths: 1, 2
+    obj.bin_edges_ = {0: [0, 1, 3]}  # Widths: 1, 2
     obj._fitted = True
 
     # Test bin width lookup
@@ -661,7 +661,7 @@ def test_lookup_bin_widths_all_invalid():
     from binlearn.utils.constants import MISSING_VALUE
 
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 3]}  # Valid bin indices: 0, 1
+    obj.bin_edges_ = {0: [0, 1, 3]}  # Valid bin indices: 0, 1
     obj._fitted = True
 
     # All indices are invalid - this should cover the valid.any() == False branch
@@ -677,7 +677,7 @@ def test_lookup_bin_widths_all_invalid():
 def test_lookup_bin_ranges_method():
     """Test lookup_bin_ranges method directly."""
     obj = DummyIntervalBinning()
-    obj._bin_edges = {0: [0, 1, 2], "col_a": [0, 1, 2, 3]}  # 2 bins, 3 bins
+    obj.bin_edges_ = {0: [0, 1, 2], "col_a": [0, 1, 2, 3]}  # 2 bins, 3 bins
     obj._fitted = True
 
     # Test bin range lookup
@@ -707,8 +707,8 @@ def test_fit_jointly_with_string_columns_and_nan():
         # Look for the exact format from line 123: "column 'string_col'"
         assert any("column 'string_col'" in msg for msg in warning_messages)
 
-    assert "string_col" in obj._bin_edges
-    assert "numeric_col" in obj._bin_edges
+    assert "string_col" in obj.bin_edges_
+    assert "numeric_col" in obj.bin_edges_
 
 
 def test_process_user_specifications_non_numeric_edges():
@@ -734,7 +734,7 @@ def test_process_user_specifications_non_binning_exception():
             obj._process_user_specifications([0])
 
 
-def test_set_sklearn_attributes_from_specs_with_none_bin_edges():
+def test_set_sklearn_attributes_from_specs_with_nonebin_edges_():
     """Test _set_sklearn_attributes_from_specs when bin_edges is None - covers line 198->exit."""
     obj = DummyIntervalBinning()  # bin_edges is None by default
     # This should not set any sklearn attributes

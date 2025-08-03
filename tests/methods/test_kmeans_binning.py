@@ -131,7 +131,7 @@ class TestKMeansBinning:
         X_binned = kmb.transform(X)
 
         assert X_binned.shape == X.shape
-        assert hasattr(kmb, "_bin_edges")
+        assert hasattr(kmb, "bin_edges_")
 
     def test_all_nan_column(self):
         """Test behavior with all-NaN column."""
@@ -399,14 +399,14 @@ class TestKMeansBinningFitGetParamsWorkflow:
         # First fit
         X1 = np.array([[1, 2], [3, 4], [5, 6], [10, 20], [11, 21], [12, 22]]).astype(float)
         kmb.fit(X1)
-        edges1 = kmb._bin_edges
+        edges1 = kmb.bin_edges_
 
         # Second fit with different data
         X2 = np.array(
             [[100, 200], [300, 400], [500, 600], [1000, 2000], [1100, 2100], [1200, 2200]]
         ).astype(float)
         kmb.fit(X2)
-        edges2 = kmb._bin_edges
+        edges2 = kmb.bin_edges_
 
         # Edges should be different due to different data scales
         assert not np.allclose(edges1[0], edges2[0])

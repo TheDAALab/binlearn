@@ -226,8 +226,8 @@ class TestOneHotBinningBasicFunctionality:
 
         # Joint fitting should create bins from all unique values across all columns
         # So both columns should have bins for values: 1, 2, 3, 10, 20, 30
-        joint_bins_col0 = binning_joint._bin_spec[0]
-        joint_bins_col1 = binning_joint._bin_spec[1]
+        joint_bins_col0 = binning_joint.bin_spec_[0]
+        joint_bins_col1 = binning_joint.bin_spec_[1]
 
         # Both columns should have the same bin structure
         assert len(joint_bins_col0) == len(joint_bins_col1)
@@ -574,7 +574,7 @@ class TestOneHotBinningFitGetParamsWorkflow:
         result = new_binning.transform(X_transform)
 
         assert result.shape == X_transform.shape
-        assert new_binning.is_fitted_
+        assert new_binning._fitted
 
         # Results should match original
         expected = original_binning.transform(X_transform)

@@ -154,7 +154,7 @@ class TestEqualWidthMinimumWeightBinning:
         X_binned = ewmwb.transform(X)
 
         assert X_binned.shape == X.shape
-        assert hasattr(ewmwb, "_bin_edges")
+        assert hasattr(ewmwb, "bin_edges_")
 
     def test_no_guidance_data_error(self):
         """Test error when guidance_data is not provided."""
@@ -261,8 +261,8 @@ class TestEqualWidthMinimumWeightBinning:
 
         assert X_binned.shape == X.shape
         # Check that bin edges respect the custom range
-        assert ewmwb._bin_edges[0][0] == 0
-        assert ewmwb._bin_edges[0][-1] == 10
+        assert ewmwb.bin_edges_[0][0] == 0
+        assert ewmwb.bin_edges_[0][-1] == 10
 
     def test_constant_data(self):
         """Test handling of constant data (all values the same)."""
@@ -464,7 +464,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         ewmwb.fit(X, guidance_data=weights)
 
         # Should have fewer bins than requested due to merging
-        final_n_bins = len(ewmwb._bin_edges[0]) - 1
+        final_n_bins = len(ewmwb.bin_edges_[0]) - 1
         assert final_n_bins < 4
 
     def test_weight_constraint_no_merge_needed(self):
@@ -477,7 +477,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         ewmwb.fit(X, guidance_data=weights)
 
         # Should have exactly 3 bins since no merging is needed
-        final_n_bins = len(ewmwb._bin_edges[0]) - 1
+        final_n_bins = len(ewmwb.bin_edges_[0]) - 1
         assert final_n_bins == 3
 
     def test_weight_constraint_extreme_merge(self):
@@ -490,7 +490,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         ewmwb.fit(X, guidance_data=weights)
 
         # Should result in very few bins due to aggressive merging
-        final_n_bins = len(ewmwb._bin_edges[0]) - 1
+        final_n_bins = len(ewmwb.bin_edges_[0]) - 1
         assert final_n_bins <= 2
 
     def test_weight_constraint_gradual_weights(self):
@@ -503,7 +503,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         ewmwb.fit(X, guidance_data=weights)
 
         # Early bins (with lower weights) should be merged
-        final_n_bins = len(ewmwb._bin_edges[0]) - 1
+        final_n_bins = len(ewmwb.bin_edges_[0]) - 1
         assert final_n_bins < 4
         assert final_n_bins >= 1
 
@@ -516,11 +516,11 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         ewmwb.fit(X, guidance_data=weights)
 
         # Check that bin edges respect custom range
-        assert ewmwb._bin_edges[0][0] == 0
-        assert ewmwb._bin_edges[0][-1] == 10
+        assert ewmwb.bin_edges_[0][0] == 0
+        assert ewmwb.bin_edges_[0][-1] == 10
 
         # Check that merging still occurs based on weights
-        final_n_bins = len(ewmwb._bin_edges[0]) - 1
+        final_n_bins = len(ewmwb.bin_edges_[0]) - 1
         assert final_n_bins <= 3
 
     def test_weight_sum_calculation(self):
@@ -533,7 +533,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
 
         # With 6 points of weight 1.0 each, and minimum_weight=1.5,
         # we should get bins where adjacent bins are merged to meet the minimum
-        final_n_bins = len(ewmwb._bin_edges[0]) - 1
+        final_n_bins = len(ewmwb.bin_edges_[0]) - 1
         assert final_n_bins <= 3
         assert final_n_bins >= 1
 
@@ -547,7 +547,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
 
         # Check that all bin indices are valid
         assert np.all(X_binned >= 0)
-        assert np.all(X_binned < len(ewmwb._bin_edges[0]) - 1)
+        assert np.all(X_binned < len(ewmwb.bin_edges_[0]) - 1)
 
         # Check that transformation is consistent
         X_binned_again = ewmwb.transform(X)
@@ -570,7 +570,7 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         np.testing.assert_array_equal(X_binned, expected)
 
         # Check that we have exactly 2 bin edges (creating 1 bin)
-        assert len(ewmwb._bin_edges[0]) == 2
+        assert len(ewmwb.bin_edges_[0]) == 2
 
     def test_defensive_single_bin_fallback(self):
         """Test defensive code path for ensuring at least one bin exists."""

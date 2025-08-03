@@ -115,8 +115,8 @@ class FlexibleBinningBase(GeneralBinningBase):
         self.bin_representatives = bin_representatives
 
         # Working specifications (fitted or user-provided)
-        self._bin_spec: FlexibleBinSpec = {}
-        self._bin_reps: BinEdgesDict = {}
+        self.bin_spec_: FlexibleBinSpec = {}
+        self.bin_representatives_: BinEdgesDict = {}
 
         # Validate parameters after everything is set up
         # This will also process any provided bins
@@ -150,30 +150,32 @@ class FlexibleBinningBase(GeneralBinningBase):
                     self.bin_spec, check_finite_bounds=True, strict=True
                 )
                 # Store the validated spec
-                self._bin_spec = self.bin_spec
+                self.bin_spec_ = self.bin_spec
 
             # Process and validate bin_representatives if provided
             if self.bin_representatives is not None:
                 validate_bin_representatives_format(self.bin_representatives)
-                self._bin_reps = self.bin_representatives
+                self.bin_representatives_ = self.bin_representatives
 
                 # Validate compatibility with bin_spec if both are provided
                 if self.bin_spec is not None:
                     validate_flexible_bins(self.bin_spec, self.bin_representatives)
-            elif self.bin_spec is not None and self._bin_spec:
+            elif self.bin_spec is not None and self.bin_spec_:
                 # Generate default representatives for provided specs
-                self._bin_reps = {}
-                for col, bin_defs in self._bin_spec.items():
-                    self._bin_reps[col] = generate_default_flexible_representatives(bin_defs)
+                self.bin_representatives_ = {}
+                for col, bin_defs in self.bin_spec_.items():
+                    self.bin_representatives_[col] = generate_default_flexible_representatives(
+                        bin_defs
+                    )
 
             # If we have complete specifications, mark as fitted
-            if self.bin_spec is not None and self._bin_spec and self._bin_reps:
+            if self.bin_spec is not None and self.bin_spec_ and self.bin_representatives_:
                 # Validate the complete bins
-                validate_flexible_bins(self._bin_spec, self._bin_reps)
+                validate_flexible_bins(self.bin_spec_, self.bin_representatives_)
                 # Mark as fitted since we have complete bin specifications
                 self._fitted = True
                 # Store columns for later reference
-                self._original_columns = list(self._bin_spec.keys())
+                self._original_columns = list(self.bin_spec_.keys())
 
                 # Set sklearn attributes based on bin_spec and guidance_columns
                 self._set_sklearn_attributes_from_specs()
@@ -311,15 +313,15 @@ class FlexibleBinningBase(GeneralBinningBase):
         """
         try:
             # Initialize internal state - reset specs to allow refitting from data
-            self._bin_spec = {}
-            self._bin_reps = {}
+            self.bin_spec_ = {}
+            self.bin_representatives_ = {}
 
             # Always calculate bins from data for all columns
             # User-provided specifications serve as parameters or starting points
             for i, col in enumerate(columns):
                 bin_defs, reps = self._calculate_flexible_bins(X[:, i], col, guidance_data)
-                self._bin_spec[col] = bin_defs
-                self._bin_reps[col] = reps
+                self.bin_spec_[col] = bin_defs
+                self.bin_representatives_[col] = reps
 
             self._finalize_fitting()
             return self
@@ -347,8 +349,8 @@ class FlexibleBinningBase(GeneralBinningBase):
         _ = columns
         try:
             # Initialize internal state - reset specs to allow refitting from data
-            self._bin_spec = {}
-            self._bin_reps = {}
+            self.bin_spec_ = {}
+            self.bin_representatives_ = {}
 
             # Always calculate bins from all flattened data
             # For true joint binning, flatten all data together
@@ -359,8 +361,8 @@ class FlexibleBinningBase(GeneralBinningBase):
 
             # Apply the same bins to all columns, overwriting any user-provided specs
             for col in columns:
-                self._bin_spec[col] = bin_defs
-                self._bin_reps[col] = reps
+                self.bin_spec_[col] = bin_defs
+                self.bin_representatives_[col] = reps
 
             self._finalize_fitting()
         except Exception as e:
@@ -378,12 +380,12 @@ class FlexibleBinningBase(GeneralBinningBase):
                 specifications are inconsistent.
         """
         # Generate default representatives for any missing ones
-        for col, bin_spec in self._bin_spec.items():
-            if col not in self._bin_reps:
-                self._bin_reps[col] = generate_default_flexible_representatives(bin_spec)
+        for col, bin_spec in self.bin_spec_.items():
+            if col not in self.bin_representatives_:
+                self.bin_representatives_[col] = generate_default_flexible_representatives(bin_spec)
 
         # Validate the bins
-        validate_flexible_bins(self._bin_spec, self._bin_reps)
+        validate_flexible_bins(self.bin_spec_, self.bin_representatives_)
 
     def _calculate_flexible_bins_jointly(
         self, all_data: np.ndarray, columns: ColumnList
@@ -541,12 +543,12 @@ class FlexibleBinningBase(GeneralBinningBase):
                 MISSING_VALUE constant is used for values that don't match any bin.
         """
         result = np.full(X.shape, MISSING_VALUE, dtype=int)
-        available_keys = list(self._bin_spec.keys())
+        available_keys = list(self.bin_spec_.keys())
 
         for i, col in enumerate(columns):
             # Find the right bin specification
             key = self._get_column_key(col, available_keys, i)
-            bin_defs = self._bin_spec[key]
+            bin_defs = self.bin_spec_[key]
 
             # Transform this column
             col_data = X[:, i]
@@ -574,11 +576,11 @@ class FlexibleBinningBase(GeneralBinningBase):
                 value. Missing values become NaN.
         """
         result = np.full(X.shape, np.nan, dtype=float)
-        available_keys = list(self._bin_reps.keys())
+        available_keys = list(self.bin_representatives_.keys())
 
         for i, col in enumerate(columns):
             key = self._get_column_key(col, available_keys, i)
-            reps = self._bin_reps[key]
+            reps = self.bin_representatives_[key]
 
             col_data = X[:, i]
 
@@ -655,11 +657,11 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._check_fitted()
         arr, columns = self._prepare_input(bin_indices)
         result = np.full(arr.shape, np.nan, dtype=float)
-        available_keys = list(self._bin_spec.keys())
+        available_keys = list(self.bin_spec_.keys())
 
         for i, col in enumerate(columns):
             key = self._get_column_key(col, available_keys, i)
-            bin_defs = self._bin_spec[key]
+            bin_defs = self.bin_spec_[key]
 
             col_data = arr[:, i]
 
@@ -696,55 +698,4 @@ class FlexibleBinningBase(GeneralBinningBase):
             >>> print(bin_counts)  # {'col1': 5, 'col2': 3}
         """
         self._check_fitted()
-        return get_flexible_bin_count(self._bin_spec)
-
-    def _get_fitted_params(self) -> dict[str, Any]:
-        """Get fitted parameters for flexible-based binning methods.
-
-        Extracts fitted parameters that enable parameter transfer workflows.
-        For flexible-based methods, this includes bin specifications and representatives.
-
-        Returns:
-            Dict[str, Any]: Fitted parameters including:
-                - bin_spec: Learned bin specifications for each column
-                - bin_representatives: Representative values for each bin
-        """
-        fitted_params = {}
-
-        # Include flexible-specific fitted parameters
-        if hasattr(self, "_bin_spec") and self._bin_spec is not None:
-            fitted_params["bin_spec"] = self._bin_spec
-
-        if hasattr(self, "_bin_reps") and self._bin_reps is not None:
-            fitted_params["bin_representatives"] = self._bin_reps
-
-        return fitted_params
-
-    # Properties for sklearn compatibility
-    @property
-    def bin_spec_(self) -> FlexibleBinSpec:
-        """Fitted bin specifications (sklearn style).
-
-        Returns:
-            FlexibleBinSpec: Dictionary mapping column identifiers to lists of
-                flexible bin definitions after fitting.
-
-        Note:
-            This property follows sklearn naming conventions with trailing underscore
-            to indicate fitted attributes.
-        """
-        return self._bin_spec
-
-    @property
-    def bin_representatives_(self) -> BinEdgesDict:
-        """Fitted bin representatives (sklearn style).
-
-        Returns:
-            BinEdgesDict: Dictionary mapping column identifiers to lists of
-                representative values for each bin after fitting.
-
-        Note:
-            This property follows sklearn naming conventions with trailing underscore
-            to indicate fitted attributes.
-        """
-        return self._bin_reps
+        return get_flexible_bin_count(self.bin_spec_)

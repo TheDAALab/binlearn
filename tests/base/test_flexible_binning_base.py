@@ -31,8 +31,8 @@ def test_init_default():
     obj = DummyFlexibleBinning()
     assert obj.bin_spec is None
     assert obj.bin_representatives is None
-    assert obj._bin_spec == {}
-    assert obj._bin_reps == {}
+    assert obj.bin_spec_ == {}
+    assert obj.bin_representatives_ == {}
 
 
 def test_init_with_bin_spec():
@@ -43,7 +43,7 @@ def test_init_with_bin_spec():
     obj = DummyFlexibleBinning(bin_spec=bin_spec)
     assert obj.bin_spec == bin_spec
     # The processing now happens in _validate_params during __init__
-    assert obj._bin_spec == bin_spec  # Should be processed and stored
+    assert obj.bin_spec_ == bin_spec  # Should be processed and stored
     assert obj._fitted is True  # Should be marked as fitted with complete spec
 
 
@@ -63,8 +63,8 @@ def test_init_with_both_spec_and_reps():
     assert obj.bin_spec == bin_spec
     assert obj.bin_representatives == bin_reps
     # Should be processed and marked as fitted
-    assert obj._bin_spec == bin_spec
-    assert obj._bin_reps == bin_reps
+    assert obj.bin_spec_ == bin_spec
+    assert obj.bin_representatives_ == bin_reps
     assert obj._fitted is True
 
 
@@ -102,8 +102,8 @@ def test_fit_per_column_with_existing_specs():
     even when existing specs are present.
     """
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [1]}  # New simplified format
-    obj._bin_reps = {0: [1.0]}
+    obj.bin_spec_ = {0: [1]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0]}
 
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
@@ -117,10 +117,10 @@ def test_fit_per_column_with_existing_specs():
         # Should call _calculate_flexible_bins for both columns now
         assert mock_calc.call_count == 2
         # Both columns should have new specs calculated
-        assert 0 in obj._bin_spec
-        assert 1 in obj._bin_spec
-        assert 0 in obj._bin_reps
-        assert 1 in obj._bin_reps
+        assert 0 in obj.bin_spec_
+        assert 1 in obj.bin_spec_
+        assert 0 in obj.bin_representatives_
+        assert 1 in obj.bin_representatives_
 
 
 def test_fit_per_column_error_handling():
@@ -236,8 +236,8 @@ def test_transform_columns(mock_transform):
     mock_transform.return_value = 0  # Return bin index 0
 
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [1], 1: [2]}  # New simplified format
-    obj._bin_reps = {0: [1.0], 1: [2.0]}
+    obj.bin_spec_ = {0: [1], 1: [2]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0], 1: [2.0]}
 
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
@@ -252,7 +252,7 @@ def test_transform_columns(mock_transform):
 def test_transform_columns_missing_key():
     """Test _transform_columns with missing column key."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {}  # Empty spec
+    obj.bin_spec_ = {}  # Empty spec
 
     X = np.array([[1, 2]])
     columns = [0]
@@ -265,19 +265,19 @@ def test_transform_columns_missing_key():
 def test_finalize_fitting(mock_validate):
     """Test _finalize_fitting method."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [1]}  # New simplified format
-    obj._bin_reps = {0: [1.0]}
+    obj.bin_spec_ = {0: [1]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0]}
 
     obj._finalize_fitting()
 
-    mock_validate.assert_called_once_with(obj._bin_spec, obj._bin_reps)
+    mock_validate.assert_called_once_with(obj.bin_spec_, obj.bin_representatives_)
 
 
 def test_finalize_fitting_error():
     """Test _finalize_fitting error handling."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [1]}  # New simplified format
-    obj._bin_reps = {0: [1.0]}
+    obj.bin_spec_ = {0: [1]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0]}
 
     with patch("binlearn.base._flexible_binning_base.validate_flexible_bins") as mock_validate:
         mock_validate.side_effect = Exception("Validation error")
@@ -302,7 +302,7 @@ def test_inverse_transform_columns(mock_return):
     mock_return.return_value = np.array([[1.0, 2.0]])
 
     obj = DummyFlexibleBinning()
-    obj._bin_reps = {0: [1.0, 2.0], 1: [3.0, 4.0]}
+    obj.bin_representatives_ = {0: [1.0, 2.0], 1: [3.0, 4.0]}
 
     X = np.array([[0, 1], [1, 0]])
     columns = [0, 1]
@@ -317,7 +317,7 @@ def test_inverse_transform_columns(mock_return):
 def test_inverse_transform_columns_missing_key():
     """Test _inverse_transform_columns with missing column key."""
     obj = DummyFlexibleBinning()
-    obj._bin_reps = {}  # Empty reps
+    obj.bin_representatives_ = {}  # Empty reps
 
     X = np.array([[0]])
     columns = [0]
@@ -331,7 +331,7 @@ def test_inverse_transform_columns_all_missing():
     from binlearn.utils.constants import MISSING_VALUE
 
     obj = DummyFlexibleBinning()
-    obj._bin_reps = {0: [1.0, 2.0]}
+    obj.bin_representatives_ = {0: [1.0, 2.0]}
 
     # All values are missing - this should cover the regular_indices.any() == False branch
     X = np.array([[MISSING_VALUE], [MISSING_VALUE]])
@@ -348,13 +348,12 @@ def test_get_fitted_params():
     """Test _get_fitted_params method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [1]}  # New simplified format
-    obj._bin_reps = {0: [1.0]}
+    obj.bin_spec_ = {0: [1]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0]}
 
-    params = obj._get_fitted_params()
-
-    assert params["bin_spec"] == {0: [1]}  # New simplified format
-    assert params["bin_representatives"] == {0: [1.0]}
+    # Now access fitted attributes directly (sklearn style)
+    assert obj.bin_spec_ == {0: [1]}  # New simplified format
+    assert obj.bin_representatives_ == {0: [1.0]}
 
 
 def test_handle_bin_params():
@@ -377,8 +376,8 @@ def test_handle_bin_params():
 def test_finalize_fitting_with_missing_reps():
     """Test _finalize_fitting generates missing representatives."""
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [1], 1: [2]}  # New simplified format
-    obj._bin_reps = {0: [1.0]}  # Missing reps for column 1
+    obj.bin_spec_ = {0: [1], 1: [2]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0]}  # Missing reps for column 1
 
     with patch(
         "binlearn.base._flexible_binning_base.generate_default_flexible_representatives"
@@ -389,7 +388,7 @@ def test_finalize_fitting_with_missing_reps():
 
         # Should generate reps for column 1 only
         mock_gen.assert_called_once_with([2])  # New simplified format
-        assert obj._bin_reps[1] == [2.0]
+        assert obj.bin_representatives_[1] == [2.0]
 
 
 def test_calculate_flexible_bins_jointly_fallback():
@@ -420,12 +419,14 @@ def test_lookup_bin_widths():
     """Test lookup_bin_widths method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [(1, 3), 5]}  # New simplified format: interval and singleton
+    obj.bin_spec_ = {0: [(1, 3), 5]}  # New simplified format: interval and singleton
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
         mock_prepare.return_value = (np.array([[0, 1]]), [0])
 
-        with patch("binlearn.base._flexible_binning_base.calculate_flexible_bin_width") as mock_calc:
+        with patch(
+            "binlearn.base._flexible_binning_base.calculate_flexible_bin_width"
+        ) as mock_calc:
             mock_calc.return_value = 2.0
 
             with patch("binlearn.base._flexible_binning_base.return_like_input") as mock_return:
@@ -442,7 +443,7 @@ def test_lookup_bin_widths_missing_value():
     """Test lookup_bin_widths with missing values."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [1]}  # New simplified format
+    obj.bin_spec_ = {0: [1]}  # New simplified format
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
         with patch("binlearn.base._flexible_binning_base.MISSING_VALUE", 999):
@@ -461,7 +462,7 @@ def test_lookup_bin_widths_out_of_bounds():
     """Test lookup_bin_widths with out-of-bounds bin indices."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [1, 2]}  # Two bins: indices 0 and 1
+    obj.bin_spec_ = {0: [1, 2]}  # Two bins: indices 0 and 1
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
         # Bin index 5 is out of bounds (only have indices 0 and 1)
@@ -481,7 +482,7 @@ def test_lookup_bin_ranges():
     """Test lookup_bin_ranges method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_spec = {0: [1, 2], 1: [3]}  # New simplified format
+    obj.bin_spec_ = {0: [1, 2], 1: [3]}  # New simplified format
 
     result = obj.lookup_bin_ranges()
 
@@ -529,7 +530,7 @@ def test_inverse_transform():
     """Test inverse_transform method."""
     obj = DummyFlexibleBinning()
     obj._fitted = True
-    obj._bin_reps = {0: [1.0, 2.0]}
+    obj.bin_representatives_ = {0: [1.0, 2.0]}
 
     with patch.object(obj, "_prepare_input") as mock_prepare:
         mock_prepare.return_value = (np.array([[0]]), [0])
@@ -607,8 +608,8 @@ def test_fit_jointly_with_no_missing_columns():
     even when existing specs are present.
     """
     obj = DummyFlexibleBinning()
-    obj._bin_spec = {0: [1], 1: [2]}  # New simplified format
-    obj._bin_reps = {0: [1.0], 1: [2.0]}
+    obj.bin_spec_ = {0: [1], 1: [2]}  # New simplified format
+    obj.bin_representatives_ = {0: [1.0], 1: [2.0]}
 
     X = np.array([[1, 2], [3, 4]])
     columns = [0, 1]
@@ -622,10 +623,10 @@ def test_fit_jointly_with_no_missing_columns():
         # Should calculate bins for all columns now
         mock_calc.assert_called_once()
         # All columns should have the same jointly calculated specs
-        assert obj._bin_spec[0] == [99]
-        assert obj._bin_spec[1] == [99]
-        assert obj._bin_reps[0] == [99.0]
-        assert obj._bin_reps[1] == [99.0]
+        assert obj.bin_spec_[0] == [99]
+        assert obj.bin_spec_[1] == [99]
+        assert obj.bin_representatives_[0] == [99.0]
+        assert obj.bin_representatives_[1] == [99.0]
 
 
 def test_calculate_flexible_bins_jointly_direct_call():
@@ -646,22 +647,22 @@ def test_fit_jointly_covers_missing_lines():
     columns = [0, 1]
 
     # Ensure no existing specs so it will call joint methods
-    obj._bin_spec = {}
-    obj._bin_reps = {}
+    obj.bin_spec_ = {}
+    obj.bin_representatives_ = {}
     obj.bin_spec = None  # No user specifications
 
     # Don't patch anything - let the real methods run
     obj._fit_jointly(X, columns)
 
     # Verify that the bins were properly created
-    assert 0 in obj._bin_spec
-    assert 1 in obj._bin_spec
-    assert 0 in obj._bin_reps
-    assert 1 in obj._bin_reps
+    assert 0 in obj.bin_spec_
+    assert 1 in obj.bin_spec_
+    assert 0 in obj.bin_representatives_
+    assert 1 in obj.bin_representatives_
 
     # Verify the bins have expected structure
-    assert obj._bin_spec[0] == [0]  # New simplified format
-    assert obj._bin_spec[1] == [0]  # New simplified format
+    assert obj.bin_spec_[0] == [0]  # New simplified format
+    assert obj.bin_spec_[1] == [0]  # New simplified format
 
 
 def test_fit_jointly_enabled_through_handle_bin_params():
@@ -674,16 +675,16 @@ def test_fit_jointly_enabled_through_handle_bin_params():
     assert changed is True  # Should indicate parameters changed
 
     # Ensure no existing specs
-    obj._bin_spec = {}
-    obj._bin_reps = {}
+    obj.bin_spec_ = {}
+    obj.bin_representatives_ = {}
     obj.bin_spec = None
 
     # Fit should use _fit_jointly which calls our target methods
     obj.fit(X)
 
     # Verify bins were created through the joint fitting process
-    assert 0 in obj._bin_spec
-    assert 1 in obj._bin_spec
+    assert 0 in obj.bin_spec_
+    assert 1 in obj.bin_spec_
 
 
 def test_property_setters_reset_fitted_state():
@@ -726,8 +727,8 @@ def test_fit_jointly_minimal_class_edge_cases():
     assert result == ([0], [0.0])
     # Edge case: fit with empty columns
     obj._fit_jointly(np.array([[]]), [])
-    assert obj._bin_spec == {}
-    assert obj._bin_reps == {}
+    assert obj.bin_spec_ == {}
+    assert obj.bin_representatives_ == {}
 
 
 def test_dummy_flexible_binning_repr_and_properties():
@@ -747,7 +748,7 @@ def test_dummy_flexible_binning_repr_and_properties():
     assert obj.bin_representatives == {1: [2.0]}
 
 
-def test_set_sklearn_attributes_from_specs_with_none_bin_spec():
+def test_set_sklearn_attributes_from_specs_with_nonebin_spec_():
     """Test _set_sklearn_attributes_from_specs when bin_spec is None - covers line 210->exit."""
     obj = DummyFlexibleBinning()  # bin_spec is None by default
     # This should not set any sklearn attributes
@@ -779,34 +780,3 @@ def test_set_sklearn_attributes_from_specs_with_guidance_columns():
     expected_features3 = [0, "target"]  # 'target' shouldn't be duplicated
     assert obj3._feature_names_in == expected_features3
     assert obj3._n_features_in == 2
-
-
-def test_get_fitted_params_with_none_attributes():
-    """Test _get_fitted_params when _bin_spec or _bin_reps are None - covers lines 715->718, 718->721."""
-    obj = DummyFlexibleBinning()
-
-    # Test when both are None
-    obj._bin_spec = None
-    obj._bin_reps = None
-    params = obj._get_fitted_params()
-    assert params == {}
-
-    # Test when _bin_spec exists but _bin_reps is None
-    obj._bin_spec = {0: [1]}
-    obj._bin_reps = None
-    params = obj._get_fitted_params()
-    assert "bin_spec" in params
-    assert "bin_representatives" not in params
-
-    # Test when _bin_reps exists but _bin_spec is None
-    obj._bin_spec = None
-    obj._bin_reps = {0: [1.0]}
-    params = obj._get_fitted_params()
-    assert "bin_spec" not in params
-    assert "bin_representatives" in params
-
-    # Test when neither attribute exists at all
-    delattr(obj, "_bin_spec")
-    delattr(obj, "_bin_reps")
-    params = obj._get_fitted_params()
-    assert params == {}

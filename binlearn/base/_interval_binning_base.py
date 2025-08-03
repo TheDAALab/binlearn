@@ -125,8 +125,8 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_representatives = bin_representatives
 
         # Working specifications (fitted or user-provided)
-        self._bin_edges: BinEdgesDict = {}
-        self._bin_reps: BinEdgesDict = {}
+        self.bin_edges_: BinEdgesDict = {}
+        self.bin_representatives_: BinEdgesDict = {}
 
         # Validate parameters early
         # This will also process any provided bins
@@ -156,31 +156,31 @@ class IntervalBinningBase(GeneralBinningBase):
             # Process and validate bin edges if provided
             if self.bin_edges is not None:
                 validate_bin_edges_format(self.bin_edges)
-                self._bin_edges = self.bin_edges
+                self.bin_edges_ = self.bin_edges
 
             # Process and validate bin representatives if provided
             if self.bin_representatives is not None:
                 validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
-                self._bin_reps = self.bin_representatives
+                self.bin_representatives_ = self.bin_representatives
 
                 # Validate compatibility with bin_edges if both are provided
                 if self.bin_edges is not None:
                     validate_bins(self.bin_edges, self.bin_representatives)
-            elif self.bin_edges is not None and self._bin_edges:
+            elif self.bin_edges is not None and self.bin_edges_:
                 # Generate default representatives for provided edges
-                self._bin_reps = {}
+                self.bin_representatives_ = {}
                 for col, edges in self.bin_edges.items():
                     edges_list = list(edges)
-                    self._bin_reps[col] = default_representatives(edges_list)
+                    self.bin_representatives_[col] = default_representatives(edges_list)
 
             # If we have complete specifications, mark as fitted
-            if self.bin_edges is not None and self._bin_edges and self._bin_reps:
+            if self.bin_edges is not None and self.bin_edges_ and self.bin_representatives_:
                 # Validate the complete bins
-                validate_bins(self._bin_edges, self._bin_reps)
+                validate_bins(self.bin_edges_, self.bin_representatives_)
                 # Mark as fitted since we have complete bin specifications
                 self._fitted = True
                 # Store columns for later reference
-                self._original_columns = list(self._bin_edges.keys())
+                self._original_columns = list(self.bin_edges_.keys())
 
                 # Set sklearn attributes based on bin_edges and guidance_columns
                 self._set_sklearn_attributes_from_specs()
@@ -357,8 +357,8 @@ class IntervalBinningBase(GeneralBinningBase):
 
         # Always calculate bins from data, overwriting any user-provided specs
         edges, reps = self._calculate_bins(col_data, col, guidance_data)
-        self._bin_edges[col] = edges
-        self._bin_reps[col] = reps
+        self.bin_edges_[col] = edges
+        self.bin_representatives_[col] = reps
 
     def _validate_column_data(self, col_data: np.ndarray, col: ColumnId, col_index: int) -> None:
         """Validate column data and issue warnings for all-NaN columns.
@@ -423,8 +423,8 @@ class IntervalBinningBase(GeneralBinningBase):
 
             # Apply the same bins to all columns, overwriting any user-provided specs
             for col in columns:
-                self._bin_edges[col] = edges
-                self._bin_reps[col] = reps
+                self.bin_edges_[col] = edges
+                self.bin_representatives_[col] = reps
 
             self._finalize_fitting()
 
@@ -455,16 +455,16 @@ class IntervalBinningBase(GeneralBinningBase):
             if self.bin_edges is not None:
                 # Validate format but don't transform - store as-is
                 validate_bin_edges_format(self.bin_edges)
-                self._bin_edges = self.bin_edges
+                self.bin_edges_ = self.bin_edges
             else:
-                self._bin_edges = {}
+                self.bin_edges_ = {}
 
             if self.bin_representatives is not None:
                 # Validate format but don't transform - store as-is
                 validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
-                self._bin_reps = self.bin_representatives
+                self.bin_representatives_ = self.bin_representatives
             else:
-                self._bin_reps = {}
+                self.bin_representatives_ = {}
 
         except Exception as e:
             raise ConfigurationError(f"Failed to process bin specifications: {str(e)}") from e
@@ -481,13 +481,13 @@ class IntervalBinningBase(GeneralBinningBase):
                 specifications are inconsistent.
         """
         # Generate default representatives for any missing ones
-        for col in self._bin_edges:
-            if col not in self._bin_reps:
-                edges = self._bin_edges[col]
-                self._bin_reps[col] = default_representatives(edges)
+        for col in self.bin_edges_:
+            if col not in self.bin_representatives_:
+                edges = self.bin_edges_[col]
+                self.bin_representatives_[col] = default_representatives(edges)
 
         # Validate the bins
-        validate_bins(self._bin_edges, self._bin_reps)
+        validate_bins(self.bin_edges_, self.bin_representatives_)
 
     def _calculate_bins_jointly(
         self, all_data: np.ndarray, columns: ColumnList
@@ -588,12 +588,12 @@ class IntervalBinningBase(GeneralBinningBase):
                 for out-of-range values when clipping is disabled.
         """
         result = np.zeros(X.shape, dtype=int)
-        available_keys = list(self._bin_edges.keys())
+        available_keys = list(self.bin_edges_.keys())
 
         for i, col in enumerate(columns):
             # Find the right bin specification
             key = self._get_column_key(col, available_keys, i)
-            edges = self._bin_edges[key]
+            edges = self.bin_edges_[key]
 
             # Transform this column
             col_data = X[:, i]
@@ -633,11 +633,11 @@ class IntervalBinningBase(GeneralBinningBase):
                 +inf for above range.
         """
         result = np.zeros(X.shape, dtype=float)
-        available_keys = list(self._bin_reps.keys())
+        available_keys = list(self.bin_representatives_.keys())
 
         for i, col in enumerate(columns):
             key = self._get_column_key(col, available_keys, i)
-            reps = self._bin_reps[key]
+            reps = self.bin_representatives_[key]
 
             col_data = X[:, i]
 
@@ -717,11 +717,11 @@ class IntervalBinningBase(GeneralBinningBase):
         self._check_fitted()
         arr, columns = self._prepare_input(bin_indices)
         result = np.zeros(arr.shape, dtype=float)
-        available_keys = list(self._bin_edges.keys())
+        available_keys = list(self.bin_edges_.keys())
 
         for i, col in enumerate(columns):
             key = self._get_column_key(col, available_keys, i)
-            edges = self._bin_edges[key]
+            edges = self.bin_edges_[key]
 
             col_data = arr[:, i]
             valid, _, _, _ = create_bin_masks(col_data, len(edges) - 1)
@@ -753,25 +753,4 @@ class IntervalBinningBase(GeneralBinningBase):
             >>> print(bin_counts)  # {'col1': 5, 'col2': 3}
         """
         self._check_fitted()
-        return {col: len(edges) - 1 for col, edges in self._bin_edges.items()}
-
-    def _get_fitted_params(self) -> dict[str, Any]:
-        """Get fitted parameter values for IntervalBinningBase.
-
-        Returns the internal fitted state as a dictionary, including bin edges
-        and representatives for all columns. This is used by sklearn's get_params
-        infrastructure and for debugging.
-
-        Returns:
-            Dict[str, Any]: Dictionary containing:
-                - 'bin_edges': Dictionary of bin edges for each column
-                - 'bin_representatives': Dictionary of bin representatives for each column
-
-        Note:
-            This method is part of the sklearn parameter interface and is typically
-            not called directly by users.
-        """
-        return {
-            "bin_edges": self._bin_edges,
-            "bin_representatives": self._bin_reps,
-        }
+        return {col: len(edges) - 1 for col, edges in self.bin_edges_.items()}

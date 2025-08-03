@@ -110,9 +110,6 @@ class GeneralBinningBase(
 
         # Internal state
         self._fitted = False
-        self._binning_columns: OptionalColumnList = None
-        self._guidance_columns: OptionalColumnList = None
-        self._original_columns: OptionalColumnList = None
         self._n_features_in: int | None = None
         self._feature_names_in: OptionalColumnList = None
 
@@ -137,7 +134,7 @@ class GeneralBinningBase(
             to ensure consistent handling across different input formats.
         """
         return prepare_input_with_columns(
-            X, fitted=self._fitted, original_columns=self._original_columns
+            X, fitted=self._fitted, original_columns=None
         )
 
     def _check_fitted(self) -> None:
@@ -159,7 +156,7 @@ class GeneralBinningBase(
 
     def _separate_columns(
         self, X: ArrayLike
-    ) -> tuple[np.ndarray, np.ndarray | None, ColumnList, ColumnList]:
+    ) -> tuple[np.ndarray, np.ndarray | None, ColumnList, ColumnList | None]:
         """Universal column separation logic for binning and guidance columns.
 
         Separates the input data into binning columns (to be transformed) and
@@ -181,8 +178,8 @@ class GeneralBinningBase(
                 - X_guidance (Optional[np.ndarray]): Data for guidance columns.
                   None if no guidance columns specified. Shape is (n_samples, n_guidance_columns).
                 - binning_columns (ColumnList): Names/indices of binning columns.
-                - guidance_columns (ColumnList): Names/indices of guidance columns.
-                  Empty list if no guidance specified.
+                - guidance_columns (ColumnList | None): Names/indices of guidance columns.
+                  None if no guidance specified.
 
         Note:
             This method automatically handles column name/index resolution and
@@ -193,7 +190,7 @@ class GeneralBinningBase(
 
         if self.guidance_columns is None:
             # No guidance - all columns are binning columns
-            return arr, None, columns, []
+            return arr, None, columns, None
 
         # Normalize guidance_columns to list
         guidance_cols = (
@@ -254,7 +251,6 @@ class GeneralBinningBase(
             # Store original input info for sklearn compatibility
             arr, original_columns = self._prepare_input(X)
             self._n_features_in = arr.shape[1]
-            self._original_columns = original_columns
 
             # Handle feature names manually to avoid sklearn conflicts
             if hasattr(X, "columns"):
@@ -268,10 +264,6 @@ class GeneralBinningBase(
 
             # Separate guidance and binning columns
             X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
-
-            # Store column information
-            self._binning_columns = binning_cols
-            self._guidance_columns = guidance_cols
 
             # Route to appropriate fitting method
             if self.fit_jointly:
@@ -408,19 +400,25 @@ class GeneralBinningBase(
             # For inverse transform, we work only with binning columns
             # (guidance columns weren't transformed, so can't be inverse transformed)
             if self.guidance_columns is not None:
+                # Calculate expected number of binning columns
+                total_features = self._n_features_in or 0
+                guidance_cols = (
+                    [self.guidance_columns]
+                    if not isinstance(self.guidance_columns, list)
+                    else self.guidance_columns
+                )
+                expected_binning_cols = total_features - len(guidance_cols)
+                
                 # Input should only have binning columns for inverse transform
                 arr, columns = self._prepare_input(X)
-                if self._binning_columns is None or len(columns) != len(self._binning_columns):
-                    expected_cols = (
-                        len(self._binning_columns) if self._binning_columns is not None else 0
-                    )
+                if len(columns) != expected_binning_cols:
                     raise ValueError(
-                        f"Input for inverse_transform should have {expected_cols} "
+                        f"Input for inverse_transform should have {expected_binning_cols} "
                         f"columns (binning columns only), got {len(columns)}"
                     )
-                result = self._inverse_transform_columns(arr, self._binning_columns)
+                result = self._inverse_transform_columns(arr, columns)
                 return return_like_input(
-                    result, X, self._binning_columns, bool(self.preserve_dataframe)
+                    result, X, columns, bool(self.preserve_dataframe)
                 )
             # No guidance - inverse transform all columns
             arr, columns = self._prepare_input(X)
@@ -800,149 +798,3 @@ class GeneralBinningBase(
         if self.guidance_columns is not None:
             if not isinstance(self.guidance_columns, (list, tuple, int, str)):
                 raise TypeError("guidance_columns must be list, tuple, int, str, or None")
-
-    # Properties for sklearn compatibility
-    @property
-    def is_fitted_(self) -> bool:
-        """Whether the estimator is fitted.
-
-        Provides sklearn-compatible access to the fitted state of the estimator.
-        This property follows sklearn's convention of using trailing underscores
-        for fitted attributes.
-
-        Returns:
-            bool: True if the estimator has been fitted (fit() has been called
-                successfully), False otherwise.
-
-        Example:
-            >>> binner = EqualWidthBinning()
-            >>> print(binner.is_fitted_)  # False
-            >>> binner.fit(X)
-            >>> print(binner.is_fitted_)  # True
-
-        Note:
-            - Follows sklearn's naming convention with trailing underscore
-            - Used internally and by sklearn utilities for fitted state checking
-        """
-        return self._fitted
-
-    @property
-    def n_features_in_(self) -> int | None:
-        """Number of features seen during fit.
-
-        Provides sklearn-compatible access to the number of features (columns)
-        that were present in the training data during fitting. This is used
-        for validation during transform to ensure feature consistency.
-
-        Returns:
-            Optional[int]: Number of features seen during fit. None if the
-                estimator has not been fitted yet.
-
-        Example:
-            >>> binner.fit(X)  # X has shape (100, 5)
-            >>> print(binner.n_features_in_)  # 5
-
-        Note:
-            - Follows sklearn's convention with trailing underscore
-            - Set automatically during fit()
-            - Used for feature validation in transform()
-        """
-        return self._n_features_in
-
-    @property
-    def feature_names_in_(self) -> OptionalColumnList:  # type: ignore[override]
-        """Feature names seen during fit.
-
-        Provides sklearn-compatible access to the feature names (column names)
-        that were present in the training data during fitting. For DataFrames,
-        this contains the actual column names. For numpy arrays, this contains
-        integer indices.
-
-        Returns:
-            OptionalColumnList: Feature names or indices seen during fit.
-                None if the estimator has not been fitted yet. For DataFrames,
-                returns list of column names. For numpy arrays, returns list
-                of integer indices.
-
-        Example:
-            >>> # With DataFrame
-            >>> df = pd.DataFrame({'a': [1,2], 'b': [3,4]})
-            >>> binner.fit(df)
-            >>> print(binner.feature_names_in_)  # ['a', 'b']
-
-            >>> # With numpy array
-            >>> X = np.array([[1,2], [3,4]])
-            >>> binner.fit(X)
-            >>> print(binner.feature_names_in_)  # [0, 1]
-
-        Note:
-            - Follows sklearn's convention with trailing underscore
-            - Set automatically during fit()
-            - Used for feature name validation in transform()
-        """
-        return getattr(self, "_feature_names_in", None)
-
-    # Additional utility properties
-    @property
-    def binning_columns_(self) -> OptionalColumnList:
-        """Columns that are being binned (excludes guidance columns).
-
-        Provides access to the column names or indices that are being transformed
-        by the binning operation. When guidance columns are specified, this property
-        returns only the columns that are actually binned, excluding the guidance
-        columns which remain unchanged.
-
-        Returns:
-            OptionalColumnList: Names or indices of columns that are binned.
-                None if the estimator has not been fitted yet. When guidance_columns
-                is None, this equals feature_names_in_. When guidance_columns is
-                specified, this is a subset excluding the guidance columns.
-
-        Example:
-            >>> # Without guidance
-            >>> binner = EqualWidthBinning()
-            >>> binner.fit(df[['a', 'b', 'c']])
-            >>> print(binner.binning_columns_)  # ['a', 'b', 'c']
-
-            >>> # With guidance
-            >>> binner = SupervisedBinning(guidance_columns=['c'])
-            >>> binner.fit(df[['a', 'b', 'c']])
-            >>> print(binner.binning_columns_)  # ['a', 'b']
-
-        Note:
-            - Set automatically during fit()
-            - Excludes guidance columns when they are specified
-            - Used internally for column-specific operations
-        """
-        return self._binning_columns
-
-    @property
-    def guidance_columns_(self) -> OptionalColumnList:
-        """Columns used for guidance.
-
-        Provides access to the column names or indices that are used for guidance
-        in supervised binning approaches. These columns are not transformed but
-        are used to inform the binning decisions for the other columns.
-
-        Returns:
-            OptionalColumnList: Names or indices of guidance columns. None if
-                the estimator has not been fitted yet. Empty list if no guidance
-                columns were specified during initialization.
-
-        Example:
-            >>> # Without guidance
-            >>> binner = EqualWidthBinning()
-            >>> binner.fit(df)
-            >>> print(binner.guidance_columns_)  # []
-
-            >>> # With guidance
-            >>> binner = SupervisedBinning(guidance_columns=['target'])
-            >>> binner.fit(df[['feature1', 'feature2', 'target']])
-            >>> print(binner.guidance_columns_)  # ['target']
-
-        Note:
-            - Set automatically during fit()
-            - Empty list when no guidance columns specified
-            - Guidance columns are preserved unchanged in transform()
-        """
-        return self._guidance_columns

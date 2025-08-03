@@ -43,7 +43,7 @@ class TestManualIntervalBinning:
     transformation, edge cases, and basic data handling scenarios.
     """
 
-    def test_init_with_bin_edges(self):
+    def test_init_withbin_edges_(self):
         """Test initialization with bin_edges parameter."""
         # Test basic initialization
         bin_edges = {0: [0.0, 10.0, 20.0, 30.0], 1: [0.0, 5.0, 15.0, 25.0]}
@@ -53,7 +53,7 @@ class TestManualIntervalBinning:
         assert mib.bin_representatives is None
         assert mib._fitted is True  # Should be fitted with provided edges
 
-    def test_init_with_bin_edges_and_representatives(self):
+    def test_init_withbin_edges__and_representatives(self):
         """Test initialization with both bin_edges and bin_representatives."""
         bin_edges = {0: [0.0, 10.0, 20.0, 30.0]}
         bin_representatives = {0: [5.0, 15.0, 25.0]}
@@ -76,7 +76,7 @@ class TestManualIntervalBinning:
         assert mib.preserve_dataframe is True
         assert mib.fit_jointly is False
 
-    def test_init_none_bin_edges_raises_error(self):
+    def test_init_nonebin_edges__raises_error(self):
         """Test that initialization with None bin_edges raises ConfigurationError."""
         with pytest.raises(ConfigurationError, match="bin_edges must be provided"):
             ManualIntervalBinning(bin_edges=None)  # type: ignore
@@ -115,7 +115,7 @@ class TestManualIntervalBinning:
         with pytest.raises(BinningError, match="No bin edges defined for column missing_col"):
             mib._calculate_bins(x_col, "missing_col")
 
-    def test_calculate_bins_none_bin_edges_raises_error(self):
+    def test_calculate_bins_nonebin_edges__raises_error(self):
         """Test _calculate_bins when bin_edges is None."""
         # Create instance with bin_edges but then set to None to test error condition
         bin_edges = {0: [0.0, 10.0, 20.0]}
@@ -134,14 +134,14 @@ class TestManualIntervalBinning:
         # Should not raise any exception
         mib._validate_params()
 
-    def test_validate_params_none_bin_edges(self):
+    def test_validate_params_nonebin_edges_(self):
         """Test that None bin_edges raises ConfigurationError during construction."""
         with pytest.raises(
             ConfigurationError, match="bin_edges must be provided for ManualIntervalBinning"
         ):
             ManualIntervalBinning(bin_edges=None)  # type: ignore
 
-    def test_validate_params_empty_bin_edges(self):
+    def test_validate_params_emptybin_edges_(self):
         """Test that empty bin_edges raises ConfigurationError during construction."""
         with pytest.raises(
             ConfigurationError, match="bin_edges cannot be empty for ManualIntervalBinning"

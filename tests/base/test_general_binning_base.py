@@ -60,8 +60,6 @@ def test_init_default_config():
     assert obj.fit_jointly is not None  # Should get from config
     assert obj.guidance_columns is None
     assert obj._fitted is False
-    assert obj._binning_columns is None
-    assert obj._guidance_columns is None
 
 
 def test_init_explicit_params():
@@ -84,16 +82,6 @@ def test_init_incompatible_params():
     """
     with pytest.raises(ValueError, match="guidance_columns and fit_jointly=True are incompatible"):
         DummyGeneralBinning(guidance_columns=["col1"], fit_jointly=True)
-
-
-def test_properties():
-    """Test all properties."""
-    obj = DummyGeneralBinning()
-    assert obj.is_fitted_ is False
-    assert obj.n_features_in_ is None
-    assert obj.feature_names_in_ is None
-    assert obj.binning_columns_ is None
-    assert obj.guidance_columns_ is None
 
 
 def test_prepare_input():
@@ -119,7 +107,6 @@ def test_separate_columns_no_guidance():
     """Test _separate_columns with no guidance columns."""
     obj = DummyGeneralBinning()
     obj._fitted = True
-    obj._original_columns = [0, 1, 2]
 
     X = np.array([[1, 2, 3], [4, 5, 6]])
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
@@ -127,14 +114,13 @@ def test_separate_columns_no_guidance():
     assert X_bin.shape == (2, 3)
     assert X_guide is None
     assert bin_cols == [0, 1, 2]
-    assert guide_cols == []
+    assert guide_cols is None
 
 
 def test_separate_columns_with_guidance():
     """Test _separate_columns with guidance columns."""
     obj = DummyGeneralBinning(guidance_columns=[1])
     obj._fitted = True
-    obj._original_columns = [0, 1, 2]
 
     X = np.array([[1, 2, 3], [4, 5, 6]])
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
@@ -150,7 +136,6 @@ def test_separate_columns_guidance_list():
     """Test _separate_columns with guidance columns as list."""
     obj = DummyGeneralBinning(guidance_columns=[0, 2])
     obj._fitted = True
-    obj._original_columns = [0, 1, 2]
 
     X = np.array([[1, 2, 3], [4, 5, 6]])
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
@@ -171,7 +156,6 @@ def test_fit_per_column():
     assert result is obj
     assert obj._fitted is True
     assert obj._n_features_in == 2
-    assert obj._binning_columns == [0, 1]
 
 
 def test_fit_jointly():

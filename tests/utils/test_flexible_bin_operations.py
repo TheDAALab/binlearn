@@ -19,7 +19,7 @@ from binlearn.utils.flexible_bin_operations import (
 class TestValidateFlexibleBinSpecFormat:
     """Test validate_flexible_bin_spec_format function."""
 
-    def test_valid_bin_spec(self):
+    def test_validbin_spec_(self):
         """Test that valid bin specifications pass validation."""
         bin_spec = {
             "col1": [1, 2, 3],  # Singleton bins
@@ -29,7 +29,7 @@ class TestValidateFlexibleBinSpecFormat:
         # Should not raise any exception
         validate_flexible_bin_spec_format(bin_spec)
 
-    def test_invalid_bin_spec_not_dict(self):
+    def test_invalidbin_spec__not_dict(self):
         """Test that non-dict bin specs raise ValueError."""
         with pytest.raises(ValueError, match="bin_spec must be a dictionary"):
             validate_flexible_bin_spec_format([1, 2, 3])  # type: ignore
