@@ -1,22 +1,27 @@
-# Equal Width Binning Examples
+===============================
+Equal Width Binning Examples
+===============================
 
-This page provides comprehensive examples of using `EqualWidthBinning` for different data scenarios and use cases.
+This page provides comprehensive examples of using ``EqualWidthBinning`` for different data scenarios and use cases.
 
-## Basic Usage
+Basic Usage
+===========
 
-### Simple Numerical Data
+Simple Numerical Data
+----------------------
 
-```python
-import numpy as np
-from binlearn.methods import EqualWidthBinning
+.. code-block:: python
 
-# Create sample data
-np.random.seed(42)
-ages = np.random.normal(35, 10, 1000).reshape(-1, 1)
+    import numpy as np
+    from binlearn.methods import EqualWidthBinning
 
-# Basic equal width binning
-binner = EqualWidthBinning(n_bins=5)
-binned_ages = binner.fit_transform(ages)
+    # Create sample data
+    np.random.seed(42)
+    ages = np.random.normal(35, 10, 1000).reshape(-1, 1)
+
+    # Basic equal width binning
+    binner = EqualWidthBinning(n_bins=5)
+    binned_ages = binner.fit_transform(ages)
 
 print("Original data range:", ages.min(), "to", ages.max())
 print("Bin edges:", binner.bin_edges_[0])

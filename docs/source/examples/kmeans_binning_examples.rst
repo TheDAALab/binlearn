@@ -1,22 +1,27 @@
-# K-Means Binning Examples
+============================
+K-Means Binning Examples
+============================
 
-This page demonstrates the use of `KMeansBinning` for creating bins based on data clustering using the K-means algorithm.
+This page demonstrates the use of ``KMeansBinning`` for creating bins based on data clustering using the K-means algorithm.
 
-## Basic Usage
+Basic Usage
+===========
 
-### Understanding K-Means Binning
+Understanding K-Means Binning
+------------------------------
 
-```python
-import numpy as np
-import matplotlib.pyplot as plt
-from binlearn import KMeansBinning, EqualWidthBinning, EqualFrequencyBinning
+.. code-block:: python
 
-# Create data with natural clusters
-np.random.seed(42)
-cluster1 = np.random.normal(2, 0.5, 300)
-cluster2 = np.random.normal(6, 0.8, 400)
-cluster3 = np.random.normal(10, 0.6, 300)
-clustered_data = np.concatenate([cluster1, cluster2, cluster3]).reshape(-1, 1)
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from binlearn import KMeansBinning, EqualWidthBinning, EqualFrequencyBinning
+
+    # Create data with natural clusters
+    np.random.seed(42)
+    cluster1 = np.random.normal(2, 0.5, 300)
+    cluster2 = np.random.normal(6, 0.8, 400)
+    cluster3 = np.random.normal(10, 0.6, 300)
+    clustered_data = np.concatenate([cluster1, cluster2, cluster3]).reshape(-1, 1)
 
 # Apply different binning methods
 kmeans_binner = KMeansBinning(n_bins=3)

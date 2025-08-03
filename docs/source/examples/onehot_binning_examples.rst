@@ -1,23 +1,28 @@
-# One-Hot Binning Examples
+============================
+One-Hot Binning Examples
+============================
 
-This page demonstrates the use of `OneHotBinning` for creating binary indicator features from continuous variables.
+This page demonstrates the use of ``OneHotBinning`` for creating binary indicator features from continuous variables.
 
-## Basic Usage
+Basic Usage
+===========
 
-### Understanding One-Hot Binning
+Understanding One-Hot Binning
+------------------------------
 
-```python
-import numpy as np
-import pandas as pd
-from binlearn import OneHotBinning, EqualWidthBinning
-import matplotlib.pyplot as plt
+.. code-block:: python
 
-# Create sample data
-np.random.seed(42)
-ages = np.random.normal(35, 12, 1000).reshape(-1, 1)
+    import numpy as np
+    import pandas as pd
+    from binlearn import OneHotBinning, EqualWidthBinning
+    import matplotlib.pyplot as plt
 
-# Regular binning vs One-hot binning
-regular_binner = EqualWidthBinning(n_bins=5)
+    # Create sample data
+    np.random.seed(42)
+    ages = np.random.normal(35, 12, 1000).reshape(-1, 1)
+
+    # Regular binning vs One-hot binning
+    regular_binner = EqualWidthBinning(n_bins=5)
 onehot_binner = OneHotBinning(n_bins=5)
 
 regular_binned = regular_binner.fit_transform(ages)

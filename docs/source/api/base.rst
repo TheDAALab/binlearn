@@ -518,7 +518,6 @@ For concurrent operations, create separate instances:
 Next Steps
 ----------
 
-* Explore specific binning methods in :doc:`../methods/index`
-* Learn about utilities and tools in :doc:`../utils/index`
+* Explore specific binning methods in the API reference
 * See practical examples in :doc:`../examples/index`
 * Check the tutorials in :doc:`../tutorials/index`

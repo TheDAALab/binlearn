@@ -1,23 +1,28 @@
-# Equal Frequency Binning Examples
+===================================
+Equal Frequency Binning Examples
+===================================
 
-This page demonstrates the use of `EqualFrequencyBinning` for creating bins with approximately equal sample counts.
+This page demonstrates the use of ``EqualFrequencyBinning`` for creating bins with approximately equal sample counts.
 
-## Basic Usage
+Basic Usage
+===========
 
-### Understanding Equal Frequency vs Equal Width
+Understanding Equal Frequency vs Equal Width
+---------------------------------------------
 
-```python
-import numpy as np
-import matplotlib.pyplot as plt
-from binlearn import EqualWidthBinning, EqualFrequencyBinning
+.. code-block:: python
 
-# Create skewed data to highlight differences
-np.random.seed(42)
-skewed_data = np.random.exponential(2, 1000).reshape(-1, 1)
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from binlearn import EqualWidthBinning, EqualFrequencyBinning
 
-# Apply both binning methods
-equal_width = EqualWidthBinning(n_bins=5)
-equal_freq = EqualFrequencyBinning(n_bins=5)
+    # Create skewed data to highlight differences
+    np.random.seed(42)
+    skewed_data = np.random.exponential(2, 1000).reshape(-1, 1)
+
+    # Apply both binning methods
+    equal_width = EqualWidthBinning(n_bins=5)
+    equal_freq = EqualFrequencyBinning(n_bins=5)
 
 width_binned = equal_width.fit_transform(skewed_data)
 freq_binned = equal_freq.fit_transform(skewed_data)

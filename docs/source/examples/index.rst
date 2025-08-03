@@ -21,16 +21,27 @@ This section provides comprehensive, practical examples for each binning method 
    kmeans_binning_examples
    onehot_binning_examples
 
-### Quick Start Guide
+Quick Start Guide
+------------------
 
-#### Choosing the Right Binning Method
+Choosing the Right Binning Method
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-| **Method** | **Best For** | **Advantages** | **Use Cases** |
-|------------|--------------|----------------|---------------|
-| **Equal Width** | Uniform distributions, interpretable boundaries | Simple, fast, interpretable | Age groups, price ranges, scores |
-| **Equal Frequency** | Skewed distributions, balanced samples | Equal sample sizes, robust to outliers | Percentile analysis, ranking systems |
-| **K-Means** | Natural clusters, multimodal data | Finds data-driven boundaries | Customer segmentation, image processing |
-| **One-Hot** | Linear models, sparse features | Creates binary features, ML-ready | Logistic regression, neural networks |
++------------------+--------------------------------+----------------------------------+----------------------------------------+
+| **Method**       | **Best For**                   | **Advantages**                   | **Use Cases**                          |
++==================+================================+==================================+========================================+
+| **Equal Width**  | Uniform distributions,         | Simple, fast, interpretable      | Age groups, price ranges, scores       |
+|                  | interpretable boundaries       |                                  |                                        |
++------------------+--------------------------------+----------------------------------+----------------------------------------+
+| **Equal Freq.**  | Skewed distributions,          | Equal sample sizes, robust       | Percentile analysis, ranking systems   |
+|                  | balanced samples               | to outliers                      |                                        |
++------------------+--------------------------------+----------------------------------+----------------------------------------+
+| **K-Means**      | Natural clusters,              | Finds data-driven boundaries     | Customer segmentation, image processing |
+|                  | multimodal data                |                                  |                                        |
++------------------+--------------------------------+----------------------------------+----------------------------------------+
+| **One-Hot**      | Linear models,                 | Creates binary features,         | Logistic regression, neural networks   |
+|                  | sparse features                | ML-ready                         |                                        |
++------------------+--------------------------------+----------------------------------+----------------------------------------+
 
 .. toctree::
    :maxdepth: 1
