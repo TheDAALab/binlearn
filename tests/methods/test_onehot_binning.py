@@ -18,7 +18,6 @@ Test Classes:
     TestOneHotBinningErrorHandling: Tests for error conditions and edge cases.
 """
 
-
 import numpy as np
 import pytest
 

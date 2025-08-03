@@ -133,9 +133,7 @@ class GeneralBinningBase(
             This method leverages the utility function `prepare_input_with_columns`
             to ensure consistent handling across different input formats.
         """
-        return prepare_input_with_columns(
-            X, fitted=self._fitted, original_columns=None
-        )
+        return prepare_input_with_columns(X, fitted=self._fitted, original_columns=None)
 
     def _check_fitted(self) -> None:
         """Check if the estimator is fitted.
@@ -417,9 +415,7 @@ class GeneralBinningBase(
                         f"columns (binning columns only), got {len(columns)}"
                     )
                 result = self._inverse_transform_columns(arr, columns)
-                return return_like_input(
-                    result, X, columns, bool(self.preserve_dataframe)
-                )
+                return return_like_input(result, X, columns, bool(self.preserve_dataframe))
             # No guidance - inverse transform all columns
             arr, columns = self._prepare_input(X)
             result = self._inverse_transform_columns(arr, columns)
