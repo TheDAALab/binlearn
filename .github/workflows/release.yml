@@ -119,7 +119,7 @@ jobs:
     - name: Test installation from TestPyPI
       run: |
         echo "🧪 Testing installation from TestPyPI..."
-        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ binning || true
+        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ binlearn || true
         echo "ℹ️  TestPyPI installation test completed (may fail if dependencies are missing)"
 
   publish-pypi:
@@ -143,7 +143,7 @@ jobs:
     - name: Verify PyPI publication
       run: |
         echo "✅ Package published to PyPI successfully!"
-        echo "🔗 Check your package at: https://pypi.org/project/binning/"
+        echo "🔗 Check your package at: https://pypi.org/project/binlearn/"
 
   create-github-release:
     name: Create GitHub Release
@@ -184,10 +184,10 @@ jobs:
       run: |
         echo "🎉 Release completed successfully!"
         echo ""
-        echo "📦 Package: binning"
+        echo "📦 Package: binlearn"
         echo "🏷️  Version: ${{ github.event.release.tag_name || github.event.inputs.version }}"
-        echo "🔗 PyPI: https://pypi.org/project/binning/"
+        echo "🔗 PyPI: https://pypi.org/project/binlearn/"
         echo "📋 GitHub: ${{ github.server_url }}/${{ github.repository }}"
         echo ""
         echo "🚀 Your package is now available for installation:"
-        echo "    pip install binning"
+        echo "    pip install binlearn"

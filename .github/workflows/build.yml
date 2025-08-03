@@ -33,23 +33,23 @@ jobs:
 
     - name: Show package info
       run: |
-        python -c "import binning; print(f'📦 Package: binning v{binning.__version__}')"
+        python -c "import binlearn; print(f'📦 Package: binlearn v{binlearn.__version__}')"
         python -c "import sys; print(f'🐍 Python: {sys.version}')"
 
     - name: Run ruff linting
       run: |
         echo "🔍 Running ruff linting..."
-        ruff check binning/
+        ruff check binlearn/
 
     - name: Run mypy type checking
       run: |
         echo "🔍 Running mypy type checking..."
-        mypy binning/ --ignore-missing-imports
+        mypy binlearn/ --ignore-missing-imports
 
     - name: Run tests with coverage
       run: |
         echo "🧪 Running test suite..."
-        pytest --cov=binning --cov-report=xml --cov-report=term-missing -v
+        pytest --cov=binlearn --cov-report=xml --cov-report=term-missing -v
 
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.11'  # Only upload once
