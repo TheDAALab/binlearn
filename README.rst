@@ -27,7 +27,7 @@ binlearn - Binning and Discretization Library
 A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
 
 🚀 **Key Features**
-------------------
+---------------------
 
 ✨ **Multiple Binning Methods**
   * **EqualWidthBinning** - Equal-width intervals across data range
@@ -53,14 +53,14 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **Documentation** - Extensive examples and API documentation
 
 📦 **Installation**
-------------------
+---------------------
 
 .. code-block:: bash
 
    pip install binlearn
 
 🔥 **Quick Start**
------------------
+--------------------
 
 .. code-block:: python
 
@@ -84,7 +84,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    print(f"Bin edges for age: {binner.bin_edges_['age']}")
 
 🎯 **Supervised Binning Example**
---------------------------------
+-----------------------------------
 
 .. code-block:: python
 
@@ -111,7 +111,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    print(f"Bin edges per feature: {[len(edges)-1 for edges in sup_binner.bin_edges_.values()]}")
 
 🛠️ **Scikit-learn Integration**
-------------------------------
+---------------------------------
 
 .. code-block:: python
 
@@ -131,7 +131,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    print(f"Pipeline accuracy: {accuracy:.3f}")
 
 📚 **Available Methods**
------------------------
+--------------------------
 
 **Interval-based Methods:**
 
@@ -154,9 +154,9 @@ A modern, type-safe Python library for data binning and discretization with comp
 * ``SupervisedBinning`` - Decision tree-based binning optimized for target variables (classification and regression)
 
 ⚙️ **Requirements**
-------------------
+---------------------
 
-**Python Versions**: 3.8, 3.9, 3.10, 3.11, 3.12, 3.13
+**Python Versions**: 3.10, 3.11, 3.12, 3.13
 
 **Core Dependencies**:
   * NumPy >= 1.21.0
@@ -174,7 +174,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * mypy >= 1.0.0 (for type checking)
 
 🧪 **Development Setup**
------------------------
+--------------------------
 
 .. code-block:: bash
 
@@ -196,7 +196,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    cd docs && make html
 
 🏆 **Code Quality Standards**
-----------------------------
+-------------------------------
 
 * ✅ **100% Test Coverage** - Comprehensive test suite with 837 tests
 * ✅ **100% Type Safety** - Complete mypy compliance with modern type annotations
@@ -206,7 +206,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 * ✅ **Robust Error Handling** - Helpful error messages with actionable suggestions
 
 🤝 **Contributing**
-------------------
+---------------------
 
 We welcome contributions! Here's how to get started:
 
@@ -231,14 +231,14 @@ We welcome contributions! Here's how to get started:
   * 🎯 Performance optimizations
 
 🔗 **Links**
------------
+--------------
 
 * **GitHub Repository**: https://github.com/TheDAALab/binlearn
 * **Issue Tracker**: https://github.com/TheDAALab/binlearn/issues
 * **Documentation**: https://binlearn.readthedocs.io/
 
 📄 **License**
--------------
+----------------
 
 This project is licensed under the MIT License. See the `LICENSE <https://github.com/TheDAALab/binlearn/blob/main/LICENSE>`_ file for details.
 
