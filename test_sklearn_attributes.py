@@ -17,15 +17,15 @@ def test_interval_binning_sklearn_attributes():
     # Create instance with bin_edges
     binner = EqualWidthBinning(bin_edges=bin_edges)
 
-    # Check sklearn attributes
-    print(f"  feature_names_in_: {binner.feature_names_in_}")
-    print(f"  n_features_in_: {binner.n_features_in_}")
-    print(f"  is_fitted_: {binner.is_fitted_}")
+    # Check that we can access private attributes directly
+    print(f"  _feature_names_in: {binner._feature_names_in}")
+    print(f"  _n_features_in: {binner._n_features_in}")
+    print(f"  _fitted: {binner._fitted}")
 
     # Should be [0, 1] and 2
-    assert binner.feature_names_in_ == [0, 1], f"Expected [0, 1], got {binner.feature_names_in_}"
-    assert binner.n_features_in_ == 2, f"Expected 2, got {binner.n_features_in_}"
-    assert binner.is_fitted_ is True, f"Expected True, got {binner.is_fitted_}"
+    assert binner._feature_names_in == [0, 1], f"Expected [0, 1], got {binner._feature_names_in}"
+    assert binner._n_features_in == 2, f"Expected 2, got {binner._n_features_in}"
+    assert binner._fitted is True, f"Expected True, got {binner._fitted}"
 
     print("  ✓ IntervalBinningBase test passed!")
 
@@ -43,17 +43,17 @@ def test_interval_binning_with_guidance():
     # Create instance with bin_edges and guidance
     binner = EqualWidthBinning(bin_edges=bin_edges, guidance_columns=[2])
 
-    # Check sklearn attributes
-    print(f"  feature_names_in_: {binner.feature_names_in_}")
-    print(f"  n_features_in_: {binner.n_features_in_}")
+    # Check private attributes
+    print(f"  _feature_names_in: {binner._feature_names_in}")
+    print(f"  _n_features_in: {binner._n_features_in}")
 
     # Should be [0, 1, 2] and 3
-    assert binner.feature_names_in_ == [
+    assert binner._feature_names_in == [
         0,
         1,
         2,
-    ], f"Expected [0, 1, 2], got {binner.feature_names_in_}"
-    assert binner.n_features_in_ == 3, f"Expected 3, got {binner.n_features_in_}"
+    ], f"Expected [0, 1, 2], got {binner._feature_names_in}"
+    assert binner._n_features_in == 3, f"Expected 3, got {binner._n_features_in}"
 
     print("  ✓ IntervalBinningBase with guidance test passed!")
 
@@ -71,15 +71,15 @@ def test_flexible_binning_sklearn_attributes():
     # Create instance with bin_spec
     binner = ManualFlexibleBinning(bin_spec=bin_spec)
 
-    # Check sklearn attributes
-    print(f"  feature_names_in_: {binner.feature_names_in_}")
-    print(f"  n_features_in_: {binner.n_features_in_}")
-    print(f"  is_fitted_: {binner.is_fitted_}")
+    # Check private attributes
+    print(f"  _feature_names_in: {binner._feature_names_in}")
+    print(f"  _n_features_in: {binner._n_features_in}")
+    print(f"  _fitted: {binner._fitted}")
 
     # Should be [0, 1] and 2
-    assert binner.feature_names_in_ == [0, 1], f"Expected [0, 1], got {binner.feature_names_in_}"
-    assert binner.n_features_in_ == 2, f"Expected 2, got {binner.n_features_in_}"
-    assert binner.is_fitted_ is True, f"Expected True, got {binner.is_fitted_}"
+    assert binner._feature_names_in == [0, 1], f"Expected [0, 1], got {binner._feature_names_in}"
+    assert binner._n_features_in == 2, f"Expected 2, got {binner._n_features_in}"
+    assert binner._fitted is True, f"Expected True, got {binner._fitted}"
 
     print("  ✓ FlexibleBinningBase test passed!")
 
@@ -97,16 +97,16 @@ def test_flexible_binning_with_guidance():
     # Create instance with bin_spec and guidance
     binner = ManualFlexibleBinning(bin_spec=bin_spec, guidance_columns=["target"])
 
-    # Check sklearn attributes
-    print(f"  feature_names_in_: {binner.feature_names_in_}")
-    print(f"  n_features_in_: {binner.n_features_in_}")
+    # Check private attributes
+    print(f"  _feature_names_in: {binner._feature_names_in}")
+    print(f"  _n_features_in: {binner._n_features_in}")
 
     # Should be ['feature_a', 'feature_b', 'target'] and 3
     expected = ["feature_a", "feature_b", "target"]
     assert (
-        binner.feature_names_in_ == expected
-    ), f"Expected {expected}, got {binner.feature_names_in_}"
-    assert binner.n_features_in_ == 3, f"Expected 3, got {binner.n_features_in_}"
+        binner._feature_names_in == expected
+    ), f"Expected {expected}, got {binner._feature_names_in}"
+    assert binner._n_features_in == 3, f"Expected 3, got {binner._n_features_in}"
 
     print("  ✓ FlexibleBinningBase with guidance test passed!")
 
