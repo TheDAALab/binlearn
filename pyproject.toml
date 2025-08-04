@@ -120,9 +120,8 @@ def get_version_info():
         "is_development": "dev" in __version__,
     }}
 """
-# Force exact tag-based versioning for PyPI releases
-version_scheme = "post-release"
-local_scheme = "no-local-version" 
+# Use default setuptools_scm versioning for clean release versions
+local_scheme = "no-local-version"
 fallback_version = "0.0.0"
 tag_regex = '^v(?P<version>\d+(?:\.\d+)*(?:[-\.]?(?:a|alpha|b|beta|rc|dev|pre)\.?\d*)?)$'
 
