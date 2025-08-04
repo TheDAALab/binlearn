@@ -1,0 +1,36 @@
+/* Custom CSS for binlearn documentation */
+
+.wy-nav-content {
+    max-width: none;
+}
+
+.rst-content .highlight {
+    background: #f8f8f8;
+    border: 1px solid #e1e4e5;
+    border-radius: 3px;
+}
+
+/* Improve table styling */
+.rst-content table.docutils {
+    border: none;
+}
+
+.rst-content table.docutils td, 
+.rst-content table.docutils th {
+    border: 1px solid #e1e4e5;
+    padding: 8px 12px;
+}
+
+/* Badge styling for new features */
+.rst-content .admonition.new {
+    background-color: #e7f3ff;
+    border-color: #0366d6;
+}
+
+/* Code highlighting improvements */
+.rst-content code.literal {
+    background-color: #f3f4f6;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 90%;
+}
