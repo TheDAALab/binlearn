@@ -1,5 +1,5 @@
 Basic Binning Tutorial
-=====================
+======================
 
 This tutorial introduces the fundamental concepts of data binning and shows how to use binlearn for basic binning tasks.
 

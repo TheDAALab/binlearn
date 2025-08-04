@@ -1,5 +1,5 @@
 Advanced Binning Techniques
-==========================
+============================
 
 This tutorial covers advanced binning techniques and optimization strategies for complex use cases.
 

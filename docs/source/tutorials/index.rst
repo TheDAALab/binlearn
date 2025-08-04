@@ -10,7 +10,7 @@ Step-by-step tutorials for learning binlearn concepts and techniques.
    advanced_binning
 
 Tutorial Overview
-----------------
+------------------
 
 .. list-table::
    :header-rows: 1
