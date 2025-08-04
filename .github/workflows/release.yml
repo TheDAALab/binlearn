@@ -77,6 +77,15 @@ jobs:
     - name: Show version info
       run: |
         echo "📋 Release Information:"
+        echo "🏷️  Current branch/ref: ${{ github.ref }}"
+        echo "🏷️  Event type: ${{ github.event_name }}"
+        echo "🏷️  Release tag: ${{ github.event.release.tag_name }}"
+        echo "🏷️  Manual input version: ${{ github.event.inputs.version }}"
+        echo "🔍 Git status:"
+        git status --porcelain || true
+        echo "🔍 Git describe:"
+        git describe --tags --exact-match HEAD || git describe --tags || true
+        echo "🔍 setuptools_scm version:"
         python -m setuptools_scm
         echo "📦 Building version: $(python -m setuptools_scm)"
 
