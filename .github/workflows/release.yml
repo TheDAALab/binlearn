@@ -92,7 +92,19 @@ jobs:
     - name: Build packages
       run: |
         echo "🔨 Building source and wheel distributions..."
+        echo "🔍 Pre-build version check:"
+        python -m setuptools_scm
+        echo "🔍 Pre-build git status:"
+        git status --porcelain || true
+        echo "🔍 Pre-build git describe:"
+        git describe --tags --exact-match HEAD || git describe --tags || true
         python -m build
+        echo "🔍 Post-build package inspection:"
+        ls -la dist/
+        echo "🔍 Built package versions:"
+        for file in dist/*.whl dist/*.tar.gz; do
+          echo "  $file"
+        done
 
     - name: Verify package
       run: |
