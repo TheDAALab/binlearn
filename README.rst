@@ -42,7 +42,7 @@ binlearn - Binning and Discretization Library
     :alt: Type Checking - MyPy
     :target: https://mypy.readthedocs.io/
 
-A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support. Features our new **SingletonBinning** method for cleaner categorical data encoding!
+A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
 
 🚀 **Key Features**
 ---------------------
@@ -55,7 +55,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
-  * **SingletonBinning** - Clean categorical encoding for discrete values 🆕
+  * **SingletonBinning** - Creates one bin per unique numeric value
 
 🔧 **Framework Integration**
   * **Pandas DataFrames** - Native support with column name preservation
@@ -68,7 +68,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **Code Quality** - 100% ruff compliance with modern Python syntax
   * **Error Handling** - Comprehensive validation with helpful error messages and suggestions
   * **Test Coverage** - 100% code coverage with 841 comprehensive tests
-  * **Documentation** - Extensive examples and API documentation with SingletonBinning guide
+  * **Documentation** - Extensive examples and API documentation
 
 📦 **Installation**
 ---------------------
@@ -101,15 +101,15 @@ A modern, type-safe Python library for data binning and discretization with comp
    print(f"Binned shape: {data_binned.shape}")
    print(f"Bin edges for age: {binner.bin_edges_['age']}")
    
-   # NEW: SingletonBinning for categorical features
-   categorical_data = pd.DataFrame({
-       'category': ['A', 'B', 'A', 'C', 'B', 'A'],
+   # SingletonBinning for numeric discrete values
+   numeric_discrete_data = pd.DataFrame({
+       'category_id': [1, 2, 1, 3, 2, 1],
        'rating': [1, 2, 1, 3, 2, 1]
    })
    
    singleton_binner = SingletonBinning(preserve_dataframe=True)
-   categorical_binned = singleton_binner.fit_transform(categorical_data)
-   print(f"Categorical binning: {categorical_binned.shape}")
+   numeric_binned = singleton_binner.fit_transform(numeric_discrete_data)
+   print(f"Numeric discrete binning: {numeric_binned.shape}")
 
 🎯 **Supervised Binning Example**
 -----------------------------------
@@ -173,9 +173,9 @@ A modern, type-safe Python library for data binning and discretization with comp
 * ``ManualIntervalBinning`` - Specify custom interval boundaries
 * ``ManualFlexibleBinning`` - Define mixed interval and singleton bins
 
-**Categorical Methods:**
+**Numeric Value Methods:**
 
-* ``SingletonBinning`` - Clean categorical encoding for discrete values 🆕
+* ``SingletonBinning`` - Creates one bin per unique numeric value
 
 **Supervised Methods:**
 
@@ -229,7 +229,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 * ✅ **100% Test Coverage** - Comprehensive test suite with 841 tests
 * ✅ **100% Type Safety** - Complete mypy compliance with modern type annotations
 * ✅ **100% Code Quality** - Full ruff compliance with modern Python standards
-* * ✅ **Comprehensive Documentation** - Detailed API docs and examples with SingletonBinning guide
+* ✅ **Comprehensive Documentation** - Detailed API docs and examples
 * ✅ **Modern Python** - Uses latest Python features and best practices
 * ✅ **Robust Error Handling** - Helpful error messages with actionable suggestions
 
@@ -270,7 +270,7 @@ We welcome contributions! Here's how to get started:
 
 This project is licensed under the MIT License. See the `LICENSE <https://github.com/TheDAALab/binlearn/blob/main/LICENSE>`_ file for details.
 
----
+
 
 **Developed by TheDAALab** 
 

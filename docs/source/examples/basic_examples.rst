@@ -226,13 +226,13 @@ Categorical Data Encoding
 
 .. code-block:: python
 
-   # Use SingletonBinning for categorical variables
-   categorical_cols = ['age_group', 'usage_frequency']
+   # Use SingletonBinning for numeric discrete variables
+   discrete_cols = ['age_group_code', 'usage_frequency_code']
    singleton_binner = SingletonBinning(preserve_dataframe=True)
-   categorical_encoded = singleton_binner.fit_transform(survey_data[categorical_cols])
+   discrete_encoded = singleton_binner.fit_transform(survey_data[discrete_cols])
    
-   print("Encoded categorical data:")
-   print(categorical_encoded.head())
+   print("Encoded discrete data:")
+   print(discrete_encoded.head())
    
    # Show the mapping
    print("Age group encoding:")

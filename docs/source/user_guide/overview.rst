@@ -262,7 +262,7 @@ Feature Engineering
    
    preprocessor = ColumnTransformer([
        ('numeric', EqualWidthBinning(n_bins=5), ['age', 'income']),
-       ('categorical', SingletonBinning(), ['category', 'region'])
+       ('discrete', SingletonBinning(), ['category_id', 'region_code'])
    ])
 
 Cross-Validation

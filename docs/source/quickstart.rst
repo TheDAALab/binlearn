@@ -143,26 +143,26 @@ Uses target information to create optimal bins:
    X_binned = sup_binner.fit_transform(X, guidance_data=y)
    print(f"Supervised binning shape: {X_binned.shape}")
 
-Categorical Data with SingletonBinning
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Numeric Discrete Data with SingletonBinning
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Handle categorical data with the new SingletonBinning method:
+Handle numeric discrete data with SingletonBinning:
 
 .. code-block:: python
 
    from binlearn import SingletonBinning
    
-   # Categorical data
-   categorical_data = pd.DataFrame({
-       'category': ['A', 'B', 'A', 'C', 'B', 'A', 'D'],
-       'rating': ['good', 'bad', 'good', 'excellent', 'bad', 'good', 'fair']
+   # Numeric discrete data
+   numeric_discrete_data = pd.DataFrame({
+       'category_id': [1, 2, 1, 3, 2, 1, 4],
+       'rating_code': [1, 0, 1, 2, 0, 1, 3]
    })
    
    singleton_binner = SingletonBinning(preserve_dataframe=True)
-   categorical_binned = singleton_binner.fit_transform(categorical_data)
+   numeric_binned = singleton_binner.fit_transform(numeric_discrete_data)
    
-   print(f"Original categories: {categorical_data['category'].unique()}")
-   print(f"Binned shape: {categorical_binned.shape}")
+   print(f"Original category IDs: {numeric_discrete_data['category_id'].unique()}")
+   print(f"Binned shape: {numeric_binned.shape}")
 
 Scikit-learn Integration
 ------------------------

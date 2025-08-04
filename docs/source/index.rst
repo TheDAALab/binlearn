@@ -38,7 +38,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
-  * **SingletonBinning** - Clean categorical encoding for discrete values 🆕
+  * **SingletonBinning** - Creates one bin per unique numeric value
 
 🔧 **Framework Integration**
   * **Pandas DataFrames** - Native support with column name preservation

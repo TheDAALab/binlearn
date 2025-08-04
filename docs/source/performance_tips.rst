@@ -17,7 +17,7 @@ Different binning methods have different performance characteristics:
 2. **EqualFrequencyBinning** - O(n log n) due to sorting  
 3. **ManualIntervalBinning** - O(n), but with validation overhead
 4. **EqualWidthMinimumWeightBinning** - O(n), with weight constraints
-5. **SingletonBinning** - O(n), with categorical encoding overhead
+5. **SingletonBinning** - O(n), with unique value processing overhead
 6. **KMeansBinning** - O(n × k × iterations), iterative clustering
 7. **SupervisedBinning** - O(n log n), decision tree overhead
 
@@ -215,7 +215,7 @@ Optimize Sklearn Pipelines
    # Performance tip 1: Use ColumnTransformer for different column types
    preprocessor = ColumnTransformer([
        ('numeric', EqualWidthBinning(n_bins=5), ['numeric1', 'numeric2']),
-       ('categorical', SingletonBinning(), ['categorical1', 'categorical2'])
+       ('discrete', SingletonBinning(), ['discrete1', 'discrete2'])
    ], remainder='drop')
 
    # Performance tip 2: Choose efficient estimators

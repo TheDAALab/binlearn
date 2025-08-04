@@ -85,7 +85,16 @@ from .base import (
 from .config import get_config, load_config, reset_config, set_config
 
 # Concrete binning methods
-from .methods import EqualWidthBinning, SingletonBinning, SupervisedBinning
+from .methods import (
+    EqualFrequencyBinning,
+    EqualWidthBinning,
+    EqualWidthMinimumWeightBinning,
+    KMeansBinning,
+    ManualFlexibleBinning,
+    ManualIntervalBinning,
+    SingletonBinning,
+    SupervisedBinning,
+)
 
 # Tools and integrations
 from .tools import (
@@ -181,7 +190,12 @@ __all__ = [
     "default_representatives",
     "create_bin_masks",
     # Concrete methods
+    "EqualFrequencyBinning",
     "EqualWidthBinning",
+    "EqualWidthMinimumWeightBinning",
+    "KMeansBinning",
+    "ManualFlexibleBinning",
+    "ManualIntervalBinning",
     "SingletonBinning",
     "SupervisedBinning",
     # Optional dependencies

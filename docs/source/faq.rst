@@ -91,7 +91,7 @@ Choose based on your data and goals:
 - **EqualFrequencyBinning**: Balanced bin sizes, good for skewed data
 - **KMeansBinning**: Natural clusters in data, good for multimodal distributions
 - **SupervisedBinning**: When you have target variables, optimizes for prediction
-- **SingletonBinning**: For categorical data encoding
+- **SingletonBinning**: For numeric discrete values (one bin per unique value)
 - **Manual methods**: When you need specific bin boundaries
 
 How do I preserve DataFrame column names?
@@ -259,7 +259,7 @@ Yes, use sklearn's ColumnTransformer:
    
    preprocessor = ColumnTransformer([
        ('numeric', EqualWidthBinning(n_bins=5), ['age', 'income']),
-       ('categorical', SingletonBinning(), ['category', 'region'])
+       ('discrete', SingletonBinning(), ['category_id', 'region_code'])
    ])
 
 How do I optimize binning performance for large datasets?

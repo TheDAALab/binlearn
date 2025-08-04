@@ -26,7 +26,7 @@ Added
 ~~~~~
 
 **New Binning Methods:**
-- ``SingletonBinning`` - Clean categorical encoding for discrete values
+- ``SingletonBinning`` - Creates one bin per unique numeric value
 - ``SupervisedBinning`` - Decision tree-based supervised binning
 - ``EqualFrequencyBinning`` - Quantile-based equal-frequency binning
 - ``KMeansBinning`` - K-means clustering-based discretization

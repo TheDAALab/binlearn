@@ -64,9 +64,9 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
 
     Example:
         >>> import numpy as np
-        >>> from binlearn.methods import OneHotBinning
+        >>> from binlearn.methods import SingletonBinning
         >>> X = np.array([[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]])
-        >>> binner = OneHotBinning(max_unique_values=50)
+        >>> binner = SingletonBinning()
         >>> X_binned = binner.fit_transform(X)
         >>> # Each unique value gets its own bin: 1.0->bin0, 2.0->bin1, etc.
     """
@@ -79,7 +79,7 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
         max_unique_values: int = 100,
         **kwargs: Any,
     ) -> None:
-        """Initialize OneHotBinning transformer.
+        """Initialize SingletonBinning transformer.
 
         Creates a specialized binning transformer that generates singleton bins for
         each unique value in the data. This is NOT traditional one-hot encoding that
@@ -113,11 +113,11 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
 
         Example:
             >>> # Basic usage for low-cardinality numeric data
-            >>> binner = OneHotBinning(max_unique_values=50)
+            >>> binner = SingletonBinning()
 
             >>> # With pre-defined bin specifications (simplified input format)
             >>> spec = {0: [1.0, 2.0]}  # Input: just the values
-            >>> binner = OneHotBinning(bin_spec=spec)
+            >>> binner = SingletonBinning(bin_spec=spec)
             >>> # Internally stored as: {0: [1.0, 2.0]}
 
         Note:
@@ -138,9 +138,9 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
         )
 
     def _validate_params(self) -> None:
-        """Validate OneHotBinning specific parameters.
+        """Validate SingletonBinning specific parameters.
 
-        Performs validation of parameters specific to OneHotBinning in addition
+        Performs validation of parameters specific to SingletonBinning in addition
         to the base class parameter validation. Ensures that the max_unique_values
         parameter is properly configured to prevent memory issues with high-cardinality data.
 
@@ -152,7 +152,7 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
         Note:
             - Called automatically during initialization and parameter setting
             - Supplements the base class _validate_params() method
-            - Focuses specifically on OneHotBinning parameter constraints
+            - Focuses specifically on SingletonBinning parameter constraints
         """
         super()._validate_params()
 
@@ -192,7 +192,7 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
             x_col = np.asarray(x_col, dtype=float)
         except (ValueError, TypeError) as e:
             raise ValueError(
-                f"OneHotBinning only supports numeric data. "
+                f"SingletonBinning only supports numeric data. "
                 f"Column {col_id} contains non-numeric values. "
                 f"Original error: {str(e)}"
             ) from e
