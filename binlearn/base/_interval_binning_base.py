@@ -379,7 +379,7 @@ class IntervalBinningBase(GeneralBinningBase):
             return
 
         # Create a more descriptive column reference
-        if isinstance(col, (int, np.integer)):
+        if isinstance(col, int | np.integer):
             col_ref = f"column {col} (index {col_index})"
         else:
             col_ref = f"column '{col}'"

@@ -12,7 +12,7 @@ Classes:
     SupervisedBinning: Main transformer for supervised binning operations.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from sklearn.base import clone
@@ -62,11 +62,11 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
     def __init__(
         self,
         task_type: str = "classification",
-        tree_params: Optional[Dict[str, Any]] = None,
+        tree_params: dict[str, Any] | None = None,
         preserve_dataframe: bool = False,
         bin_edges: Any = None,
         bin_representatives: Any = None,
-        guidance_columns: Optional[GuidanceColumns] = None,
+        guidance_columns: GuidanceColumns | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the SupervisedBinning transformer.
@@ -149,16 +149,16 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         )
 
         # Initialize tree storage attributes
-        self._fitted_trees: Dict[ColumnId, Any] = {}
-        self._tree_importance: Dict[ColumnId, float] = {}
+        self._fitted_trees: dict[ColumnId, Any] = {}
+        self._tree_importance: dict[ColumnId, float] = {}
 
         # Create tree template for cloning during fitting
         self._create_tree_template()
 
     # pylint: disable=too-many-locals
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[BinEdges, BinEdges]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[BinEdges, BinEdges]:
         """Calculate bins using decision tree splits for a single column.
 
         Fits a decision tree to predict the guidance data from the feature column,
@@ -267,7 +267,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         # Remove duplicates while preserving order
 
         config = get_config()
-        bin_edges: List[float] = []
+        bin_edges: list[float] = []
         for edge in all_edges:
             if not bin_edges or abs(edge - bin_edges[-1]) > config.float_tolerance:
                 bin_edges.append(edge)
@@ -330,7 +330,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return split_points
 
-    def get_feature_importance(self, column_id: Optional[ColumnId] = None) -> Dict[ColumnId, float]:
+    def get_feature_importance(self, column_id: ColumnId | None = None) -> dict[ColumnId, float]:
         """Get feature importance scores from the fitted decision trees.
 
         Returns the importance scores computed by the decision trees during
@@ -399,7 +399,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return self._tree_importance.copy()
 
-    def get_tree_structure(self, column_id: ColumnId) -> Dict[str, Any]:
+    def get_tree_structure(self, column_id: ColumnId) -> dict[str, Any]:
         """Get the structure of the decision tree for a specific column.
 
         Provides detailed information about the decision tree that was fitted

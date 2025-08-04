@@ -8,7 +8,7 @@ Classes:
     KMeansBinning: Main transformer for K-means clustering-based binning operations.
 """
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import kmeans1d
 import numpy as np
@@ -54,12 +54,12 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
     def __init__(
         self,
         n_bins: int = 10,
-        random_state: Optional[int] = None,
-        clip: Optional[bool] = None,
-        preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[BinEdgesDict] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        fit_jointly: Optional[bool] = None,
+        random_state: int | None = None,
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize KMeansBinning transformer.
@@ -123,8 +123,8 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[list[float], list[float]]:
         """Calculate K-means clustering-based bins for a single column or joint binning data.
 
         Computes bin edges and representatives for either a single feature (per-column
@@ -167,7 +167,7 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-locals
     def _create_kmeans_bins(
         self, x_col: np.ndarray, col_id: Any, n_bins: int
-    ) -> Tuple[List[float], List[float]]:
+    ) -> tuple[list[float], list[float]]:
         """Create K-means clustering-based bins.
 
         Generates bin edges and representative values using K-means clustering

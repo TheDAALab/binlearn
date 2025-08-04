@@ -2,7 +2,7 @@
 Simple representation mixin for binning classes.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from ..utils.inspection import safe_get_constructor_info
 
@@ -16,7 +16,7 @@ class ReprMixin:
     determined by inspecting the class's constructor signature.
     """
 
-    def _get_constructor_info(self) -> Dict[str, Any]:
+    def _get_constructor_info(self) -> dict[str, Any]:
         """Get constructor parameter names and their default values.
 
         Extracts parameter information from the class constructor signature,

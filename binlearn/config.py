@@ -12,7 +12,7 @@ This module provides a comprehensive configuration system that supports:
 import json
 import os
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 # pylint: disable=too-many-instance-attributes
@@ -64,7 +64,7 @@ class BinningConfig:
     supervised_default_min_samples_leaf: int = 5
     supervised_default_min_samples_split: int = 10
     supervised_default_task_type: str = "classification"
-    supervised_random_state: Optional[int] = None
+    supervised_random_state: int | None = None
 
     # =============================================================================
     # VALIDATION AND ERROR HANDLING
@@ -87,7 +87,7 @@ class BinningConfig:
 
     # Performance settings
     parallel_processing: bool = False
-    max_workers: Optional[int] = None
+    max_workers: int | None = None
     memory_efficient_mode: bool = False
 
     # Caching settings
@@ -107,7 +107,7 @@ class BinningConfig:
     default_column_selection: str = "numeric"  # "numeric", "all", "explicit"
 
     @classmethod
-    def from_dict(cls, config_dict: Dict[str, Any]) -> "BinningConfig":
+    def from_dict(cls, config_dict: dict[str, Any]) -> "BinningConfig":
         """Create config from dictionary, ignoring unknown keys."""
         valid_keys = {
             field.name for field in cls.__dataclass_fields__.values()  # pylint: disable=no-member
@@ -115,7 +115,7 @@ class BinningConfig:
         filtered_dict = {k: v for k, v in config_dict.items() if k in valid_keys}
         return cls(**filtered_dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary."""
         return asdict(self)
 
@@ -153,7 +153,7 @@ class BinningConfig:
                 ):
                     if value < 1:
                         raise ValueError(f"{key} must be positive, got {value}")
-                elif key == "float_tolerance" and isinstance(value, (int, float)):
+                elif key == "float_tolerance" and isinstance(value, int | float):
                     if value <= 0:
                         raise ValueError("float_tolerance must be positive")
 
@@ -176,7 +176,7 @@ class BinningConfig:
         if key in valid_strategies and value not in valid_strategies[key]:
             raise ValueError(f"{key} must be one of {valid_strategies[key]}, got '{value}'")
 
-    def get_method_defaults(self, method_name: str) -> Dict[str, Any]:
+    def get_method_defaults(self, method_name: str) -> dict[str, Any]:
         """
         Get default configuration values for a specific binning method.
 
@@ -186,7 +186,7 @@ class BinningConfig:
         Returns:
             Dictionary of default parameters for the method
         """
-        defaults: Dict[str, Any] = {
+        defaults: dict[str, Any] = {
             "preserve_dataframe": self.preserve_dataframe,
             "fit_jointly": self.fit_jointly,
             "strict_validation": self.strict_validation,
@@ -311,8 +311,8 @@ def reset_config() -> None:
 
 
 def apply_config_defaults(
-    method_name: str, user_params: Optional[Dict[str, Any]] = None, **override_params: Any
-) -> Dict[str, Any]:
+    method_name: str, user_params: dict[str, Any] | None = None, **override_params: Any
+) -> dict[str, Any]:
     """
     Apply configuration defaults to user parameters for a specific method.
 
@@ -370,7 +370,7 @@ def validate_config_parameter(name: str, value: Any) -> bool:
         return False
 
 
-def get_config_schema() -> Dict[str, Dict[str, Any]]:
+def get_config_schema() -> dict[str, dict[str, Any]]:
     """
     Get the configuration schema with parameter descriptions and types.
 
@@ -445,7 +445,7 @@ class ConfigContext:
 
     def __init__(self, **temp_config: Any) -> None:
         self.temp_config = temp_config
-        self.original_config: Dict[str, Any] = {}
+        self.original_config: dict[str, Any] = {}
 
     def __enter__(self) -> "ConfigContext":
         # Save current configuration

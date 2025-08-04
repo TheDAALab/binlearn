@@ -36,7 +36,7 @@ def validate_bin_edges_format(bin_edges: Any) -> None:
         raise ValueError("bin_edges must be a dictionary mapping column identifiers to edge lists")
 
     for col_id, edges in bin_edges.items():
-        if not hasattr(edges, "__iter__") or isinstance(edges, (str, bytes)):
+        if not hasattr(edges, "__iter__") or isinstance(edges, str | bytes):
             raise ValueError(
                 f"Edges for column {col_id} must be array-like (list, tuple, or numpy array)"
             )
@@ -80,7 +80,7 @@ def validate_bin_representatives_format(bin_representatives: Any, bin_edges: Any
         )
 
     for col_id, reps in bin_representatives.items():
-        if not hasattr(reps, "__iter__") or isinstance(reps, (str, bytes)):
+        if not hasattr(reps, "__iter__") or isinstance(reps, str | bytes):
             raise ValueError(
                 f"Representatives for column {col_id} must be array-like (list, tuple,"
                 " or numpy array)"

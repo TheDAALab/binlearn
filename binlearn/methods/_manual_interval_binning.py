@@ -9,7 +9,7 @@ Classes:
     ManualIntervalBinning: Main transformer for user-defined interval binning.
 """
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -63,10 +63,10 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
     def __init__(
         self,
         bin_edges: BinEdgesDict,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        clip: Optional[bool] = None,
-        preserve_dataframe: Optional[bool] = None,
-        fit_jointly: Optional[bool] = None,
+        bin_representatives: BinEdgesDict | None = None,
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        fit_jointly: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize ManualIntervalBinning transformer.
@@ -129,8 +129,8 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[list[float], list[float]]:
         """Return pre-defined bins without calculation.
 
         Since ManualIntervalBinning uses user-provided bin edges, this method

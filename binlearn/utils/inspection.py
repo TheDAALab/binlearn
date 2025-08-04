@@ -6,14 +6,14 @@ across different binning classes.
 """
 
 import inspect
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any
 
 
 def get_class_parameters(
-    class_obj: Type,
-    exclude_params: Optional[Set[str]] = None,
-    exclude_base_class: Optional[str] = None,
-) -> List[str]:
+    class_obj: type,
+    exclude_params: set[str] | None = None,
+    exclude_base_class: str | None = None,
+) -> list[str]:
     """
     Get parameter names from a class constructor, optionally excluding base class parameters.
 
@@ -69,7 +69,7 @@ def get_class_parameters(
     return list(current_params)
 
 
-def get_constructor_info(class_obj: Type, concrete_only: bool = True) -> Dict[str, Any]:
+def get_constructor_info(class_obj: type, concrete_only: bool = True) -> dict[str, Any]:
     """
     Get constructor parameter names and their default values.
 
@@ -120,11 +120,11 @@ def get_constructor_info(class_obj: Type, concrete_only: bool = True) -> Dict[st
 
 
 def safe_get_class_parameters(
-    class_obj: Type,
-    exclude_params: Optional[Set[str]] = None,
-    exclude_base_class: Optional[str] = None,
-    fallback: Optional[List[str]] = None,
-) -> List[str]:
+    class_obj: type,
+    exclude_params: set[str] | None = None,
+    exclude_base_class: str | None = None,
+    fallback: list[str] | None = None,
+) -> list[str]:
     """
     Safely get class parameters with fallback on inspection failure.
 
@@ -157,8 +157,8 @@ def safe_get_class_parameters(
 
 
 def safe_get_constructor_info(
-    class_obj: Type, concrete_only: bool = True, fallback: Optional[Dict[str, Any]] = None
-) -> Dict[str, Any]:
+    class_obj: type, concrete_only: bool = True, fallback: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Safely get constructor info with fallback on inspection failure.
 

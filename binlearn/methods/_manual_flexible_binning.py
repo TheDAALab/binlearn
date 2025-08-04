@@ -9,7 +9,7 @@ Classes:
     ManualFlexibleBinning: Main transformer for user-defined flexible binning.
 """
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -78,8 +78,8 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
     def __init__(
         self,
         bin_spec: FlexibleBinSpec,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        preserve_dataframe: Optional[bool] = None,
+        bin_representatives: BinEdgesDict | None = None,
+        preserve_dataframe: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize ManualFlexibleBinning transformer.
@@ -152,8 +152,8 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
         )
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[FlexibleBinDefs, BinReps]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[FlexibleBinDefs, BinReps]:
         """Return pre-defined flexible bin specifications without calculation.
 
         Since ManualFlexibleBinning uses user-provided bin specifications, this method

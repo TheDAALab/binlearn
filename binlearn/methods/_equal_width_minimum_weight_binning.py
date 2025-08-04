@@ -9,7 +9,7 @@ Classes:
 """
 
 import warnings
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -60,13 +60,13 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         self,
         n_bins: int = 10,
         minimum_weight: float = 1.0,
-        bin_range: Optional[Tuple[float, float]] = None,
-        clip: Optional[bool] = None,
-        preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[BinEdgesDict] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        fit_jointly: Optional[bool] = None,
-        guidance_columns: Optional[GuidanceColumns] = None,
+        bin_range: tuple[float, float] | None = None,
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
+        guidance_columns: GuidanceColumns | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize EqualWidthMinimumWeightBinning transformer.
@@ -141,8 +141,8 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[list[float], list[float]]:
         """Calculate equal-width bins with minimum weight constraint for a single column.
 
         Computes bin edges and representatives starting with equal-width bins and then
@@ -232,7 +232,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-locals
     def _create_weight_constrained_bins(
         self, x_data: np.ndarray, weights: np.ndarray, col_id: Any
-    ) -> Tuple[List[float], List[float]]:
+    ) -> tuple[list[float], list[float]]:
         """Create equal-width bins with minimum weight constraint.
 
         Args:
@@ -338,7 +338,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
         return np.array(merged_edges)  # type: ignore[no-any-return]
 
-    def _perform_bin_merging(self, edges: np.ndarray, bin_weights: np.ndarray) -> List[float]:
+    def _perform_bin_merging(self, edges: np.ndarray, bin_weights: np.ndarray) -> list[float]:
         """Perform the actual bin merging logic.
 
         Separated from _merge_underweight_bins to make testing easier.
@@ -377,15 +377,15 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             raise ConfigurationError("n_bins must be a positive integer")
 
         # Validate minimum_weight
-        if not isinstance(self.minimum_weight, (int, float)) or self.minimum_weight <= 0:
+        if not isinstance(self.minimum_weight, int | float) or self.minimum_weight <= 0:
             raise ConfigurationError("minimum_weight must be a positive number")
 
         # Validate bin_range if provided
         if self.bin_range is not None:
             if (
-                not isinstance(self.bin_range, (tuple, list))
+                not isinstance(self.bin_range, tuple | list)
                 or len(self.bin_range) != 2
-                or not all(isinstance(x, (int, float)) for x in self.bin_range)
+                or not all(isinstance(x, int | float) for x in self.bin_range)
                 or self.bin_range[0] >= self.bin_range[1]
             ):
                 raise ConfigurationError(

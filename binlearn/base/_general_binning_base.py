@@ -286,7 +286,7 @@ class GeneralBinningBase(
         except Exception as e:
             if isinstance(e, BinningError):
                 raise
-            if isinstance(e, (ValueError, RuntimeError, NotImplementedError)):
+            if isinstance(e, ValueError | RuntimeError | NotImplementedError):
                 # Let these pass through unchanged for test compatibility
                 raise
             raise ValueError(f"Failed to fit binning model: {str(e)}") from e
@@ -347,7 +347,7 @@ class GeneralBinningBase(
                 result = np.empty((X_binning.shape[0], 0), dtype=int)
             return return_like_input(result, X, binning_cols, bool(self.preserve_dataframe))
         except Exception as e:
-            if isinstance(e, (BinningError, RuntimeError)):
+            if isinstance(e, BinningError | RuntimeError):
                 raise
             raise ValueError(f"Failed to transform data: {str(e)}") from e
 
@@ -422,7 +422,7 @@ class GeneralBinningBase(
             return return_like_input(result, X, columns, bool(self.preserve_dataframe))
 
         except Exception as e:
-            if isinstance(e, (BinningError, RuntimeError)):
+            if isinstance(e, BinningError | RuntimeError):
                 raise
             raise ValueError(f"Failed to inverse transform data: {str(e)}") from e
 
@@ -792,5 +792,5 @@ class GeneralBinningBase(
 
         # Validate guidance_columns
         if self.guidance_columns is not None:
-            if not isinstance(self.guidance_columns, (list, tuple, int, str)):
+            if not isinstance(self.guidance_columns, list | tuple | int | str):
                 raise TypeError("guidance_columns must be list, tuple, int, str, or None")

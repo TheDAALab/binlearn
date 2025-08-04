@@ -10,7 +10,7 @@ strategies for insufficient data scenarios and comprehensive data quality valida
 """
 
 import warnings
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
@@ -40,7 +40,7 @@ class SupervisedBinningBase(IntervalBinningBase):
     def __init__(
         self,
         task_type: str = "classification",
-        tree_params: Optional[Dict[str, Any]] = None,
+        tree_params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize SupervisedBinningBase with task configuration and tree parameters.
@@ -94,7 +94,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         # Note: Tree template creation is deferred to fit time to allow invalid parameters
         # during initialization (for sklearn compatibility)
-        self._tree_template: Optional[Union[DecisionTreeClassifier, DecisionTreeRegressor]] = None
+        self._tree_template: DecisionTreeClassifier | DecisionTreeRegressor | None = None
 
     def _create_tree_template(self) -> None:
         """Create tree template with merged parameters.
@@ -212,7 +212,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     def validate_feature_target_pair(
         self, x_col: np.ndarray, guidance_data: np.ndarray, col_id: Any = None
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Validate feature-target pair and create valid data mask.
 
         Performs comprehensive validation of a feature-target pair for supervised
@@ -284,7 +284,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     def extract_valid_pairs(
         self, x_col: np.ndarray, guidance_data: np.ndarray, valid_mask: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Extract valid feature-target pairs using the provided mask.
 
         Filters the feature and target data to include only valid (non-missing)
@@ -319,7 +319,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         return x_col[valid_mask], guidance_data[valid_mask]
 
     def require_guidance_data(
-        self, guidance_data: Optional[np.ndarray], method_name: str = "supervised binning"
+        self, guidance_data: np.ndarray | None, method_name: str = "supervised binning"
     ) -> None:
         """Ensure guidance data is provided for supervised methods.
 
@@ -386,7 +386,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     def handle_insufficient_data(
         self, x_col: np.ndarray, valid_mask: np.ndarray, min_samples: int, col_id: Any = None
-    ) -> Optional[Tuple[BinEdges, BinEdges]]:
+    ) -> tuple[BinEdges, BinEdges] | None:
         """Handle cases with insufficient valid data for supervised binning.
 
         Provides a fallback strategy when there are not enough valid feature-target
@@ -450,7 +450,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         if col_id is not None:
             col_ref = (
                 f"column {col_id}"
-                if isinstance(col_id, (int, np.integer))
+                if isinstance(col_id, int | np.integer)
                 else f"column '{col_id}'"
             )
             warnings.warn(
@@ -463,8 +463,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         return [min_val, max_val], [(min_val + max_val) / 2]
 
     def create_fallback_bins(
-        self, x_col: np.ndarray, default_range: Optional[Tuple[float, float]] = None
-    ) -> Tuple[BinEdges, BinEdges]:
+        self, x_col: np.ndarray, default_range: tuple[float, float] | None = None
+    ) -> tuple[BinEdges, BinEdges]:
         """Create fallback bins when supervised binning fails.
 
         Constructs simple fallback bin specifications when supervised binning

@@ -3,7 +3,7 @@ Enhanced error handling for the binning framework.
 """
 
 import warnings
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import numpy as np
 
@@ -13,7 +13,7 @@ from binlearn.config import get_config
 class BinningError(Exception):
     """Base exception for all binning-related errors."""
 
-    def __init__(self, message: str, suggestions: Optional[List[str]] = None):
+    def __init__(self, message: str, suggestions: list[str] | None = None):
         super().__init__(message)
         self.suggestions = suggestions or []
 
@@ -63,7 +63,7 @@ class ValidationMixin:
     @staticmethod
     def validate_array_like(
         data: Any, name: str = "data", allow_none: bool = False
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """Validate and convert array-like input."""
         if data is None and allow_none:
             return None
@@ -96,17 +96,17 @@ class ValidationMixin:
         return arr  # type: ignore[no-any-return]
 
     @staticmethod
-    def validate_column_specification(columns: Any, data_shape: tuple) -> List[Any]:
+    def validate_column_specification(columns: Any, data_shape: tuple) -> list[Any]:
         """Validate column specifications."""
         if columns is None:
             return list(range(data_shape[1]))
 
         # Convert single column to list
-        if not isinstance(columns, (list, tuple, np.ndarray)):
+        if not isinstance(columns, list | tuple | np.ndarray):
             columns = [columns]
 
         # Validate each column
-        validated_columns: List[Any] = []
+        validated_columns: list[Any] = []
         for col in columns:
             if isinstance(col, str):
                 validated_columns.append(col)
@@ -133,14 +133,14 @@ class ValidationMixin:
 
     @staticmethod
     def validate_guidance_columns(
-        guidance_cols: Any, binning_cols: List[Any], data_shape: tuple
-    ) -> List[Any]:
+        guidance_cols: Any, binning_cols: list[Any], data_shape: tuple
+    ) -> list[Any]:
         """Validate guidance column specifications."""
         if guidance_cols is None:
             return []
 
         # Convert to list if needed
-        if not isinstance(guidance_cols, (list, tuple)):
+        if not isinstance(guidance_cols, list | tuple):
             guidance_cols = [guidance_cols]
 
         validated_guidance = ValidationMixin.validate_column_specification(
@@ -220,7 +220,7 @@ class ValidationMixin:
                     )
 
 
-def validate_tree_params(task_type: str, tree_params: Dict[str, Any]) -> Dict[str, Any]:
+def validate_tree_params(task_type: str, tree_params: dict[str, Any]) -> dict[str, Any]:
     """Validate tree parameters for SupervisedBinning."""
     _ = task_type
 
@@ -278,7 +278,7 @@ def validate_tree_params(task_type: str, tree_params: Dict[str, Any]) -> Dict[st
     return tree_params
 
 
-def suggest_alternatives(method_name: str) -> List[str]:
+def suggest_alternatives(method_name: str) -> list[str]:
     """Suggest alternative method names for common misspellings."""
     alternatives = {
         "supervised": ["tree", "decision_tree"],

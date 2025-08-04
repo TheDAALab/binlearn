@@ -43,7 +43,7 @@ def generate_default_flexible_representatives(bin_defs: FlexibleBinDefs) -> BinR
     """
     reps = []
     for bin_def in bin_defs:
-        if isinstance(bin_def, (int, float)):
+        if isinstance(bin_def, int | float):
             # Numeric singleton bin
             reps.append(float(bin_def))
         elif isinstance(bin_def, tuple) and len(bin_def) == 2:
@@ -112,7 +112,7 @@ def validate_flexible_bin_spec_format(
         raise ValueError("bin_spec must be a dictionary mapping columns to bin definitions")
 
     for col, bin_defs in bin_spec.items():
-        if not isinstance(bin_defs, (list, tuple)):
+        if not isinstance(bin_defs, list | tuple):
             raise ValueError(f"Bin definitions for column {col} must be a list or tuple")
 
         if strict and len(bin_defs) == 0:
@@ -152,7 +152,7 @@ def _validate_single_flexible_bin_def(
     ValueError
         If bin definition is invalid.
     """
-    if isinstance(bin_def, (int, float)):
+    if isinstance(bin_def, int | float):
         # Numeric singleton bin - optionally check if finite
         if check_finite_bounds and not np.isfinite(bin_def):
             raise ValueError(f"Column {col}, bin {bin_idx}: Singleton value must be finite")
@@ -162,7 +162,7 @@ def _validate_single_flexible_bin_def(
             raise ValueError(f"Column {col}, bin {bin_idx}: Interval must be (min, max)")
 
         left, right = bin_def
-        if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+        if not isinstance(left, int | float) or not isinstance(right, int | float):
             raise ValueError(f"Column {col}, bin {bin_idx}: Interval values must be numeric")
 
         # Check for finite bounds if required
@@ -202,7 +202,7 @@ def is_missing_value(value: Any) -> bool:
     if value is None:
         return True
 
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         return bool(np.isnan(value))
 
     return False
@@ -224,14 +224,14 @@ def find_flexible_bin_for_value(value: Any, bin_defs: FlexibleBinDefs) -> int:
         Bin index if found, MISSING_VALUE if no match.
     """
     for bin_idx, bin_def in enumerate(bin_defs):
-        if isinstance(bin_def, (int, float)):
+        if isinstance(bin_def, int | float):
             # Singleton bin - direct comparison
             if value == bin_def:
                 return bin_idx
         elif isinstance(bin_def, tuple) and len(bin_def) == 2:
             # Interval bin - only for numeric values
             left, right = bin_def
-            if isinstance(value, (int, float)) and left <= value <= right:
+            if isinstance(value, int | float) and left <= value <= right:
                 return bin_idx
 
     # Value doesn't match any bin - treat as missing
@@ -256,7 +256,7 @@ def calculate_flexible_bin_width(bin_def: FlexibleBinDef) -> float:
     ValueError
         If bin definition has unknown format.
     """
-    if isinstance(bin_def, (int, float)):
+    if isinstance(bin_def, int | float):
         # Singleton bin has zero width
         return 0.0
     if isinstance(bin_def, tuple) and len(bin_def) == 2:

@@ -9,7 +9,7 @@ Classes:
     EqualFrequencyBinning: Main transformer for equal-frequency binning operations.
 """
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -53,12 +53,12 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
     def __init__(
         self,
         n_bins: int = 10,
-        quantile_range: Optional[Tuple[float, float]] = None,
-        clip: Optional[bool] = None,
-        preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[BinEdgesDict] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        fit_jointly: Optional[bool] = None,
+        quantile_range: tuple[float, float] | None = None,
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize EqualFrequencyBinning transformer.
@@ -121,8 +121,8 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[list[float], list[float]]:
         """Calculate equal-frequency bins for a single column or joint binning data.
 
         Computes bin edges and representatives for either a single feature (per-column
@@ -173,7 +173,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-locals
     def _create_equal_frequency_bins(
         self, x_col: np.ndarray, col_id: Any, min_quantile: float, max_quantile: float, n_bins: int
-    ) -> Tuple[List[float], List[float]]:
+    ) -> tuple[list[float], list[float]]:
         """Create equal-frequency bins using quantiles.
 
         Generates bin edges and representative values for equal-frequency binning
@@ -306,8 +306,8 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
 
             min_q, max_q = self.quantile_range
             if (
-                not isinstance(min_q, (int, float))
-                or not isinstance(max_q, (int, float))
+                not isinstance(min_q, int | float)
+                or not isinstance(max_q, int | float)
                 or min_q < 0
                 or max_q > 1
                 or min_q >= max_q

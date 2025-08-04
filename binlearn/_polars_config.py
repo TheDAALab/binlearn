@@ -6,7 +6,7 @@ This module attempts to import polars and sets a flag indicating its availabilit
 from typing import Any, Optional
 
 # Initialize variables
-pl: Optional[Any] = None
+pl: Any | None = None
 POLARS_AVAILABLE = False
 
 try:

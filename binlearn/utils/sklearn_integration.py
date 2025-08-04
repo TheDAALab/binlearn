@@ -1,13 +1,13 @@
 """Sklearn integration utilities for binning methods."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 # pylint: disable=too-few-public-methods
 class SklearnCompatibilityMixin:
     """Mixin to enhance sklearn compatibility for binning methods."""
 
-    def _more_tags(self) -> Dict:
+    def _more_tags(self) -> dict:
         """Provide additional tags for sklearn compatibility."""
         return {
             "requires_fit": True,
@@ -29,7 +29,7 @@ class SklearnCompatibilityMixin:
             },
         }
 
-    def _check_feature_names(self, X: Any, reset: bool = False) -> List[str]:
+    def _check_feature_names(self, X: Any, reset: bool = False) -> list[str]:
         """Check and store feature names from input."""
         feature_names = None
 
@@ -52,7 +52,7 @@ class SklearnCompatibilityMixin:
 
         return feature_names
 
-    def get_feature_names_out(self, input_features: Optional[List[str]] = None) -> List[str]:
+    def get_feature_names_out(self, input_features: list[str] | None = None) -> list[str]:
         """Get output feature names for transformation."""
         # Note: This assumes the class using this mixin inherits from BaseEstimator
         # Check if fitted (basic check)

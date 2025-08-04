@@ -13,7 +13,7 @@ Functions:
     _import_supervised_binning: Helper function to import SupervisedBinning.
 """
 
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -48,7 +48,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         binning_method: str = "equal_width",
         k: int = 10,
         score_func: str = "auto",
-        binning_params: Optional[Dict] = None,
+        binning_params: dict | None = None,
     ):
         """Initialize the feature selector.
 
@@ -69,8 +69,8 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         self.binning_params = binning_params or {}
 
         # Initialize attributes that will be set during fit
-        self.selector_: Optional[SelectKBest] = None
-        self.binner_: Optional[Any] = None
+        self.selector_: SelectKBest | None = None
+        self.binner_: Any | None = None
 
     def fit(self, X: Any, y: Any) -> Any:
         """Fit the feature selector.
@@ -175,9 +175,9 @@ class BinningPipeline:
 
     @staticmethod
     def create_supervised_binning_pipeline(
-        guidance_column: Union[str, int],
+        guidance_column: str | int,
         task_type: str = "classification",
-        tree_params: Optional[Dict] = None,
+        tree_params: dict | None = None,
         final_estimator: Any = None,
     ) -> Any:
         """Create a pipeline with supervised binning.
@@ -210,7 +210,7 @@ class BinningPipeline:
 
 
 def make_binning_scorer(
-    binning_method: str = "supervised", binning_params: Optional[Dict] = None
+    binning_method: str = "supervised", binning_params: dict | None = None
 ) -> Any:
     """Create a scorer that includes binning in the evaluation.
 

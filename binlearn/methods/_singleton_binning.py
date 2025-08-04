@@ -10,7 +10,7 @@ as its own bin, useful for categorical data represented as numbers or when you n
 fine-grained binning based on actual data values.
 """
 
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -73,9 +73,9 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
 
     def __init__(
         self,
-        preserve_dataframe: Optional[bool] = None,
-        bin_spec: Optional[FlexibleBinSpec] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
+        preserve_dataframe: bool | None = None,
+        bin_spec: FlexibleBinSpec | None = None,
+        bin_representatives: BinEdgesDict | None = None,
         max_unique_values: int = 100,
         **kwargs: Any,
     ) -> None:
@@ -160,8 +160,8 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
             raise ValueError("max_unique_values must be a positive integer")
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: ColumnId, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[FlexibleBinDefs, BinEdges]:
+        self, x_col: np.ndarray, col_id: ColumnId, guidance_data: np.ndarray | None = None
+    ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate singleton bins for each unique value in the column.
 
         Creates one bin per unique value found in the data. Each bin is defined as

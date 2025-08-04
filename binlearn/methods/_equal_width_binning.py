@@ -8,7 +8,7 @@ Classes:
     EqualWidthBinning: Main transformer for equal-width binning operations.
 """
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -52,12 +52,12 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
     def __init__(
         self,
         n_bins: int = 10,
-        bin_range: Optional[Tuple[float, float]] = None,
-        clip: Optional[bool] = None,
-        preserve_dataframe: Optional[bool] = None,
-        bin_edges: Optional[BinEdgesDict] = None,
-        bin_representatives: Optional[BinEdgesDict] = None,
-        fit_jointly: Optional[bool] = None,
+        bin_range: tuple[float, float] | None = None,
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        fit_jointly: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize EqualWidthBinning transformer.
@@ -119,8 +119,8 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: Optional[np.ndarray] = None
-    ) -> Tuple[List[float], List[float]]:
+        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+    ) -> tuple[list[float], list[float]]:
         """Calculate equal-width bins for a single column or joint binning data.
 
         Computes bin edges and representatives for either a single feature (per-column
@@ -166,7 +166,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
 
         return self._create_equal_width_bins(min_val, max_val, self.n_bins)
 
-    def _get_data_range(self, x_col: np.ndarray, col_id: Any) -> Tuple[float, float]:
+    def _get_data_range(self, x_col: np.ndarray, col_id: Any) -> tuple[float, float]:
         """Get the data range with robust handling of edge cases.
 
         Determines the minimum and maximum values for the provided data while handling
@@ -215,7 +215,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
 
     def _create_equal_width_bins(
         self, min_val: float, max_val: float, n_bins: int
-    ) -> Tuple[List[float], List[float]]:
+    ) -> tuple[list[float], list[float]]:
         """Create equal-width bins given range and number of bins.
 
         Generates bin edges and representative values for equal-width binning

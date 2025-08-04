@@ -7,7 +7,7 @@ to improve code readability and maintainability.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -17,11 +17,11 @@ import numpy as np
 
 # Column identifiers can be any type (int, str, etc.)
 ColumnId = Any
-ColumnList = List[ColumnId]
-OptionalColumnList = Optional[ColumnList]
+ColumnList = list[ColumnId]
+OptionalColumnList = ColumnList | None
 
 # Flexible guidance columns - can be single value or list
-GuidanceColumns = Optional[Union[ColumnList, ColumnId]]
+GuidanceColumns = ColumnList | ColumnId | None
 
 # Array-like data types
 ArrayLike = Any  # Could be np.ndarray, pandas.DataFrame, polars.DataFrame, list, etc.
@@ -31,16 +31,16 @@ ArrayLike = Any  # Could be np.ndarray, pandas.DataFrame, polars.DataFrame, list
 # =============================================================================
 
 # Bin edges for interval binning (e.g., [0, 1, 2, 3] for 3 bins)
-BinEdges = List[float]
-BinEdgesDict = Dict[ColumnId, BinEdges]
+BinEdges = list[float]
+BinEdgesDict = dict[ColumnId, BinEdges]
 
 # Bin representatives for interval binning (e.g., [0.5, 1.5, 2.5] for 3 bins)
-BinReps = List[float]
-BinRepsDict = Dict[ColumnId, BinReps]
+BinReps = list[float]
+BinRepsDict = dict[ColumnId, BinReps]
 
 # Optional versions for parameters
-OptionalBinEdgesDict = Optional[Union[BinEdgesDict, Any]]
-OptionalBinRepsDict = Optional[Union[BinRepsDict, Any]]
+OptionalBinEdgesDict = BinEdgesDict | Any | None
+OptionalBinRepsDict = BinRepsDict | Any | None
 
 # =============================================================================
 # FLEXIBLE BINNING TYPES
@@ -50,30 +50,30 @@ OptionalBinRepsDict = Optional[Union[BinRepsDict, Any]]
 FlexibleBinDef = Any  # Union[int, float, Tuple[Union[int, float], Union[int, float]]]
 
 # List of flexible bin definitions for a column
-FlexibleBinDefs = List[FlexibleBinDef]
+FlexibleBinDefs = list[FlexibleBinDef]
 
 # Dictionary mapping columns to their flexible bin definitions
-FlexibleBinSpec = Dict[ColumnId, FlexibleBinDefs]
+FlexibleBinSpec = dict[ColumnId, FlexibleBinDefs]
 
 # Optional versions for parameters
-OptionalFlexibleBinSpec = Optional[Union[FlexibleBinSpec, Any]]
+OptionalFlexibleBinSpec = FlexibleBinSpec | Any | None
 
 # =============================================================================
 # CALCULATION RETURN TYPES
 # =============================================================================
 
 # Return type for bin calculation methods in interval binning
-IntervalBinCalculationResult = Tuple[BinEdges, BinReps]
+IntervalBinCalculationResult = tuple[BinEdges, BinReps]
 
 # Return type for bin calculation methods in flexible binning
-FlexibleBinCalculationResult = Tuple[FlexibleBinDefs, BinReps]
+FlexibleBinCalculationResult = tuple[FlexibleBinDefs, BinReps]
 
 # =============================================================================
 # COUNT AND VALIDATION TYPES
 # =============================================================================
 
 # Dictionary mapping columns to number of bins
-BinCountDict = Dict[ColumnId, int]
+BinCountDict = dict[ColumnId, int]
 
 # =============================================================================
 # NUMPY ARRAY TYPES (for better clarity)
@@ -89,7 +89,7 @@ BooleanMask = np.ndarray  # Boolean array for masking
 # =============================================================================
 
 # Common fit_params type
-FitParams = Dict[str, Any]
+FitParams = dict[str, Any]
 
 # Common joint parameters type
-JointParams = Dict[str, Any]
+JointParams = dict[str, Any]
