@@ -14,7 +14,7 @@ Key Features:
     - Integration utilities for ML workflows
 
 Main Components:
-    Methods: EqualWidthBinning, SupervisedBinning, OneHotBinning
+    Methods: EqualWidthBinning, SupervisedBinning, SingletonBinning
     Base Classes: GeneralBinningBase, IntervalBinningBase, FlexibleBinningBase
     Utilities: Data handling, bin operations, error management
     Integration: Feature selection, pipeline utilities, scoring functions
@@ -85,7 +85,7 @@ from .base import (
 from .config import get_config, load_config, reset_config, set_config
 
 # Concrete binning methods
-from .methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
+from .methods import EqualWidthBinning, SingletonBinning, SupervisedBinning
 
 # Tools and integrations
 from .tools import (
@@ -182,7 +182,7 @@ __all__ = [
     "create_bin_masks",
     # Concrete methods
     "EqualWidthBinning",
-    "OneHotBinning",
+    "SingletonBinning",
     "SupervisedBinning",
     # Optional dependencies
     "PANDAS_AVAILABLE",

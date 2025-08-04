@@ -1,8 +1,11 @@
-============================
+=Singleton Binning Examples
+==========================
+
+This page demonstrates the use of ``SingletonBinning`` for creating binary indicator features from continuous variables.=======================
 One-Hot Binning Examples
 ============================
 
-This page demonstrates the use of ``OneHotBinning`` for creating binary indicator features from continuous variables.
+This page demonstrates the use of ``SingletonBinning`` for creating binary indicator features from continuous variables.
 
 Basic Usage
 ===========
@@ -14,29 +17,29 @@ Understanding One-Hot Binning
 
     import numpy as np
     import pandas as pd
-    from binlearn import OneHotBinning, EqualWidthBinning
+    from binlearn import SingletonBinning, EqualWidthBinning
     import matplotlib.pyplot as plt
 
     # Create sample data
     np.random.seed(42)
     ages = np.random.normal(35, 12, 1000).reshape(-1, 1)
 
-    # Regular binning vs One-hot binning
+    # Regular binning vs Singleton binning
     regular_binner = EqualWidthBinning(n_bins=5)
-onehot_binner = OneHotBinning(n_bins=5)
+singleton_binner = SingletonBinning(n_bins=5)
 
 regular_binned = regular_binner.fit_transform(ages)
-onehot_binned = onehot_binner.fit_transform(ages)
+singleton_binned = singleton_binner.fit_transform(ages)
 
 print("Original data shape:", ages.shape)
 print("Regular binning shape:", regular_binned.shape)
-print("One-hot binning shape:", onehot_binned.shape)
+print("Singleton binning shape:", singleton_binned.shape)
 
 print("\\nRegular binning sample (first 10 rows):")
 print(regular_binned[:10].flatten())
 
-print("\\nOne-hot binning sample (first 10 rows):")
-print(onehot_binned[:10])
+print("\\nSingleton binning sample (first 10 rows):")
+print(singleton_binned[:10])
 
 # Show the transformation
 df = pd.DataFrame({
@@ -46,7 +49,7 @@ df = pd.DataFrame({
 
 # Add one-hot columns
 for i in range(5):
-    df[f'bin_{i}'] = onehot_binned[:10, i]
+    df[f'bin_{i}'] = singleton_binned[:10, i]
 
 print("\\nTransformation comparison:")
 print(df)
@@ -57,7 +60,7 @@ print(df)
 ```python
 import numpy as np
 import pandas as pd
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 
 # Create multi-dimensional data
 np.random.seed(42)
@@ -71,32 +74,32 @@ feature_names = ['income', 'experience', 'age']
 print("Original data shape:", data.shape)
 
 # Apply one-hot binning with different bins per feature
-onehot_binner = OneHotBinning(n_bins=[4, 3, 5])  # Different bins for each feature
-onehot_features = onehot_binner.fit_transform(data)
+singleton_binner = SingletonBinning(n_bins=[4, 3, 5])  # Different bins for each feature
+singleton_features = singleton_binner.fit_transform(data)
 
-print("One-hot encoded shape:", onehot_features.shape)
-print("Total features created:", onehot_features.shape[1])
+print("Singleton encoded shape:", singleton_features.shape)
+print("Total features created:", singleton_features.shape[1])
 
 # Show bin edges for each feature
 for i, feature in enumerate(feature_names):
     print(f"\\n{feature} bin edges:")
-    print(onehot_binner.bin_edges_[i])
+    print(singleton_binner.bin_edges_[i])
 
 # Create feature names for the one-hot encoded columns
-feature_names_onehot = []
+feature_names_singleton = []
 start_idx = 0
 for i, feature in enumerate(feature_names):
-    n_bins = onehot_binner.n_bins[i] if isinstance(onehot_binner.n_bins, list) else onehot_binner.n_bins
+    n_bins = singleton_binner.n_bins[i] if isinstance(singleton_binner.n_bins, list) else singleton_binner.n_bins
     for j in range(n_bins):
-        feature_names_onehot.append(f'{feature}_bin_{j}')
+        feature_names_singleton.append(f'{feature}_bin_{j}')
 
-print("\\nOne-hot feature names:")
-print(feature_names_onehot)
+print("\\nSingleton feature names:")
+print(feature_names_singleton)
 
 # Show sample of transformed data
-df_onehot = pd.DataFrame(onehot_features[:10], columns=feature_names_onehot)
+df_singleton = pd.DataFrame(singleton_features[:10], columns=feature_names_singleton)
 print("\\nSample one-hot encoded data:")
-print(df_onehot)
+print(df_singleton)
 ```
 
 ## Real-world Applications
@@ -106,7 +109,7 @@ print(df_onehot)
 ```python
 import numpy as np
 import pandas as pd
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, roc_auc_score
@@ -165,19 +168,19 @@ lr_continuous.fit(X_train, y_train)
 y_pred_continuous = lr_continuous.predict(X_test)
 y_prob_continuous = lr_continuous.predict_proba(X_test)[:, 1]
 
-# Model 2: One-hot binned features
-onehot_binner = OneHotBinning(n_bins=4)  # 4 bins per feature
-X_train_onehot = onehot_binner.fit_transform(X_train)
-X_test_onehot = onehot_binner.transform(X_test)
+# Model 2: Singleton binned features
+singleton_binner = SingletonBinning(n_bins=4)  # 4 bins per feature
+X_train_singleton = singleton_binner.fit_transform(X_train)
+X_test_singleton = singleton_binner.transform(X_test)
 
-lr_onehot = LogisticRegression(random_state=42)
-lr_onehot.fit(X_train_onehot, y_train)
-y_pred_onehot = lr_onehot.predict(X_test_onehot)
-y_prob_onehot = lr_onehot.predict_proba(X_test_onehot)[:, 1]
+lr_singleton = LogisticRegression(random_state=42)
+lr_singleton.fit(X_train_singleton, y_train)
+y_pred_singleton = lr_singleton.predict(X_test_singleton)
+y_prob_singleton = lr_singleton.predict_proba(X_test_singleton)[:, 1]
 
 # Model 3: Combined features
-X_train_combined = np.concatenate([X_train, X_train_onehot], axis=1)
-X_test_combined = np.concatenate([X_test, X_test_onehot], axis=1)
+X_train_combined = np.concatenate([X_train, X_train_singleton], axis=1)
+X_test_combined = np.concatenate([X_test, X_test_singleton], axis=1)
 
 lr_combined = LogisticRegression(random_state=42)
 lr_combined.fit(X_train_combined, y_train)
@@ -191,22 +194,22 @@ print(f"AUC: {roc_auc_score(y_test, y_prob_continuous):.3f}")
 print(classification_report(y_test, y_pred_continuous))
 
 print("\\nOne-Hot Binned Features:")
-print(f"AUC: {roc_auc_score(y_test, y_prob_onehot):.3f}")
-print(classification_report(y_test, y_pred_onehot))
+print(f"AUC: {roc_auc_score(y_test, y_prob_singleton):.3f}")
+print(classification_report(y_test, y_pred_singleton))
 
 print("\\nCombined Features:")
 print(f"AUC: {roc_auc_score(y_test, y_prob_combined):.3f}")
 print(classification_report(y_test, y_pred_combined))
 
 # Analyze feature importance for one-hot model
-feature_names_onehot = []
+feature_names_singleton = []
 for i, feature in enumerate(features):
     for j in range(4):  # 4 bins per feature
-        feature_names_onehot.append(f'{feature}_bin_{j}')
+        feature_names_singleton.append(f'{feature}_bin_{j}')
 
 importance_df = pd.DataFrame({
-    'feature': feature_names_onehot,
-    'coefficient': lr_onehot.coef_[0]
+    'feature': feature_names_singleton,
+    'coefficient': lr_singleton.coef_[0]
 }).sort_values('coefficient', key=abs, ascending=False)
 
 print("\\nTop 10 One-Hot Features by Importance:")
@@ -218,7 +221,7 @@ print(importance_df.head(10))
 ```python
 import numpy as np
 import pandas as pd
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
@@ -283,11 +286,11 @@ y = df['disease'].values
 # Glucose: 3 groups (normal, prediabetic, diabetic)
 bins_per_feature = [4, 4, 3, 3, 3]
 
-onehot_binner = OneHotBinning(n_bins=bins_per_feature)
-X_onehot = onehot_binner.fit_transform(X)
+singleton_binner = SingletonBinning(n_bins=bins_per_feature)
+X_singleton = singleton_binner.fit_transform(X)
 
 print(f"\\nOriginal features: {X.shape[1]}")
-print(f"One-hot encoded features: {X_onehot.shape[1]}")
+print(f"Singleton encoded features: {X_singleton.shape[1]}")
 
 # Create meaningful feature names
 feature_bins = {
@@ -298,13 +301,13 @@ feature_bins = {
     'glucose': ['Normal', 'Prediabetic', 'Diabetic']
 }
 
-feature_names_onehot = []
+feature_names_singleton = []
 for i, feature in enumerate(features):
     for j, category in enumerate(feature_bins[feature]):
-        feature_names_onehot.append(f'{feature}_{category}')
+        feature_names_singleton.append(f'{feature}_{category}')
 
 # Train model with one-hot features
-X_train, X_test, y_train, y_test = train_test_split(X_onehot, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X_singleton, y, test_size=0.2, random_state=42)
 
 rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 rf_model.fit(X_train, y_train)
@@ -315,7 +318,7 @@ print(classification_report(y_test, y_pred))
 
 # Feature importance analysis
 importance_df = pd.DataFrame({
-    'feature': feature_names_onehot,
+    'feature': feature_names_singleton,
     'importance': rf_model.feature_importances_
 }).sort_values('importance', ascending=False)
 
@@ -323,11 +326,11 @@ print("\\nTop 10 Risk Factors:")
 print(importance_df.head(10))
 
 # Analyze risk by categories
-risk_analysis = pd.DataFrame(X_onehot, columns=feature_names_onehot)
+risk_analysis = pd.DataFrame(X_singleton, columns=feature_names_singleton)
 risk_analysis['disease'] = y
 
 print("\\nRisk Analysis by Categories:")
-for feature in feature_names_onehot[:10]:  # Show top 10
+for feature in feature_names_singleton[:10]:  # Show top 10
     category_risk = risk_analysis.groupby(feature)['disease'].agg(['count', 'mean'])
     if category_risk.loc[1, 'count'] > 50:  # Only show if sufficient samples
         risk_rate = category_risk.loc[1, 'mean']
@@ -340,7 +343,7 @@ for feature in feature_names_onehot[:10]:  # Show top 10
 ```python
 import numpy as np
 import pandas as pd
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
@@ -387,15 +390,15 @@ X_numerical = df[numerical_features].values
 y = df['category'].values
 
 # Apply one-hot binning to numerical features
-onehot_binner = OneHotBinning(n_bins=4)
-X_numerical_onehot = onehot_binner.fit_transform(X_numerical)
+singleton_binner = SingletonBinning(n_bins=4)
+X_numerical_singleton = singleton_binner.fit_transform(X_numerical)
 
 print(f"\\nNumerical features: {X_numerical.shape[1]}")
-print(f"One-hot encoded numerical features: {X_numerical_onehot.shape[1]}")
+print(f"Singleton encoded numerical features: {X_numerical_singleton.shape[1]}")
 
 # Split data
 X_train_num, X_test_num, y_train, y_test = train_test_split(
-    X_numerical_onehot, y, test_size=0.2, random_state=42
+    X_numerical_singleton, y, test_size=0.2, random_state=42
 )
 
 # Train classifier with one-hot numerical features
@@ -407,14 +410,14 @@ print("\\nClassification with One-Hot Numerical Features:")
 print(classification_report(y_test, y_pred_num))
 
 # Create feature names
-feature_names_onehot = []
+feature_names_singleton = []
 for feature in numerical_features:
     for i in range(4):
-        feature_names_onehot.append(f'{feature}_bin_{i}')
+        feature_names_singleton.append(f'{feature}_bin_{i}')
 
 # Feature importance
 importance_df = pd.DataFrame({
-    'feature': feature_names_onehot,
+    'feature': feature_names_singleton,
     'coefficient': lr_model.coef_[0]
 }).sort_values('coefficient', key=abs, ascending=False)
 
@@ -424,7 +427,7 @@ print(importance_df.head(10))
 # Show bin ranges for interpretation
 print("\\nBin Ranges for Interpretation:")
 for i, feature in enumerate(numerical_features):
-    bin_edges = onehot_binner.bin_edges_[i]
+    bin_edges = singleton_binner.bin_edges_[i]
     print(f"\\n{feature}:")
     for j in range(len(bin_edges) - 1):
         print(f"  Bin {j}: {bin_edges[j]:.2f} to {bin_edges[j+1]:.2f}")
@@ -436,7 +439,7 @@ for i, feature in enumerate(numerical_features):
 
 ```python
 import numpy as np
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 from scipy.sparse import csr_matrix
 import pandas as pd
 
@@ -462,20 +465,20 @@ print("Original data shape:", X.shape)
 print("Memory usage (MB):", X.nbytes / 1024**2)
 
 # Apply one-hot binning
-onehot_binner = OneHotBinning(n_bins=5)
-X_onehot = onehot_binner.fit_transform(X)
+singleton_binner = SingletonBinning(n_bins=5)
+X_singleton = singleton_binner.fit_transform(X)
 
-print("One-hot data shape:", X_onehot.shape)
-print("Memory usage (MB):", X_onehot.nbytes / 1024**2)
+print("Singleton data shape:", X_singleton.shape)
+print("Memory usage (MB):", X_singleton.nbytes / 1024**2)
 
 # Check sparsity
-sparsity = np.mean(X_onehot == 0)
+sparsity = np.mean(X_singleton == 0)
 print(f"Sparsity: {sparsity:.2%}")
 
 # Convert to sparse matrix for memory efficiency
-X_sparse = csr_matrix(X_onehot)
+X_sparse = csr_matrix(X_singleton)
 print(f"Sparse matrix memory (MB): {X_sparse.data.nbytes / 1024**2:.2f}")
-print(f"Memory reduction: {X_onehot.nbytes / X_sparse.data.nbytes:.1f}x")
+print(f"Memory reduction: {X_singleton.nbytes / X_sparse.data.nbytes:.1f}x")
 
 # Demonstrate working with sparse matrices
 from sklearn.linear_model import LogisticRegression
@@ -495,7 +498,7 @@ print("\\nSuccessfully trained model with sparse one-hot features!")
 ```python
 import numpy as np
 import pandas as pd
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -546,8 +549,8 @@ categorical_features = ['city', 'education', 'employment']
 
 # Create preprocessing pipeline
 preprocessor = ColumnTransformer([
-    ('num_onehot', OneHotBinning(n_bins=4), numerical_features),
-    ('cat_onehot', OneHotEncoder(drop='first'), categorical_features)
+    ('num_singleton', SingletonBinning(n_bins=4), numerical_features),
+    ('cat_singleton', OneHotEncoder(drop='first'), categorical_features)
 ])
 
 # Create full pipeline
@@ -569,7 +572,7 @@ for feature in numerical_features:
     for i in range(4):
         num_feature_names.append(f'{feature}_bin_{i}')
 
-cat_feature_names = pipeline.named_steps['preprocessor'].named_transformers_['cat_onehot'].get_feature_names_out(categorical_features)
+cat_feature_names = pipeline.named_steps['preprocessor'].named_transformers_['cat_singleton'].get_feature_names_out(categorical_features)
 
 all_feature_names = num_feature_names + list(cat_feature_names)
 
@@ -591,7 +594,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from binlearn import OneHotBinning
+from binlearn import SingletonBinning
 
 # Create dataset for visualization
 np.random.seed(42)
@@ -622,17 +625,17 @@ df = pd.DataFrame({
 
 # Apply one-hot binning
 X = df[['feature1', 'feature2']].values
-onehot_binner = OneHotBinning(n_bins=4)
-X_onehot = onehot_binner.fit_transform(X)
+singleton_binner = SingletonBinning(n_bins=4)
+X_singleton = singleton_binner.fit_transform(X)
 
 # Create one-hot DataFrame
-onehot_columns = []
+singleton_columns = []
 for i, feature in enumerate(['feature1', 'feature2']):
     for j in range(4):
-        onehot_columns.append(f'{feature}_bin_{j}')
+        singleton_columns.append(f'{feature}_bin_{j}')
 
-df_onehot = pd.DataFrame(X_onehot, columns=onehot_columns)
-df_onehot['target'] = target
+df_singleton = pd.DataFrame(X_singleton, columns=singleton_columns)
+df_singleton['target'] = target
 
 # Visualization
 plt.figure(figsize=(20, 15))
@@ -653,7 +656,7 @@ plt.xlabel('Value')
 plt.ylabel('Frequency')
 
 # Add bin boundaries
-for edge in onehot_binner.bin_edges_[0][1:-1]:
+for edge in singleton_binner.bin_edges_[0][1:-1]:
     plt.axvline(edge, color='red', linestyle='--', alpha=0.7)
 
 plt.subplot(3, 4, 3)
@@ -663,14 +666,14 @@ plt.xlabel('Value')
 plt.ylabel('Frequency')
 
 # Add bin boundaries
-for edge in onehot_binner.bin_edges_[1][1:-1]:
+for edge in singleton_binner.bin_edges_[1][1:-1]:
     plt.axvline(edge, color='red', linestyle='--', alpha=0.7)
 
-# One-hot feature distributions
-for i, col in enumerate(onehot_columns):
+# Singleton feature distributions
+for i, col in enumerate(singleton_columns):
     plt.subplot(3, 4, i + 5)
-    target_0_count = df_onehot[df_onehot['target'] == 0][col].sum()
-    target_1_count = df_onehot[df_onehot['target'] == 1][col].sum()
+    target_0_count = df_singleton[df_singleton['target'] == 0][col].sum()
+    target_1_count = df_singleton[df_singleton['target'] == 1][col].sum()
     
     plt.bar(['Target 0', 'Target 1'], [target_0_count, target_1_count], 
             alpha=0.7, color=['blue', 'red'])
@@ -682,7 +685,7 @@ plt.show()
 
 # Correlation heatmap
 plt.figure(figsize=(12, 8))
-correlation_matrix = df_onehot.corr()
+correlation_matrix = df_singleton.corr()
 sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0,
             square=True, fmt='.2f')
 plt.title('One-Hot Features Correlation Matrix')
@@ -692,10 +695,10 @@ plt.show()
 # Feature importance for each bin
 from sklearn.linear_model import LogisticRegression
 lr = LogisticRegression()
-lr.fit(X_onehot, target)
+lr.fit(X_singleton, target)
 
 importance_df = pd.DataFrame({
-    'feature': onehot_columns,
+    'feature': singleton_columns,
     'coefficient': lr.coef_[0],
     'abs_coefficient': np.abs(lr.coef_[0])
 }).sort_values('abs_coefficient', ascending=False)
@@ -752,11 +755,11 @@ for n_samples in [1000, 10000]:
         X = np.random.rand(n_samples, n_features)
         
         start_time = time.time()
-        binner = OneHotBinning(n_bins=5)
-        X_onehot = binner.fit_transform(X)
+        binner = SingletonBinning(n_bins=5)
+        X_singleton = binner.fit_transform(X)
         end_time = time.time()
         
-        memory_mb = X_onehot.nbytes / (1024**2)
+        memory_mb = X_singleton.nbytes / (1024**2)
         
         print(f"{n_samples}\\t{n_features}\\t\\t{end_time-start_time:.3f}\\t{memory_mb:.1f}")
 ```

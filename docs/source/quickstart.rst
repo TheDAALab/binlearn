@@ -59,7 +59,7 @@ The framework provides several binning methods for different use cases:
 
 **Categorical Methods:**
 
-* :class:`~binlearn.methods.OneHotBinning` - One-hot encoding for categorical data
+* :class:`~binlearn.methods.SingletonBinning` - Singleton encoding for categorical data
 
 **Supervised Methods:**
 

@@ -51,9 +51,9 @@ class BinningConfig:
     # FLEXIBLE BINNING DEFAULTS
     # =============================================================================
 
-    # OneHotBinning specific defaults
-    onehot_max_unique_values: int = 1000  # Safety limit for unique values
-    onehot_sort_values: bool = True  # Whether to sort unique values
+    # SingletonBinning specific defaults
+    singleton_max_unique_values: int = 1000  # Safety limit for unique values
+    singleton_sort_values: bool = True  # Whether to sort unique values
 
     # =============================================================================
     # SUPERVISED BINNING DEFAULTS
@@ -181,7 +181,7 @@ class BinningConfig:
         Get default configuration values for a specific binning method.
 
         Args:
-            method_name: Name of the binning method ("equal_width", "onehot", "supervised")
+            method_name: Name of the binning method ("equal_width", "singleton", "supervised")
 
         Returns:
             Dictionary of default parameters for the method
@@ -200,11 +200,11 @@ class BinningConfig:
                     "range_strategy": self.equal_width_default_range_strategy,
                 }
             )
-        elif method_name == "onehot":
+        elif method_name == "singleton":
             defaults.update(
                 {
-                    "max_unique_values": self.onehot_max_unique_values,
-                    "sort_values": self.onehot_sort_values,
+                    "max_unique_values": self.singleton_max_unique_values,
+                    "sort_values": self.singleton_sort_values,
                 }
             )
         elif method_name == "supervised":
@@ -399,8 +399,8 @@ def _get_parameter_description(param_name: str) -> str:
         "default_clip": "Whether to clip values outside bin ranges by default",
         "equal_width_default_bins": "Default number of bins for equal-width binning",
         "equal_width_default_range_strategy": "Strategy for determining bin ranges",
-        "onehot_max_unique_values": "Maximum unique values allowed for one-hot binning",
-        "onehot_sort_values": "Whether to sort unique values in one-hot binning",
+        "singleton_max_unique_values": "Maximum unique values allowed for singleton binning",
+        "singleton_sort_values": "Whether to sort unique values in singleton binning",
         "supervised_default_max_depth": "Default maximum depth for decision trees",
         "supervised_default_min_samples_leaf": "Default minimum samples per leaf",
         "supervised_default_min_samples_split": "Default minimum samples to split",

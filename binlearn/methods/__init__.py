@@ -8,7 +8,7 @@ from ._equal_width_minimum_weight_binning import EqualWidthMinimumWeightBinning
 from ._kmeans_binning import KMeansBinning
 from ._manual_flexible_binning import ManualFlexibleBinning
 from ._manual_interval_binning import ManualIntervalBinning
-from ._onehot_binning import OneHotBinning
+from ._singleton_binning import SingletonBinning
 from ._supervised_binning import SupervisedBinning
 
 __all__ = [
@@ -18,6 +18,6 @@ __all__ = [
     "EqualWidthMinimumWeightBinning",
     "ManualIntervalBinning",
     "ManualFlexibleBinning",
-    "OneHotBinning",
+    "SingletonBinning",
     "SupervisedBinning",
 ]

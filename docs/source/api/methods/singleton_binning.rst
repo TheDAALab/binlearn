@@ -1,19 +1,19 @@
-OneHotBinning
-=============
+SingletonBinning
+================
 
 .. currentmodule:: binlearn.methods
 
-.. autoclass:: OneHotBinning
+.. autoclass:: SingletonBinning
    :members:
    :inherited-members:
    :show-inheritance:
 
-**One-hot binning** creates separate bins for each unique value in the data, essentially performing categorical encoding on continuous or discrete numerical features.
+**Singleton binning** creates separate bins for each unique value in the data, essentially performing categorical encoding on continuous or discrete numerical features.
 
 Overview
 --------
 
-OneHotBinning transforms each unique value in numerical features into its own bin. This is particularly useful for discrete numerical features or when you want to treat each unique value as a separate category.
+SingletonBinning transforms each unique value in numerical features into its own bin. This is particularly useful for discrete numerical features or when you want to treat each unique value as a separate category.
 
 **Key Characteristics:**
 
@@ -59,7 +59,7 @@ Attributes
 
 _bin_edges : dict
     Fitted bin mappings for each column after calling fit().
-    For one-hot binning, this contains the unique values found.
+    For singleton binning, this contains the unique values found.
 
 _unique_values : dict
     Dictionary mapping column indices to their unique values (internal use).
@@ -74,7 +74,7 @@ Basic Usage with Discrete Data
 
    import numpy as np
    import pandas as pd
-   from binlearn.methods import OneHotBinning
+   from binlearn.methods import SingletonBinning
    
    # Create sample discrete data
    np.random.seed(42)
@@ -87,8 +87,8 @@ Basic Usage with Discrete Data
        'category': categories
    })
    
-   # Apply one-hot binning
-   binner = OneHotBinning(max_unique_values=10)
+   # Apply singleton binning
+   binner = SingletonBinning(max_unique_values=10)
    df_binned = binner.fit_transform(df)
    
    print("Original data:")
@@ -121,8 +121,8 @@ Handling Limited Unique Values
        'product_id': product_ids
    })
    
-   # Apply one-hot binning
-   binner = OneHotBinning(max_unique_values=20)
+   # Apply singleton binning
+   binner = SingletonBinning(max_unique_values=20)
    df_binned = binner.fit_transform(df)
    
    # Analyze the binning results
@@ -139,7 +139,7 @@ Comparison with Other Binning Methods
 
 .. code-block:: python
 
-   from binlearn.methods import OneHotBinning, EqualWidthBinning, EqualFrequencyBinning
+   from binlearn.methods import SingletonBinning, EqualWidthBinning, EqualFrequencyBinning
    
    # Create mixed data: some discrete, some continuous
    np.random.seed(42)
@@ -152,20 +152,20 @@ Comparison with Other Binning Methods
    })
    
    # Apply different binning methods
-   onehot_binner = OneHotBinning(max_unique_values=10)
+   singleton_binner = SingletonBinning(max_unique_values=10)
    equal_width_binner = EqualWidthBinning(n_bins=5)
    equal_freq_binner = EqualFrequencyBinning(n_bins=5)
    
    # Bin only the discrete feature for fair comparison
    df_discrete = df[['discrete']]
    
-   df_onehot = onehot_binner.fit_transform(df_discrete)
+   df_singleton = singleton_binner.fit_transform(df_discrete)
    df_equal_width = equal_width_binner.fit_transform(df_discrete)
    df_equal_freq = equal_freq_binner.fit_transform(df_discrete)
    
    print("Discrete feature binning comparison:")
-   print("\nOne-hot binning (preserves all values):")
-   print(df_onehot['discrete'].value_counts().sort_index())
+   print("\nSingleton binning (preserves all values):")
+   print(df_singleton['discrete'].value_counts().sort_index())
    print("\nEqual-width binning (5 bins):")
    print(df_equal_width['discrete'].value_counts().sort_index())
    print("\nEqual-frequency binning (5 bins):")
@@ -188,11 +188,11 @@ Custom Bin Specifications
    
    df = pd.DataFrame({'segment': segments})
    
-   # Default one-hot binning (all values get bins)
-   default_binner = OneHotBinning(max_unique_values=10)
+   # Default singleton binning (all values get bins)
+   default_binner = SingletonBinning(max_unique_values=10)
    df_default = default_binner.fit_transform(df)
    
-   print("Default one-hot binning:")
+   print("Default singleton binning:")
    print(df_default['segment'].value_counts().sort_index())
    
    # Custom bin specification (group rare categories)
@@ -200,7 +200,7 @@ Custom Bin Specifications
    custom_spec = {0: [1, 2, 3, 4]}  # Only create bins for values 1,2,3,4
    
    try:
-       custom_binner = OneHotBinning(max_unique_values=10, bin_spec=custom_spec)
+       custom_binner = SingletonBinning(max_unique_values=10, bin_spec=custom_spec)
        df_custom = custom_binner.fit_transform(df)
        print("\nCustom bin specification:")
        print(df_custom['segment'].value_counts().sort_index())
@@ -230,15 +230,15 @@ Handling Large Cardinality
    print(f"User ID unique values: {df['user_id'].nunique()}")
    print(f"Hour unique values: {df['hour'].nunique()}")
    
-   # Try one-hot binning with different limits
+   # Try singleton binning with different limits
    try:
        # This should work for hours
-       hour_binner = OneHotBinning(max_unique_values=25)
+       hour_binner = SingletonBinning(max_unique_values=25)
        df_hours = hour_binner.fit_transform(df[['hour']])
        print(f"\nHour binning successful: {df_hours['hour'].nunique()} bins created")
        
        # This should fail for user_ids (too many unique values)
-       user_binner = OneHotBinning(max_unique_values=50)
+       user_binner = SingletonBinning(max_unique_values=50)
        df_users = user_binner.fit_transform(df[['user_id']])
        print(f"User binning successful: {df_users['user_id'].nunique()} bins created")
        
@@ -261,7 +261,7 @@ Pipeline Integration for Categorical Features
    np.random.seed(42)
    n_samples = 1000
    
-   # Categorical-like features (perfect for one-hot binning)
+   # Categorical-like features (perfect for singleton binning)
    education_level = np.random.choice([1, 2, 3, 4, 5], size=n_samples)
    region = np.random.choice([10, 20, 30, 40], size=n_samples)
    
@@ -285,7 +285,7 @@ Pipeline Integration for Categorical Features
    
    preprocessor = ColumnTransformer(
        transformers=[
-           ('cat', OneHotBinning(max_unique_values=10), categorical_features),
+           ('cat', SingletonBinning(max_unique_values=10), categorical_features),
            ('num', EqualWidthBinning(n_bins=5), continuous_features)
        ])
    
@@ -297,14 +297,14 @@ Pipeline Integration for Categorical Features
    
    # Evaluate
    scores = cross_val_score(pipeline, df, y, cv=5, scoring='accuracy')
-   print(f"Pipeline with one-hot binning: {scores.mean():.3f} ± {scores.std():.3f}")
+   print(f"Pipeline with singleton binning: {scores.mean():.3f} ± {scores.std():.3f}")
 
 Feature Engineering with One-Hot Binning
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
-   # Demonstrate one-hot binning for feature engineering
+   # Demonstrate singleton binning for feature engineering
    np.random.seed(42)
    
    # E-commerce data example
@@ -315,10 +315,10 @@ Feature Engineering with One-Hot Binning
        'purchase_amount': np.random.lognormal(4, 1, 1000)  # Continuous
    })
    
-   # Apply one-hot binning to categorical-like features
+   # Apply singleton binning to categorical-like features
    categorical_cols = ['day_of_week', 'payment_method', 'customer_segment']
    
-   binner = OneHotBinning(max_unique_values=15)
+   binner = SingletonBinning(max_unique_values=15)
    categorical_data = purchase_data[categorical_cols]
    categorical_binned = binner.fit_transform(categorical_data)
    
@@ -341,7 +341,7 @@ Feature Engineering with One-Hot Binning
        binned_unique = set(categorical_binned[col].unique())
        print(f"\n{col} - Values preserved: {original_unique == binned_unique}")
 
-When to Use OneHotBinning
+When to Use SingletonBinning
 -------------------------
 
 **Best For:**
@@ -405,7 +405,7 @@ Common Issues and Solutions
    # Problem: Feature has hundreds of unique values
    
    # Solution 1: Increase max_unique_values (if manageable)
-   binner = OneHotBinning(max_unique_values=100)
+   binner = SingletonBinning(max_unique_values=100)
    
    # Solution 2: Preprocess to reduce cardinality
    def group_rare_values(series, min_count=10):
@@ -419,7 +419,7 @@ Common Issues and Solutions
 
 .. code-block:: python
 
-   # Problem: One-hot binning creates too many features
+   # Problem: Singleton binning creates too many features
    
    # Solution: Use sparse representation or different binning method
    from sklearn.preprocessing import OneHotEncoder
@@ -454,7 +454,7 @@ Comparison with Other Methods
      - Feature Count
      - Memory Usage
      - Best Use Case
-   * - OneHotBinning
+   * - SingletonBinning
      - None
      - High (= unique values)
      - High
@@ -482,13 +482,13 @@ Advanced Usage Patterns
 
 .. code-block:: python
 
-   class CustomOneHotBinning(OneHotBinning):
+   class CustomSingletonBinning(SingletonBinning):
        def __init__(self, value_mapping=None, **kwargs):
            super().__init__(**kwargs)
            self.value_mapping = value_mapping or {}
            
        def _transform_column(self, column_data, column_index, **kwargs):
-           # Apply custom value mapping before one-hot binning
+           # Apply custom value mapping before singleton binning
            if column_index in self.value_mapping:
                mapping = self.value_mapping[column_index]
                column_data = column_data.map(mapping).fillna(column_data)
@@ -510,8 +510,8 @@ Advanced Usage Patterns
                le = LabelEncoder()
                processed_df[col] = le.fit_transform(processed_df[col])
        
-       # Now apply one-hot binning
-       binner = OneHotBinning(max_unique_values=20)
+       # Now apply singleton binning
+       binner = SingletonBinning(max_unique_values=20)
        return binner.fit_transform(processed_df[categorical_cols])
 
 See Also
@@ -520,7 +520,7 @@ See Also
 * :class:`EqualWidthBinning` - For continuous data binning
 * :class:`EqualFrequencyBinning` - For balanced binning
 * :class:`ManualFlexibleBinning` - For custom categorical groupings
-* :doc:`../../examples/onehot_binning` - Comprehensive examples
+* :doc:`../../examples/singleton_binning` - Comprehensive examples
 
 References
 ----------

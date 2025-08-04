@@ -1,28 +1,31 @@
 """
-Comprehensive test suite for OneHotBinning transformer.
+Comprehensive test suite for SingletonBinning transformer.
 
-This module provides extensive testing for the OneHotBinning class, which creates
+This module provides extensive testing for the SingletonBinning class, which creates
+singleton bins for each unique value in numerical data. The tests cover initialization,
+basic functionality, integration with pandas and polars, sklearn compatibility,
+workflow patterns, parameter handling, and error conditions.
 singleton bins for each unique value in the data. The tests cover initialization,
 parameter validation, basic functionality, pandas/polars integration, sklearn
 compatibility, error handling, and various edge cases.
 
 Test Classes:
-    TestOneHotBinningInitialization: Tests for parameter initialization and validation.
-    TestOneHotBinningBasicFunctionality: Core fitting and transformation tests.
-    TestOneHotBinningPandasIntegration: Tests for pandas DataFrame compatibility.
-    TestOneHotBinningPolarsIntegration: Tests for polars DataFrame compatibility.
-    TestOneHotBinningSklearnIntegration: Tests for sklearn pipeline compatibility.
-    TestOneHotBinningWorkflows: Tests for complete ML workflows.
-    TestOneHotBinningFitGetParamsWorkflow: Tests for parameter handling workflows.
-    TestOneHotBinningRepr: Tests for string representation functionality.
-    TestOneHotBinningErrorHandling: Tests for error conditions and edge cases.
+    TestSingletonBinningInitialization: Tests for parameter initialization and validation.
+    TestSingletonBinningBasicFunctionality: Core fitting and transformation tests.
+    TestSingletonBinningPandasIntegration: Tests for pandas DataFrame compatibility.
+    TestSingletonBinningPolarsIntegration: Tests for polars DataFrame compatibility.
+    TestSingletonBinningSklearnIntegration: Tests for sklearn pipeline compatibility.
+    TestSingletonBinningWorkflows: Tests for complete ML workflows.
+    TestSingletonBinningFitGetParamsWorkflow: Tests for parameter handling workflows.
+    TestSingletonBinningRepr: Tests for string representation functionality.
+    TestSingletonBinningErrorHandling: Tests for error conditions and edge cases.
 """
 
 import numpy as np
 import pytest
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
-from binlearn.methods._onehot_binning import OneHotBinning
+from binlearn.methods._singleton_binning import SingletonBinning
 from binlearn.utils.errors import BinningError
 
 try:
@@ -41,10 +44,10 @@ from sklearn.preprocessing import StandardScaler
 SKLEARN_AVAILABLE = True
 
 
-class TestOneHotBinningInitialization:
-    """Test OneHotBinning initialization and parameter validation.
+class TestSingletonBinningInitialization:
+    """Test SingletonBinning initialization and parameter validation.
 
-    This test class verifies that the OneHotBinning transformer initializes
+    This test class verifies that the SingletonBinning transformer initializes
     correctly with both default and custom parameters, handles parameter
     validation properly, and maintains the correct state during initialization.
     """
@@ -55,7 +58,7 @@ class TestOneHotBinningInitialization:
         Verifies that all default parameter values are set correctly and
         that the transformer is in the expected initial state.
         """
-        binning = OneHotBinning()
+        binning = SingletonBinning()
         assert binning.max_unique_values == 100
         assert binning.preserve_dataframe is False  # Default from config
         assert binning.fit_jointly is False  # Default from config
@@ -69,7 +72,7 @@ class TestOneHotBinningInitialization:
         including max_unique_values, preserve_dataframe options, and
         pre-defined bin specifications.
         """
-        binning = OneHotBinning(
+        binning = SingletonBinning(
             max_unique_values=50,
             preserve_dataframe=True,
             bin_spec={"col1": [1.0]},  # New simplified format
@@ -85,15 +88,15 @@ class TestOneHotBinningInitialization:
         """Test parameter validation."""
         # Test that validation happens during initialization (new behavior after refactoring)
         with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
-            OneHotBinning(max_unique_values=-1)
+            SingletonBinning(max_unique_values=-1)
 
         # Test that valid parameters work fine
-        binning = OneHotBinning(max_unique_values=100)
+        binning = SingletonBinning(max_unique_values=100)
         assert binning.max_unique_values == 100
 
     def test_handle_bin_params(self):
         """Test _handle_bin_params method."""
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Test updating max_unique_values
         params = {"max_unique_values": 200}
@@ -108,13 +111,13 @@ class TestOneHotBinningInitialization:
         assert "some_other_param" in params  # Should not be popped
 
 
-class TestOneHotBinningBasicFunctionality:
-    """Test basic OneHotBinning functionality."""
+class TestSingletonBinningBasicFunctionality:
+    """Test basic SingletonBinning functionality."""
 
     def test_simple_numeric_data(self):
         """Test with simple numeric data."""
         X = np.array([[1, 2], [2, 3], [1, 2], [3, 1]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Fit the binning
         binning.fit(X)
@@ -136,7 +139,7 @@ class TestOneHotBinningBasicFunctionality:
     def test_with_missing_values(self):
         """Test handling of missing values."""
         X = np.array([[1, 2], [np.nan, 3], [1, np.inf], [3, 1]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         binning.fit(X)
         X_binned = binning.transform(X)
@@ -148,7 +151,7 @@ class TestOneHotBinningBasicFunctionality:
     def test_all_nan_column(self):
         """Test with column containing only NaN values."""
         X = np.array([[np.nan, 1], [np.nan, 2], [np.nan, 1]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         binning.fit(X)
         X_binned = binning.transform(X)
@@ -159,7 +162,7 @@ class TestOneHotBinningBasicFunctionality:
         """Test max_unique_values parameter."""
         # Create data with many unique values
         X = np.arange(0, 200).reshape(-1, 1)
-        binning = OneHotBinning(max_unique_values=10)
+        binning = SingletonBinning(max_unique_values=10)
 
         with pytest.raises(ValueError, match="exceeds max_unique_values"):
             binning.fit(X)
@@ -167,7 +170,7 @@ class TestOneHotBinningBasicFunctionality:
     def test_non_numeric_data_error(self):
         """Test that non-numeric data raises appropriate error."""
         X = np.array([["a", "b"], ["c", "d"]], dtype=object)
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         with pytest.raises(ValueError, match="only supports numeric data"):
             binning.fit(X)
@@ -175,7 +178,7 @@ class TestOneHotBinningBasicFunctionality:
     def test_fit_transform(self):
         """Test fit_transform method."""
         X = np.array([[1, 2], [2, 3], [1, 2]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         X_binned = binning.fit_transform(X)
         assert X_binned.shape == X.shape
@@ -186,7 +189,7 @@ class TestOneHotBinningBasicFunctionality:
         X1 = np.array([[1, 2], [2, 3]])
         X2 = np.array([[4, 5], [5, 6]])
 
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # First fit
         binning.fit(X1)
@@ -200,7 +203,7 @@ class TestOneHotBinningBasicFunctionality:
         assert first_spec != second_spec
 
     def test_joint_fitting_functionality(self):
-        """Test OneHotBinning with joint fitting enabled.
+        """Test SingletonBinning with joint fitting enabled.
 
         Verifies that joint fitting creates consistent bins across all columns
         using unique values from all features combined.
@@ -216,11 +219,11 @@ class TestOneHotBinningBasicFunctionality:
         )
 
         # Test per-column fitting (default)
-        binning_individual = OneHotBinning(fit_jointly=False)
+        binning_individual = SingletonBinning(fit_jointly=False)
         binning_individual.fit(X)
 
         # Test joint fitting
-        binning_joint = OneHotBinning(fit_jointly=True)
+        binning_joint = SingletonBinning(fit_jointly=True)
         binning_joint.fit(X)
 
         # Joint fitting should create bins from all unique values across all columns
@@ -247,22 +250,22 @@ class TestOneHotBinningBasicFunctionality:
 
     def test_joint_fitting_with_fit_jointly_parameter(self):
         """Test explicit fit_jointly parameter setting."""
-        binning = OneHotBinning(fit_jointly=True)
+        binning = SingletonBinning(fit_jointly=True)
         assert binning.fit_jointly is True
 
-        binning = OneHotBinning(fit_jointly=False)
+        binning = SingletonBinning(fit_jointly=False)
         assert binning.fit_jointly is False
 
 
 @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
-class TestOneHotBinningPandasIntegration:
-    """Test OneHotBinning with pandas DataFrames."""
+class TestSingletonBinningPandasIntegration:
+    """Test SingletonBinning with pandas DataFrames."""
 
     def test_pandas_dataframe_basic(self):
         """Test basic functionality with pandas DataFrame."""
         df = pd.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})
 
-        binning = OneHotBinning(preserve_dataframe=True)
+        binning = SingletonBinning(preserve_dataframe=True)
 
         # Fit and transform
         binning.fit(df)
@@ -277,7 +280,7 @@ class TestOneHotBinningPandasIntegration:
         """Test pandas DataFrame without preserve_dataframe."""
         df = pd.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})
 
-        binning = OneHotBinning(preserve_dataframe=False)
+        binning = SingletonBinning(preserve_dataframe=False)
 
         binning.fit(df)
         result = binning.transform(df)
@@ -290,7 +293,7 @@ class TestOneHotBinningPandasIntegration:
         """Test that column names are preserved in bin specifications."""
         df = pd.DataFrame({"feature1": [1, 2, 3], "feature2": [4, 5, 6]})
 
-        binning = OneHotBinning()
+        binning = SingletonBinning()
         binning.fit(df)
 
         # Column names should be in bin_spec_
@@ -301,7 +304,7 @@ class TestOneHotBinningPandasIntegration:
         """Test pandas DataFrame with missing values."""
         df = pd.DataFrame({"A": [1, np.nan, 2], "B": [3, 4, np.nan]})
 
-        binning = OneHotBinning(preserve_dataframe=True)
+        binning = SingletonBinning(preserve_dataframe=True)
 
         binning.fit(df)
         df_binned = binning.transform(df)
@@ -311,14 +314,14 @@ class TestOneHotBinningPandasIntegration:
 
 
 @pytest.mark.skipif(not POLARS_AVAILABLE, reason="Polars not available")
-class TestOneHotBinningPolarsIntegration:
-    """Test OneHotBinning with Polars DataFrames."""
+class TestSingletonBinningPolarsIntegration:
+    """Test SingletonBinning with Polars DataFrames."""
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
         df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[name-defined]
 
-        binning = OneHotBinning(preserve_dataframe=True)
+        binning = SingletonBinning(preserve_dataframe=True)
 
         # Fit and transform
         binning.fit(df)
@@ -333,7 +336,7 @@ class TestOneHotBinningPolarsIntegration:
         """Test Polars DataFrame without preserve_dataframe."""
         df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[name-defined]
 
-        binning = OneHotBinning(preserve_dataframe=False)
+        binning = SingletonBinning(preserve_dataframe=False)
 
         binning.fit(df)
         result = binning.transform(df)
@@ -348,7 +351,7 @@ class TestOneHotBinningPolarsIntegration:
             {"feature1": [1, 2, 3], "feature2": [4, 5, 6]}  # type: ignore[name-defined]
         )
 
-        binning = OneHotBinning()
+        binning = SingletonBinning()
         binning.fit(df)
 
         # Column names should be in bin_spec_
@@ -356,27 +359,27 @@ class TestOneHotBinningPolarsIntegration:
         assert "feature2" in binning.bin_spec_
 
 
-class TestOneHotBinningSklearnIntegration:
-    """Test OneHotBinning with scikit-learn components."""
+class TestSingletonBinningSklearnIntegration:
+    """Test SingletonBinning with scikit-learn components."""
 
     def test_sklearn_pipeline_compatibility(self):
-        """Test that OneHotBinning works in sklearn pipelines."""
+        """Test that SingletonBinning works in sklearn pipelines."""
         X = np.array([[1, 2], [2, 3], [1, 2], [3, 1]])
 
         # Create pipeline
-        pipeline = Pipeline([("binning", OneHotBinning()), ("scaler", StandardScaler())])
+        pipeline = Pipeline([("binning", SingletonBinning()), ("scaler", StandardScaler())])
 
         # Should work without errors
         X_transformed = pipeline.fit_transform(X)
         assert X_transformed.shape == X.shape
 
     def test_sklearn_column_transformer(self):
-        """Test OneHotBinning with ColumnTransformer."""
+        """Test SingletonBinning with ColumnTransformer."""
         X = np.array([[1, 2, 3], [2, 3, 4], [1, 2, 3]])
 
         # Create ColumnTransformer
         ct = ColumnTransformer(
-            [("binning", OneHotBinning(), [0, 1]), ("scaler", StandardScaler(), [2])]
+            [("binning", SingletonBinning(), [0, 1]), ("scaler", StandardScaler(), [2])]
         )
 
         X_transformed = ct.fit_transform(X)
@@ -387,7 +390,7 @@ class TestOneHotBinningSklearnIntegration:
 
     def test_sklearn_feature_names_out(self):
         """Test get_feature_names_out method for sklearn compatibility."""
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Check if method exists and works
         if hasattr(binning, "get_feature_names_out"):
@@ -397,13 +400,13 @@ class TestOneHotBinningSklearnIntegration:
             assert len(feature_names) == 2
 
 
-class TestOneHotBinningWorkflows:
+class TestSingletonBinningWorkflows:
     """Test complete workflows and edge cases."""
 
     def test_single_column_workflow(self):
         """Test complete workflow with single column."""
         X = np.array([[1], [2], [1], [3], [2]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Fit
         binning.fit(X)
@@ -421,7 +424,7 @@ class TestOneHotBinningWorkflows:
     def test_multi_column_workflow(self):
         """Test complete workflow with multiple columns."""
         X = np.array([[1, 10], [2, 20], [1, 10], [3, 30]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Fit
         binning.fit(X)
@@ -442,7 +445,7 @@ class TestOneHotBinningWorkflows:
     def test_empty_data_handling(self):
         """Test handling of empty data."""
         X = np.array([]).reshape(0, 2)
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Empty data should be handled gracefully
         binning.fit(X)
@@ -452,7 +455,7 @@ class TestOneHotBinningWorkflows:
     def test_single_value_column(self):
         """Test column with single unique value."""
         X = np.array([[5], [5], [5]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         binning.fit(X)
         assert len(binning.bin_spec_[0]) == 1
@@ -466,7 +469,7 @@ class TestOneHotBinningWorkflows:
         np.random.seed(42)
         X = np.random.randint(1, 20, size=(1000, 3))
 
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Should handle larger datasets efficiently
         binning.fit(X)
@@ -477,7 +480,7 @@ class TestOneHotBinningWorkflows:
 
     def test_parameter_updates(self):
         """Test parameter updates after initialization."""
-        binning = OneHotBinning(max_unique_values=50)
+        binning = SingletonBinning(max_unique_values=50)
 
         # Update parameters
         binning.set_params(max_unique_values=200)
@@ -490,7 +493,7 @@ class TestOneHotBinningWorkflows:
     def test_bin_representatives_consistency(self):
         """Test that bin representatives are consistent with bin specs."""
         X = np.array([[1, 10], [2, 20], [3, 30]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         binning.fit(X)
 
@@ -505,7 +508,7 @@ class TestOneHotBinningWorkflows:
                 assert bin_repr[i] == bin_def  # New format: value directly
 
 
-class TestOneHotBinningFitGetParamsWorkflow:
+class TestSingletonBinningFitGetParamsWorkflow:
     """Test fit → get_params → instantiation → binning workflow."""
 
     def test_fit_get_params_reinstantiate_workflow(self):
@@ -515,14 +518,14 @@ class TestOneHotBinningFitGetParamsWorkflow:
         X_test = np.array([[1.5, 15.0], [2.5, 25.0], [3.5, 35.0]])
 
         # Step 1: Fit original transformer
-        binning_original = OneHotBinning(max_unique_values=50)
+        binning_original = SingletonBinning(max_unique_values=50)
         binning_original.fit(X_train)
 
         # Step 2: Get all parameters from fitted transformer
         params = binning_original.get_params()
 
         # Step 3: Create new instance with all parameters
-        binning_new = OneHotBinning(**params)
+        binning_new = SingletonBinning(**params)
 
         # Step 4: Use new instance for binning WITHOUT fitting
         result_original = binning_original.transform(X_test)
@@ -533,7 +536,7 @@ class TestOneHotBinningFitGetParamsWorkflow:
 
     def test_get_params_preserves_all_parameters(self):
         """Test that get_params preserves all necessary parameters."""
-        binning = OneHotBinning(
+        binning = SingletonBinning(
             max_unique_values=25,
             preserve_dataframe=True,
         )
@@ -544,7 +547,7 @@ class TestOneHotBinningFitGetParamsWorkflow:
 
         params = binning.get_params()
 
-        # Check that all OneHotBinning-specific params are preserved
+        # Check that all SingletonBinning-specific params are preserved
         assert params["max_unique_values"] == 25
         assert params["preserve_dataframe"] is True
 
@@ -562,12 +565,12 @@ class TestOneHotBinningFitGetParamsWorkflow:
         X_transform = np.array([[2, 20], [1, 10], [3, 30]])
 
         # Original workflow
-        original_binning = OneHotBinning()
+        original_binning = SingletonBinning()
         original_binning.fit(X_fit)
 
         # Get params and reinstantiate
         params = original_binning.get_params()
-        new_binning = OneHotBinning(**params)
+        new_binning = SingletonBinning(**params)
 
         # Should be able to transform without fitting
         result = new_binning.transform(X_transform)
@@ -580,43 +583,43 @@ class TestOneHotBinningFitGetParamsWorkflow:
         np.testing.assert_array_equal(result, expected)
 
 
-class TestOneHotBinningRepr:
+class TestSingletonBinningRepr:
     """Test string representation and debugging features."""
 
     def test_str_representation(self):
         """Test __str__ method."""
-        binning = OneHotBinning(max_unique_values=50)
+        binning = SingletonBinning(max_unique_values=50)
         str_repr = str(binning)
-        assert "OneHotBinning" in str_repr
+        assert "SingletonBinning" in str_repr
         assert "max_unique_values=50" in str_repr
 
     def test_repr_representation(self):
         """Test __repr__ method."""
-        binning = OneHotBinning()
+        binning = SingletonBinning()
         repr_str = repr(binning)
-        assert "OneHotBinning" in repr_str
+        assert "SingletonBinning" in repr_str
 
     def test_fitted_representation(self):
         """Test representation after fitting."""
         X = np.array([[1, 2], [2, 3]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
         binning.fit(X)
 
         str_repr = str(binning)
         # After fitting, it should show fitted parameters or at least not crash
-        assert "OneHotBinning" in str_repr
+        assert "SingletonBinning" in str_repr
         # Check that we can access fitted state
         assert hasattr(binning, "bin_spec_")
         assert len(binning.bin_spec_) > 0
 
 
-class TestOneHotBinningErrorHandling:
+class TestSingletonBinningErrorHandling:
     """Test error handling and edge cases."""
 
     def test_transform_before_fit_error(self):
         """Test that transform before fit raises appropriate error."""
         X = np.array([[1, 2], [2, 3]])
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         with pytest.raises(RuntimeError, match="not fitted yet"):
             binning.transform(X)
@@ -626,7 +629,7 @@ class TestOneHotBinningErrorHandling:
         X_fit = np.array([[1, 2], [2, 3]])
         X_transform = np.array([[1, 2, 3], [2, 3, 4]])
 
-        binning = OneHotBinning()
+        binning = SingletonBinning()
         binning.fit(X_fit)
 
         with pytest.raises((ValueError, BinningError)):
@@ -634,7 +637,7 @@ class TestOneHotBinningErrorHandling:
 
     def test_invalid_data_types(self):
         """Test with various invalid data types."""
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Test with string data
         with pytest.raises(ValueError, match="only supports numeric data"):
@@ -649,7 +652,7 @@ class TestOneHotBinningErrorHandling:
         """Test handling of extreme values."""
         X = np.array([[np.finfo(float).max, 1], [np.finfo(float).min, 2], [0, 3]])
 
-        binning = OneHotBinning()
+        binning = SingletonBinning()
 
         # Should handle extreme values
         binning.fit(X)

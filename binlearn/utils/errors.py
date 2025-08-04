@@ -283,7 +283,7 @@ def suggest_alternatives(method_name: str) -> List[str]:
     alternatives = {
         "supervised": ["tree", "decision_tree"],
         "equal_width": ["uniform", "equidistant"],
-        "onehot": ["categorical", "nominal"],
+        "singleton": ["categorical", "nominal"],
         "quantile": ["percentile"],
     }
 

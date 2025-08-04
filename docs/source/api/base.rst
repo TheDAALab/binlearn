@@ -118,7 +118,7 @@ FlexibleBinningBase
    **Subclasses:**
    
    * :class:`~binlearn.methods.ManualFlexibleBinning`
-   * :class:`~binlearn.methods.OneHotBinning`
+   * :class:`~binlearn.methods.SingletonBinning`
 
    **Usage Example:**
    

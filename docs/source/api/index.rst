@@ -13,7 +13,7 @@ Binning Methods
    methods/equal_frequency_binning
    methods/equal_width_minimum_weight_binning
    methods/kmeans_binning
-   methods/onehot_binning
+   methods/singleton_binning
    methods/supervised_binning
    methods/manual_binning
 

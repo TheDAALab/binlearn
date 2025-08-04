@@ -1,9 +1,8 @@
 """
-OneHotBinning transformer for creating singleton bins from unique values.
+SingletonBinning transformer for creating singleton bins from unique values.
 
 This module implements a specialized binning method that creates one bin per unique
-value in the data. Unlike traditional one-hot encoding that expands features into
-multiple columns, this transformer maintains the original data shape while creating
+value in the data. This transformer maintains the original data shape while creating
 singleton bins using a simplified format (just the value itself).
 
 The transformer is designed for scenarios where you want to treat each unique value
@@ -21,7 +20,7 @@ from ..utils.types import BinEdges, BinEdgesDict, ColumnId, FlexibleBinDefs, Fle
 
 
 # pylint: disable=too-many-ancestors
-class OneHotBinning(ReprMixin, FlexibleBinningBase):
+class SingletonBinning(ReprMixin, FlexibleBinningBase):
     """Creates a singleton bin for each unique value in numeric data.
 
     This transformer creates one bin per unique value found in the data, where each

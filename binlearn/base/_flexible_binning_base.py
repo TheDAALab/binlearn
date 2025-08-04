@@ -88,8 +88,8 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     Example:
         >>> # This is an abstract class, use a concrete implementation
-        >>> from binlearn.methods import OneHotBinning
-        >>> binner = OneHotBinning(max_unique_values=50)
+        >>> from binlearn.methods import SingletonBinning
+        >>> binner = SingletonBinning(max_unique_values=50)
         >>> X_binned = binner.fit_transform(X)
     """
 

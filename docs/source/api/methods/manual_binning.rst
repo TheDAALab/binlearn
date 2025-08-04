@@ -566,7 +566,7 @@ See Also
 
 * :class:`EqualWidthBinning` - For automatic interval binning
 * :class:`EqualFrequencyBinning` - For balanced automatic binning
-* :class:`OneHotBinning` - For unique value binning
+* :class:`SingletonBinning` - For unique value binning
 * :doc:`../../examples/manual_binning` - Comprehensive examples
 
 References

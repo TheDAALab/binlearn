@@ -23,7 +23,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
-from ..methods import EqualWidthBinning, OneHotBinning, SupervisedBinning
+from ..methods import EqualWidthBinning, SingletonBinning, SupervisedBinning
 
 
 class BinningFeatureSelector(BaseEstimator, TransformerMixin):
@@ -54,7 +54,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
 
         Args:
             binning_method: Binning method to use before computing mutual information.
-                Options: "equal_width", "supervised", "onehot". Defaults to "equal_width".
+                Options: "equal_width", "supervised", "singleton". Defaults to "equal_width".
             k: Number of top features to select. Defaults to 10.
             score_func: Scoring function for feature selection. Options:
                 "mutual_info_classif", "mutual_info_regression", "auto".
@@ -93,8 +93,8 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
             binner = EqualWidthBinning(**self.binning_params)
         elif self.binning_method == "supervised":
             binner = SupervisedBinning(**self.binning_params)
-        elif self.binning_method == "onehot":
-            binner = OneHotBinning(**self.binning_params)
+        elif self.binning_method == "singleton":
+            binner = SingletonBinning(**self.binning_params)
         else:
             raise ValueError(f"Unknown binning method: {self.binning_method}")
 

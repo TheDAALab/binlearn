@@ -19,7 +19,7 @@ This section provides comprehensive, practical examples for each binning method 
    equal_width_binning_examples
    equal_frequency_binning_examples
    kmeans_binning_examples
-   onehot_binning_examples
+   singleton_binning_examples
 
 Quick Start Guide
 ------------------
