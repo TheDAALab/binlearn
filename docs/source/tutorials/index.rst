@@ -1,97 +1,44 @@
 Tutorials
 =========
 
-Learn how to use the binlearn library effectively with these comprehensive tutorials.
-
-Getting Started
----------------
-
-If you're new to the binlearn library, start with these foundational tutorials:
+Step-by-step tutorials for learning binlearn concepts and techniques.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    basic_binning
    advanced_binning
 
-Basic Usage
------------
+Tutorial Overview
+----------------
 
-:doc:`basic_binning`
-   Learn the fundamentals of binning with practical examples. This tutorial covers:
-   
-   * Understanding binning concepts and when to use different methods
-   * Working with EqualWidthBinning for uniform bin sizes
-   * Using EqualFrequencyBinning for balanced populations
-   * Applying EqualWidthMinimumWeightBinning with weight constraints
-   * Integrating SupervisedBinning for classification tasks
-   * Handling missing values and edge cases
-   * Pipeline integration with scikit-learn
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
 
-Advanced Techniques
--------------------
+   * - Tutorial
+     - Description
+   * - :doc:`basic_binning`
+     - Introduction to binning concepts and basic usage
+   * - :doc:`advanced_binning`
+     - Advanced techniques, custom binning, and performance optimization
 
-:doc:`advanced_binning`
-   Master sophisticated binning strategies for complex scenarios:
-   
-   * Creating custom binning methods by extending base classes
-   * Multi-stage binning workflows for complex preprocessing
-   * Adaptive binning with automatic parameter selection
-   * Handling mixed data types (numeric and categorical)
-   * Time series binning with temporal awareness
-   * Memory-efficient processing for large datasets
-   * Parallel binning for performance optimization
-   * Quality evaluation and cross-validation techniques
-
-Tutorial Progression
---------------------
-
-The tutorials are designed to build upon each other:
-
-1. **Start with Basic Binning** to understand core concepts
-2. **Progress to Advanced Techniques** for specialized scenarios
-3. **Apply concepts** to your own datasets and use cases
-
-Code Examples
+Learning Path
 -------------
 
-All tutorials include complete, runnable code examples that you can:
+1. **Start Here**: :doc:`basic_binning`
+   - Understanding binning concepts
+   - Basic method usage
+   - DataFrame integration
 
-* Copy and run in your own environment
-* Modify for your specific datasets
-* Use as templates for your own binning workflows
+2. **Advanced Topics**: :doc:`advanced_binning`
+   - Custom binning strategies
+   - Performance optimization
+   - Integration patterns
 
 Prerequisites
 -------------
 
-The tutorials assume basic familiarity with:
-
-* Python programming
-* NumPy and pandas for data manipulation
-* Basic machine learning concepts
-* Scikit-learn for pipelines (for advanced topics)
-
-Running the Examples
---------------------
-
-To run the tutorial examples, make sure you have the required dependencies:
-
-.. code-block:: bash
-
-   pip install binning-framework numpy pandas matplotlib scikit-learn
-
-Some advanced examples may require additional packages:
-
-.. code-block:: bash
-
-   pip install scipy polars  # For advanced tutorials
-
-Next Steps
-----------
-
-After completing the tutorials, explore:
-
-* :doc:`../examples/equal_width_minimum_weight_binning` for detailed implementation examples
-* :doc:`../api/index` for complete API documentation
-* :doc:`../user_guide` for comprehensive usage patterns
-* Real-world applications with your own datasets
+- Basic Python programming
+- Familiarity with numpy and pandas
+- Basic understanding of machine learning concepts
