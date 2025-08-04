@@ -205,9 +205,10 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
 
         if len(clean_data) == 0:
             # All NaN data - create default range
-            edges = np.linspace(0.0, 1.0, n_bins + 1)
+            edges_array = np.linspace(0.0, 1.0, n_bins + 1)
+            edges = list(edges_array)
             reps = [(edges[i] + edges[i + 1]) / 2 for i in range(n_bins)]
-            return list(edges), reps
+            return edges, reps
 
         if len(clean_data) < n_bins:
             raise ValueError(
@@ -220,32 +221,33 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
             # All data points are the same - create equal-width bins around the value
             value = clean_data[0]
             epsilon = 1e-8 if value != 0 else 1e-8
-            edges = np.linspace(value - epsilon, value + epsilon, n_bins + 1)
+            edges_array = np.linspace(value - epsilon, value + epsilon, n_bins + 1)
+            edges = list(edges_array)
             reps = [(edges[i] + edges[i + 1]) / 2 for i in range(n_bins)]
-            return list(edges), reps
+            return edges, reps
 
         # Handle case where we have fewer unique values than desired clusters
         unique_values = np.unique(clean_data)
         if len(unique_values) < n_bins:
             # Create bins around each unique value
             sorted_values = np.sort(unique_values)
-            edges = []
+            unique_edges: list[float] = []
 
             # First edge: extend slightly below minimum
-            edges.append(sorted_values[0] - (sorted_values[-1] - sorted_values[0]) * 0.01)
+            unique_edges.append(sorted_values[0] - (sorted_values[-1] - sorted_values[0]) * 0.01)
 
             # Intermediate edges: midpoints between consecutive unique values
             for i in range(len(sorted_values) - 1):
                 mid = (sorted_values[i] + sorted_values[i + 1]) / 2
-                edges.append(mid)
+                unique_edges.append(mid)
 
             # Last edge: extend slightly above maximum
-            edges.append(sorted_values[-1] + (sorted_values[-1] - sorted_values[0]) * 0.01)
+            unique_edges.append(sorted_values[-1] + (sorted_values[-1] - sorted_values[0]) * 0.01)
 
             # Representatives are the unique values themselves
             reps = list(sorted_values)
 
-            return edges, reps
+            return unique_edges, reps
 
         # Perform K-means clustering
         try:
@@ -263,32 +265,32 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         centroids = sorted(centroids)
 
         # Create bin edges as midpoints between adjacent centroids
-        edges = []
+        cluster_edges: list[float] = []
 
         # First edge: extend below the minimum centroid
         data_min: float = np.min(clean_data)
         if centroids[0] > data_min:
-            edges.append(data_min)
+            cluster_edges.append(data_min)
         else:
             # Extend slightly below the first centroid
             edge_extension = (centroids[-1] - centroids[0]) * 0.05
-            edges.append(centroids[0] - edge_extension)
+            cluster_edges.append(centroids[0] - edge_extension)
 
         # Intermediate edges: midpoints between consecutive centroids
         for i in range(len(centroids) - 1):
             midpoint = (centroids[i] + centroids[i + 1]) / 2
-            edges.append(midpoint)
+            cluster_edges.append(midpoint)
 
         # Last edge: extend above the maximum centroid
         data_max: float = np.max(clean_data)
         if centroids[-1] < data_max:
-            edges.append(data_max)
+            cluster_edges.append(data_max)
         else:
             # Extend slightly above the last centroid
             edge_extension = (centroids[-1] - centroids[0]) * 0.05
-            edges.append(centroids[-1] + edge_extension)
+            cluster_edges.append(centroids[-1] + edge_extension)
 
-        return edges, centroids
+        return cluster_edges, centroids
 
     def _validate_params(self) -> None:
         """Validate parameters for sklearn compatibility and logical consistency.

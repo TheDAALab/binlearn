@@ -42,7 +42,7 @@ def get_class_parameters(
         exclude_params = {"self", "kwargs"}
 
     try:
-        current_sig = inspect.signature(class_obj.__init__)
+        current_sig = inspect.signature(class_obj.__init__)  # type: ignore[misc]
         current_params = set(current_sig.parameters.keys()) - exclude_params
     except (ValueError, TypeError) as exc:
         # Re-raise with context for easier debugging
@@ -100,7 +100,7 @@ def get_constructor_info(class_obj: type, concrete_only: bool = True) -> dict[st
             sig = inspect.signature(class_obj.__dict__["__init__"])
         else:
             # Use normal method resolution
-            sig = inspect.signature(class_obj.__init__)
+            sig = inspect.signature(class_obj.__init__)  # type: ignore[misc]
 
         params = {}
         for name, param in sig.parameters.items():

@@ -195,7 +195,7 @@ class SupervisedBinningBase(IntervalBinningBase):
 
         # Handle dimensionality - supervised binning expects single column
         if guidance_validated.ndim == 1:
-            return guidance_validated  # type: ignore[no-any-return]
+            return guidance_validated
         if guidance_validated.ndim == 2:
             if guidance_validated.shape[1] != 1:
                 raise ValidationError(
@@ -204,7 +204,7 @@ class SupervisedBinningBase(IntervalBinningBase):
                     f"Please specify the correct guidance column."
                 )
             # Flatten to 1D for easier processing
-            return guidance_validated.ravel()  # type: ignore[no-any-return]
+            return guidance_validated.ravel()
         raise ValidationError(
             f"{name} has {guidance_validated.ndim} dimensions, "
             f"expected 1D or 2D array with single column"
@@ -449,9 +449,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         # Issue warning with appropriate column reference
         if col_id is not None:
             col_ref = (
-                f"column {col_id}"
-                if isinstance(col_id, int | np.integer)
-                else f"column '{col_id}'"
+                f"column {col_id}" if isinstance(col_id, int | np.integer) else f"column '{col_id}'"
             )
             warnings.warn(
                 f"Data in {col_ref} {warning_msg}. "

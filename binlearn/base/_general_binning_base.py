@@ -247,7 +247,7 @@ class GeneralBinningBase(
             self.validate_array_like(X, "X")
 
             # Store original input info for sklearn compatibility
-            arr, original_columns = self._prepare_input(X)
+            arr, _ = self._prepare_input(X)
             self._n_features_in = arr.shape[1]
 
             # Handle feature names manually to avoid sklearn conflicts
@@ -261,7 +261,7 @@ class GeneralBinningBase(
                 self._feature_names_in = list(range(arr.shape[1]))
 
             # Separate guidance and binning columns
-            X_binning, X_guidance, binning_cols, guidance_cols = self._separate_columns(X)
+            X_binning, X_guidance, binning_cols, _ = self._separate_columns(X)
 
             # Route to appropriate fitting method
             if self.fit_jointly:

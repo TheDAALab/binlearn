@@ -557,7 +557,7 @@ class FlexibleBinningBase(GeneralBinningBase):
                 # Use utility function for transformation
                 result[row_idx, i] = transform_value_to_flexible_bin(value, bin_defs)
 
-        return result  # type: ignore[no-any-return]
+        return result
 
     def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Transform bin indices back to representative values for flexible bins.
@@ -596,7 +596,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             # Handle missing values
             result[missing_mask, i] = np.nan
 
-        return result  # type: ignore[no-any-return]
+        return result
 
     def inverse_transform(self, X: Any) -> Any:
         """Transform bin indices back to representative values.

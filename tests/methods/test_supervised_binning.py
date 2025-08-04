@@ -854,7 +854,7 @@ class TestSupervisedBinningErrorHandling:
         importance = binning.get_feature_importance(column_id=0)
         assert isinstance(importance, dict)
         assert 0 in importance
-        assert isinstance(importance[0], (int, float))
+        assert isinstance(importance[0], int | float)
 
     def test_tree_structure_not_available(self):
         """Test tree structure when trees not available."""

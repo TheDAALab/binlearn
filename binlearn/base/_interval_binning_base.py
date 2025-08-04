@@ -607,13 +607,13 @@ class IntervalBinningBase(GeneralBinningBase):
             if self.clip:
                 bin_indices = np.clip(bin_indices, 0, len(edges) - 2)
             else:
-                bin_indices[below_mask] = BELOW_RANGE  # type: ignore[index]
-                bin_indices[above_mask] = ABOVE_RANGE  # type: ignore[index]
+                bin_indices[below_mask] = BELOW_RANGE
+                bin_indices[above_mask] = ABOVE_RANGE
 
-            bin_indices[nan_mask] = MISSING_VALUE  # type: ignore[index]
+            bin_indices[nan_mask] = MISSING_VALUE
             result[:, i] = bin_indices
 
-        return result  # type: ignore[no-any-return]
+        return result
 
     def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
         """Inverse transform from bin indices to representative values.
@@ -657,7 +657,7 @@ class IntervalBinningBase(GeneralBinningBase):
             result[below_mask, i] = -np.inf
             result[above_mask, i] = np.inf
 
-        return result  # type: ignore[no-any-return]
+        return result
 
     def inverse_transform(self, X: Any) -> Any:
         """Transform bin indices back to representative values.

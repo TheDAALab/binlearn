@@ -336,7 +336,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         if len(merged_edges) < 2:
             merged_edges = [float(edges[0]), float(edges[-1])]
 
-        return np.array(merged_edges)  # type: ignore[no-any-return]
+        return np.array(merged_edges)
 
     def _perform_bin_merging(self, edges: np.ndarray, bin_weights: np.ndarray) -> list[float]:
         """Perform the actual bin merging logic.
