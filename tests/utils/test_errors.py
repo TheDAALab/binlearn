@@ -449,10 +449,10 @@ class TestSuggestAlternatives:
         assert "equal_width" in result
         assert "equidistant" in result
 
-    def test_onehot_alternatives(self):
-        """Test alternatives for onehot method."""
+    def test_singleton_alternatives(self):
+        """Test alternatives for singleton method."""
         result = suggest_alternatives("categorical")
-        assert "onehot" in result
+        assert "singleton" in result
         assert "nominal" in result
 
     def test_quantile_alternatives(self):

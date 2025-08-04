@@ -90,6 +90,14 @@ class TestSingletonBinningInitialization:
         with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
             SingletonBinning(max_unique_values=-1)
 
+        # Test non-integer values
+        with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
+            SingletonBinning(max_unique_values=10.5)
+
+        # Test string values
+        with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
+            SingletonBinning(max_unique_values="10")
+
         # Test that valid parameters work fine
         binning = SingletonBinning(max_unique_values=100)
         assert binning.max_unique_values == 100
@@ -157,6 +165,20 @@ class TestSingletonBinningBasicFunctionality:
         X_binned = binning.transform(X)
 
         assert X_binned.shape == X.shape
+
+    def test_all_inf_column(self):
+        """Test with column containing only infinite values."""
+        X = np.array([[np.inf, 1], [-np.inf, 2], [np.inf, 1]])
+        binning = SingletonBinning()
+
+        binning.fit(X)
+        X_binned = binning.transform(X)
+
+        assert X_binned.shape == X.shape
+        # The first column should be binned to a default value since all are inf
+        assert np.all(
+            X_binned[:, 0] == X_binned[0, 0]
+        )  # All first column values should be the same
 
     def test_max_unique_values_limit(self):
         """Test max_unique_values parameter."""

@@ -8,7 +8,8 @@ SingletonBinning
    :inherited-members:
    :show-inheritance:
 
-**Singleton binning** creates separate bins for each unique value in the data, essentially performing categorical encoding on continuous or discrete numerical features.
+**Singleton binning** creates separate bins for each unique value in the data, essentially performing categorical encoding on continuous oFeature Engineering with Singleton Binning
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~discrete numerical features.
 
 Overview
 --------

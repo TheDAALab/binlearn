@@ -216,9 +216,9 @@ class TestBinningConfig:
         assert "max_depth" in sup_defaults
         assert "min_samples_leaf" in sup_defaults
 
-        # OneHot
-        oh_defaults = config.get_method_defaults("onehot")
-        assert "max_unique_values" in oh_defaults
+        # Singleton
+        singleton_defaults = config.get_method_defaults("singleton")
+        assert "max_unique_values" in singleton_defaults
 
         # Unknown method - should return base defaults
         unknown_defaults = config.get_method_defaults("UnknownMethod")

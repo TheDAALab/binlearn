@@ -2,16 +2,17 @@
 ==========================
 
 This page demonstrates the use of ``SingletonBinning`` for creating binary indicator features from continuous variables.=======================
-One-Hot Binning Examples
-============================
+=========================
+Singleton Binning Examples
+=========================
 
 This page demonstrates the use of ``SingletonBinning`` for creating binary indicator features from continuous variables.
 
 Basic Usage
 ===========
 
-Understanding One-Hot Binning
-------------------------------
+Understanding Singleton Binning
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 

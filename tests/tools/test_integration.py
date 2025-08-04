@@ -129,9 +129,9 @@ class TestBinningFeatureSelector:
         # Check that SelectKBest was called with regression function
         mock_select_k.assert_called_once_with(score_func=mock_mutual_info, k=10)
 
-    @patch("binlearn.tools.integration.OneHotBinning")
-    def test_fit_onehot_binning(self, mock_binning_class):
-        """Test fit with onehot binning."""
+    @patch("binlearn.tools.integration.SingletonBinning")
+    def test_fit_singleton_binning(self, mock_binning_class):
+        """Test fit with singleton binning."""
         mock_binner = Mock()
         mock_binner.fit_transform.return_value = np.array([[1, 2], [3, 4]])
         mock_binning_class.return_value = mock_binner
@@ -143,7 +143,7 @@ class TestBinningFeatureSelector:
             X = np.array([[1, 2], [3, 4]])
             y = np.array([0, 1])
 
-            selector = BinningFeatureSelector(binning_method="onehot")
+            selector = BinningFeatureSelector(binning_method="singleton")
             selector.fit(X, y)
 
             mock_binning_class.assert_called_once_with()
