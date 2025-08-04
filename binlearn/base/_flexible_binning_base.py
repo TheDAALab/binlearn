@@ -63,7 +63,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     This flexibility is particularly useful for:
     - Mixed categorical and continuous data
-    - One-hot encoding style binning combined with range binning
+    - Singleton encoding style binning combined with range binning
     - Custom binning specifications where some values need exact matches
 
     The class provides comprehensive bin specification management, validation,

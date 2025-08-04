@@ -6,7 +6,7 @@ integrates with popular data science libraries, and provides sklearn-compatible
 transformers for machine learning pipelines.
 
 Key Features:
-    - Multiple binning methods: equal-width, supervised, one-hot, and flexible binning
+    - Multiple binning methods: equal-width, supervised, singleton, and flexible binning
     - Support for pandas and polars DataFrames
     - Scikit-learn compatible transformers
     - Advanced features like guidance columns and custom bin specifications

@@ -2,35 +2,45 @@
 binlearn - Binning and Discretization Library
 =============================================
 
-.. image:: https://img.shields.io/badge/python-3.10%2B-blue
-    :alt: Python Version
-    :target: https://www.python.org/downloads/
+.. image:: https://img.shields.io/pypi/v/binlearn
+    :alt: PyPI Version
+    :target: https://pypi.org/project/binlearn/
 
-.. image:: https://github.com/TheDAALab/binlearn/workflows/Build%20&%20Test/badge.svg
-    :target: https://github.com/TheDAALab/binlearn/actions/workflows/build.yml
+.. image:: https://img.shields.io/pypi/pyversions/binlearn
+    :alt: Python Versions
+    :target: https://pypi.org/project/binlearn/
+
+.. image:: https://img.shields.io/github/actions/workflow/status/TheDAALab/binlearn/build.yml?branch=main
     :alt: Build Status
+    :target: https://github.com/TheDAALab/binlearn/actions/workflows/build.yml
 
-.. image:: https://img.shields.io/badge/license-MIT-green
+.. image:: https://img.shields.io/codecov/c/github/TheDAALab/binlearn
+    :alt: Code Coverage
+    :target: https://codecov.io/gh/TheDAALab/binlearn
+
+.. image:: https://img.shields.io/github/license/TheDAALab/binlearn
     :alt: License
     :target: https://github.com/TheDAALab/binlearn/blob/main/LICENSE
 
-.. image:: https://img.shields.io/badge/code%20quality-ruff-black
-    :alt: Code Quality - Ruff
-    :target: https://docs.astral.sh/ruff/
+.. image:: https://img.shields.io/readthedocs/binlearn
+    :alt: Documentation Status
+    :target: https://binlearn.readthedocs.io/
 
-.. image:: https://img.shields.io/badge/type%20checking-mypy-blue
+.. image:: https://img.shields.io/pypi/dm/binlearn
+    :alt: Monthly Downloads
+    :target: https://pypi.org/project/binlearn/
+
+.. image:: https://img.shields.io/github/stars/TheDAALab/binlearn?style=social
+    :alt: GitHub Stars
+    :target: https://github.com/TheDAALab/binlearn
+
+.. image:: https://img.shields.io/badge/code%20style-ruff-000000.svg
+    :alt: Code Style - Ruff
+    :target: https://github.com/astral-sh/ruff
+
+.. image:: https://img.shields.io/badge/typing-mypy-blue
     :alt: Type Checking - MyPy
     :target: https://mypy.readthedocs.io/
-
-.. image:: https://img.shields.io/badge/tests-841%20passed-green
-    :alt: Test Results
-
-.. image:: https://img.shields.io/badge/coverage-100%25-brightgreen
-    :alt: Test Coverage
-
-.. image:: https://img.shields.io/badge/docs-ReadTheDocs-blue
-    :alt: Documentation
-    :target: https://binlearn.readthedocs.io/
 
 A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support. Features our new **SingletonBinning** method for cleaner categorical data encoding!
 
@@ -45,7 +55,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
-  * **SingletonBinning** - Clean categorical encoding (formerly OneHotBinning) 🆕
+  * **SingletonBinning** - Clean categorical encoding for discrete values 🆕
 
 🔧 **Framework Integration**
   * **Pandas DataFrames** - Native support with column name preservation
@@ -165,7 +175,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
 **Categorical Methods:**
 
-* ``SingletonBinning`` - Clean categorical encoding (replaces OneHotBinning) 🆕
+* ``SingletonBinning`` - Clean categorical encoding for discrete values 🆕
 
 **Supervised Methods:**
 
@@ -219,7 +229,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 * ✅ **100% Test Coverage** - Comprehensive test suite with 841 tests
 * ✅ **100% Type Safety** - Complete mypy compliance with modern type annotations
 * ✅ **100% Code Quality** - Full ruff compliance with modern Python standards
-* ✅ **Comprehensive Documentation** - Detailed API docs and examples including SingletonBinning
+* * ✅ **Comprehensive Documentation** - Detailed API docs and examples with SingletonBinning guide
 * ✅ **Modern Python** - Uses latest Python features and best practices
 * ✅ **Robust Error Handling** - Helpful error messages with actionable suggestions
 
@@ -282,6 +292,10 @@ This project is licensed under the MIT License. See the `LICENSE <https://github
     :alt: Integrates with Scikit-learn
     :target: https://scikit-learn.org/
 
-.. image:: https://img.shields.io/badge/Latest%20Release-SingletonBinning-purple.svg
-    :alt: Latest Feature - SingletonBinning
-    :target: https://binlearn.readthedocs.io/en/latest/api/methods/singleton_binning.html
+.. image:: https://img.shields.io/pypi/status/binlearn
+    :alt: Development Status
+    :target: https://pypi.org/project/binlearn/
+
+.. image:: https://img.shields.io/github/contributors/TheDAALab/binlearn
+    :alt: Contributors
+    :target: https://github.com/TheDAALab/binlearn/graphs/contributors

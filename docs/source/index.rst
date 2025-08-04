@@ -1,20 +1,29 @@
 binlearn: Data Binning and Discretization Library
 ===============================================
 
-.. image:: https://img.shields.io/badge/python-3.10%2B-blue
-    :alt: Python Version
-    :target: https://www.python.org/downloads/
+.. image:: https://img.shields.io/pypi/v/binlearn
+    :alt: PyPI Version
+    :target: https://pypi.org/project/binlearn/
 
-.. image:: https://github.com/TheDAALab/binlearn/workflows/Build%20&%20Test/badge.svg
-    :target: https://github.com/TheDAALab/binlearn/actions/workflows/build.yml
+.. image:: https://img.shields.io/pypi/pyversions/binlearn
+    :alt: Python Versions
+    :target: https://pypi.org/project/binlearn/
+
+.. image:: https://img.shields.io/github/actions/workflow/status/TheDAALab/binlearn/build.yml?branch=main
     :alt: Build Status
+    :target: https://github.com/TheDAALab/binlearn/actions/workflows/build.yml
 
-.. image:: https://img.shields.io/badge/license-MIT-green
+.. image:: https://img.shields.io/codecov/c/github/TheDAALab/binlearn
+    :alt: Code Coverage
+    :target: https://codecov.io/gh/TheDAALab/binlearn
+
+.. image:: https://img.shields.io/github/license/TheDAALab/binlearn
     :alt: License
     :target: https://github.com/TheDAALab/binlearn/blob/main/LICENSE
 
-.. image:: https://img.shields.io/badge/coverage-100%25-brightgreen
-    :alt: Test Coverage
+.. image:: https://img.shields.io/readthedocs/binlearn
+    :alt: Documentation Status
+    :target: https://binlearn.readthedocs.io/
 
 A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
 
@@ -29,7 +38,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
-  * **SingletonBinning** - Clean categorical encoding (formerly OneHotBinning) 🆕
+  * **SingletonBinning** - Clean categorical encoding for discrete values 🆕
 
 🔧 **Framework Integration**
   * **Pandas DataFrames** - Native support with column name preservation
