@@ -120,7 +120,7 @@ def get_version_info():
         "is_development": "dev" in __version__,
     }}
 """
-version_scheme = "guess-next-dev"
+# Use standard setuptools_scm versioning without custom schemes
 local_scheme = "no-local-version"
 fallback_version = "0.0.0"
 tag_regex = '^v(?P<version>\d+(?:\.\d+)*(?:[-\.]?(?:a|alpha|b|beta|rc|dev|pre)\.?\d*)?)$'
