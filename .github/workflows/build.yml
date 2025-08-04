@@ -51,10 +51,12 @@ jobs:
         echo "🧪 Running test suite..."
         pytest --cov=binlearn --cov-report=xml --cov-report=term-missing -v
 
-    - name: Upload coverage to Codecov
+    - name: Upload coverage reports to Codecov
       if: matrix.python-version == '3.11'  # Only upload once
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: TheDAALab/binlearn
         file: ./coverage.xml
         fail_ci_if_error: false
 
