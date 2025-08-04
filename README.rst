@@ -2,8 +2,9 @@
 binlearn - Binning and Discretization Library
 =============================================
 
-.. image:: https://img.shields.io/badge/python-3.8%2B-blue
+.. image:: https://img.shields.io/badge/python-3.10%2B-blue
     :alt: Python Version
+    :target: https://www.python.org/downloads/
 
 .. image:: https://github.com/TheDAALab/binlearn/workflows/Build%20&%20Test/badge.svg
     :target: https://github.com/TheDAALab/binlearn/actions/workflows/build.yml
@@ -11,20 +12,27 @@ binlearn - Binning and Discretization Library
 
 .. image:: https://img.shields.io/badge/license-MIT-green
     :alt: License
+    :target: https://github.com/TheDAALab/binlearn/blob/main/LICENSE
 
 .. image:: https://img.shields.io/badge/code%20quality-ruff-black
     :alt: Code Quality - Ruff
+    :target: https://docs.astral.sh/ruff/
 
 .. image:: https://img.shields.io/badge/type%20checking-mypy-blue
     :alt: Type Checking - MyPy
+    :target: https://mypy.readthedocs.io/
 
-.. image:: https://img.shields.io/badge/tests-837%20passed-green
+.. image:: https://img.shields.io/badge/tests-841%20passed-green
     :alt: Test Results
 
 .. image:: https://img.shields.io/badge/coverage-100%25-brightgreen
     :alt: Test Coverage
 
-A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support.
+.. image:: https://img.shields.io/badge/docs-ReadTheDocs-blue
+    :alt: Documentation
+    :target: https://binlearn.readthedocs.io/
+
+A modern, type-safe Python library for data binning and discretization with comprehensive error handling, sklearn compatibility, and DataFrame support. Features our new **SingletonBinning** method for cleaner categorical data encoding!
 
 🚀 **Key Features**
 ---------------------
@@ -37,7 +45,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
-  * **SingletonBinning** - Singleton encoding for categorical data
+  * **SingletonBinning** - Clean categorical encoding (formerly OneHotBinning) 🆕
 
 🔧 **Framework Integration**
   * **Pandas DataFrames** - Native support with column name preservation
@@ -49,8 +57,8 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **Type Safety** - 100% mypy compliance with comprehensive type annotations
   * **Code Quality** - 100% ruff compliance with modern Python syntax
   * **Error Handling** - Comprehensive validation with helpful error messages and suggestions
-  * **Test Coverage** - 100% code coverage with 837 comprehensive tests
-  * **Documentation** - Extensive examples and API documentation
+  * **Test Coverage** - 100% code coverage with 841 comprehensive tests
+  * **Documentation** - Extensive examples and API documentation with SingletonBinning guide
 
 📦 **Installation**
 ---------------------
@@ -66,7 +74,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
    import numpy as np
    import pandas as pd
-   from binlearn.methods import EqualWidthBinning, SupervisedBinning
+   from binlearn import EqualWidthBinning, SupervisedBinning, SingletonBinning
    
    # Create sample data
    data = pd.DataFrame({
@@ -82,13 +90,23 @@ A modern, type-safe Python library for data binning and discretization with comp
    print(f"Original shape: {data.shape}")
    print(f"Binned shape: {data_binned.shape}")
    print(f"Bin edges for age: {binner.bin_edges_['age']}")
+   
+   # NEW: SingletonBinning for categorical features
+   categorical_data = pd.DataFrame({
+       'category': ['A', 'B', 'A', 'C', 'B', 'A'],
+       'rating': [1, 2, 1, 3, 2, 1]
+   })
+   
+   singleton_binner = SingletonBinning(preserve_dataframe=True)
+   categorical_binned = singleton_binner.fit_transform(categorical_data)
+   print(f"Categorical binning: {categorical_binned.shape}")
 
 🎯 **Supervised Binning Example**
 -----------------------------------
 
 .. code-block:: python
 
-   from binlearn.methods import SupervisedBinning
+   from binlearn import SupervisedBinning
    from sklearn.datasets import make_classification
    from sklearn.model_selection import train_test_split
    
@@ -117,7 +135,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
    from sklearn.pipeline import Pipeline
    from sklearn.ensemble import RandomForestClassifier
-   from binlearn.methods import EqualFrequencyBinning
+   from binlearn import EqualFrequencyBinning
    
    # Create ML pipeline with binning preprocessing
    pipeline = Pipeline([
@@ -147,7 +165,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
 **Categorical Methods:**
 
-* ``SingletonBinning`` - Singleton encoding for categorical variables
+* ``SingletonBinning`` - Clean categorical encoding (replaces OneHotBinning) 🆕
 
 **Supervised Methods:**
 
@@ -198,10 +216,10 @@ A modern, type-safe Python library for data binning and discretization with comp
 🏆 **Code Quality Standards**
 -------------------------------
 
-* ✅ **100% Test Coverage** - Comprehensive test suite with 837 tests
+* ✅ **100% Test Coverage** - Comprehensive test suite with 841 tests
 * ✅ **100% Type Safety** - Complete mypy compliance with modern type annotations
 * ✅ **100% Code Quality** - Full ruff compliance with modern Python standards
-* ✅ **Comprehensive Documentation** - Detailed API docs and examples
+* ✅ **Comprehensive Documentation** - Detailed API docs and examples including SingletonBinning
 * ✅ **Modern Python** - Uses latest Python features and best practices
 * ✅ **Robust Error Handling** - Helpful error messages with actionable suggestions
 
@@ -250,12 +268,20 @@ This project is licensed under the MIT License. See the `LICENSE <https://github
 
 .. image:: https://img.shields.io/badge/Powered%20by-Python-blue.svg
     :alt: Powered by Python
+    :target: https://www.python.org/
 
 .. image:: https://img.shields.io/badge/Built%20with-NumPy-orange.svg
     :alt: Built with NumPy
+    :target: https://numpy.org/
 
 .. image:: https://img.shields.io/badge/Compatible%20with-Pandas-green.svg
     :alt: Compatible with Pandas
+    :target: https://pandas.pydata.org/
 
 .. image:: https://img.shields.io/badge/Integrates%20with-Scikit--learn-red.svg
     :alt: Integrates with Scikit-learn
+    :target: https://scikit-learn.org/
+
+.. image:: https://img.shields.io/badge/Latest%20Release-SingletonBinning-purple.svg
+    :alt: Latest Feature - SingletonBinning
+    :target: https://binlearn.readthedocs.io/en/latest/api/methods/singleton_binning.html
