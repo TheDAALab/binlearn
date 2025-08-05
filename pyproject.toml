@@ -258,6 +258,9 @@ module = "tests.*"
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 disallow_untyped_decorators = false
+disallow_untyped_calls = false
+check_untyped_defs = false
+warn_unused_ignores = false
 
 [tool.coverage.run]
 source = ["binlearn"]

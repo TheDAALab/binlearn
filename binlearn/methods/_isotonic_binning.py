@@ -141,7 +141,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate isotonic regression-based bins for a single column.
 
@@ -216,7 +216,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         return self._create_isotonic_bins(x_clean, y_clean, col_id)
 
     def _create_isotonic_bins(
-        self, x_col: np.ndarray[Any, Any], y_col: np.ndarray, col_id: Any
+        self, x_col: np.ndarray[Any, Any], y_col: np.ndarray[Any, Any], col_id: Any
     ) -> tuple[list[float], list[float]]:
         """Create bins using isotonic regression.
 
@@ -269,7 +269,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         # Create bin edges and representatives
         return self._create_bins_from_cuts(x_sorted, y_fitted, cut_points, col_id)
 
-    def _prepare_target_values(self, y_values: np.ndarray[Any, Any]) -> np.ndarray:
+    def _prepare_target_values(self, y_values: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """Prepare target values for isotonic regression.
 
         Converts categorical targets to numeric values and applies bounds if specified.
@@ -291,7 +291,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
 
         return y_processed
 
-    def _find_cut_points(self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray) -> list[int]:
+    def _find_cut_points(self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any]) -> list[int]:
         """Find cut points based on changes in fitted isotonic function.
 
         Identifies locations where the fitted function has significant changes

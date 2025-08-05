@@ -26,7 +26,7 @@ from sklearn.utils.validation import check_is_fitted
 from ..methods import EqualWidthBinning, SingletonBinning, SupervisedBinning
 
 
-class BinningFeatureSelector(BaseEstimator, TransformerMixin):
+class BinningFeatureSelector(BaseEstimator, TransformerMixin):  # type: ignore[misc]
     """Feature selector that uses binning-based mutual information.
 
     This transformer combines binning methods with mutual information-based
@@ -48,7 +48,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):
         binning_method: str = "equal_width",
         k: int = 10,
         score_func: str = "auto",
-        binning_params: dict | None = None,
+        binning_params: dict[str, Any] | None = None,
     ):
         """Initialize the feature selector.
 
@@ -177,7 +177,7 @@ class BinningPipeline:
     def create_supervised_binning_pipeline(
         guidance_column: str | int,
         task_type: str = "classification",
-        tree_params: dict | None = None,
+        tree_params: dict[str, Any] | None = None,
         final_estimator: Any = None,
     ) -> Any:
         """Create a pipeline with supervised binning.
@@ -210,7 +210,7 @@ class BinningPipeline:
 
 
 def make_binning_scorer(
-    binning_method: str = "supervised", binning_params: dict | None = None
+    binning_method: str = "supervised", binning_params: dict[str, Any] | None = None
 ) -> Any:
     """Create a scorer that includes binning in the evaluation.
 

@@ -3,6 +3,7 @@ Comprehensive tests for Chi2Binning functionality.
 """
 
 import warnings
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -88,7 +89,7 @@ class TestChi2BinningGuidanceParameterizations:
     """Test different ways of providing guidance data to Chi2Binning."""
 
     @pytest.fixture
-    def sample_data(self) -> tuple[np.ndarray, np.ndarray]:
+    def sample_data(self) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Create sample data for testing."""
         np.random.seed(42)
         n_samples = 200
@@ -109,7 +110,7 @@ class TestChi2BinningGuidanceParameterizations:
         return X, y
 
     @pytest.fixture
-    def multifeature_data(self) -> tuple[np.ndarray, np.ndarray]:
+    def multifeature_data(self) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Create multi-feature sample data for testing."""
         np.random.seed(42)
         n_samples = 150
@@ -295,7 +296,7 @@ class TestChi2BinningAlgorithm:
     """Test the Chi2Binning algorithm specifics."""
 
     @pytest.fixture
-    def classification_data(self) -> tuple[np.ndarray, np.ndarray]:
+    def classification_data(self) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Create data suitable for classification testing."""
         np.random.seed(42)
         n_samples = 300
@@ -380,7 +381,7 @@ class TestChi2BinningDataFrameSupport:
     """Test Chi2Binning with pandas and polars DataFrames."""
 
     @pytest.fixture
-    def sample_dataframe_data(self) -> dict[str, np.ndarray]:
+    def sample_dataframe_data(self) -> dict[str, np.ndarray[Any, Any]]:
         """Create sample DataFrame data."""
         np.random.seed(42)
         n_samples = 100
@@ -536,7 +537,7 @@ class TestChi2BinningSklearnIntegration:
     """Test Chi2Binning integration with sklearn pipelines."""
 
     @pytest.fixture
-    def pipeline_data(self) -> tuple[np.ndarray, np.ndarray]:
+    def pipeline_data(self) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Create data for pipeline testing."""
         np.random.seed(42)
         n_samples = 100
@@ -995,7 +996,7 @@ class TestChi2BinningEdgeCases:
         binning = Chi2Binning(max_bins=3)
 
         # Mock validate_guidance_data to return 1D array to trigger line 236
-        def mock_validate_guidance_data(guidance_data) -> np.ndarray:
+        def mock_validate_guidance_data(guidance_data) -> np.ndarray[Any, Any]:
             return y  # Return 1D array, should trigger else branch on line 236
 
         with patch.object(

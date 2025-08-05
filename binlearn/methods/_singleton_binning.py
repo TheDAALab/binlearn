@@ -160,7 +160,7 @@ class SingletonBinning(ReprMixin, FlexibleBinningBase):
             raise ValueError("max_unique_values must be a positive integer")
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: ColumnId, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: ColumnId, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate singleton bins for each unique value in the column.
 

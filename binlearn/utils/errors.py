@@ -63,7 +63,7 @@ class ValidationMixin:
     @staticmethod
     def validate_array_like(
         data: Any, name: str = "data", allow_none: bool = False
-    ) -> np.ndarray | None:
+    ) -> np.ndarray[Any, Any] | None:
         """Validate and convert array-like input."""
         if data is None and allow_none:
             return None
@@ -102,7 +102,7 @@ class ValidationMixin:
             return list(range(data_shape[1]))
 
         # Convert single column to list
-        if not isinstance(columns, (list, tuple, np.ndarray)):
+        if not isinstance(columns, list | tuple | np.ndarray):
             columns = [columns]
 
         # Validate each column
@@ -140,7 +140,7 @@ class ValidationMixin:
             return []
 
         # Convert to list if needed
-        if not isinstance(guidance_cols, (list, tuple)):
+        if not isinstance(guidance_cols, list | tuple):
             guidance_cols = [guidance_cols]
 
         validated_guidance = ValidationMixin.validate_column_specification(
@@ -161,7 +161,7 @@ class ValidationMixin:
         return validated_guidance
 
     @staticmethod
-    def check_data_quality(data: np.ndarray, name: str = "data") -> None:
+    def check_data_quality(data: np.ndarray[Any, Any], name: str = "data") -> None:
         """Check data quality and issue warnings if needed."""
 
         config = get_config()

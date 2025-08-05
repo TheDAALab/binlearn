@@ -1,5 +1,7 @@
 """Tests for types module."""
 
+from typing import Any
+
 import numpy as np
 
 from binlearn.utils import types
@@ -54,9 +56,9 @@ class TestTypeAliases:
 
     def test_numpy_array_types_are_ndarray(self):
         """Test that numpy array types are actually ndarray."""
-        assert types.Array1D == np.ndarray
-        assert types.Array2D == np.ndarray
-        assert types.BooleanMask == np.ndarray
+        assert types.Array1D == np.ndarray[Any, Any]
+        assert types.Array2D == np.ndarray[Any, Any]
+        assert types.BooleanMask == np.ndarray[Any, Any]
 
     def test_types_module_imports(self):
         """Test that the module imports work correctly."""

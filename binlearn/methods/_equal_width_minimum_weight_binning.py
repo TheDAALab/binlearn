@@ -141,7 +141,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate equal-width bins with minimum weight constraint for a single column.
 
@@ -231,7 +231,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals
     def _create_weight_constrained_bins(
-        self, x_data: np.ndarray[Any, Any], weights: np.ndarray, col_id: Any
+        self, x_data: np.ndarray[Any, Any], weights: np.ndarray[Any, Any], col_id: Any
     ) -> tuple[list[float], list[float]]:
         """Create equal-width bins with minimum weight constraint.
 
@@ -295,7 +295,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             ) from e
 
     def _merge_underweight_bins(
-        self, edges: np.ndarray[Any, Any], bin_weights: np.ndarray, col_id: Any
+        self, edges: np.ndarray[Any, Any], bin_weights: np.ndarray[Any, Any], col_id: Any
     ) -> np.ndarray[Any, Any]:
         """Merge adjacent bins that don't meet minimum weight requirement.
 
@@ -338,7 +338,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
         return np.array(merged_edges)
 
-    def _perform_bin_merging(self, edges: np.ndarray[Any, Any], bin_weights: np.ndarray) -> list[float]:
+    def _perform_bin_merging(self, edges: np.ndarray[Any, Any], bin_weights: np.ndarray[Any, Any]) -> list[float]:
         """Perform the actual bin merging logic.
 
         Separated from _merge_underweight_bins to make testing easier.

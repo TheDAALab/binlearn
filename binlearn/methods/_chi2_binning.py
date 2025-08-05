@@ -195,7 +195,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         # validate guidance_columns here
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: ColumnId, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: ColumnId, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate chi-square based bins for a single column.
 
@@ -286,7 +286,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             ) from e
 
     def _merge_bins_chi2(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, initial_edges: np.ndarray
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], initial_edges: np.ndarray[Any, Any]
     ) -> list[float]:
         """Merge bins based on chi-square statistic.
 
@@ -325,7 +325,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return current_edges
 
     def _find_best_merge_pair(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, edges: list[float]
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], edges: list[float]
     ) -> int | None:
         """Find the best pair of adjacent intervals to merge.
 
@@ -361,7 +361,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return best_idx
 
     def _calculate_chi2_for_pair(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, edges: list[float], pair_idx: int
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], edges: list[float], pair_idx: int
     ) -> tuple[float, float]:
         """Calculate chi-square statistic for a pair of adjacent intervals.
 
@@ -473,7 +473,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             centers.append(center)
         return centers
 
-    def _extract_guidance_column(self, guidance_data_validated: np.ndarray[Any, Any]) -> np.ndarray:
+    def _extract_guidance_column(self, guidance_data_validated: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """Extract guidance column from validated guidance data.
 
         Args:
@@ -508,7 +508,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return None
 
     def _should_stop_merging_for_significance(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, current_edges: list[float], best_pair_idx: int
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], current_edges: list[float], best_pair_idx: int
     ) -> bool:
         """Check if merging should stop based on significance when at max_bins.
 

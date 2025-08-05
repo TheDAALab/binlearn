@@ -54,7 +54,7 @@ class SklearnCompatibilityMixin:
         if (
             reset
             or not hasattr(self, "feature_names_in_")
-            or getattr(self, "feature_names_in_") is None
+            or self.feature_names_in_ is None
         ):
             self.feature_names_in_ = feature_names
 

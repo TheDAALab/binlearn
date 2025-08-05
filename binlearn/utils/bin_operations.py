@@ -159,9 +159,7 @@ def default_representatives(edges: BinEdges) -> BinReps:
 
 def create_bin_masks(
     bin_indices: np.ndarray[Any, Any], n_bins: int
-) -> tuple[
-    BooleanMask[Any, Any], BooleanMask[Any, Any], BooleanMask[Any, Any], BooleanMask[Any, Any]
-]:
+) -> tuple[BooleanMask, BooleanMask, BooleanMask, BooleanMask]:
     """Create boolean masks for different bin index types.
 
     Args:

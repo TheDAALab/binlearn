@@ -124,7 +124,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate Gaussian Mixture Model clustering-based bins for a single column or joint binning data.
 

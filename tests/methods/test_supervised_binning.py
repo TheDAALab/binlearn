@@ -279,7 +279,7 @@ class TestSupervisedBinningInitialization:
         finally:
             # Restore the original method if it existed
             if original_method is not None:
-                setattr(base_class, "_validate_params", original_method)
+                base_class._validate_params = original_method
 
     def test_set_params_task_type(self):
         """Test set_params method with task_type to trigger _handle_bin_params lines 323-324."""

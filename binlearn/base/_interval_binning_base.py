@@ -316,7 +316,7 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
     def _calculate_bins_for_columns(
-        self, X: np.ndarray[Any, Any], columns: ColumnList, guidance_data: np.ndarray | None
+        self, X: np.ndarray[Any, Any], columns: ColumnList, guidance_data: np.ndarray[Any, Any] | None
     ) -> None:
         """Calculate bins for each column.
 
@@ -334,7 +334,7 @@ class IntervalBinningBase(GeneralBinningBase):
             self._calculate_bins_for_single_column(X, i, col, guidance_data)
 
     def _calculate_bins_for_single_column(
-        self, X: np.ndarray[Any, Any], col_index: int, col: ColumnId, guidance_data: np.ndarray | None
+        self, X: np.ndarray[Any, Any], col_index: int, col: ColumnId, guidance_data: np.ndarray[Any, Any] | None
     ) -> None:
         """Calculate bins for a single column.
 
@@ -515,13 +515,13 @@ class IntervalBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[BinEdges, BinEdges]:
         """Calculate bin edges and representatives for a column.
 
         Parameters
         ----------
-        x_col : np.ndarray
+        x_col : np.ndarray[Any, Any]
             The data for the column being binned.
         col_id : Any
             The identifier for the column.
@@ -570,7 +570,7 @@ class IntervalBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray[Any, Any]:
         """Transform columns to bin indices.
 
         Converts continuous values in each column to discrete bin indices using
@@ -615,7 +615,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray[Any, Any]:
         """Inverse transform from bin indices to representative values.
 
         Converts bin indices back to continuous values using the fitted bin

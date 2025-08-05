@@ -470,13 +470,13 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
     ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bin definitions and representatives for a column.
 
         Parameters
         ----------
-        x_col : np.ndarray
+        x_col : np.ndarray[Any, Any]
             Data for a single column.
         col_id : Any
             Column identifier.
@@ -526,7 +526,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray[Any, Any]:
         """Transform columns to bin indices using flexible bins.
 
         Converts values in each column to discrete bin indices using the fitted
@@ -559,7 +559,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray[Any, Any]:
         """Transform bin indices back to representative values for flexible bins.
 
         Converts bin indices back to continuous representative values using the

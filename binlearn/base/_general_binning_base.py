@@ -28,7 +28,7 @@ from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumn
 
 # pylint: disable=too-many-ancestors
 class GeneralBinningBase(
-    ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin
+    ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin  # type: ignore[misc]
 ):
     """Base class for all binning transformers with universal guidance support.
 
@@ -516,7 +516,9 @@ class GeneralBinningBase(
         )
 
     @abstractmethod
-    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
+    def _transform_columns(
+        self, X: np.ndarray[Any, Any], columns: ColumnList
+    ) -> np.ndarray[Any, Any]:
         """Transform columns to bin indices.
 
         Abstract method that must be implemented by subclasses to convert input
@@ -547,7 +549,7 @@ class GeneralBinningBase(
     @abstractmethod
     def _inverse_transform_columns(
         self, X: np.ndarray[Any, Any], columns: ColumnList
-    ) -> np.ndarray:
+    ) -> np.ndarray[Any, Any]:
         """Inverse transform from bin indices to representative values.
 
         Abstract method that must be implemented by subclasses to convert bin

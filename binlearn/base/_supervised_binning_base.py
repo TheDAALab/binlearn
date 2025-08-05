@@ -122,8 +122,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         )
 
     def validate_feature_target_pair(
-        self, x_col: np.ndarray[Any, Any], guidance_data: np.ndarray, col_id: Any = None
-    ) -> tuple[np.ndarray[Any, Any], np.ndarray, np.ndarray]:
+        self, x_col: np.ndarray[Any, Any], guidance_data: np.ndarray[Any, Any], col_id: Any = None
+    ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Validate feature-target pair and create valid data mask.
 
         Performs comprehensive validation of a feature-target pair for supervised
@@ -143,7 +143,7 @@ class SupervisedBinningBase(IntervalBinningBase):
                 better debugging context. Defaults to None.
 
         Returns:
-            Tuple[np.ndarray[Any, Any], np.ndarray, np.ndarray]: A tuple containing:
+            Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any], np.ndarray[Any, Any]]: A tuple containing:
                 - x_col: Validated feature data as float array (shape: n_samples)
                 - guidance_data: Validated guidance data (shape: n_samples)
                 - valid_mask: Boolean mask indicating valid (non-missing) pairs (shape: n_samples)
@@ -194,8 +194,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         return x_col, guidance_data_validated, valid_mask
 
     def extract_valid_pairs(
-        self, x_col: np.ndarray[Any, Any], guidance_data: np.ndarray, valid_mask: np.ndarray
-    ) -> tuple[np.ndarray[Any, Any], np.ndarray]:
+        self, x_col: np.ndarray[Any, Any], guidance_data: np.ndarray[Any, Any], valid_mask: np.ndarray[Any, Any]
+    ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
         """Extract valid feature-target pairs using the provided mask.
 
         Filters the feature and target data to include only valid (non-missing)
@@ -211,7 +211,7 @@ class SupervisedBinningBase(IntervalBinningBase):
                 valid (non-missing) feature-target pairs. Shape should be (n_samples,).
 
         Returns:
-            Tuple[np.ndarray[Any, Any], np.ndarray]: A tuple containing:
+            Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]: A tuple containing:
                 - Valid feature data (shape: n_valid_samples)
                 - Valid target data (shape: n_valid_samples)
 
@@ -265,7 +265,7 @@ class SupervisedBinningBase(IntervalBinningBase):
             )
 
     def handle_insufficient_data(
-        self, x_col: np.ndarray[Any, Any], valid_mask: np.ndarray, min_samples: int, col_id: Any = None
+        self, x_col: np.ndarray[Any, Any], valid_mask: np.ndarray[Any, Any], min_samples: int, col_id: Any = None
     ) -> tuple[BinEdges, BinEdges] | None:
         """Handle cases with insufficient valid data for supervised binning.
 

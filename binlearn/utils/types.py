@@ -80,9 +80,9 @@ BinCountDict = dict[ColumnId, int]
 # =============================================================================
 
 # Common numpy array shapes used in binning
-Array1D = np.ndarray  # 1D array
-Array2D = np.ndarray  # 2D array
-BooleanMask = np.ndarray  # Boolean array for masking
+Array1D = np.ndarray[Any, Any]  # 1D array
+Array2D = np.ndarray[Any, Any]  # 2D array
+BooleanMask = np.ndarray[Any, Any]  # Boolean array for masking
 
 # =============================================================================
 # PARAMETER TYPES FOR FUNCTIONS

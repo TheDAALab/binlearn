@@ -15,6 +15,7 @@ Test Classes:
     TestManualIntervalBinningEdgeCases: Tests for edge cases and error conditions.
 """
 
+
 import numpy as np
 import pytest
 from sklearn.base import clone

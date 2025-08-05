@@ -141,7 +141,7 @@ def prepare_input_with_columns(
 
     Returns
     -------
-    arr : np.ndarray
+    arr : np.ndarray[Any, Any]
         Prepared array
     columns : List[Any]
         Column identifiers

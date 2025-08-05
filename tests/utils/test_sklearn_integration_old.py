@@ -5,21 +5,20 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
-import numpy as np
 
 from binlearn.utils.sklearn_integration import SklearnCompatibilityMixin
 
 
 class MockTransformer(SklearnCompatibilityMixin):
     """Mock transformer class for testing sklearn integration."""
-    
+
     def __init__(self, guidance_columns: Any = None) -> None:
         self._fitted = False
         self.feature_names_in_: list[str] | None = None
         self.n_features_in_: int = 0
         self._n_features_in: int = 0  # Add _n_features_in for backward compatibility testing
         self.guidance_columns = guidance_columns
-    
+
     def fit(self, X: Any, y: Any = None) -> "MockTransformer":
         """Mock fit method."""
         self._fitted = True

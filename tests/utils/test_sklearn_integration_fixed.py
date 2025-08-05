@@ -5,7 +5,6 @@ from typing import Any
 from unittest.mock import Mock
 
 import pytest
-import numpy as np
 
 from binlearn.utils.sklearn_integration import SklearnCompatibilityMixin
 
