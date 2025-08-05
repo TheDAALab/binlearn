@@ -29,8 +29,8 @@ from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumn
 # pylint: disable=too-many-ancestors
 class GeneralBinningBase(
     ABC,
-    BaseEstimator,
-    TransformerMixin,
+    BaseEstimator,  # type: ignore[misc]
+    TransformerMixin,  # type: ignore[misc]
     ValidationMixin,
     SklearnCompatibilityMixin,
 ):
