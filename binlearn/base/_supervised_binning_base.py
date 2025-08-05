@@ -1,9 +1,9 @@
 """
-Base class for supervised binning methods with decision tree integration.
+Base class for supervised binning methods with guidance data management.
 
 This module provides the foundational SupervisedBinningBase class for all supervised
-binning transformers. It handles guidance data validation, decision tree configuration,
-feature-target pair processing, and automatic task type detection.
+binning transformers. It handles guidance data validation, feature-target pair processing,
+and automatic data quality validation.
 
 The class supports both classification and regression tasks, with intelligent fallback
 strategies for insufficient data scenarios and comprehensive data quality validation.
@@ -13,14 +13,12 @@ import warnings
 from typing import Any
 
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from ..utils.errors import (
-    ConfigurationError,
     DataQualityWarning,
     ValidationError,
 )
-from ..utils.types import BinEdges, ColumnList
+from ..utils.types import BinEdges
 from ._interval_binning_base import IntervalBinningBase
 
 
@@ -31,7 +29,6 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     This class provides:
     - Single guidance column validation and preprocessing
-    - Decision tree template management
     - Feature-target pair validation and missing value handling
     - Insufficient data handling with fallback strategies
     - Data quality warnings for both features and targets
@@ -39,115 +36,29 @@ class SupervisedBinningBase(IntervalBinningBase):
 
     def __init__(
         self,
-        task_type: str = "classification",
-        tree_params: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize SupervisedBinningBase with task configuration and tree parameters.
+        """Initialize SupervisedBinningBase with guidance data management.
 
-        Sets up the supervised binning transformer with the specified task type
-        and decision tree configuration. Provides intelligent defaults for
-        tree parameters while allowing full customization.
+        Sets up the supervised binning transformer for guidance data management.
+        This base class focuses purely on handling guidance columns and validation,
+        without any task-specific logic like decision trees.
 
         Args:
-            task_type (str, optional): Type of supervised learning task. Must be either
-                "classification" or "regression". Defaults to "classification".
-                Determines the type of decision tree used internally.
-            tree_params (Optional[Dict[str, Any]], optional): Parameters for the underlying
-                decision tree estimator. If None, uses sensible defaults optimized for
-                binning tasks. Common parameters include max_depth, min_samples_split,
-                min_samples_leaf, etc. Defaults to None.
             **kwargs: Additional keyword arguments passed to the parent IntervalBinningBase
                 class, including clip, bin_edges, bin_representatives, preserve_dataframe,
                 fit_jointly, and guidance_columns.
 
-        Raises:
-            ValueError: If task_type is not "classification" or "regression".
-
         Example:
-            >>> # Basic usage with defaults
-            >>> binner = SupervisedBinning()
-
-            >>> # Custom task type and tree parameters
-            >>> binner = SupervisedBinning(
-            ...     task_type="regression",
-            ...     tree_params={"max_depth": 5, "min_samples_leaf": 10}
-            ... )
+            >>> # Basic usage (typically subclassed)
+            >>> binner = SupervisedBinning(guidance_columns=[3])
 
         Note:
-            - Default tree parameters are optimized for binning rather than prediction
-            - Tree parameters can be modified after initialization using set_params()
-            - The task type determines whether DecisionTreeClassifier or DecisionTreeRegressor
-                is used
+            - This is a base class meant to be subclassed by specific implementations
+            - Guidance columns can be modified after initialization using set_params()
+            - Data validation is performed during fit operations
         """
         super().__init__(**kwargs)
-
-        # Validate task type
-        if task_type not in ["classification", "regression"]:
-            raise ConfigurationError(
-                f"task_type must be 'classification' or 'regression', got '{task_type}'"
-            )
-
-        # Store parameters exactly as received for sklearn clone compatibility
-        self.task_type = task_type
-        self.tree_params = tree_params
-
-        # Note: Tree template creation is deferred to fit time to allow invalid parameters
-        # during initialization (for sklearn compatibility)
-        self._tree_template: DecisionTreeClassifier | DecisionTreeRegressor | None = None
-
-    def _create_tree_template(self) -> None:
-        """Create tree template with merged parameters.
-
-        Initializes the decision tree template that will be used for all binning
-        operations. This method merges user-provided tree parameters with sensible
-        defaults optimized for binning tasks, then creates the appropriate tree
-        estimator based on the task type.
-
-        The tree template is created once and cloned for each column/feature pair
-        to ensure consistent behavior across all binning operations.
-
-        Raises:
-            ConfigurationError: If the tree_params contain invalid parameters
-                that cannot be used with the decision tree estimator.
-
-        Note:
-            - Called automatically during the first fit operation
-            - Uses shallow trees (max_depth=3) by default for interpretable binning
-            - Defers creation until fit time to allow invalid parameters during init
-            - Template is cloned for each feature to avoid state sharing
-        """
-        if self._tree_template is not None:
-            return
-
-        # Create simple tree template with default parameters
-        default_params = {
-            "max_depth": 3,
-            "min_samples_leaf": 1,
-            "min_samples_split": 2,
-            "random_state": None,
-        }
-
-        # Merge user params with defaults
-        merged_params = {**default_params, **(self.tree_params or {})}
-
-        # Initialize the appropriate tree model template
-        try:
-            if self.task_type == "classification":
-                self._tree_template = DecisionTreeClassifier(**merged_params)
-            else:  # regression
-                self._tree_template = DecisionTreeRegressor(**merged_params)
-        except TypeError as e:
-            raise ConfigurationError(
-                f"Invalid tree_params: {str(e)}",
-                suggestions=[
-                    "Check that all tree_params are valid DecisionTree parameters",
-                    (
-                        "Common parameters: max_depth, min_samples_split, "
-                        "min_samples_leaf, random_state"
-                    ),
-                ],
-            ) from e
 
     def validate_guidance_data(
         self, guidance_data: np.ndarray, name: str = "guidance_data"
@@ -351,37 +262,6 @@ class SupervisedBinningBase(IntervalBinningBase):
             raise ValueError(
                 f"{method_name.title()} requires guidance_data (target values) to be provided. "
                 f"Please specify guidance_columns when creating the transformer."
-            )
-
-    def validate_task_type(self, task_type: str, valid_types: ColumnList) -> None:
-        """Validate that task_type is one of the valid options.
-
-        Ensures that the specified task type is supported by the supervised
-        binning implementation. This validation helps provide clear error
-        messages when unsupported task types are specified.
-
-        Args:
-            task_type (str): Task type to validate (e.g., "classification", "regression").
-            valid_types (ColumnList): List of valid task types that are supported
-                by the current implementation.
-
-        Raises:
-            ValueError: If task_type is not in the list of valid_types, with
-                a clear message indicating which types are supported.
-
-        Example:
-            >>> binner.validate_task_type("clustering", ["classification", "regression"])
-            # ValueError: task_type 'clustering' not supported. Valid options are:
-            # ['classification', 'regression']
-
-        Note:
-            - Called during initialization or parameter setting
-            - Provides user-friendly error messages with valid alternatives
-            - Case-sensitive comparison for consistency
-        """
-        if task_type not in valid_types:
-            raise ValueError(
-                f"task_type '{task_type}' not supported. " f"Valid options are: {valid_types}"
             )
 
     def handle_insufficient_data(

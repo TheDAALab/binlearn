@@ -1,6 +1,5 @@
 """Tests for ReprMixin to achieve 100% coverage."""
 
-
 from binlearn.base._repr_mixin import ReprMixin
 
 

@@ -222,11 +222,14 @@ class GeneralBinningBase(
 
         Fits the binning transformer to the input data. Handles both guided and
         unguided binning scenarios, automatically separating guidance columns
-        when specified.
+        when specified. For supervised binning methods, if guidance_columns is
+        not specified but y is provided, y will be used as guidance data.
 
         Args:
             X (Any): Input data (DataFrame, array-like) to fit the transformer on.
-            y (Any, optional): Target values, ignored. For sklearn compatibility.
+            y (Any, optional): Target values. For supervised binning methods,
+                if guidance_columns is not specified, y will be used as guidance
+                data automatically. For sklearn compatibility.
             **fit_params: Additional parameters passed to fitting methods.
 
         Returns:
@@ -237,8 +240,6 @@ class GeneralBinningBase(
             ValueError: If input validation or parameter validation fails.
             RuntimeError: If fitting encounters runtime issues.
         """
-        _ = y
-
         try:
             # Validate parameters first
             self._validate_params()
@@ -267,14 +268,29 @@ class GeneralBinningBase(
             if self.fit_jointly:
                 self._fit_jointly(X_binning, binning_cols, **fit_params)
             else:
-                # Handle potential conflict between X_guidance and fit_params['guidance_data']
+                # Handle guidance data priority:
+                # 1. X_guidance (from guidance_columns in X)
+                # 2. external guidance_data from fit_params
+                # 3. y parameter (sklearn-style convenience for supervised methods)
                 fit_params_clean = fit_params.copy()
                 external_guidance_data = fit_params_clean.pop("guidance_data", None)
 
-                # Use external guidance data if no embedded guidance columns
-                final_guidance_data = (
-                    X_guidance if X_guidance is not None else external_guidance_data
-                )
+                if X_guidance is not None:
+                    # Use embedded guidance columns
+                    final_guidance_data = X_guidance
+                elif external_guidance_data is not None:
+                    # Use explicit guidance_data parameter
+                    final_guidance_data = external_guidance_data
+                elif y is not None:
+                    # Use y parameter as convenience for supervised methods
+                    # Convert to numpy array and ensure 2D shape
+                    y_array = np.asarray(y)
+                    if y_array.ndim == 1:
+                        y_array = y_array.reshape(-1, 1)
+                    final_guidance_data = y_array
+                else:
+                    # No guidance data available
+                    final_guidance_data = None
 
                 self._fit_per_column(
                     X_binning, binning_cols, final_guidance_data, **fit_params_clean

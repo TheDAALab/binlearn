@@ -53,7 +53,7 @@ class TestSupervisedBinningInitialization:
 
     def test_invalid_task_type(self):
         """Test initialization with invalid task type."""
-        with pytest.raises(ConfigurationError, match="Invalid task_type"):
+        with pytest.raises(ConfigurationError, match="task_type must be"):
             SupervisedBinning(task_type="invalid")
 
     def test_tree_params_validation(self):

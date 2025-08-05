@@ -86,6 +86,7 @@ from .config import get_config, load_config, reset_config, set_config
 
 # Concrete binning methods
 from .methods import (
+    Chi2Binning,
     EqualFrequencyBinning,
     EqualWidthBinning,
     EqualWidthMinimumWeightBinning,
@@ -190,6 +191,7 @@ __all__ = [
     "default_representatives",
     "create_bin_masks",
     # Concrete methods
+    "Chi2Binning",
     "EqualFrequencyBinning",
     "EqualWidthBinning",
     "EqualWidthMinimumWeightBinning",

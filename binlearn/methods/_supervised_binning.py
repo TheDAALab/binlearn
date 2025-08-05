@@ -16,6 +16,7 @@ from typing import Any
 
 import numpy as np
 from sklearn.base import clone
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from ..base._repr_mixin import ReprMixin
 from ..base._supervised_binning_base import SupervisedBinningBase
@@ -63,6 +64,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         self,
         task_type: str = "classification",
         tree_params: dict[str, Any] | None = None,
+        clip: bool | None = None,
         preserve_dataframe: bool = False,
         bin_edges: Any = None,
         bin_representatives: Any = None,
@@ -87,6 +89,10 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
                 (int, default=5), min_samples_split (int, default=10), and
                 random_state (int or None). If None, default parameters optimized
                 for binning will be used. Defaults to None.
+            clip: Whether to clip values outside bin ranges to nearest bin edges.
+                If True, out-of-range values are clipped to the nearest bin boundary.
+                If False, out-of-range values are assigned special indicators.
+                If None, uses global configuration default. Defaults to None.
             preserve_dataframe: Whether to preserve pandas/polars DataFrame format
                 in the output. If True, returns DataFrame with same structure as
                 input. If False, returns numpy arrays. Defaults to False.
@@ -128,6 +134,12 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
             - Automatically handles both numeric and categorical guidance data
             - Tree parameters are validated during initialization
         """
+        # Validate task type first
+        if task_type not in ["classification", "regression"]:
+            raise ConfigurationError(
+                f"task_type must be 'classification' or 'regression', got '{task_type}'"
+            )
+
         # Store parameters BEFORE calling super().__init__
         # because parent class calls _validate_params() which needs these attributes
         self.task_type = task_type
@@ -137,9 +149,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         kwargs.pop("fit_jointly", None)
 
         super().__init__(
-            task_type=task_type,
-            tree_params=tree_params,
-            clip=kwargs.get("clip"),
+            clip=clip,
             preserve_dataframe=preserve_dataframe,
             bin_edges=bin_edges,
             bin_representatives=bin_representatives,
@@ -152,8 +162,63 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         self._fitted_trees: dict[ColumnId, Any] = {}
         self._tree_importance: dict[ColumnId, float] = {}
 
+        # Initialize tree template
+        self._tree_template: DecisionTreeClassifier | DecisionTreeRegressor | None = None
+
         # Create tree template for cloning during fitting
         self._create_tree_template()
+
+    def _create_tree_template(self) -> None:
+        """Create tree template with merged parameters.
+
+        Initializes the decision tree template that will be used for all binning
+        operations. This method merges user-provided tree parameters with sensible
+        defaults optimized for binning tasks, then creates the appropriate tree
+        estimator based on the task type.
+
+        The tree template is created once and cloned for each column/feature pair
+        to ensure consistent behavior across all binning operations.
+
+        Raises:
+            ConfigurationError: If the tree_params contain invalid parameters
+                that cannot be used with the decision tree estimator.
+
+        Note:
+            - Called automatically during initialization
+            - Uses shallow trees (max_depth=3) by default for interpretable binning
+            - Template is cloned for each feature to avoid state sharing
+        """
+        if self._tree_template is not None:
+            return
+
+        # Create simple tree template with default parameters
+        default_params = {
+            "max_depth": 3,
+            "min_samples_leaf": 1,
+            "min_samples_split": 2,
+            "random_state": None,
+        }
+
+        # Merge user params with defaults
+        merged_params = {**default_params, **(self.tree_params or {})}
+
+        # Initialize the appropriate tree model template
+        try:
+            if self.task_type == "classification":
+                self._tree_template = DecisionTreeClassifier(**merged_params)
+            else:  # regression
+                self._tree_template = DecisionTreeRegressor(**merged_params)
+        except TypeError as e:
+            raise ConfigurationError(
+                f"Invalid tree_params: {str(e)}",
+                suggestions=[
+                    "Check that all tree_params are valid DecisionTree parameters",
+                    (
+                        "Common parameters: max_depth, min_samples_split, "
+                        "min_samples_leaf, random_state"
+                    ),
+                ],
+            ) from e
 
     # pylint: disable=too-many-locals
     def _calculate_bins(

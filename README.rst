@@ -84,7 +84,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
    import numpy as np
    import pandas as pd
-   from binlearn import EqualWidthBinning, SupervisedBinning, SingletonBinning
+   from binlearn import EqualWidthBinning, SupervisedBinning, SingletonBinning, Chi2Binning
    
    # Create sample data
    data = pd.DataFrame({
@@ -118,25 +118,34 @@ A modern, type-safe Python library for data binning and discretization with comp
 
    from binlearn import SupervisedBinning
    from sklearn.datasets import make_classification
-   from sklearn.model_selection import train_test_split
+   import numpy as np
    
    # Create classification dataset
    X, y = make_classification(n_samples=1000, n_features=4, n_classes=2, random_state=42)
-   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
    
-   # Create supervised binner that considers target variable
-   sup_binner = SupervisedBinning(
-       n_bins=4,
+   # Method 1: Using guidance_columns (binlearn style)
+   # Combine features and target into single dataset
+   X_with_target = np.column_stack([X, y])
+   
+   sup_binner1 = SupervisedBinning(
+       guidance_columns=[4],  # Use the target column to guide binning
        task_type='classification',
        tree_params={'max_depth': 3, 'min_samples_leaf': 20}
    )
+   X_binned1 = sup_binner1.fit_transform(X_with_target)
    
-   # Fit using guidance data (target variable)
-   X_train_binned = sup_binner.fit_transform(X_train, guidance_data=y_train)
-   X_test_binned = sup_binner.transform(X_test)
+   # Method 2: Using y parameter (sklearn style) - NEW!
+   # Pass features and target separately like sklearn
+   sup_binner2 = SupervisedBinning(
+       task_type='classification',
+       tree_params={'max_depth': 3, 'min_samples_leaf': 20}
+   )
+   sup_binner2.fit(X, y)  # y is automatically used as guidance
+   X_binned2 = sup_binner2.transform(X)
    
-   print(f"Supervised binning created bins optimized for target separation")
-   print(f"Bin edges per feature: {[len(edges)-1 for edges in sup_binner.bin_edges_.values()]}")
+   print(f"Method 1 - Input shape: {X_with_target.shape}, Output shape: {X_binned1.shape}")
+   print(f"Method 2 - Input shape: {X.shape}, Output shape: {X_binned2.shape}")
+   print(f"Both methods create same bins: {np.array_equal(X_binned1, X_binned2)}")
 
 🛠️ **Scikit-learn Integration**
 ---------------------------------
@@ -180,6 +189,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 **Supervised Methods:**
 
 * ``SupervisedBinning`` - Decision tree-based binning optimized for target variables (classification and regression)
+* ``Chi2Binning`` - Chi-square statistic-based binning for optimal feature-target association
 
 ⚙️ **Requirements**
 ---------------------
