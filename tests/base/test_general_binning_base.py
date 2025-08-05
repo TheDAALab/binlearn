@@ -567,3 +567,20 @@ def test_get_params_with_none_fitted_attributes():
 
     # Should not include None fitted parameters
     assert "bin_spec" not in params or params.get("bin_spec") is None
+
+
+def test_fit_with_y_parameter():
+    """Test fit method with y parameter for convenience."""
+    obj = DummyGeneralBinning()
+    X = np.array([[1], [2], [3]])
+    y = np.array([0, 1, 0])  # 1D array
+
+    # This should work and convert y to 2D internally
+    obj.fit(X, y=y)
+    assert obj._fitted
+
+    # Test with 2D y
+    y_2d = np.array([[0], [1], [0]])
+    obj2 = DummyGeneralBinning()
+    obj2.fit(X, y=y_2d)
+    assert obj2._fitted

@@ -143,6 +143,119 @@ class TestSupervisedBinningInitialization:
         with pytest.raises(ConfigurationError, match="Invalid tree parameters"):
             binning._validate_params()
 
+    def test_create_tree_template_invalid_params_actual_error(self):
+        """Test _create_tree_template with class_weight on regression task."""
+        # class_weight is valid in the validation list but not accepted by DecisionTreeRegressor
+        # This should trigger ConfigurationError during initialization
+        with pytest.raises(ConfigurationError, match="Invalid tree_params"):
+            SupervisedBinning(task_type="regression", tree_params={"class_weight": "balanced"})
+
+    def test_create_tree_template_invalid_params_regression(self):
+        """Test _create_tree_template with class_weight parameter that fails on regressor."""
+        # Create regression binning with class_weight (classifier-only parameter)
+        # This parameter passes validation but fails in sklearn DecisionTreeRegressor
+        # This should trigger the TypeError from sklearn and raise ConfigurationError
+        # This will specifically hit the regression branch (lines 211-212) during exception
+        with pytest.raises(ConfigurationError, match="Invalid tree_params"):
+            SupervisedBinning(
+                task_type="regression", tree_params={"class_weight": {"A": 1, "B": 2}}
+            )
+
+    def test_create_tree_template_early_return(self):
+        """Test _create_tree_template early return when template already exists."""
+        binning = SupervisedBinning()
+
+        # First call should create the template
+        binning._create_tree_template()
+        first_template = binning._tree_template
+        assert first_template is not None
+
+        # Second call should return early without changing the template
+        binning._create_tree_template()
+        assert binning._tree_template is first_template  # Should be the same object
+
+    def test_create_tree_template_regression(self):
+        """Test _create_tree_template for regression task type."""
+        binning = SupervisedBinning(task_type="regression")
+
+        # Reset template to trigger creation
+        binning._tree_template = None
+
+        # Create template for regression
+        binning._create_tree_template()
+
+        # Should create DecisionTreeRegressor
+        from sklearn.tree import DecisionTreeRegressor
+
+        assert isinstance(binning._tree_template, DecisionTreeRegressor)
+
+    def test_regression_workflow_full(self):
+        """Test full regression workflow to ensure all regression code paths are covered."""
+        # Create regression data
+        X = np.array([[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]])
+        y = np.array([1.1, 2.2, 3.3, 4.4, 5.5, 6.6])  # Continuous target for regression
+
+        # Create regression binning - this should trigger tree template creation during init
+        binning = SupervisedBinning(task_type="regression")
+
+        # Manually trigger tree template creation to ensure coverage
+        binning._tree_template = None  # Reset to force creation
+        binning._create_tree_template()  # This should create DecisionTreeRegressor
+
+        # Verify regression tree was created
+        from sklearn.tree import DecisionTreeRegressor
+
+        assert isinstance(binning._tree_template, DecisionTreeRegressor)
+
+        # Also test the full workflow
+        binning.fit(X, y)
+        X_binned = binning.transform(X)
+        assert X_binned.shape == X.shape
+
+    def test_regression_tree_creation_direct(self):
+        """Test regression tree creation directly to ensure lines 211-212 are covered."""
+        binning = SupervisedBinning()
+
+        # Force regression mode and reset template
+        binning.task_type = "regression"
+        binning._tree_template = None
+
+        # This should specifically hit the regression branch (lines 211-212)
+        binning._create_tree_template()
+
+        # Verify regression tree was created
+        from sklearn.tree import DecisionTreeRegressor
+
+        assert isinstance(binning._tree_template, DecisionTreeRegressor)
+        assert binning._tree_template.max_depth == 3  # Default parameter
+
+    def test_regression_initialization_coverage(self):
+        """Test to ensure regression code paths are definitely covered during initialization."""
+        # Test multiple regression initialization patterns
+
+        # Pattern 1: Direct regression initialization
+        binning1 = SupervisedBinning(task_type="regression")
+        assert binning1.task_type == "regression"
+
+        # Pattern 2: Force template recreation
+        binning2 = SupervisedBinning(task_type="regression")
+        binning2._tree_template = None  # Force recreation
+        binning2._create_tree_template()  # This MUST hit lines 211-212
+
+        from sklearn.tree import DecisionTreeRegressor
+
+        assert isinstance(binning2._tree_template, DecisionTreeRegressor)
+
+        # Pattern 3: Regression with custom tree params
+        binning3 = SupervisedBinning(
+            task_type="regression", tree_params={"max_depth": 5, "min_samples_leaf": 3}
+        )
+        binning3._tree_template = None
+        binning3._create_tree_template()
+        assert isinstance(binning3._tree_template, DecisionTreeRegressor)
+        assert binning3._tree_template.max_depth == 5
+        assert binning3._tree_template.min_samples_leaf == 3
+
     def test_validate_params_calls_super(self):
         """Test that _validate_params calls super()._validate_params if available."""
         binning = SupervisedBinning()
@@ -484,7 +597,10 @@ class TestSupervisedBinningPolarsIntegration:
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame(
+        if not POLARS_AVAILABLE:
+            pytest.skip("Polars not available")
+
+        df = pl.DataFrame(  # type: ignore[attr-defined]
             {  # type: ignore[name-defined]
                 "A": [1, 2, 3, 4, 5, 6],
                 "B": [10, 20, 30, 40, 50, 60],
@@ -505,7 +621,10 @@ class TestSupervisedBinningPolarsIntegration:
 
     def test_polars_dataframe_without_preserve(self):
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame(
+        if not POLARS_AVAILABLE:
+            pytest.skip("Polars not available")
+
+        df = pl.DataFrame(  # type: ignore[attr-defined]
             {  # type: ignore[name-defined]
                 "A": [1, 2, 3, 4, 5, 6],
                 "B": [10, 20, 30, 40, 50, 60],
