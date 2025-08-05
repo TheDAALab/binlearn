@@ -45,7 +45,7 @@ class TestIsotonicBinningInitialization:
         assert binning.y_max == 1.0
         assert binning.min_change_threshold == 0.05
         assert binning.preserve_dataframe is True
-        assert binning.guidance_columns  # type: ignore[attr-defined] == [2]
+        assert binning.guidance_columns
 
     def test_invalid_max_bins(self) -> None:
         """Test initialization with invalid max_bins."""
@@ -56,7 +56,7 @@ class TestIsotonicBinningInitialization:
             IsotonicBinning(max_bins=-1)
 
         with pytest.raises(ConfigurationError, match="max_bins must be a positive integer"):
-            IsotonicBinning(max_bins=1.5)
+            IsotonicBinning(max_bins=1.5)  # type: ignore[arg-type]
 
     def test_invalid_min_samples_per_bin(self) -> None:
         """Test initialization with invalid min_samples_per_bin."""
@@ -73,10 +73,10 @@ class TestIsotonicBinningInitialization:
     def test_invalid_increasing_parameter(self) -> None:
         """Test initialization with invalid increasing parameter."""
         with pytest.raises(ConfigurationError, match="increasing must be a boolean"):
-            IsotonicBinning(increasing="yes")
+            IsotonicBinning(increasing="yes")  # type: ignore[arg-type]
 
         with pytest.raises(ConfigurationError, match="increasing must be a boolean"):
-            IsotonicBinning(increasing=1)
+            IsotonicBinning(increasing=1)  # type: ignore[arg-type]
 
     def test_invalid_y_bounds(self) -> None:
         """Test initialization with invalid y bounds."""
@@ -682,7 +682,7 @@ class TestIsotonicBinningCoverage:
         binning = IsotonicBinning(min_samples_per_bin=1)
 
         # Mock _find_cut_points to return single cut point
-        def mock_find_cut_points(x_sorted, y_fitted) -> None:
+        def mock_find_cut_points(x_sorted, y_fitted) -> list[int]:
             return [0]  # Always return single cut point
 
         with unittest.mock.patch.object(

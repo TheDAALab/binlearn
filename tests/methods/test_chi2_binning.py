@@ -56,7 +56,7 @@ class TestChi2BinningInitialization:
         assert binning.alpha == 0.01
         assert binning.initial_bins == 20
         assert binning.preserve_dataframe is True
-        assert binning.guidance_columns  # type: ignore[attr-defined] == [1]
+        assert binning.guidance_columns  # == [1]
 
     def test_invalid_initialization_parameters(self) -> None:
         """Test that invalid parameters raise appropriate errors."""
@@ -109,7 +109,7 @@ class TestChi2BinningGuidanceParameterizations:
         return X, y
 
     @pytest.fixture
-    def multifeature_data(self) -> None:
+    def multifeature_data(self) -> tuple[np.ndarray, np.ndarray]:
         """Create multi-feature sample data for testing."""
         np.random.seed(42)
         n_samples = 150
@@ -295,7 +295,7 @@ class TestChi2BinningAlgorithm:
     """Test the Chi2Binning algorithm specifics."""
 
     @pytest.fixture
-    def classification_data(self) -> None:
+    def classification_data(self) -> tuple[np.ndarray, np.ndarray]:
         """Create data suitable for classification testing."""
         np.random.seed(42)
         n_samples = 300
@@ -380,7 +380,7 @@ class TestChi2BinningDataFrameSupport:
     """Test Chi2Binning with pandas and polars DataFrames."""
 
     @pytest.fixture
-    def sample_dataframe_data(self) -> None:
+    def sample_dataframe_data(self) -> dict[str, np.ndarray]:
         """Create sample DataFrame data."""
         np.random.seed(42)
         n_samples = 100
@@ -471,8 +471,8 @@ class TestChi2BinningPolarsIntegration:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_dataframe_basic(self) -> None:
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame(
-            {  # type: ignore[name-defined]
+        df = pl.DataFrame(  # type: ignore[union-attr]
+            {
                 "feature_1": [1, 2, 3, 4, 5, 6],
                 "feature_2": [10, 20, 30, 40, 50, 60],
                 "target": [0, 0, 0, 1, 1, 1],
@@ -486,7 +486,7 @@ class TestChi2BinningPolarsIntegration:
         df_binned = binning.transform(df)
 
         # Should return Polars DataFrame with only feature columns
-        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.columns == ["feature_1", "feature_2"]
         assert df_binned.shape == (6, 2)
 

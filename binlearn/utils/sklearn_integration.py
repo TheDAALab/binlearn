@@ -7,7 +7,11 @@ from typing import Any
 class SklearnCompatibilityMixin:
     """Mixin to enhance sklearn compatibility for binning methods."""
 
-    def _more_tags(self) -> dict:
+    # Type annotations for sklearn compatibility attributes
+    feature_names_in_: list[str] | None = None
+    n_features_in_: int = 0
+
+    def _more_tags(self) -> dict[str, Any]:
         """Provide additional tags for sklearn compatibility."""
         return {
             "requires_fit": True,
@@ -47,7 +51,11 @@ class SklearnCompatibilityMixin:
 
         # Store feature names in a way that's compatible with sklearn
         # Use the same attribute name as sklearn but avoid property conflicts
-        if reset or not hasattr(self, "feature_names_in_"):
+        if (
+            reset
+            or not hasattr(self, "feature_names_in_")
+            or getattr(self, "feature_names_in_") is None
+        ):
             self.feature_names_in_ = feature_names
 
         return feature_names
@@ -62,7 +70,10 @@ class SklearnCompatibilityMixin:
         if input_features is None:
             input_features = getattr(self, "feature_names_in_", None)
             if input_features is None:
-                n_features = getattr(self, "n_features_in_", getattr(self, "_n_features_in", 0))
+                # Try private attribute first if it has a non-zero value, then public, default to 0
+                n_features = getattr(self, "_n_features_in", 0)
+                if n_features == 0:
+                    n_features = getattr(self, "n_features_in_", 0)
                 input_features = [f"x{i}" for i in range(n_features)]
 
         # For binning, we typically return the same feature names

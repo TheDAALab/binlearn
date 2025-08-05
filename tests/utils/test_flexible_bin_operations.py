@@ -1,5 +1,7 @@
 """Tests for flexible_binning module."""
 
+from typing import Any
+
 import numpy as np
 import pytest
 
@@ -21,7 +23,7 @@ class TestValidateFlexibleBinSpecFormat:
 
     def test_validbin_spec_(self):
         """Test that valid bin specifications pass validation."""
-        bin_spec = {
+        bin_spec: dict[str, list[Any]] = {
             "col1": [1, 2, 3],  # Singleton bins
             "col2": [(0, 1), (1, 2), (2, 3)],  # Interval bins
             "col3": [1, (2, 3), 4],  # Mixed bins
@@ -40,9 +42,9 @@ class TestValidateFlexibleBinSpecFormat:
         with pytest.raises(ValueError, match="must be a list or tuple"):
             validate_flexible_bin_spec_format(bin_spec)  # type: ignore
 
-    def test_empty_bin_defs(self):
+    def test_empty_bin_defs(self) -> None:
         """Test that empty bin definitions raise ValueError."""
-        bin_spec = {"col1": []}
+        bin_spec: dict[str, list[Any]] = {"col1": []}
         with pytest.raises(ValueError, match="cannot be empty"):
             validate_flexible_bin_spec_format(bin_spec)
 
@@ -163,8 +165,8 @@ class TestValidateFlexibleBins:
 
     def test_valid_bins(self):
         """Test with valid bin specifications."""
-        bin_spec = {"col1": [1, (2, 3)], "col2": [5]}  # New simplified format
-        bin_reps = {"col1": [1.0, 2.5], "col2": [5.0]}
+        bin_spec: dict[str, list[Any]] = {"col1": [1, (2, 3)], "col2": [5]}  # New simplified format
+        bin_reps: dict[str, list[float]] = {"col1": [1.0, 2.5], "col2": [5.0]}
         # Should not raise any exception
         validate_flexible_bins(bin_spec, bin_reps)
 
@@ -177,8 +179,8 @@ class TestValidateFlexibleBins:
 
     def test_missing_column_in_reps(self):
         """Test with missing column in representatives."""
-        bin_spec = {"col1": [1]}  # New format
-        bin_reps = {}  # Empty representatives
+        bin_spec: dict[str, list[Any]] = {"col1": [1]}  # New format
+        bin_reps: dict[str, list[float]] = {}  # Empty representatives
         with pytest.raises(ValueError, match="Number of bin definitions.*must match"):
             validate_flexible_bins(bin_spec, bin_reps)
 
@@ -302,7 +304,7 @@ class TestFindFlexibleBinForValue:
     def test_edge_cases_branch_coverage(self):
         """Test edge cases to cover remaining branches."""
         # Test tuple with wrong length (not 2) - should be skipped
-        bin_defs = [(1, 2, 3)]  # Wrong length tuple
+        bin_defs: list[Any] = [(1, 2, 3)]  # Wrong length tuple
         assert find_flexible_bin_for_value(2, bin_defs) == MISSING_VALUE
 
         # Test non-numeric value against interval (should not match)
@@ -395,7 +397,7 @@ class TestGetFlexibleBinCount:
 
     def test_multiple_columns(self):
         """Test with multiple columns."""
-        bin_spec = {
+        bin_spec: dict[str, list[Any]] = {
             "col1": [1],  # New simplified format
             "col2": [(2, 4), 5, (6, 8)],  # New simplified format
             "col3": [],
@@ -411,6 +413,6 @@ class TestGetFlexibleBinCount:
 
     def test_empty_columns(self):
         """Test with columns having no bins."""
-        bin_spec = {"col1": [], "col2": []}
+        bin_spec: dict[str, list[Any]] = {"col1": [], "col2": []}
         result = get_flexible_bin_count(bin_spec)
         assert result == {"col1": 0, "col2": 0}

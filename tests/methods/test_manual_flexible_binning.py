@@ -176,8 +176,8 @@ class TestManualFlexibleBinningValidateParams:
         with pytest.raises(
             ValueError, match="Failed to process provided flexible bin specifications"
         ):
-            bin_spec = {0: 123}  # type: ignore  # Not a list/iterable
-            ManualFlexibleBinning(bin_spec=bin_spec)  # type: ignore
+            bin_spec = {0: 123}  # Not a list/iterable
+            ManualFlexibleBinning(bin_spec=bin_spec)  # type: ignore[arg-type]
 
     def test_validate_params_empty_column_specs_raises_error(self):
         """Test that empty column specifications raise ConfigurationError during construction."""
@@ -189,7 +189,7 @@ class TestManualFlexibleBinningValidateParams:
         with pytest.raises(
             ValueError, match="Failed to process provided flexible bin specifications"
         ):
-            bin_spec = {0: [(1, 2, 3)]}  # type: ignore  # 3-tuple instead of 2-tuple
+            bin_spec = {0: [(1, 2, 3)]}  # 3-tuple instead of 2-tuple
             ManualFlexibleBinning(bin_spec=bin_spec)
 
     def test_validate_params_non_finite_interval_bounds_raises_error(self):
@@ -244,8 +244,8 @@ class TestManualFlexibleBinningValidateParams:
             ValueError, match="Failed to process provided flexible bin specifications"
         ):
             bin_spec = {0: [1, 2, 3]}
-            bin_representatives = {0: "invalid"}  # type: ignore
-            ManualFlexibleBinning(bin_spec=bin_spec, bin_representatives=bin_representatives)  # type: ignore
+            bin_representatives = {0: "invalid"}
+            ManualFlexibleBinning(bin_spec=bin_spec, bin_representatives=bin_representatives)  # type: ignore[arg-type]
 
     def test_validate_params_wrong_number_of_representatives(self):
         """Test that wrong number of representatives is rejected during initialization."""
@@ -303,7 +303,7 @@ class TestManualFlexibleBinningTransformation:
     def test_transform_basic_data(self):
         """Test transform with basic numeric data."""
         bin_spec = {0: [1, (2, 5), (5, 10)], 1: [10, 20, 30]}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)
+        binner = ManualFlexibleBinning(bin_spec=bin_spec)  # type: ignore[arg-type]
 
         X = np.array([[1, 10], [3, 20], [7, 30], [1, 10]])
 
@@ -330,7 +330,7 @@ class TestManualFlexibleBinningTransformation:
     def test_transform_pandas_dataframe(self):
         """Test transform with pandas DataFrame."""
         bin_spec = {"feature1": [1, (2, 5), (5, 10)], "feature2": [10, 20, 30]}
-        binner = ManualFlexibleBinning(bin_spec=bin_spec, preserve_dataframe=True)
+        binner = ManualFlexibleBinning(bin_spec=bin_spec, preserve_dataframe=True)  # type: ignore[arg-type]
 
         df = pd.DataFrame({"feature1": [1, 3, 7], "feature2": [10, 20, 30]})
 
@@ -375,8 +375,8 @@ class TestManualFlexibleBinningEdgeCases:
 
     def test_tuple_specifications(self):
         """Test with tuple bin specifications."""
-        bin_spec = {0: (1, 2, 3)}  # type: ignore  # Testing tuple support
-        binner = ManualFlexibleBinning(bin_spec=bin_spec)  # type: ignore
+        bin_spec = {0: (1, 2, 3)}  # Testing tuple support
+        binner = ManualFlexibleBinning(bin_spec=bin_spec)  # type: ignore[arg-type]
 
         # Should not raise exception during validation
         binner._validate_params()

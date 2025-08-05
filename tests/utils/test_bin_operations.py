@@ -111,14 +111,14 @@ class TestValidateBins:
     def test_insufficient_edges(self):
         """Test with insufficient bin edges."""
         bin_spec = {"col1": [1.0]}  # Only one edge
-        bin_reps = {}
+        bin_reps: dict[str, list[float]] = {}
         with pytest.raises(ValueError, match="needs at least 2 bin edges"):
             validate_bins(bin_spec, bin_reps)
 
     def test_unsorted_edges(self):
         """Test with unsorted bin edges."""
         bin_spec = {"col1": [2.0, 1.0, 3.0]}  # Unsorted
-        bin_reps = {}
+        bin_reps: dict[str, list[float]] = {}
         with pytest.raises(ValueError, match="must be non-decreasing"):
             validate_bins(bin_spec, bin_reps)
 
@@ -348,4 +348,4 @@ class TestValidateBinsNonFiniteValues:
     def test_validate_bins_with_none_input(self):
         """Test validate_bins with None input to cover early return."""
         # This should not raise any exception and cover line 117
-        validate_bins(None, {})  # type: ignore
+        validate_bins(None, {})

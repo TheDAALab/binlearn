@@ -400,14 +400,14 @@ class TestGaussianMixtureBinningDataTypes:
         """Test with polars DataFrame input and output."""
 
         np.random.seed(42)
-        df = pl.DataFrame(
+        df = pl.DataFrame(  # type: ignore[union-attr]
             {"feature1": np.random.normal(5, 2, 20), "feature2": np.random.normal(15, 3, 20)}
         )
 
         gmb = GaussianMixtureBinning(n_components=2, random_state=42, preserve_dataframe=True)
         df_binned = gmb.fit(df).transform(df)
 
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.shape == df.shape
 
 

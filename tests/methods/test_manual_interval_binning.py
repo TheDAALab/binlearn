@@ -377,10 +377,10 @@ class TestManualIntervalBinningDataTypes:
         bin_edges = {"col1": [0.0, 10.0, 20.0], "col2": [0.0, 15.0, 30.0]}
         mib = ManualIntervalBinning(bin_edges=bin_edges, preserve_dataframe=True)
 
-        df_polars = pl.DataFrame({"col1": [5, 15], "col2": [8, 22]})
+        df_polars = pl.DataFrame({"col1": [5, 15], "col2": [8, 22]})  # type: ignore[union-attr]
         result = mib.transform(df_polars)
 
-        assert isinstance(result, pl.DataFrame)
+        assert isinstance(result, pl.DataFrame)  # type: ignore[union-attr]
 
     def test_numpy_arrays_different_dtypes(self):
         """Test with different numpy data types."""

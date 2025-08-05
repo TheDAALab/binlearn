@@ -324,7 +324,7 @@ class TestEqualFrequencyBinningDataTypes:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_dataframe(self):
         """Test with polars DataFrame input and output."""
-        df = pl.DataFrame(
+        df = pl.DataFrame(  # type: ignore[union-attr]
             {
                 "feature1": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                 "feature2": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
@@ -332,9 +332,9 @@ class TestEqualFrequencyBinningDataTypes:
         )
 
         efb = EqualFrequencyBinning(n_bins=3, preserve_dataframe=True)
-        df_binned = efb.fit_transform(df)  # type: ignore
+        df_binned = efb.fit_transform(df)
 
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.shape == df.shape
         assert df_binned.columns == df.columns
 
@@ -438,7 +438,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
             "preserve_dataframe": False,
         }
 
-        efb = EqualFrequencyBinning(**params)
+        efb = EqualFrequencyBinning(**params)  # type: ignore[arg-type]
         retrieved_params = efb.get_params()
 
         for key, value in params.items():
@@ -502,7 +502,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
     def test_parameter_immutability_during_use(self):
         """Test that parameters don't change unexpectedly during use."""
         original_params = {"n_bins": 4, "quantile_range": (0.1, 0.9)}
-        efb = EqualFrequencyBinning(**original_params)
+        efb = EqualFrequencyBinning(**original_params)  # type: ignore[arg-type]
 
         X = np.random.rand(25, 2)
         efb.fit_transform(X)
@@ -531,7 +531,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
         # Patch np.quantile to raise an exception
         import binlearn.methods._equal_frequency_binning as efb_module
 
-        efb_module.np.quantile = failing_quantile
+        efb_module.np.quantile = failing_quantile  # type: ignore[attr-defined]
 
         try:
             data = np.array([1, 2, 3, 4, 5])
@@ -545,7 +545,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
                 )
         finally:
             # Restore original function
-            efb_module.np.quantile = original_quantile
+            efb_module.np.quantile = original_quantile  # type: ignore[attr-defined]
 
     def test_quantile_calculation_index_error_handling(self):
         """Test error handling when np.quantile fails with IndexError.
@@ -566,7 +566,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
         # Patch np.quantile to raise an exception
         import binlearn.methods._equal_frequency_binning as efb_module
 
-        efb_module.np.quantile = failing_quantile_index_error
+        efb_module.np.quantile = failing_quantile_index_error  # type: ignore[attr-defined]
 
         try:
             data = np.array([1, 2, 3, 4, 5])
@@ -580,4 +580,4 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
                 )
         finally:
             # Restore original function
-            efb_module.np.quantile = original_quantile
+            efb_module.np.quantile = original_quantile  # type: ignore[attr-defined]

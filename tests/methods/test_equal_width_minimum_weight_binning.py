@@ -394,7 +394,7 @@ class TestEqualWidthMinimumWeightBinningDataTypes:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_dataframe(self):
         """Test with polars DataFrame input and output."""
-        df = pl.DataFrame({"feature1": [1, 2, 3, 4, 5, 6], "feature2": [10, 11, 12, 13, 14, 15]})
+        df = pl.DataFrame({"feature1": [1, 2, 3, 4, 5, 6], "feature2": [10, 11, 12, 13, 14, 15]})  # type: ignore[union-attr]
         weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
 
         ewmwb = EqualWidthMinimumWeightBinning(
@@ -402,7 +402,7 @@ class TestEqualWidthMinimumWeightBinningDataTypes:
         )
         df_binned = ewmwb.fit(df, guidance_data=weights).transform(df)
 
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.shape == df.shape
 
 

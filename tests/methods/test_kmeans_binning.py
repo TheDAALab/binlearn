@@ -304,12 +304,12 @@ class TestKMeansBinningDataTypes:
     def test_polars_dataframe(self):
         """Test with polars DataFrame input and output."""
 
-        df = pl.DataFrame({"feature1": [1, 2, 3, 20, 21, 22], "feature2": [10, 11, 12, 30, 31, 32]})
+        df = pl.DataFrame({"feature1": [1, 2, 3, 20, 21, 22], "feature2": [10, 11, 12, 30, 31, 32]})  # type: ignore[union-attr]
 
         kmb = KMeansBinning(n_bins=2, random_state=42, preserve_dataframe=True)
         df_binned = kmb.fit(df).transform(df)
 
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.shape == df.shape
 
 

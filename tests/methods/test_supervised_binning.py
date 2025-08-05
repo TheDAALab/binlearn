@@ -2,6 +2,7 @@
 Comprehensive tests for SupervisedBinning functionality.
 """
 
+from typing import Any
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -75,12 +76,12 @@ class TestSupervisedBinningInitialization:
         assert params == {}  # Should be popped
 
         # Test updating tree_params
-        params = {"tree_params": {"max_depth": 10}}
-        reset_fitted = binning._handle_bin_params(params)
+        tree_params: dict[str, Any] = {"tree_params": {"max_depth": 10}}
+        reset_fitted = binning._handle_bin_params(tree_params)
         assert reset_fitted is True
         assert binning.tree_params is not None
         assert binning.tree_params["max_depth"] == 10
-        assert params == {}  # Should be popped
+        assert tree_params == {}  # Should be popped
 
     def test_handle_bin_params_no_changes(self):
         """Test _handle_bin_params when no relevant params are provided."""
@@ -278,7 +279,7 @@ class TestSupervisedBinningInitialization:
         finally:
             # Restore the original method if it existed
             if original_method is not None:
-                base_class._validate_params = original_method
+                setattr(base_class, "_validate_params", original_method)
 
     def test_set_params_task_type(self):
         """Test set_params method with task_type to trigger _handle_bin_params lines 323-324."""
@@ -329,29 +330,29 @@ class TestSupervisedBinningInitialization:
         binning = SupervisedBinning()
 
         # Test 1: Only task_type parameter (should hit lines 323-324)
-        params = {"task_type": "regression"}
-        result = binning._handle_bin_params(params)
+        params1 = {"task_type": "regression"}
+        result = binning._handle_bin_params(params1)
         assert result is True
         assert binning.task_type == "regression"
-        assert len(params) == 0  # task_type should be popped
+        assert len(params1) == 0  # task_type should be popped
 
         # Test 2: Only tree_params parameter (should hit lines 327-328)
-        params = {"tree_params": {"max_depth": 10}}
-        result = binning._handle_bin_params(params)
+        params2: dict[str, Any] = {"tree_params": {"max_depth": 10}}
+        result = binning._handle_bin_params(params2)
         assert result is True
         assert binning.tree_params is not None
         assert binning.tree_params["max_depth"] == 10
-        assert len(params) == 0  # tree_params should be popped
+        assert len(params2) == 0  # tree_params should be popped
 
         # Test 3: Both parameters at once
         binning = SupervisedBinning()  # Reset
-        params = {"task_type": "classification", "tree_params": {"random_state": 42}}
-        result = binning._handle_bin_params(params)
+        params3: dict[str, Any] = {"task_type": "classification", "tree_params": {"random_state": 42}}
+        result = binning._handle_bin_params(params3)
         assert result is True
         assert binning.task_type == "classification"
         assert binning.tree_params is not None
         assert binning.tree_params["random_state"] == 42
-        assert len(params) == 0  # Both should be popped
+        assert len(params3) == 0  # Both should be popped
 
 
 class TestSupervisedBinningBasicFunctionality:
@@ -600,8 +601,8 @@ class TestSupervisedBinningPolarsIntegration:
         if not POLARS_AVAILABLE:
             pytest.skip("Polars not available")
 
-        df = pl.DataFrame(  # type: ignore[attr-defined]
-            {  # type: ignore[name-defined]
+        df = pl.DataFrame(  # type: ignore[union-attr]
+            {
                 "A": [1, 2, 3, 4, 5, 6],
                 "B": [10, 20, 30, 40, 50, 60],
                 "target": [0, 0, 0, 1, 1, 1],
@@ -615,7 +616,7 @@ class TestSupervisedBinningPolarsIntegration:
         df_binned = binning.transform(df)
 
         # Should return Polars DataFrame with only feature columns
-        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.columns == ["A", "B"]
         assert df_binned.shape == (6, 2)
 
@@ -624,8 +625,8 @@ class TestSupervisedBinningPolarsIntegration:
         if not POLARS_AVAILABLE:
             pytest.skip("Polars not available")
 
-        df = pl.DataFrame(  # type: ignore[attr-defined]
-            {  # type: ignore[name-defined]
+        df = pl.DataFrame(  # type: ignore[union-attr]
+            {
                 "A": [1, 2, 3, 4, 5, 6],
                 "B": [10, 20, 30, 40, 50, 60],
                 "target": [0, 0, 0, 1, 1, 1],
@@ -1195,12 +1196,12 @@ class TestSupervisedBinningParameterRoundtrip:
         class MockSupervisedBinning(SupervisedBinning):
             """Mock class to test hasattr FALSE branch."""
 
-            def __init__(self):
+            def __init__(self) -> None:
                 # Initialize with minimal setup to test _validate_params
                 self.task_type = "classification"
                 self.tree_params = None
 
-            def _get_parent_without_validate_params(self):
+            def _get_parent_without_validate_params(self) -> Any:
                 """Helper to simulate super() without _validate_params."""
 
                 # Create a mock parent that doesn't have _validate_params
@@ -1215,7 +1216,7 @@ class TestSupervisedBinningParameterRoundtrip:
         # Monkey patch to simulate super() returning object without _validate_params
         _ = super  # original_super
 
-        def mock_super(*args, **kwargs):
+        def mock_super(*args: Any, **kwargs: Any) -> Any:
             class MockSuperReturn:
                 pass  # No _validate_params method
 
@@ -1226,14 +1227,14 @@ class TestSupervisedBinningParameterRoundtrip:
 
         original_super_builtin = builtins.super
         try:
-            builtins.super = mock_super
+            builtins.super = mock_super  # type: ignore[misc,assignment]
             # This should test the FALSE branch: hasattr(super(), "_validate_params") == False
             mock_binning._validate_params()
         except Exception:
             pass  # Exception is fine, we just want branch coverage
         finally:
             # Restore original super()
-            builtins.super = original_super_builtin
+            builtins.super = original_super_builtin  # type: ignore[misc]
 
 
 def test_import_availability():

@@ -358,7 +358,7 @@ class TestDBSCANBinningDataTypes:
         """Test with polars DataFrame input and output."""
 
         np.random.seed(42)
-        df = pl.DataFrame(
+        df = pl.DataFrame(  # type: ignore[union-attr]
             {
                 "feature1": np.concatenate(
                     [np.random.normal(5, 1, 15), np.random.normal(15, 1, 15)]
@@ -372,7 +372,7 @@ class TestDBSCANBinningDataTypes:
         dbb = DBSCANBinning(eps=2.0, min_samples=3, preserve_dataframe=True)
         df_binned = dbb.fit(df).transform(df)
 
-        assert isinstance(df_binned, pl.DataFrame)
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.shape == df.shape
 
 
@@ -450,8 +450,8 @@ class TestDBSCANBinningFitGetParamsWorkflow:
         original_params = {"eps": 0.15, "min_samples": 6, "min_bins": 3}
         dbb = DBSCANBinning(
             eps=original_params["eps"],
-            min_samples=original_params["min_samples"],
-            min_bins=original_params["min_bins"],
+            min_samples=int(original_params["min_samples"]),
+            min_bins=int(original_params["min_bins"]),
         )
 
         X = np.random.rand(25, 2) * 100
@@ -489,8 +489,8 @@ class TestDBSCANBinningFitGetParamsWorkflow:
         original_params = {"eps": 1.5, "min_samples": 4, "min_bins": 2}
         dbb = DBSCANBinning(
             eps=original_params["eps"],
-            min_samples=original_params["min_samples"],
-            min_bins=original_params["min_bins"],
+            min_samples=int(original_params["min_samples"]),
+            min_bins=int(original_params["min_bins"]),
         )
 
         X = np.random.rand(25, 2) * 100

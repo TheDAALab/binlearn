@@ -10,7 +10,7 @@ class TestReprMixin:
         """Test ReprMixin when __init__ is not in cls.__dict__ to trigger line 28."""
 
         class BaseClass(ReprMixin):
-            def __init__(self, param1=None):
+            def __init__(self, param1: str | None = None) -> None:
                 self.param1 = param1
 
         class DerivedClass(BaseClass):
@@ -25,7 +25,7 @@ class TestReprMixin:
         """Test ReprMixin with required parameters (no defaults) to trigger line 38."""
 
         class RequiredParamsClass(ReprMixin):
-            def __init__(self, required_param, optional_param="default"):
+            def __init__(self, required_param: str, optional_param: str = "default") -> None:
                 self.required_param = required_param
                 self.optional_param = optional_param
 
@@ -40,7 +40,7 @@ class TestReprMixin:
         import inspect
 
         class ProblematicClass(ReprMixin):
-            def __init__(self, param1=None):
+            def __init__(self, param1: str | None = None) -> None:
                 self.param1 = param1
 
         # Create an instance first
@@ -67,7 +67,7 @@ class TestReprMixin:
         """Test ReprMixin when object is missing expected attributes."""
 
         class IncompleteClass(ReprMixin):
-            def __init__(self, param1=None, param2="default"):
+            def __init__(self, param1: str | None = None, param2: str = "default") -> None:
                 # Intentionally not setting param1 to test hasattr check
                 self.param2 = param2
 
@@ -81,7 +81,7 @@ class TestReprMixin:
         """Test ReprMixin handling of default values and empty containers."""
 
         class DefaultsClass(ReprMixin):
-            def __init__(self, param1=None, param2=None, param3=None):
+            def __init__(self, param1: str | None = None, param2: list[str] | None = None, param3: dict[str, str] | None = None) -> None:
                 if param3 is None:
                     param3 = {}
                 if param2 is None:
@@ -104,7 +104,7 @@ class TestReprMixin:
         """Test ReprMixin normal operation with non-default values."""
 
         class NormalClass(ReprMixin):
-            def __init__(self, param1="default", param2=42):
+            def __init__(self, param1: str = "default", param2: int = 42) -> None:
                 self.param1 = param1
                 self.param2 = param2
 

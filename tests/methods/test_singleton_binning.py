@@ -92,11 +92,11 @@ class TestSingletonBinningInitialization:
 
         # Test non-integer values
         with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
-            SingletonBinning(max_unique_values=10.5)
+            SingletonBinning(max_unique_values=10.5)  # type: ignore[arg-type]
 
         # Test string values
         with pytest.raises(ValueError, match="max_unique_values must be a positive integer"):
-            SingletonBinning(max_unique_values="10")
+            SingletonBinning(max_unique_values="10")  # type: ignore[arg-type]
 
         # Test that valid parameters work fine
         binning = SingletonBinning(max_unique_values=100)
@@ -341,7 +341,7 @@ class TestSingletonBinningPolarsIntegration:
 
     def test_polars_dataframe_basic(self):
         """Test basic functionality with Polars DataFrame."""
-        df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[name-defined]
+        df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[union-attr]
 
         binning = SingletonBinning(preserve_dataframe=True)
 
@@ -350,13 +350,13 @@ class TestSingletonBinningPolarsIntegration:
         df_binned = binning.transform(df)
 
         # Should return Polars DataFrame
-        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[name-defined]
+        assert isinstance(df_binned, pl.DataFrame)  # type: ignore[union-attr]
         assert df_binned.columns == ["A", "B"]
         assert df_binned.shape == df.shape
 
     def test_polars_dataframe_without_preserve(self):
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[name-defined]
+        df = pl.DataFrame({"A": [1, 2, 1, 3], "B": [2, 3, 2, 1]})  # type: ignore[union-attr]
 
         binning = SingletonBinning(preserve_dataframe=False)
 
@@ -369,8 +369,8 @@ class TestSingletonBinningPolarsIntegration:
 
     def test_polars_with_column_names(self):
         """Test that column names are preserved in bin specifications."""
-        df = pl.DataFrame(
-            {"feature1": [1, 2, 3], "feature2": [4, 5, 6]}  # type: ignore[name-defined]
+        df = pl.DataFrame(  # type: ignore[union-attr]
+            {"feature1": [1, 2, 3], "feature2": [4, 5, 6]}
         )
 
         binning = SingletonBinning()

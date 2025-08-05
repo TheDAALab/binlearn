@@ -317,21 +317,21 @@ class TestEqualWidthBinning:
         """Test parameter validation with non-integer n_bins."""
         with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
             ewb = EqualWidthBinning()
-            ewb.n_bins = "invalid"  # Bypass type checking
+            ewb.n_bins = "invalid"  # type: ignore[assignment]  # Bypass type checking
             ewb._validate_params()
 
     def test_validate_params_invalid_bin_range_length(self):
         """Test parameter validation with invalid bin_range length."""
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
             ewb = EqualWidthBinning()
-            ewb.bin_range = 1, 2, 3  # Bypass type checking, wrong length
+            ewb.bin_range = 1, 2, 3  # type: ignore[assignment]  # Bypass type checking, wrong length
             ewb._validate_params()
 
     def test_validate_params_non_tuple_bin_range(self):
         """Test parameter validation with non-tuple bin_range."""
         with pytest.raises(ConfigurationError, match="bin_range must be a tuple"):
             ewb = EqualWidthBinning()
-            ewb.bin_range = [0, 10]  # Bypass type checking, list instead of tuple
+            ewb.bin_range = [0, 10]  # type: ignore[assignment]  # Bypass type checking, list instead of tuple
             ewb._validate_params()
 
     def test_empty_params_in_handle_bin_params(self):
@@ -479,8 +479,8 @@ class TestEqualWidthBinningDataTypes:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="Polars not available")
     def test_polars_dataframe(self):
         """Test with Polars DataFrame."""
-        df_polars = pl.DataFrame(
-            {  # type: ignore[name-defined]
+        df_polars = pl.DataFrame(  # type: ignore[union-attr]
+            {
                 "feature1": [1.0, 2.0, 3.0, 4.0, 5.0],
                 "feature2": [10.0, 20.0, 30.0, 40.0, 50.0],
             }
@@ -491,7 +491,7 @@ class TestEqualWidthBinningDataTypes:
         result = ewb.transform(df_polars)
 
         # Should preserve Polars format
-        assert isinstance(result, pl.DataFrame)  # type: ignore[name-defined]
+        assert isinstance(result, pl.DataFrame)  # type: ignore[union-attr]
         assert result.shape == df_polars.shape
 
     @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
@@ -521,9 +521,9 @@ class TestEqualWidthBinningSklearnIntegration:
         y = np.array([0, 1, 0, 1])
 
         pipeline = Pipeline(
-            [  # type: ignore[name-defined]
+            [
                 ("binning", EqualWidthBinning(n_bins=2)),
-                ("scaler", StandardScaler()),  # type: ignore[name-defined]
+                ("scaler", StandardScaler()),
             ]
         )
 
@@ -539,9 +539,9 @@ class TestEqualWidthBinningSklearnIntegration:
         X = np.array([[1.0, 10.0, 100.0], [2.0, 20.0, 200.0], [3.0, 30.0, 300.0]])
 
         ct = ColumnTransformer(
-            [  # type: ignore[name-defined]
+            [
                 ("bin_first_two", EqualWidthBinning(n_bins=2), [0, 1]),
-                ("scale_third", StandardScaler(), [2]),  # type: ignore[name-defined]
+                ("scale_third", StandardScaler(), [2]),
             ]
         )
 
@@ -589,7 +589,7 @@ class TestEqualWidthBinningSklearnIntegration:
         )
 
         pipeline = Pipeline(
-            [  # type: ignore[name-defined]
+            [
                 ("binning", EqualWidthBinning(n_bins=3, preserve_dataframe=True))
             ]
         )
