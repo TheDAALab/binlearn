@@ -26,7 +26,7 @@ from sklearn.utils.validation import check_is_fitted
 from ..methods import EqualWidthBinning, SingletonBinning, SupervisedBinning
 
 
-class BinningFeatureSelector(BaseEstimator, TransformerMixin):  # type: ignore[misc]
+class BinningFeatureSelector(BaseEstimator, TransformerMixin):
     """Feature selector that uses binning-based mutual information.
 
     This transformer combines binning methods with mutual information-based
