@@ -409,7 +409,9 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         # Create contingency table
         unique_targets = np.unique(y_data)
 
-        contingency_table: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.zeros((2, len(unique_targets)))
+        contingency_table: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.zeros(
+            (2, len(unique_targets))
+        )
 
         for j, target_val in enumerate(unique_targets):
             contingency_table[0, j] = np.sum(left_targets == target_val)
