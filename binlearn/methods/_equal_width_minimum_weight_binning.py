@@ -15,6 +15,7 @@ import numpy as np
 
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
+from ..config import apply_config_defaults
 from ..utils.errors import ConfigurationError, DataQualityWarning, FittingError
 from ..utils.parameter_conversion import (
     resolve_n_bins_parameter,
@@ -137,21 +138,53 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             ...     n_bins=8, minimum_weight=3.0, guidance_columns=['weight_col']
             ... )
         """
+        # Apply configuration defaults for parameters not explicitly provided
+        user_params = {
+            "n_bins": n_bins,
+            "minimum_weight": minimum_weight,
+            "bin_range": bin_range,
+            "clip": clip,
+            "preserve_dataframe": preserve_dataframe,
+            "bin_edges": bin_edges,
+            "bin_representatives": bin_representatives,
+            "fit_jointly": fit_jointly,
+            "guidance_columns": guidance_columns,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
+
+        # Apply configuration defaults for equal_width_minimum_weight method
+        params = apply_config_defaults("equal_width_minimum_weight", user_params, **kwargs)
 
         # Store specific parameters BEFORE calling super().__init__
         # because parent class calls _validate_params() which needs these attributes
-        self.n_bins = n_bins
-        self.minimum_weight = minimum_weight
-        self.bin_range = bin_range
+        self.n_bins = params.get("n_bins", n_bins)
+        self.minimum_weight = params.get("minimum_weight", minimum_weight)
+        self.bin_range = params.get("bin_range", bin_range)
 
         super().__init__(
-            clip=clip,
-            preserve_dataframe=preserve_dataframe,
-            bin_edges=bin_edges,
-            bin_representatives=bin_representatives,
-            fit_jointly=fit_jointly,
-            guidance_columns=guidance_columns,
-            **kwargs,
+            clip=params.get("clip", clip),
+            preserve_dataframe=params.get("preserve_dataframe", preserve_dataframe),
+            bin_edges=params.get("bin_edges", bin_edges),
+            bin_representatives=params.get("bin_representatives", bin_representatives),
+            fit_jointly=params.get("fit_jointly", fit_jointly),
+            guidance_columns=params.get("guidance_columns", guidance_columns),
+            **{
+                k: v
+                for k, v in params.items()
+                if k
+                not in {
+                    "n_bins",
+                    "minimum_weight",
+                    "bin_range",
+                    "clip",
+                    "preserve_dataframe",
+                    "bin_edges",
+                    "bin_representatives",
+                    "fit_jointly",
+                    "guidance_columns",
+                }
+            },
         )
 
     def _calculate_bins(
@@ -238,7 +271,6 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
         # Warn about zero weights
         if np.all(weights_valid == 0):
-
             warnings.warn(
                 f"Column {col_id}: All weights are zero. Binning may not work as expected.",
                 DataQualityWarning,

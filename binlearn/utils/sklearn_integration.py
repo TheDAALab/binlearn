@@ -51,11 +51,7 @@ class SklearnCompatibilityMixin:
 
         # Store feature names in a way that's compatible with sklearn
         # Use the same attribute name as sklearn but avoid property conflicts
-        if (
-            reset
-            or not hasattr(self, "feature_names_in_")
-            or self.feature_names_in_ is None
-        ):
+        if reset or not hasattr(self, "feature_names_in_") or self.feature_names_in_ is None:
             self.feature_names_in_ = feature_names
 
         return feature_names

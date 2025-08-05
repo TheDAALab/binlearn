@@ -137,7 +137,7 @@ def validate_bins(bin_spec: BinEdgesDict | None, bin_reps: BinRepsDict | None) -
             reps_list = list(bin_reps[col])
             if len(reps_list) != n_bins:
                 raise ValueError(
-                    f"Column {col}: {len(reps_list)} representatives " f"for {n_bins} bins"
+                    f"Column {col}: {len(reps_list)} representatives for {n_bins} bins"
                 )
 
 

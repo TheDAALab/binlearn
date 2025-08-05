@@ -177,9 +177,9 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         self.require_guidance_data(guidance_data, "isotonic binning")
 
         # At this point, guidance_data is guaranteed to be not None
-        assert (
-            guidance_data is not None
-        ), "guidance_data should not be None after require_guidance_data check"
+        assert guidance_data is not None, (
+            "guidance_data should not be None after require_guidance_data check"
+        )
 
         # Convert categorical guidance data to numeric before validation
         if guidance_data.dtype == object or not np.issubdtype(guidance_data.dtype, np.number):

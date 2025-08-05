@@ -227,6 +227,63 @@ class TestBinningConfig:
         assert "preserve_dataframe" in unknown_defaults
         assert "fit_jointly" in unknown_defaults
 
+    def test_get_method_defaults_comprehensive(self):
+        """Test get_method_defaults for all supported methods to ensure complete coverage."""
+        config = BinningConfig()
+
+        # Test equal_frequency method
+        eq_freq_defaults = config.get_method_defaults("equal_frequency")
+        assert "n_bins" in eq_freq_defaults
+        assert "quantile_range" in eq_freq_defaults
+        assert eq_freq_defaults["n_bins"] == config.equal_frequency_default_bins
+        assert eq_freq_defaults["quantile_range"] == config.equal_frequency_default_quantile_range
+
+        # Test kmeans method
+        kmeans_defaults = config.get_method_defaults("kmeans")
+        assert "n_bins" in kmeans_defaults
+        assert "random_state" in kmeans_defaults
+        assert kmeans_defaults["n_bins"] == config.kmeans_default_bins
+        assert kmeans_defaults["random_state"] == config.kmeans_random_state
+
+        # Test gaussian_mixture method
+        gm_defaults = config.get_method_defaults("gaussian_mixture")
+        assert "n_components" in gm_defaults
+        assert "random_state" in gm_defaults
+        assert gm_defaults["n_components"] == config.gaussian_mixture_default_components
+        assert gm_defaults["random_state"] == config.gaussian_mixture_random_state
+
+        # Test equal_width_minimum_weight method
+        ewmw_defaults = config.get_method_defaults("equal_width_minimum_weight")
+        assert "n_bins" in ewmw_defaults
+        assert "minimum_weight" in ewmw_defaults
+        assert ewmw_defaults["n_bins"] == config.equal_width_min_weight_default_bins
+        assert ewmw_defaults["minimum_weight"] == config.equal_width_min_weight_threshold
+
+        # Test chi2 method (line 265)
+        chi2_defaults = config.get_method_defaults("chi2")
+        assert "n_bins" in chi2_defaults
+        assert "significance_level" in chi2_defaults
+        assert "min_expected_frequency" in chi2_defaults
+        assert chi2_defaults["n_bins"] == config.chi2_default_bins
+        assert chi2_defaults["significance_level"] == config.chi2_significance_level
+        assert chi2_defaults["min_expected_frequency"] == config.chi2_min_expected_frequency
+
+        # Test dbscan method (line 273)
+        dbscan_defaults = config.get_method_defaults("dbscan")
+        assert "eps" in dbscan_defaults
+        assert "min_samples" in dbscan_defaults
+        assert "random_state" in dbscan_defaults
+        assert dbscan_defaults["eps"] == config.dbscan_eps
+        assert dbscan_defaults["min_samples"] == config.dbscan_min_samples
+        assert dbscan_defaults["random_state"] == config.dbscan_random_state
+
+        # Test isotonic method (line 281)
+        isotonic_defaults = config.get_method_defaults("isotonic")
+        assert "n_bins" in isotonic_defaults
+        assert "increasing" in isotonic_defaults
+        assert isotonic_defaults["n_bins"] == config.isotonic_default_bins
+        assert isotonic_defaults["increasing"] == config.isotonic_increasing
+
 
 class TestConfigManager:
     """Test ConfigManager singleton."""

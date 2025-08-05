@@ -576,7 +576,6 @@ class TestGaussianMixtureBinningFitGetParamsWorkflow:
                 return_value=0,
             ),
         ):
-
             # Make validate_bin_number_for_calculation do nothing (just pass)
             mock_validate.return_value = None
 

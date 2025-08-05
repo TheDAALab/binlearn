@@ -303,7 +303,8 @@ class TestBinningPipeline:
         mock_binning_class.return_value = mock_binner
 
         result = BinningPipeline.create_supervised_binning_pipeline(
-            guidance_column=0, task_type="regression"  # Integer column index
+            guidance_column=0,
+            task_type="regression",  # Integer column index
         )
 
         # Check that SupervisedBinning was created correctly

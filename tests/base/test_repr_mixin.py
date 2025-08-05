@@ -81,7 +81,12 @@ class TestReprMixin:
         """Test ReprMixin handling of default values and empty containers."""
 
         class DefaultsClass(ReprMixin):
-            def __init__(self, param1: str | None = None, param2: list[str] | None = None, param3: dict[str, str] | None = None) -> None:
+            def __init__(
+                self,
+                param1: str | None = None,
+                param2: list[str] | None = None,
+                param3: dict[str, str] | None = None,
+            ) -> None:
                 if param3 is None:
                     param3 = {}
                 if param2 is None:

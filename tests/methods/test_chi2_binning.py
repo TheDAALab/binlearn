@@ -182,26 +182,26 @@ class TestChi2BinningGuidanceParameterizations:
         X_binned3 = binning3.transform(X)
 
         # All results should be identical
-        assert np.array_equal(
-            X_binned1, X_binned2
-        ), "Methods 1 and 2 should produce identical results"
-        assert np.array_equal(
-            X_binned1, X_binned3
-        ), "Methods 1 and 3 should produce identical results"
-        assert np.array_equal(
-            X_binned2, X_binned3
-        ), "Methods 2 and 3 should produce identical results"
+        assert np.array_equal(X_binned1, X_binned2), (
+            "Methods 1 and 2 should produce identical results"
+        )
+        assert np.array_equal(X_binned1, X_binned3), (
+            "Methods 1 and 3 should produce identical results"
+        )
+        assert np.array_equal(X_binned2, X_binned3), (
+            "Methods 2 and 3 should produce identical results"
+        )
 
         # Bin edges should be identical
-        assert (
-            binning1.bin_edges_ == binning2.bin_edges_
-        ), "Bin edges should be identical (methods 1&2)"
-        assert (
-            binning1.bin_edges_ == binning3.bin_edges_
-        ), "Bin edges should be identical (methods 1&3)"
-        assert (
-            binning2.bin_edges_ == binning3.bin_edges_
-        ), "Bin edges should be identical (methods 2&3)"
+        assert binning1.bin_edges_ == binning2.bin_edges_, (
+            "Bin edges should be identical (methods 1&2)"
+        )
+        assert binning1.bin_edges_ == binning3.bin_edges_, (
+            "Bin edges should be identical (methods 1&3)"
+        )
+        assert binning2.bin_edges_ == binning3.bin_edges_, (
+            "Bin edges should be identical (methods 2&3)"
+        )
 
     def test_identical_results_multifeature(self, multifeature_data) -> None:
         """Test that all guidance approaches produce identical results for multiple features."""
@@ -223,26 +223,26 @@ class TestChi2BinningGuidanceParameterizations:
         X_binned3 = binning3.transform(X)
 
         # All results should be identical
-        assert np.array_equal(
-            X_binned1, X_binned2
-        ), "Methods 1 and 2 should produce identical results"
-        assert np.array_equal(
-            X_binned1, X_binned3
-        ), "Methods 1 and 3 should produce identical results"
-        assert np.array_equal(
-            X_binned2, X_binned3
-        ), "Methods 2 and 3 should produce identical results"
+        assert np.array_equal(X_binned1, X_binned2), (
+            "Methods 1 and 2 should produce identical results"
+        )
+        assert np.array_equal(X_binned1, X_binned3), (
+            "Methods 1 and 3 should produce identical results"
+        )
+        assert np.array_equal(X_binned2, X_binned3), (
+            "Methods 2 and 3 should produce identical results"
+        )
 
         # Bin edges should be identical
-        assert (
-            binning1.bin_edges_ == binning2.bin_edges_
-        ), "Bin edges should be identical (methods 1&2)"
-        assert (
-            binning1.bin_edges_ == binning3.bin_edges_
-        ), "Bin edges should be identical (methods 1&3)"
-        assert (
-            binning2.bin_edges_ == binning3.bin_edges_
-        ), "Bin edges should be identical (methods 2&3)"
+        assert binning1.bin_edges_ == binning2.bin_edges_, (
+            "Bin edges should be identical (methods 1&2)"
+        )
+        assert binning1.bin_edges_ == binning3.bin_edges_, (
+            "Bin edges should be identical (methods 1&3)"
+        )
+        assert binning2.bin_edges_ == binning3.bin_edges_, (
+            "Bin edges should be identical (methods 2&3)"
+        )
 
         # Should bin all features
         assert X_binned1.shape == (len(X), 3)
@@ -266,9 +266,9 @@ class TestChi2BinningGuidanceParameterizations:
         result_control = binning_control.transform(X)
 
         # Should use embedded guidance (ignore y parameter)
-        assert np.array_equal(
-            result_embedded, result_control
-        ), "Should prioritize embedded guidance_columns over y parameter"
+        assert np.array_equal(result_embedded, result_control), (
+            "Should prioritize embedded guidance_columns over y parameter"
+        )
 
     def test_multiple_guidance_columns_error(self, sample_data) -> None:
         """Test that providing multiple guidance columns raises appropriate errors."""
@@ -318,9 +318,9 @@ class TestChi2BinningAlgorithm:
 
             # Should respect max_bins constraint
             unique_bins = len(np.unique(X_binned))
-            assert (
-                unique_bins <= max_bins
-            ), f"Should not exceed max_bins={max_bins}, got {unique_bins}"
+            assert unique_bins <= max_bins, (
+                f"Should not exceed max_bins={max_bins}, got {unique_bins}"
+            )
             assert unique_bins >= 2, "Should create at least 2 bins"
 
     def test_alpha_parameter_effect(self, classification_data) -> None:
@@ -342,9 +342,9 @@ class TestChi2BinningAlgorithm:
         lenient_bins = len(np.unique(X_binned_lenient))
 
         # This is a general tendency, not a strict rule
-        assert (
-            strict_bins <= lenient_bins + 1
-        ), "Strict alpha should not create significantly more bins"
+        assert strict_bins <= lenient_bins + 1, (
+            "Strict alpha should not create significantly more bins"
+        )
 
     def test_initial_bins_parameter(self, classification_data) -> None:
         """Test that initial_bins parameter affects the algorithm."""
@@ -358,9 +358,9 @@ class TestChi2BinningAlgorithm:
 
             # Should still respect max_bins
             unique_bins = len(np.unique(X_binned))
-            assert (
-                unique_bins <= 4
-            ), f"Should not exceed max_bins=4 with initial_bins={initial_bins}"
+            assert unique_bins <= 4, (
+                f"Should not exceed max_bins=4 with initial_bins={initial_bins}"
+            )
 
     def test_insufficient_data_handling(self) -> None:
         """Test handling of insufficient data scenarios."""
@@ -461,9 +461,9 @@ class TestChi2BinningDataFrameSupport:
         result1_array = getattr(result1, "values", result1)
         result2_array = getattr(result2, "values", result2)
 
-        assert np.array_equal(
-            result1_array, result2_array
-        ), "DataFrame methods should produce identical results"
+        assert np.array_equal(result1_array, result2_array), (
+            "DataFrame methods should produce identical results"
+        )
 
 
 class TestChi2BinningPolarsIntegration:

@@ -281,9 +281,9 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
         self.require_guidance_data(guidance_data, "SupervisedBinning")
 
         # At this point guidance_data is guaranteed to be not None
-        assert (
-            guidance_data is not None
-        ), "guidance_data should not be None after require_guidance_data"
+        assert guidance_data is not None, (
+            "guidance_data should not be None after require_guidance_data"
+        )
 
         # Validate and preprocess feature-target pair
         x_col, guidance_data_validated, valid_mask = self.validate_feature_target_pair(

@@ -346,7 +346,10 @@ class TestSupervisedBinningInitialization:
 
         # Test 3: Both parameters at once
         binning = SupervisedBinning()  # Reset
-        params3: dict[str, Any] = {"task_type": "classification", "tree_params": {"random_state": 42}}
+        params3: dict[str, Any] = {
+            "task_type": "classification",
+            "tree_params": {"random_state": 42},
+        }
         result = binning._handle_bin_params(params3)
         assert result is True
         assert binning.task_type == "classification"
@@ -364,7 +367,8 @@ class TestSupervisedBinningBasicFunctionality:
         X = np.column_stack([[1, 2, 3, 4, 5, 6], [0, 0, 0, 1, 1, 1]])  # target column
 
         binning = SupervisedBinning(
-            task_type="classification", guidance_columns=[1]  # Target is in column 1
+            task_type="classification",
+            guidance_columns=[1],  # Target is in column 1
         )
 
         # Fit the binning using only X
@@ -388,7 +392,8 @@ class TestSupervisedBinningBasicFunctionality:
         )
 
         binning = SupervisedBinning(
-            task_type="regression", guidance_columns=[1]  # Target is in column 1
+            task_type="regression",
+            guidance_columns=[1],  # Target is in column 1
         )
 
         # Fit the binning using only X

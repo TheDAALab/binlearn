@@ -173,7 +173,9 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals,too-many-statements
     def _create_dbscan_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any  # pylint: disable=unused-argument
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,  # pylint: disable=unused-argument
     ) -> tuple[list[float], list[float]]:
         """Create DBSCAN clustering-based bins.
 

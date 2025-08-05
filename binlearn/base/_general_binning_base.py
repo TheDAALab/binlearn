@@ -676,7 +676,6 @@ class GeneralBinningBase(
                 and not attr_name.endswith("__")  # Exclude dunder methods
                 and hasattr(self, attr_name)
             ):
-
                 value = getattr(self, attr_name)
                 if value is not None:
                     # Map to parameter names (remove trailing underscore)

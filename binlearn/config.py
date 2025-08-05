@@ -42,10 +42,42 @@ class BinningConfig:
 
     # General interval binning settings
     default_clip: bool = True  # Whether to clip values outside bin ranges
+    default_n_bins: int = 10  # Default number of bins for all methods
+    default_random_state: int | None = None  # Default random state for reproducibility
 
     # EqualWidthBinning specific defaults
     equal_width_default_bins: int = 5
     equal_width_default_range_strategy: str = "min_max"  # "min_max", "percentile", "std"
+
+    # EqualFrequencyBinning specific defaults
+    equal_frequency_default_bins: int = 10
+    equal_frequency_default_quantile_range: tuple[float, float] | None = None
+
+    # KMeansBinning specific defaults
+    kmeans_default_bins: int = 10
+    kmeans_random_state: int | None = None
+
+    # GaussianMixtureBinning specific defaults
+    gaussian_mixture_default_components: int = 10
+    gaussian_mixture_random_state: int | None = None
+
+    # EqualWidthMinimumWeightBinning specific defaults
+    equal_width_min_weight_default_bins: int = 10
+    equal_width_min_weight_threshold: float = 0.05
+
+    # Chi2Binning specific defaults
+    chi2_default_bins: int = 10
+    chi2_significance_level: float = 0.05
+    chi2_min_expected_frequency: float = 5.0
+
+    # DBSCANBinning specific defaults
+    dbscan_eps: float = 0.5
+    dbscan_min_samples: int = 5
+    dbscan_random_state: int | None = None
+
+    # IsotonicBinning specific defaults
+    isotonic_default_bins: int = 10
+    isotonic_increasing: bool = True
 
     # =============================================================================
     # FLEXIBLE BINNING DEFAULTS
@@ -181,7 +213,8 @@ class BinningConfig:
         Get default configuration values for a specific binning method.
 
         Args:
-            method_name: Name of the binning method ("equal_width", "singleton", "supervised")
+            method_name: Name of the binning method (e.g., "equal_width", "equal_frequency",
+                "kmeans", "gaussian_mixture", "supervised", "singleton", etc.)
 
         Returns:
             Dictionary of default parameters for the method
@@ -190,14 +223,65 @@ class BinningConfig:
             "preserve_dataframe": self.preserve_dataframe,
             "fit_jointly": self.fit_jointly,
             "strict_validation": self.strict_validation,
+            "clip": self.default_clip,
         }
 
         if method_name == "equal_width":
             defaults.update(
                 {
                     "n_bins": self.equal_width_default_bins,
-                    "clip": self.default_clip,
                     "range_strategy": self.equal_width_default_range_strategy,
+                }
+            )
+        elif method_name == "equal_frequency":
+            defaults.update(
+                {
+                    "n_bins": self.equal_frequency_default_bins,
+                    "quantile_range": self.equal_frequency_default_quantile_range,
+                }
+            )
+        elif method_name == "kmeans":
+            defaults.update(
+                {
+                    "n_bins": self.kmeans_default_bins,
+                    "random_state": self.kmeans_random_state,
+                }
+            )
+        elif method_name == "gaussian_mixture":
+            defaults.update(
+                {
+                    "n_components": self.gaussian_mixture_default_components,
+                    "random_state": self.gaussian_mixture_random_state,
+                }
+            )
+        elif method_name == "equal_width_minimum_weight":
+            defaults.update(
+                {
+                    "n_bins": self.equal_width_min_weight_default_bins,
+                    "minimum_weight": self.equal_width_min_weight_threshold,
+                }
+            )
+        elif method_name == "chi2":
+            defaults.update(
+                {
+                    "n_bins": self.chi2_default_bins,
+                    "significance_level": self.chi2_significance_level,
+                    "min_expected_frequency": self.chi2_min_expected_frequency,
+                }
+            )
+        elif method_name == "dbscan":
+            defaults.update(
+                {
+                    "eps": self.dbscan_eps,
+                    "min_samples": self.dbscan_min_samples,
+                    "random_state": self.dbscan_random_state,
+                }
+            )
+        elif method_name == "isotonic":
+            defaults.update(
+                {
+                    "n_bins": self.isotonic_default_bins,
+                    "increasing": self.isotonic_increasing,
                 }
             )
         elif method_name == "singleton":
@@ -215,6 +299,14 @@ class BinningConfig:
                     "min_samples_split": self.supervised_default_min_samples_split,
                     "task_type": self.supervised_default_task_type,
                     "random_state": self.supervised_random_state,
+                }
+            )
+        # For any method not explicitly configured, provide basic defaults
+        else:
+            defaults.update(
+                {
+                    "n_bins": self.default_n_bins,
+                    "random_state": self.default_random_state,
                 }
             )
 

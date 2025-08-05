@@ -15,7 +15,6 @@ Test Classes:
     TestManualIntervalBinningEdgeCases: Tests for edge cases and error conditions.
 """
 
-
 import numpy as np
 import pytest
 from sklearn.base import clone
@@ -201,7 +200,8 @@ class TestManualIntervalBinning:
 
         with pytest.raises(ConfigurationError, match="must be array-like"):
             ManualIntervalBinning(
-                bin_edges=bin_edges, bin_representatives=bin_representatives  # type: ignore
+                bin_edges=bin_edges,
+                bin_representatives=bin_representatives,  # type: ignore
             )
 
     def test_validate_params_wrong_number_representatives(self):

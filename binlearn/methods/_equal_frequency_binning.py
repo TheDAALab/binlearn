@@ -15,6 +15,7 @@ import numpy as np
 
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
+from ..config import apply_config_defaults
 from ..utils.errors import ConfigurationError
 from ..utils.parameter_conversion import (
     resolve_n_bins_parameter,
@@ -118,18 +119,47 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
             >>> edges = {0: [0, 25, 50, 75, 100]}
             >>> binner = EqualFrequencyBinning(bin_edges=edges)
         """
+        # Apply configuration defaults for parameters not explicitly provided
+        user_params = {
+            "n_bins": n_bins,
+            "quantile_range": quantile_range,
+            "clip": clip,
+            "preserve_dataframe": preserve_dataframe,
+            "bin_edges": bin_edges,
+            "bin_representatives": bin_representatives,
+            "fit_jointly": fit_jointly,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
+
+        # Apply configuration defaults for equal_frequency method
+        params = apply_config_defaults("equal_frequency", user_params, **kwargs)
+
         # Store equal-frequency specific parameters BEFORE calling super().__init__
         # because parent class calls _validate_params() which needs these attributes
-        self.n_bins = n_bins
-        self.quantile_range = quantile_range
+        self.n_bins = params.get("n_bins", n_bins)
+        self.quantile_range = params.get("quantile_range", quantile_range)
 
         super().__init__(
-            clip=clip,
-            preserve_dataframe=preserve_dataframe,
-            bin_edges=bin_edges,
-            bin_representatives=bin_representatives,
-            fit_jointly=fit_jointly,
-            **kwargs,
+            clip=params.get("clip", clip),
+            preserve_dataframe=params.get("preserve_dataframe", preserve_dataframe),
+            bin_edges=params.get("bin_edges", bin_edges),
+            bin_representatives=params.get("bin_representatives", bin_representatives),
+            fit_jointly=params.get("fit_jointly", fit_jointly),
+            **{
+                k: v
+                for k, v in params.items()
+                if k
+                not in {
+                    "n_bins",
+                    "quantile_range",
+                    "clip",
+                    "preserve_dataframe",
+                    "bin_edges",
+                    "bin_representatives",
+                    "fit_jointly",
+                }
+            },
         )
 
     def _calculate_bins(
