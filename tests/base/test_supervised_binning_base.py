@@ -140,7 +140,7 @@ def test_create_fallback_bins_with_col_id():
     # This should trigger the warning with col_id
     import warnings
 
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as _:
         warnings.simplefilter("always")
         left_edges, right_edges = obj.create_fallback_bins(x_col, default_range=None)
 
