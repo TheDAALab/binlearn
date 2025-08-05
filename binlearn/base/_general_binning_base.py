@@ -28,7 +28,11 @@ from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumn
 
 # pylint: disable=too-many-ancestors
 class GeneralBinningBase(
-    ABC, BaseEstimator, TransformerMixin, ValidationMixin, SklearnCompatibilityMixin  # type: ignore[misc]
+    ABC,
+    BaseEstimator,  # type: ignore[misc]
+    TransformerMixin,  # type: ignore[misc]
+    ValidationMixin,
+    SklearnCompatibilityMixin,
 ):
     """Base class for all binning transformers with universal guidance support.
 
@@ -217,6 +221,7 @@ class GeneralBinningBase(
 
         return X_binning, X_guidance, binning_columns, guidance_columns
 
+    # pylint: disable=too-many-branches
     def fit(self, X: Any, y: Any = None, **fit_params: Any) -> GeneralBinningBase:
         """Universal fit method with guidance support.
 
@@ -533,9 +538,9 @@ class GeneralBinningBase(
                 in X. Used to access the appropriate fitted parameters for each column.
 
         Returns:
-            np.ndarray[Any, Any]: Transformed data with bin indices. Shape is (n_samples, n_columns).
-                Each value is an integer representing the bin index that the original
-                value was assigned to.
+            np.ndarray[Any, Any]: Transformed data with bin indices. Shape is
+                (n_samples, n_columns). Each value is an integer representing the bin
+                index that the original value was assigned to.
 
         Note:
             - Output should contain integer bin indices
@@ -558,8 +563,9 @@ class GeneralBinningBase(
         numeric values that represent each bin.
 
         Args:
-            X (np.ndarray[Any, Any]): Binned data to inverse transform. Shape is (n_samples, n_columns).
-                Contains integer bin indices as produced by _transform_columns.
+            X (np.ndarray[Any, Any]): Binned data to inverse transform. Shape is
+                (n_samples, n_columns). Contains integer bin indices as produced by
+                _transform_columns.
             columns (ColumnList): Column identifiers corresponding to the columns
                 in X. Used to access the appropriate fitted parameters for each column.
 

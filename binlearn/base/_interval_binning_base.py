@@ -316,7 +316,10 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
     def _calculate_bins_for_columns(
-        self, X: np.ndarray[Any, Any], columns: ColumnList, guidance_data: np.ndarray[Any, Any] | None
+        self,
+        X: np.ndarray[Any, Any],
+        columns: ColumnList,
+        guidance_data: np.ndarray[Any, Any] | None,
     ) -> None:
         """Calculate bins for each column.
 
@@ -334,7 +337,11 @@ class IntervalBinningBase(GeneralBinningBase):
             self._calculate_bins_for_single_column(X, i, col, guidance_data)
 
     def _calculate_bins_for_single_column(
-        self, X: np.ndarray[Any, Any], col_index: int, col: ColumnId, guidance_data: np.ndarray[Any, Any] | None
+        self,
+        X: np.ndarray[Any, Any],
+        col_index: int,
+        col: ColumnId,
+        guidance_data: np.ndarray[Any, Any] | None,
     ) -> None:
         """Calculate bins for a single column.
 
@@ -360,7 +367,9 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_edges_[col] = edges
         self.bin_representatives_[col] = reps
 
-    def _validate_column_data(self, col_data: np.ndarray[Any, Any], col: ColumnId, col_index: int) -> None:
+    def _validate_column_data(
+        self, col_data: np.ndarray[Any, Any], col: ColumnId, col_index: int
+    ) -> None:
         """Validate column data and issue warnings for all-NaN columns.
 
         Checks if the column contains only NaN values and issues a data quality
@@ -515,7 +524,10 @@ class IntervalBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[BinEdges, BinEdges]:
         """Calculate bin edges and representatives for a column.
 
@@ -570,7 +582,9 @@ class IntervalBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray[Any, Any]:
+    def _transform_columns(
+        self, X: np.ndarray[Any, Any], columns: ColumnList
+    ) -> np.ndarray[Any, Any]:
         """Transform columns to bin indices.
 
         Converts continuous values in each column to discrete bin indices using
@@ -615,7 +629,9 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray[Any, Any]:
+    def _inverse_transform_columns(
+        self, X: np.ndarray[Any, Any], columns: ColumnList
+    ) -> np.ndarray[Any, Any]:
         """Inverse transform from bin indices to representative values.
 
         Converts bin indices back to continuous values using the fitted bin

@@ -152,7 +152,10 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
         )
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[FlexibleBinDefs, BinReps]:
         """Return pre-defined flexible bin specifications without calculation.
 

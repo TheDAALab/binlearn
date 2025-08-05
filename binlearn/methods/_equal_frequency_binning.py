@@ -121,7 +121,10 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
         """Calculate equal-frequency bins for a single column or joint binning data.
 
@@ -172,7 +175,12 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals
     def _create_equal_frequency_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, min_quantile: float, max_quantile: float, n_bins: int
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        min_quantile: float,
+        max_quantile: float,
+        n_bins: int,
     ) -> tuple[list[float], list[float]]:
         """Create equal-frequency bins using quantiles.
 

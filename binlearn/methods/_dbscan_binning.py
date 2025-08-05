@@ -131,7 +131,10 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
         """Calculate DBSCAN clustering-based bins for a single column or joint binning data.
 
@@ -168,9 +171,9 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
         """
         return self._create_dbscan_bins(x_col, col_id)
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-statements
     def _create_dbscan_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any
+        self, x_col: np.ndarray[Any, Any], col_id: Any  # pylint: disable=unused-argument
     ) -> tuple[list[float], list[float]]:
         """Create DBSCAN clustering-based bins.
 
@@ -265,7 +268,7 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
                 center = np.mean(cluster_points)
                 cluster_centers.append(center)
 
-        except Exception:
+        except (ValueError, RuntimeError):
             # Fall back to equal-width binning on error
             data_min, data_max = np.min(clean_data), np.max(clean_data)
             edges_array = np.linspace(data_min, data_max, self.min_bins + 1)

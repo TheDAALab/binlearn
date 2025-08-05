@@ -548,7 +548,9 @@ class TestDBSCANBinningExceptionHandling:
         from unittest.mock import patch
 
         with patch("binlearn.methods._dbscan_binning.DBSCAN") as mock_dbscan:
-            mock_dbscan.return_value.fit_predict.side_effect = Exception("DBSCAN clustering failed")
+            mock_dbscan.return_value.fit_predict.side_effect = RuntimeError(
+                "DBSCAN clustering failed"
+            )
 
             # Should handle the exception and fallback to equal width binning
             edges, reps = db._create_dbscan_bins(np.array([1, 2, 3, 4, 5]), col_id=0)

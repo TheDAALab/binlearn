@@ -222,7 +222,10 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
     # pylint: disable=too-many-locals
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[BinEdges, BinEdges]:
         """Calculate bins using decision tree splits for a single column.
 

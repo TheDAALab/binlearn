@@ -19,10 +19,10 @@ class MockTransformer(SklearnCompatibilityMixin):
         # Add _n_features_in for backward compatibility testing
         self._n_features_in: int = 0
 
-    def fit(self, X: Any, y: Any = None) -> "MockTransformer":
+    def fit(self, X: Any, y: Any = None) -> "MockTransformer":  # pylint: disable=unused-argument
         """Mock fit method."""
         self._fitted = True
-        if hasattr(X, 'shape'):
+        if hasattr(X, "shape"):
             self.n_features_in_ = X.shape[1]
         else:
             self.n_features_in_ = len(X[0]) if X else 0
@@ -54,6 +54,39 @@ class TestSklearnCompatibilityMixin:
 
         assert result == ["col1", "col2", "col3"]
         assert transformer.feature_names_in_ == ["col1", "col2", "col3"]
+
+    def test_check_feature_names_with_feature_names_attribute(self) -> None:
+        """Test _check_feature_names with object having feature_names attribute."""
+        transformer = MockTransformer()
+
+        # Mock object with feature_names attribute (but no columns)
+        mock_x = Mock()
+        mock_x.feature_names = ["feat1", "feat2", "feat3"]
+        mock_x.shape = (100, 3)
+        # Ensure it doesn't have columns attribute
+        del mock_x.columns
+
+        result = transformer._check_feature_names(mock_x)
+
+        assert result == ["feat1", "feat2", "feat3"]
+        assert transformer.feature_names_in_ == ["feat1", "feat2", "feat3"]
+
+    def test_check_feature_names_with_private_feature_names_attribute(self) -> None:
+        """Test _check_feature_names with object having _feature_names attribute."""
+        transformer = MockTransformer()
+
+        # Mock object with _feature_names attribute (but no columns or feature_names)
+        mock_x = Mock()
+        mock_x._feature_names = ["private_feat1", "private_feat2"]
+        mock_x.shape = (100, 2)
+        # Ensure it doesn't have columns or feature_names attributes
+        del mock_x.columns
+        del mock_x.feature_names
+
+        result = transformer._check_feature_names(mock_x)
+
+        assert result == ["private_feat1", "private_feat2"]
+        assert transformer.feature_names_in_ == ["private_feat1", "private_feat2"]
 
     def test_check_feature_names_with_numpy_array(self) -> None:
         """Test _check_feature_names with numpy array."""

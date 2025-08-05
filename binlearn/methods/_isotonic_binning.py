@@ -141,7 +141,10 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
         """Calculate isotonic regression-based bins for a single column.
 
@@ -291,7 +294,9 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
 
         return y_processed
 
-    def _find_cut_points(self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any]) -> list[int]:
+    def _find_cut_points(
+        self, _: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any]
+    ) -> list[int]:
         """Find cut points based on changes in fitted isotonic function.
 
         Identifies locations where the fitted function has significant changes
@@ -336,9 +341,9 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
     def _create_bins_from_cuts(
         self,
         x_sorted: np.ndarray[Any, Any],
-        y_fitted: np.ndarray[Any, Any],
+        _: np.ndarray[Any, Any],
         cut_indices: list[int],
-        col_id: Any,
+        __: Any,
     ) -> tuple[list[float], list[float]]:
         """Create bin edges and representatives from cut points.
 
@@ -362,9 +367,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         bin_edges = []
         bin_representatives = []
 
-        for i in range(len(cut_indices)):
-            cut_idx = cut_indices[i]
-
+        for i, cut_idx in enumerate(cut_indices):
             if i == 0:
                 # First bin edge
                 bin_edges.append(float(x_sorted[cut_idx]))

@@ -124,9 +124,13 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
-        """Calculate Gaussian Mixture Model clustering-based bins for a single column or joint binning data.
+        """Calculate Gaussian Mixture Model clustering-based bins for a single column or
+        joint binning data.
 
         Computes bin edges and representatives for either a single feature (per-column
         fitting) or from all flattened data (joint fitting). Uses GMM clustering
@@ -259,7 +263,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
             # Create and fit GMM
             gmm = GaussianMixture(
                 n_components=n_components,
-                covariance_type="full",  # Always use "full" for maximum flexibility in 1D
+                covariance_type="full",  # Always use "full" for maximum flexibility
                 random_state=self.random_state,
             )
             gmm.fit(data_2d)
@@ -309,10 +313,10 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         """
         if means[-1] < data_max:
             return data_max
-        else:
-            # Extend slightly above the last mean
-            edge_extension = (means[-1] - means[0]) * 0.05
-            return means[-1] + edge_extension
+
+        # Extend slightly above the last mean
+        edge_extension = (means[-1] - means[0]) * 0.05
+        return means[-1] + edge_extension
 
     def _validate_params(self) -> None:
         """Validate parameters for sklearn compatibility and logical consistency.
@@ -330,7 +334,6 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         Example:
             >>> # This will raise ConfigurationError
             >>> binner = GaussianMixtureBinning(n_components=0)  # n_components must be positive
-            >>> binner = GaussianMixtureBinning(random_state=-1)  # random_state must be non-negative
 
         Note:
             - Called automatically during fit() for early error detection

@@ -181,7 +181,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             )
 
         # Validate alpha
-        if not isinstance(self.alpha, int | float) or not (0 < self.alpha < 1):
+        if not isinstance(self.alpha, int | float) or not 0 < self.alpha < 1:
             raise ConfigurationError(f"alpha must be a number between 0 and 1, got {self.alpha}")
 
         # Validate initial_bins
@@ -194,8 +194,12 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         # either guidance_columns or the y parameter in fit(), so we don't
         # validate guidance_columns here
 
+    # pylint: disable=too-many-locals
     def _calculate_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: ColumnId, guidance_data: np.ndarray[Any, Any] | None = None
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: ColumnId,
+        guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
         """Calculate chi-square based bins for a single column.
 
@@ -286,7 +290,10 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             ) from e
 
     def _merge_bins_chi2(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], initial_edges: np.ndarray[Any, Any]
+        self,
+        x_data: np.ndarray[Any, Any],
+        y_data: np.ndarray[Any, Any],
+        initial_edges: np.ndarray[Any, Any],
     ) -> list[float]:
         """Merge bins based on chi-square statistic.
 
@@ -360,8 +367,13 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
 
         return best_idx
 
+    # pylint: disable=too-many-locals
     def _calculate_chi2_for_pair(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], edges: list[float], pair_idx: int
+        self,
+        x_data: np.ndarray[Any, Any],
+        y_data: np.ndarray[Any, Any],
+        edges: list[float],
+        pair_idx: int,
     ) -> tuple[float, float]:
         """Calculate chi-square statistic for a pair of adjacent intervals.
 
@@ -423,14 +435,8 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
 
         # Calculate chi-square statistic
         try:
-            from typing import Any, cast
-
-            result = chi2_contingency(contingency_table)
-            # Result is a tuple with chi2 statistic and p-value as first two elements
-            chi2_stat = result[0]
-            p_value = result[1]
-            # Cast to Any first to work around scipy typing issues
-            return float(cast(Any, chi2_stat)), float(cast(Any, p_value))
+            chi2_val, p_val, _, _ = chi2_contingency(contingency_table)
+            return float(chi2_val), float(p_val)
         except ValueError:
             # Handle edge cases where chi2 calculation fails
             return 0.0, 1.0
@@ -473,7 +479,9 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             centers.append(center)
         return centers
 
-    def _extract_guidance_column(self, guidance_data_validated: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
+    def _extract_guidance_column(
+        self, guidance_data_validated: np.ndarray[Any, Any]
+    ) -> np.ndarray[Any, Any]:
         """Extract guidance column from validated guidance data.
 
         Args:
@@ -485,8 +493,8 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         # This method allows testing both 1D and 2D paths
         if guidance_data_validated.ndim == 2:
             return guidance_data_validated[:, 0]  # Line would be here
-        else:
-            return guidance_data_validated  # This line can be tested
+
+        return guidance_data_validated  # This line can be tested
 
     def _handle_constant_feature_values(
         self, data_min: float, data_max: float
@@ -508,7 +516,11 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return None
 
     def _should_stop_merging_for_significance(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], current_edges: list[float], best_pair_idx: int
+        self,
+        x_data: np.ndarray[Any, Any],
+        y_data: np.ndarray[Any, Any],
+        current_edges: list[float],
+        best_pair_idx: int,
     ) -> bool:
         """Check if merging should stop based on significance when at max_bins.
 
@@ -523,9 +535,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         """
         if len(current_edges) - 1 <= self.max_bins:
             # We've reached max_bins, check if we should stop based on significance
-            chi2_stat, p_value = self._calculate_chi2_for_pair(
-                x_data, y_data, current_edges, best_pair_idx
-            )
+            _, p_value = self._calculate_chi2_for_pair(x_data, y_data, current_edges, best_pair_idx)
             if p_value <= self.alpha:
                 # Significant difference, don't merge - line 324 equivalent
                 return True
