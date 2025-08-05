@@ -714,7 +714,7 @@ def test_fit_jointly_with_string_columns_and_nan():
 def test_process_user_specifications_non_numeric_edges():
     """Test _process_user_specifications with non-numeric edges."""
     obj = DummyIntervalBinning()
-    obj.bin_edges = {0: ["a", "b", "c"]}  # Non-numeric edges
+    obj.bin_edges = {0: ["a", "b", "c"]}  # type: ignore[list-item] # Non-numeric edges for testing
 
     # This should raise a real validation error
     with pytest.raises(ConfigurationError, match="must be numeric"):

@@ -88,7 +88,7 @@ class TestChi2BinningGuidanceParameterizations:
     """Test different ways of providing guidance data to Chi2Binning."""
 
     @pytest.fixture
-    def sample_data(self) -> None:
+    def sample_data(self) -> tuple[np.ndarray, np.ndarray]:
         """Create sample data for testing."""
         np.random.seed(42)
         n_samples = 200
@@ -493,8 +493,8 @@ class TestChi2BinningPolarsIntegration:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_dataframe_without_preserve(self) -> None:
         """Test Polars DataFrame without preserve_dataframe."""
-        df = pl.DataFrame(
-            {  # type: ignore[name-defined]
+        df = pl.DataFrame(  # type: ignore[union-attr]
+            {
                 "feature_1": [1, 2, 3, 4, 5, 6],
                 "feature_2": [10, 20, 30, 40, 50, 60],
                 "target": [0, 0, 0, 1, 1, 1],
@@ -513,8 +513,8 @@ class TestChi2BinningPolarsIntegration:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_y_parameter_approach(self) -> None:
         """Test Polars DataFrame with y parameter approach."""
-        features_df = pl.DataFrame(
-            {  # type: ignore[name-defined]
+        features_df = pl.DataFrame(  # type: ignore[union-attr]
+            {
                 "feature_1": [1, 2, 3, 4, 5, 6],
                 "feature_2": [10, 20, 30, 40, 50, 60],
             }
@@ -527,7 +527,7 @@ class TestChi2BinningPolarsIntegration:
         result = binning.transform(features_df)
 
         # Should return Polars DataFrame with feature columns
-        assert isinstance(result, pl.DataFrame)  # type: ignore[name-defined]
+        assert isinstance(result, pl.DataFrame)  # type: ignore[union-attr]
         assert result.columns == ["feature_1", "feature_2"]
         assert result.shape == (6, 2)
 
@@ -536,7 +536,7 @@ class TestChi2BinningSklearnIntegration:
     """Test Chi2Binning integration with sklearn pipelines."""
 
     @pytest.fixture
-    def pipeline_data(self) -> None:
+    def pipeline_data(self) -> tuple[np.ndarray, np.ndarray]:
         """Create data for pipeline testing."""
         np.random.seed(42)
         n_samples = 100
@@ -995,7 +995,7 @@ class TestChi2BinningEdgeCases:
         binning = Chi2Binning(max_bins=3)
 
         # Mock validate_guidance_data to return 1D array to trigger line 236
-        def mock_validate_guidance_data(guidance_data) -> None:
+        def mock_validate_guidance_data(guidance_data) -> np.ndarray:
             return y  # Return 1D array, should trigger else branch on line 236
 
         with patch.object(
@@ -1044,7 +1044,7 @@ class TestChi2BinningEdgeCases:
 
         # Mock _calculate_chi2_for_pair to return significant p-value to trigger break
 
-        def mock_chi2_for_pair(x_data, y_data, edges, pair_idx) -> None:
+        def mock_chi2_for_pair(x_data, y_data, edges, pair_idx) -> tuple[float, float]:
             # Return a very small p-value (significant) to trigger break on line 324
             return 10.0, 0.001  # High chi2, very low p-value (significant)
 
@@ -1068,7 +1068,7 @@ class TestChi2BinningEdgeCases:
         original_method = binning._calculate_chi2_for_pair
         call_count = [0]  # Use list to allow modification in nested function
 
-        def mock_chi2_calculation(*args, **kwargs) -> None:
+        def mock_chi2_calculation(*args, **kwargs) -> tuple[float, float]:
             # Raise ValueError for first call, then use original for subsequent calls
             call_count[0] += 1
 

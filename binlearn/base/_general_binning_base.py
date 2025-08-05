@@ -113,7 +113,7 @@ class GeneralBinningBase(
         self._n_features_in: int | None = None
         self._feature_names_in: OptionalColumnList = None
 
-    def _prepare_input(self, X: ArrayLike) -> tuple[np.ndarray, ColumnList]:
+    def _prepare_input(self, X: ArrayLike) -> tuple[np.ndarray[Any, Any], ColumnList]:
         """Prepare input array and determine column identifiers.
 
         Converts input data to a standardized numpy array format while preserving
@@ -125,7 +125,7 @@ class GeneralBinningBase(
                 DataFrame, or numpy array.
 
         Returns:
-            Tuple[np.ndarray, ColumnList]: A tuple containing:
+            Tuple[np.ndarray[Any, Any], ColumnList]: A tuple containing:
                 - Prepared numpy array with standardized format
                 - Column identifiers (names for DataFrames, indices for arrays)
 
@@ -154,7 +154,7 @@ class GeneralBinningBase(
 
     def _separate_columns(
         self, X: ArrayLike
-    ) -> tuple[np.ndarray, np.ndarray | None, ColumnList, ColumnList | None]:
+    ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None, ColumnList, ColumnList | None]:
         """Universal column separation logic for binning and guidance columns.
 
         Separates the input data into binning columns (to be transformed) and
@@ -171,9 +171,9 @@ class GeneralBinningBase(
 
         Returns:
             Tuple containing:
-                - X_binning (np.ndarray): Data for columns to be binned. Shape is
+                - X_binning (np.ndarray[Any, Any]): Data for columns to be binned. Shape is
                   (n_samples, n_binning_columns).
-                - X_guidance (Optional[np.ndarray]): Data for guidance columns.
+                - X_guidance (Optional[np.ndarray[Any, Any]]): Data for guidance columns.
                   None if no guidance columns specified. Shape is (n_samples, n_guidance_columns).
                 - binning_columns (ColumnList): Names/indices of binning columns.
                 - guidance_columns (ColumnList | None): Names/indices of guidance columns.
@@ -479,7 +479,7 @@ class GeneralBinningBase(
         raise NotImplementedError("Subclasses must implement _fit_per_column method.")
 
     @abstractmethod
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
+    def _fit_jointly(self, X: np.ndarray[Any, Any], columns: ColumnList, **fit_params: Any) -> None:
         """Fit bins jointly across all columns.
 
         Abstract method that must be implemented by subclasses to handle joint
@@ -492,7 +492,7 @@ class GeneralBinningBase(
         or ranges across features.
 
         Args:
-            X (np.ndarray): Input data for all binning columns. Shape is
+            X (np.ndarray[Any, Any]): Input data for all binning columns. Shape is
                 (n_samples, n_binning_columns).
             columns (ColumnList): Column identifiers for all binning columns.
                 The order corresponds to the columns in X.
@@ -516,7 +516,7 @@ class GeneralBinningBase(
         )
 
     @abstractmethod
-    def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
         """Transform columns to bin indices.
 
         Abstract method that must be implemented by subclasses to convert input
@@ -525,13 +525,13 @@ class GeneralBinningBase(
         bin indices.
 
         Args:
-            X (np.ndarray): Input data to transform. Shape is (n_samples, n_columns).
+            X (np.ndarray[Any, Any]): Input data to transform. Shape is (n_samples, n_columns).
                 Contains the raw data values that need to be mapped to bin indices.
             columns (ColumnList): Column identifiers corresponding to the columns
                 in X. Used to access the appropriate fitted parameters for each column.
 
         Returns:
-            np.ndarray: Transformed data with bin indices. Shape is (n_samples, n_columns).
+            np.ndarray[Any, Any]: Transformed data with bin indices. Shape is (n_samples, n_columns).
                 Each value is an integer representing the bin index that the original
                 value was assigned to.
 
@@ -545,7 +545,9 @@ class GeneralBinningBase(
         raise NotImplementedError("Subclasses must implement _transform_columns method.")
 
     @abstractmethod
-    def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
+    def _inverse_transform_columns(
+        self, X: np.ndarray[Any, Any], columns: ColumnList
+    ) -> np.ndarray:
         """Inverse transform from bin indices to representative values.
 
         Abstract method that must be implemented by subclasses to convert bin
@@ -554,13 +556,13 @@ class GeneralBinningBase(
         numeric values that represent each bin.
 
         Args:
-            X (np.ndarray): Binned data to inverse transform. Shape is (n_samples, n_columns).
+            X (np.ndarray[Any, Any]): Binned data to inverse transform. Shape is (n_samples, n_columns).
                 Contains integer bin indices as produced by _transform_columns.
             columns (ColumnList): Column identifiers corresponding to the columns
                 in X. Used to access the appropriate fitted parameters for each column.
 
         Returns:
-            np.ndarray: Data with representative values. Shape is (n_samples, n_columns).
+            np.ndarray[Any, Any]: Data with representative values. Shape is (n_samples, n_columns).
                 Each bin index is replaced with a representative value for that bin
                 (e.g., bin center, mean, or other representative statistic).
 

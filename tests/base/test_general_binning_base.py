@@ -404,13 +404,13 @@ def test_validate_params():
     obj._validate_params()  # Should not raise
 
     # Test invalid preserve_dataframe
-    obj.preserve_dataframe = "invalid"  # Bypass type checking for test
+    obj.preserve_dataframe = "invalid"  # type: ignore[assignment] # Bypass type checking for test
     with pytest.raises(TypeError, match="preserve_dataframe must be a boolean"):
         obj._validate_params()
 
     # Test invalid fit_jointly
     obj.preserve_dataframe = True
-    obj.fit_jointly = "invalid"  # Bypass type checking for test
+    obj.fit_jointly = "invalid"  # type: ignore[assignment] # Bypass type checking for test
     with pytest.raises(TypeError, match="fit_jointly must be a boolean"):
         obj._validate_params()
 

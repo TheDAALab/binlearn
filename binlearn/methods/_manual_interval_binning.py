@@ -129,7 +129,7 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Return pre-defined bins without calculation.
 
@@ -138,9 +138,9 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
         performing any data-based calculations.
 
         Args:
-            x_col (np.ndarray): Input data column (ignored in manual binning).
+            x_col (np.ndarray[Any, Any]): Input data column (ignored in manual binning).
             col_id (Any): Column identifier to retrieve pre-defined bins.
-            guidance_data (Optional[np.ndarray], optional): Guidance data (ignored).
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data (ignored).
                 Defaults to None.
 
         Returns:

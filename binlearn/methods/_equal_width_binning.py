@@ -119,7 +119,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate equal-width bins for a single column or joint binning data.
 
@@ -128,13 +128,13 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         specified bin_range or the actual data range to determine bin boundaries.
 
         Args:
-            x_col (np.ndarray): Data for binning. For per-column fitting, this is
+            x_col (np.ndarray[Any, Any]): Data for binning. For per-column fitting, this is
                 data for a single column with shape (n_samples,). For joint fitting,
                 this is flattened data from all columns. May contain NaN values.
             col_id (Any): Column identifier (name or index) for error reporting
                 and logging purposes. For joint fitting, this is typically the
                 first column identifier.
-            guidance_data (Optional[np.ndarray], optional): Guidance data for
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data for
                 supervised binning. Not used in equal-width binning as it's an
                 unsupervised method. Defaults to None.
 
@@ -166,7 +166,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
 
         return self._create_equal_width_bins(min_val, max_val, self.n_bins)
 
-    def _get_data_range(self, x_col: np.ndarray, col_id: Any) -> tuple[float, float]:
+    def _get_data_range(self, x_col: np.ndarray[Any, Any], col_id: Any) -> tuple[float, float]:
         """Get the data range with robust handling of edge cases.
 
         Determines the minimum and maximum values for the provided data while handling
@@ -174,7 +174,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         both single-column data and flattened multi-column data (joint fitting).
 
         Args:
-            x_col (np.ndarray): Data to analyze. For per-column fitting, this is
+            x_col (np.ndarray[Any, Any]): Data to analyze. For per-column fitting, this is
                 data for a single column with shape (n_samples,). For joint fitting,
                 this is flattened data from all columns. May contain NaN or infinite values.
             col_id (Any): Column identifier used for error reporting and logging.

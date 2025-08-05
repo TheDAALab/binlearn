@@ -19,3 +19,6 @@ try:
 except ImportError:  # pragma: no cover
     # pl remains None as initialized above
     pass  # pragma: no cover
+
+# Explicit exports for mypy
+__all__ = ["pl", "POLARS_AVAILABLE"]

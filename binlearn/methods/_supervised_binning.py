@@ -222,7 +222,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
     # pylint: disable=too-many-locals
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[BinEdges, BinEdges]:
         """Calculate bins using decision tree splits for a single column.
 
@@ -345,7 +345,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
 
         return bin_edges, representatives
 
-    def _extract_split_points(self, tree: Any, _x_data: np.ndarray) -> BinEdges:
+    def _extract_split_points(self, tree: Any, _x_data: np.ndarray[Any, Any]) -> BinEdges:
         """Extract split points from a fitted decision tree.
 
         Traverses the decision tree structure to extract all threshold values
@@ -482,7 +482,7 @@ class SupervisedBinning(ReprMixin, SupervisedBinningBase):
             - "n_nodes": Total number of nodes in the tree (int)
             - "max_depth": Maximum depth of the tree (int)
             - "n_leaves": Number of leaf nodes in the tree (int)
-            - "feature_importances": Array of feature importance scores (np.ndarray)
+            - "feature_importances": Array of feature importance scores (np.ndarray[Any, Any])
             - "tree_": The actual sklearn tree structure object for advanced access
 
         Raises:

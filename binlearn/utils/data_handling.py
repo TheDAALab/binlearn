@@ -28,7 +28,7 @@ def _is_polars_df(obj: Any) -> bool:
     return polars_module is not None and isinstance(obj, polars_module.DataFrame)
 
 
-def prepare_array(X: ArrayLike) -> tuple[np.ndarray, OptionalColumnList, Any]:
+def prepare_array(X: ArrayLike) -> tuple[np.ndarray[Any, Any], OptionalColumnList, Any]:
     """Convert input to numpy array and extract metadata.
 
     Args:
@@ -52,7 +52,7 @@ def prepare_array(X: ArrayLike) -> tuple[np.ndarray, OptionalColumnList, Any]:
 
 
 def return_like_input(
-    arr: np.ndarray,
+    arr: np.ndarray[Any, Any],
     original_input: ArrayLike,
     columns: OptionalColumnList = None,
     preserve_dataframe: bool = False,
@@ -127,7 +127,7 @@ def _determine_columns(
 
 def prepare_input_with_columns(
     X: ArrayLike, fitted: bool = False, original_columns: OptionalColumnList = None
-) -> tuple[np.ndarray, list[Any]]:
+) -> tuple[np.ndarray[Any, Any], list[Any]]:
     """Prepare input data and determine column identifiers.
 
     Parameters

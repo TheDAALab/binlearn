@@ -531,7 +531,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
         # Patch np.quantile to raise an exception
         import binlearn.methods._equal_frequency_binning as efb_module
 
-        efb_module.np.quantile = failing_quantile  # type: ignore[attr-defined]
+        efb_module.np.quantile = failing_quantile  # type: ignore[assignment]
 
         try:
             data = np.array([1, 2, 3, 4, 5])
@@ -545,7 +545,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
                 )
         finally:
             # Restore original function
-            efb_module.np.quantile = original_quantile  # type: ignore[attr-defined]
+            efb_module.np.quantile = original_quantile
 
     def test_quantile_calculation_index_error_handling(self):
         """Test error handling when np.quantile fails with IndexError.
@@ -566,7 +566,7 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
         # Patch np.quantile to raise an exception
         import binlearn.methods._equal_frequency_binning as efb_module
 
-        efb_module.np.quantile = failing_quantile_index_error  # type: ignore[attr-defined]
+        efb_module.np.quantile = failing_quantile_index_error  # type: ignore[assignment]
 
         try:
             data = np.array([1, 2, 3, 4, 5])
@@ -580,4 +580,4 @@ class TestEqualFrequencyBinningFitGetParamsWorkflow:
                 )
         finally:
             # Restore original function
-            efb_module.np.quantile = original_quantile  # type: ignore[attr-defined]
+            efb_module.np.quantile = original_quantile

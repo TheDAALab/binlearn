@@ -61,8 +61,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         super().__init__(**kwargs)
 
     def validate_guidance_data(
-        self, guidance_data: np.ndarray, name: str = "guidance_data"
-    ) -> np.ndarray:
+        self, guidance_data: np.ndarray[Any, Any], name: str = "guidance_data"
+    ) -> np.ndarray[Any, Any]:
         """Validate and preprocess guidance data for supervised binning.
 
         Ensures that the guidance data is appropriate for supervised binning
@@ -73,14 +73,14 @@ class SupervisedBinningBase(IntervalBinningBase):
         binning methods that may support multiple guidance columns.
 
         Args:
-            guidance_data (np.ndarray): Raw guidance/target data to validate.
+            guidance_data (np.ndarray[Any, Any]): Raw guidance/target data to validate.
                 Should be a 2D array with shape (n_samples, 1) or 1D array
                 with shape (n_samples,).
             name (str, optional): Name used in error messages for better
                 debugging context. Defaults to "guidance_data".
 
         Returns:
-            np.ndarray: Validated 1D guidance data with shape (n_samples,).
+            np.ndarray[Any, Any]: Validated 1D guidance data with shape (n_samples,).
                 Ready for use with decision tree estimators.
 
         Raises:
@@ -122,8 +122,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         )
 
     def validate_feature_target_pair(
-        self, x_col: np.ndarray, guidance_data: np.ndarray, col_id: Any = None
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        self, x_col: np.ndarray[Any, Any], guidance_data: np.ndarray, col_id: Any = None
+    ) -> tuple[np.ndarray[Any, Any], np.ndarray, np.ndarray]:
         """Validate feature-target pair and create valid data mask.
 
         Performs comprehensive validation of a feature-target pair for supervised
@@ -134,16 +134,16 @@ class SupervisedBinningBase(IntervalBinningBase):
         detailed validation for both numeric and categorical target variables.
 
         Args:
-            x_col (np.ndarray): Feature column data to be validated and converted.
+            x_col (np.ndarray[Any, Any]): Feature column data to be validated and converted.
                 Can contain missing values (NaN) which will be identified in the mask.
-            guidance_data (np.ndarray): Target/guidance data that must be 1D after
+            guidance_data (np.ndarray[Any, Any]): Target/guidance data that must be 1D after
                 validation. Can be numeric (for regression) or categorical
                 (for classification).
             col_id (Any, optional): Column identifier used in error messages for
                 better debugging context. Defaults to None.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray, np.ndarray]: A tuple containing:
+            Tuple[np.ndarray[Any, Any], np.ndarray, np.ndarray]: A tuple containing:
                 - x_col: Validated feature data as float array (shape: n_samples)
                 - guidance_data: Validated guidance data (shape: n_samples)
                 - valid_mask: Boolean mask indicating valid (non-missing) pairs (shape: n_samples)
@@ -194,8 +194,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         return x_col, guidance_data_validated, valid_mask
 
     def extract_valid_pairs(
-        self, x_col: np.ndarray, guidance_data: np.ndarray, valid_mask: np.ndarray
-    ) -> tuple[np.ndarray, np.ndarray]:
+        self, x_col: np.ndarray[Any, Any], guidance_data: np.ndarray, valid_mask: np.ndarray
+    ) -> tuple[np.ndarray[Any, Any], np.ndarray]:
         """Extract valid feature-target pairs using the provided mask.
 
         Filters the feature and target data to include only valid (non-missing)
@@ -203,15 +203,15 @@ class SupervisedBinningBase(IntervalBinningBase):
         supervised learning algorithms that cannot handle missing values.
 
         Args:
-            x_col (np.ndarray): Feature column data with potential missing values.
+            x_col (np.ndarray[Any, Any]): Feature column data with potential missing values.
                 Shape should be (n_samples,).
-            guidance_data (np.ndarray): Target/guidance data with potential missing
+            guidance_data (np.ndarray[Any, Any]): Target/guidance data with potential missing
                 values. Shape should be (n_samples,).
-            valid_mask (np.ndarray): Boolean mask indicating which samples have
+            valid_mask (np.ndarray[Any, Any]): Boolean mask indicating which samples have
                 valid (non-missing) feature-target pairs. Shape should be (n_samples,).
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: A tuple containing:
+            Tuple[np.ndarray[Any, Any], np.ndarray]: A tuple containing:
                 - Valid feature data (shape: n_valid_samples)
                 - Valid target data (shape: n_valid_samples)
 
@@ -230,7 +230,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         return x_col[valid_mask], guidance_data[valid_mask]
 
     def require_guidance_data(
-        self, guidance_data: np.ndarray | None, method_name: str = "supervised binning"
+        self, guidance_data: np.ndarray[Any, Any] | None, method_name: str = "supervised binning"
     ) -> None:
         """Ensure guidance data is provided for supervised methods.
 
@@ -240,7 +240,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         binning process.
 
         Args:
-            guidance_data (Optional[np.ndarray]): Guidance data to check for presence.
+            guidance_data (Optional[np.ndarray[Any, Any]]): Guidance data to check for presence.
                 None indicates that no guidance data was provided.
             method_name (str, optional): Name of the calling method used in error
                 messages for better debugging context. Defaults to "supervised binning".
@@ -265,7 +265,7 @@ class SupervisedBinningBase(IntervalBinningBase):
             )
 
     def handle_insufficient_data(
-        self, x_col: np.ndarray, valid_mask: np.ndarray, min_samples: int, col_id: Any = None
+        self, x_col: np.ndarray[Any, Any], valid_mask: np.ndarray, min_samples: int, col_id: Any = None
     ) -> tuple[BinEdges, BinEdges] | None:
         """Handle cases with insufficient valid data for supervised binning.
 
@@ -279,9 +279,9 @@ class SupervisedBinningBase(IntervalBinningBase):
         the data quality issues.
 
         Args:
-            x_col (np.ndarray): Feature column data that may contain missing values.
+            x_col (np.ndarray[Any, Any]): Feature column data that may contain missing values.
                 Used to compute fallback bin boundaries if needed.
-            valid_mask (np.ndarray): Boolean mask indicating which samples have
+            valid_mask (np.ndarray[Any, Any]): Boolean mask indicating which samples have
                 valid feature-target pairs.
             min_samples (int): Minimum number of valid samples required for
                 supervised binning to proceed normally.
@@ -341,7 +341,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         return [min_val, max_val], [(min_val + max_val) / 2]
 
     def create_fallback_bins(
-        self, x_col: np.ndarray, default_range: tuple[float, float] | None = None
+        self, x_col: np.ndarray[Any, Any], default_range: tuple[float, float] | None = None
     ) -> tuple[BinEdges, BinEdges]:
         """Create fallback bins when supervised binning fails.
 
@@ -355,7 +355,7 @@ class SupervisedBinningBase(IntervalBinningBase):
         while indicating that more sophisticated binning was not possible.
 
         Args:
-            x_col (np.ndarray): Feature column data from which to infer the
+            x_col (np.ndarray[Any, Any]): Feature column data from which to infer the
                 appropriate range for fallback bins.
             default_range (Optional[Tuple[float, float]], optional): Explicit
                 range to use for the fallback bins as (min_val, max_val).

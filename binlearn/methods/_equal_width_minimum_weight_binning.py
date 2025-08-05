@@ -141,7 +141,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate equal-width bins with minimum weight constraint for a single column.
 
@@ -150,11 +150,11 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         guidance data. The guidance data provides weights for each data point.
 
         Args:
-            x_col (np.ndarray): Data for binning with shape (n_samples,).
+            x_col (np.ndarray[Any, Any]): Data for binning with shape (n_samples,).
                 May contain NaN values which are excluded from binlearn calculations.
             col_id (Any): Column identifier (name or index) for error reporting
                 and logging purposes.
-            guidance_data (Optional[np.ndarray], optional): Weight values for each
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Weight values for each
                 data point with shape (n_samples,). Must be provided for this binning
                 method. Non-negative weights are expected. Defaults to None.
 
@@ -231,13 +231,13 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals
     def _create_weight_constrained_bins(
-        self, x_data: np.ndarray, weights: np.ndarray, col_id: Any
+        self, x_data: np.ndarray[Any, Any], weights: np.ndarray, col_id: Any
     ) -> tuple[list[float], list[float]]:
         """Create equal-width bins with minimum weight constraint.
 
         Args:
-            x_data (np.ndarray): Valid (non-NaN) data values.
-            weights (np.ndarray): Valid (non-NaN) weight values.
+            x_data (np.ndarray[Any, Any]): Valid (non-NaN) data values.
+            weights (np.ndarray[Any, Any]): Valid (non-NaN) weight values.
             col_id (Any): Column identifier for error reporting.
 
         Returns:
@@ -295,17 +295,17 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             ) from e
 
     def _merge_underweight_bins(
-        self, edges: np.ndarray, bin_weights: np.ndarray, col_id: Any
-    ) -> np.ndarray:
+        self, edges: np.ndarray[Any, Any], bin_weights: np.ndarray, col_id: Any
+    ) -> np.ndarray[Any, Any]:
         """Merge adjacent bins that don't meet minimum weight requirement.
 
         Args:
-            edges (np.ndarray): Initial bin edges.
-            bin_weights (np.ndarray): Weight totals for each initial bin.
+            edges (np.ndarray[Any, Any]): Initial bin edges.
+            bin_weights (np.ndarray[Any, Any]): Weight totals for each initial bin.
             col_id (Any): Column identifier for error reporting.
 
         Returns:
-            np.ndarray: Merged bin edges.
+            np.ndarray[Any, Any]: Merged bin edges.
 
         Raises:
             FittingError: If total weight is insufficient for even one bin.
@@ -338,14 +338,14 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
 
         return np.array(merged_edges)
 
-    def _perform_bin_merging(self, edges: np.ndarray, bin_weights: np.ndarray) -> list[float]:
+    def _perform_bin_merging(self, edges: np.ndarray[Any, Any], bin_weights: np.ndarray) -> list[float]:
         """Perform the actual bin merging logic.
 
         Separated from _merge_underweight_bins to make testing easier.
 
         Args:
-            edges (np.ndarray): Initial bin edges.
-            bin_weights (np.ndarray): Weight totals for each initial bin.
+            edges (np.ndarray[Any, Any]): Initial bin edges.
+            bin_weights (np.ndarray[Any, Any]): Weight totals for each initial bin.
 
         Returns:
             List[float]: Merged bin edges (may have < 2 elements in edge cases).
@@ -400,7 +400,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         """
         return True
 
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
+    def _fit_jointly(self, X: np.ndarray[Any, Any], columns: ColumnList, **fit_params: Any) -> None:
         """Override joint fitting to handle guidance data properly.
 
         Joint fitting doesn't make conceptual sense for weight-constrained binning
@@ -408,7 +408,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         fitting instead.
 
         Args:
-            X (np.ndarray): Input data array.
+            X (np.ndarray[Any, Any]): Input data array.
             columns (ColumnList): Column identifiers.
             **fit_params: Additional parameters including guidance_data.
         """

@@ -141,7 +141,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate isotonic regression-based bins for a single column.
 
@@ -150,10 +150,10 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         the fitted function.
 
         Args:
-            x_col (np.ndarray): Feature data for binning with shape (n_samples,).
+            x_col (np.ndarray[Any, Any]): Feature data for binning with shape (n_samples,).
                 May contain NaN values which will be handled appropriately.
             col_id (Any): Column identifier for error reporting and model storage.
-            guidance_data (Optional[np.ndarray], optional): Target/guidance data
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Target/guidance data
                 for supervised binning. Must be provided for isotonic binning.
 
         Returns:
@@ -216,7 +216,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         return self._create_isotonic_bins(x_clean, y_clean, col_id)
 
     def _create_isotonic_bins(
-        self, x_col: np.ndarray, y_col: np.ndarray, col_id: Any
+        self, x_col: np.ndarray[Any, Any], y_col: np.ndarray, col_id: Any
     ) -> tuple[list[float], list[float]]:
         """Create bins using isotonic regression.
 
@@ -224,8 +224,8 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         identifies optimal cut points based on changes in the fitted function.
 
         Args:
-            x_col (np.ndarray): Clean feature data (no NaN values).
-            y_col (np.ndarray): Clean target data (no NaN values).
+            x_col (np.ndarray[Any, Any]): Clean feature data (no NaN values).
+            y_col (np.ndarray[Any, Any]): Clean target data (no NaN values).
             col_id (Any): Column identifier for model storage.
 
         Returns:
@@ -269,16 +269,16 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         # Create bin edges and representatives
         return self._create_bins_from_cuts(x_sorted, y_fitted, cut_points, col_id)
 
-    def _prepare_target_values(self, y_values: np.ndarray) -> np.ndarray:
+    def _prepare_target_values(self, y_values: np.ndarray[Any, Any]) -> np.ndarray:
         """Prepare target values for isotonic regression.
 
         Converts categorical targets to numeric values and applies bounds if specified.
 
         Args:
-            y_values (np.ndarray): Raw target values.
+            y_values (np.ndarray[Any, Any]): Raw target values.
 
         Returns:
-            np.ndarray: Processed target values suitable for isotonic regression.
+            np.ndarray[Any, Any]: Processed target values suitable for isotonic regression.
         """
         # Handle object/categorical data
         if y_values.dtype == object or not np.issubdtype(y_values.dtype, np.number):
@@ -291,15 +291,15 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
 
         return y_processed
 
-    def _find_cut_points(self, x_sorted: np.ndarray, y_fitted: np.ndarray) -> list[int]:
+    def _find_cut_points(self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray) -> list[int]:
         """Find cut points based on changes in fitted isotonic function.
 
         Identifies locations where the fitted function has significant changes
         that warrant creating new bin boundaries.
 
         Args:
-            x_sorted (np.ndarray): Sorted feature values.
-            y_fitted (np.ndarray): Fitted isotonic regression values.
+            x_sorted (np.ndarray[Any, Any]): Sorted feature values.
+            y_fitted (np.ndarray[Any, Any]): Fitted isotonic regression values.
 
         Returns:
             List[int]: Indices of cut points in the sorted arrays.
@@ -335,16 +335,16 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
 
     def _create_bins_from_cuts(
         self,
-        x_sorted: np.ndarray,
-        y_fitted: np.ndarray,
+        x_sorted: np.ndarray[Any, Any],
+        y_fitted: np.ndarray[Any, Any],
         cut_indices: list[int],
         col_id: Any,
     ) -> tuple[list[float], list[float]]:
         """Create bin edges and representatives from cut points.
 
         Args:
-            x_sorted (np.ndarray): Sorted feature values.
-            y_fitted (np.ndarray): Fitted isotonic regression values.
+            x_sorted (np.ndarray[Any, Any]): Sorted feature values.
+            y_fitted (np.ndarray[Any, Any]): Fitted isotonic regression values.
             cut_indices (List[int]): Indices of cut points.
             col_id (Any): Column identifier for error reporting.
 

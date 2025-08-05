@@ -24,7 +24,7 @@ OptionalColumnList = ColumnList | None
 GuidanceColumns = ColumnList | ColumnId | None
 
 # Array-like data types
-ArrayLike = Any  # Could be np.ndarray, pandas.DataFrame, polars.DataFrame, list, etc.
+ArrayLike = Any  # Could be np.ndarray[Any, Any], pandas.DataFrame, polars.DataFrame, list, etc.
 
 # =============================================================================
 # INTERVAL BINNING TYPES

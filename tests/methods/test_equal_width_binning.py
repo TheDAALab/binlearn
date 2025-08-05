@@ -549,12 +549,12 @@ class TestEqualWidthBinningSklearnIntegration:
 
         # Convert to dense array if sparse
         if sparse is not None and sparse.issparse(result):
-            result = result.toarray()  # type: ignore[attr-defined] # pragma: no cover
+            result = result.toarray()  # pragma: no cover
 
         # All columns should be numeric (ColumnTransformer typically converts to float64)
-        assert np.issubdtype(result[:, 0].dtype, np.number)  # type: ignore[index]
-        assert np.issubdtype(result[:, 1].dtype, np.number)  # type: ignore[index]
-        assert np.issubdtype(result[:, 2].dtype, np.floating)  # type: ignore[index]
+        assert np.issubdtype(result[:, 0].dtype, np.number)
+        assert np.issubdtype(result[:, 1].dtype, np.number)
+        assert np.issubdtype(result[:, 2].dtype, np.floating)
 
     def test_sklearn_get_set_params(self):
         """Test sklearn parameter interface."""
@@ -588,11 +588,7 @@ class TestEqualWidthBinningSklearnIntegration:
             {"feature1": [1.0, 2.0, 3.0, 4.0, 5.0], "feature2": [10.0, 20.0, 30.0, 40.0, 50.0]}
         )
 
-        pipeline = Pipeline(
-            [
-                ("binning", EqualWidthBinning(n_bins=3, preserve_dataframe=True))
-            ]
-        )
+        pipeline = Pipeline([("binning", EqualWidthBinning(n_bins=3, preserve_dataframe=True))])
 
         result = pipeline.fit_transform(df)
 

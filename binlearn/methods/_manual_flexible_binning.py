@@ -152,7 +152,7 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
         )
 
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[FlexibleBinDefs, BinReps]:
         """Return pre-defined flexible bin specifications without calculation.
 
@@ -161,9 +161,9 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
         any data-based calculations.
 
         Args:
-            x_col (np.ndarray): Input data column (ignored in manual binning).
+            x_col (np.ndarray[Any, Any]): Input data column (ignored in manual binning).
             col_id (Any): Column identifier to retrieve pre-defined bin specifications.
-            guidance_data (Optional[np.ndarray], optional): Guidance data (ignored).
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data (ignored).
                 Defaults to None.
 
         Returns:

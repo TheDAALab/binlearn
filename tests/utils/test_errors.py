@@ -124,12 +124,14 @@ class TestValidationMixin:
         """Test validate_array_like with valid data."""
         data = [1, 2, 3, 4]
         result = ValidationMixin.validate_array_like(data, "test")
+        assert result is not None
         np.testing.assert_array_equal(result, np.array([1, 2, 3, 4]))
 
     def test_validate_array_like_numpy_array(self):
         """Test validate_array_like with numpy array."""
         data = np.array([1, 2, 3, 4])
         result = ValidationMixin.validate_array_like(data, "test")
+        assert result is not None
         np.testing.assert_array_equal(result, data)
 
     def test_validate_array_like_conversion_error(self):

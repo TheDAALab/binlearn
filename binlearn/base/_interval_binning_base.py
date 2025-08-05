@@ -270,9 +270,9 @@ class IntervalBinningBase(GeneralBinningBase):
 
     def _fit_per_column(
         self,
-        X: np.ndarray,
+        X: np.ndarray[Any, Any],
         columns: ColumnList,
-        guidance_data: np.ndarray | None = None,
+        guidance_data: np.ndarray[Any, Any] | None = None,
         **fit_params: Any,
     ) -> IntervalBinningBase:
         """Fit bins per column with optional guidance data.
@@ -283,9 +283,9 @@ class IntervalBinningBase(GeneralBinningBase):
         skip the fitting process.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
-            guidance_data (np.ndarray, optional): Optional guidance data that can
+            guidance_data (np.ndarray[Any, Any], optional): Optional guidance data that can
                 influence bin calculation. Defaults to None.
             **fit_params: Additional parameters passed to fitting methods.
 
@@ -316,7 +316,7 @@ class IntervalBinningBase(GeneralBinningBase):
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
     def _calculate_bins_for_columns(
-        self, X: np.ndarray, columns: ColumnList, guidance_data: np.ndarray | None
+        self, X: np.ndarray[Any, Any], columns: ColumnList, guidance_data: np.ndarray | None
     ) -> None:
         """Calculate bins for each column.
 
@@ -325,16 +325,16 @@ class IntervalBinningBase(GeneralBinningBase):
         specifications exist (user specs serve as starting points or validation).
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
-            guidance_data (np.ndarray, optional): Optional guidance data that can
+            guidance_data (np.ndarray[Any, Any], optional): Optional guidance data that can
                 influence bin calculation for each column.
         """
         for i, col in enumerate(columns):
             self._calculate_bins_for_single_column(X, i, col, guidance_data)
 
     def _calculate_bins_for_single_column(
-        self, X: np.ndarray, col_index: int, col: ColumnId, guidance_data: np.ndarray | None
+        self, X: np.ndarray[Any, Any], col_index: int, col: ColumnId, guidance_data: np.ndarray | None
     ) -> None:
         """Calculate bins for a single column.
 
@@ -344,10 +344,10 @@ class IntervalBinningBase(GeneralBinningBase):
         specifications for this column.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             col_index (int): Index of the column in the data array.
             col (ColumnId): Identifier for the column being processed.
-            guidance_data (np.ndarray, optional): Optional guidance data that can
+            guidance_data (np.ndarray[Any, Any], optional): Optional guidance data that can
                 influence bin calculation for this column.
         """
         col_data = X[:, col_index]
@@ -360,7 +360,7 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_edges_[col] = edges
         self.bin_representatives_[col] = reps
 
-    def _validate_column_data(self, col_data: np.ndarray, col: ColumnId, col_index: int) -> None:
+    def _validate_column_data(self, col_data: np.ndarray[Any, Any], col: ColumnId, col_index: int) -> None:
         """Validate column data and issue warnings for all-NaN columns.
 
         Checks if the column contains only NaN values and issues a data quality
@@ -368,7 +368,7 @@ class IntervalBinningBase(GeneralBinningBase):
         in the binning process.
 
         Args:
-            col_data (np.ndarray): Data array for the specific column being validated.
+            col_data (np.ndarray[Any, Any]): Data array for the specific column being validated.
             col (ColumnId): Identifier for the column (name or index).
             col_index (int): Numeric index of the column in the data array.
 
@@ -388,7 +388,7 @@ class IntervalBinningBase(GeneralBinningBase):
             f"Data in {col_ref} contains only NaN values", DataQualityWarning, stacklevel=2
         )
 
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
+    def _fit_jointly(self, X: np.ndarray[Any, Any], columns: ColumnList, **fit_params: Any) -> None:
         """Fit bins jointly across all columns.
 
         Computes bins using all data across all columns simultaneously, creating
@@ -396,7 +396,7 @@ class IntervalBinningBase(GeneralBinningBase):
         consistent binning across features.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
             **fit_params: Additional parameters passed to fitting methods.
 
@@ -490,7 +490,7 @@ class IntervalBinningBase(GeneralBinningBase):
         validate_bins(self.bin_edges_, self.bin_representatives_)
 
     def _calculate_bins_jointly(
-        self, all_data: np.ndarray, columns: ColumnList
+        self, all_data: np.ndarray[Any, Any], columns: ColumnList
     ) -> tuple[BinEdges, BinEdges]:
         """Calculate bins from all flattened data for joint binning.
 
@@ -500,7 +500,7 @@ class IntervalBinningBase(GeneralBinningBase):
         binning strategies.
 
         Args:
-            all_data (np.ndarray): Flattened data array containing all values
+            all_data (np.ndarray[Any, Any]): Flattened data array containing all values
                 from all columns concatenated together.
             columns (ColumnList): List of column identifiers for reference.
 
@@ -515,7 +515,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[BinEdges, BinEdges]:
         """Calculate bin edges and representatives for a column.
 
@@ -525,7 +525,7 @@ class IntervalBinningBase(GeneralBinningBase):
             The data for the column being binned.
         col_id : Any
             The identifier for the column.
-        guidance_data : Optional[np.ndarray], default=None
+        guidance_data : Optional[np.ndarray[Any, Any]], default=None
             Optional guidance data that can influence bin calculation.
 
         Returns
@@ -570,7 +570,7 @@ class IntervalBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
         """Transform columns to bin indices.
 
         Converts continuous values in each column to discrete bin indices using
@@ -578,11 +578,11 @@ class IntervalBinningBase(GeneralBinningBase):
         values (with optional clipping), and maintains consistent indexing.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
 
         Returns:
-            np.ndarray: Array of bin indices with same shape as input, where each
+            np.ndarray[Any, Any]: Array of bin indices with same shape as input, where each
                 value represents the bin index for the corresponding input value.
                 Special values: MISSING_VALUE for NaN, BELOW_RANGE/ABOVE_RANGE
                 for out-of-range values when clipping is disabled.
@@ -615,7 +615,7 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
         """Inverse transform from bin indices to representative values.
 
         Converts bin indices back to continuous values using the fitted bin
@@ -623,11 +623,11 @@ class IntervalBinningBase(GeneralBinningBase):
         out-of-range conditions appropriately.
 
         Args:
-            X (np.ndarray): Array of bin indices with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Array of bin indices with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
 
         Returns:
-            np.ndarray: Array of representative values with same shape as input,
+            np.ndarray[Any, Any]: Array of representative values with same shape as input,
                 where each bin index is replaced by its corresponding representative
                 value. Special values: NaN for missing, -inf for below range,
                 +inf for above range.

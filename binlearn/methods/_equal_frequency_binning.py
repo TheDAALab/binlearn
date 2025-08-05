@@ -121,7 +121,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate equal-frequency bins for a single column or joint binning data.
 
@@ -130,13 +130,13 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         approximately equal numbers of observations in each bin.
 
         Args:
-            x_col (np.ndarray): Data for binning. For per-column fitting, this is
+            x_col (np.ndarray[Any, Any]): Data for binning. For per-column fitting, this is
                 data for a single column with shape (n_samples,). For joint fitting,
                 this is flattened data from all columns. May contain NaN values.
             col_id (Any): Column identifier (name or index) for error reporting
                 and logging purposes. For joint fitting, this is typically the
                 first column identifier.
-            guidance_data (Optional[np.ndarray], optional): Guidance data for
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data for
                 supervised binning. Not used in equal-frequency binning as it's an
                 unsupervised method. Defaults to None.
 
@@ -172,7 +172,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals
     def _create_equal_frequency_bins(
-        self, x_col: np.ndarray, col_id: Any, min_quantile: float, max_quantile: float, n_bins: int
+        self, x_col: np.ndarray[Any, Any], col_id: Any, min_quantile: float, max_quantile: float, n_bins: int
     ) -> tuple[list[float], list[float]]:
         """Create equal-frequency bins using quantiles.
 
@@ -180,7 +180,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         using quantiles to ensure approximately equal numbers of observations in each bin.
 
         Args:
-            x_col (np.ndarray): Data to bin. May contain NaN values.
+            x_col (np.ndarray[Any, Any]): Data to bin. May contain NaN values.
             col_id (Any): Column identifier for error reporting.
             min_quantile (float): Minimum quantile (0.0 to 1.0).
             max_quantile (float): Maximum quantile (0.0 to 1.0).

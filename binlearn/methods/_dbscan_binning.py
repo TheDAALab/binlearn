@@ -131,7 +131,7 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate DBSCAN clustering-based bins for a single column or joint binning data.
 
@@ -140,13 +140,13 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
         to find natural density-based groupings and creates bin edges at cluster boundaries.
 
         Args:
-            x_col (np.ndarray): Data for binning. For per-column fitting, this is
+            x_col (np.ndarray[Any, Any]): Data for binning. For per-column fitting, this is
                 data for a single column with shape (n_samples,). For joint fitting,
                 this is flattened data from all columns. May contain NaN values.
             col_id (Any): Column identifier (name or index) for error reporting
                 and logging purposes. For joint fitting, this is typically the
                 first column identifier.
-            guidance_data (Optional[np.ndarray], optional): Guidance data for
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data for
                 supervised binning. Not used in DBSCAN binning as it's an
                 unsupervised method. Defaults to None.
 
@@ -170,7 +170,7 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals
     def _create_dbscan_bins(
-        self, x_col: np.ndarray, col_id: Any
+        self, x_col: np.ndarray[Any, Any], col_id: Any
     ) -> tuple[list[float], list[float]]:
         """Create DBSCAN clustering-based bins.
 
@@ -179,7 +179,7 @@ class DBSCANBinning(ReprMixin, IntervalBinningBase):
         at the cluster boundaries.
 
         Args:
-            x_col (np.ndarray): Data to bin. May contain NaN values.
+            x_col (np.ndarray[Any, Any]): Data to bin. May contain NaN values.
             col_id (Any): Column identifier for error reporting.
 
         Returns:

@@ -124,7 +124,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         )
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate Gaussian Mixture Model clustering-based bins for a single column or joint binning data.
 
@@ -134,13 +134,13 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         between mixture components.
 
         Args:
-            x_col (np.ndarray): Data for binning. For per-column fitting, this is
+            x_col (np.ndarray[Any, Any]): Data for binning. For per-column fitting, this is
                 data for a single column with shape (n_samples,). For joint fitting,
                 this is flattened data from all columns. May contain NaN values.
             col_id (Any): Column identifier (name or index) for error reporting
                 and logging purposes. For joint fitting, this is typically the
                 first column identifier.
-            guidance_data (Optional[np.ndarray], optional): Guidance data for
+            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data for
                 supervised binning. Not used in GMM binning as it's an
                 unsupervised method. Defaults to None.
 
@@ -168,7 +168,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
 
     # pylint: disable=too-many-locals
     def _create_gmm_bins(
-        self, x_col: np.ndarray, col_id: Any, n_components: int
+        self, x_col: np.ndarray[Any, Any], col_id: Any, n_components: int
     ) -> tuple[list[float], list[float]]:
         """Create Gaussian Mixture Model clustering-based bins.
 
@@ -177,7 +177,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         at the decision boundaries between mixture components.
 
         Args:
-            x_col (np.ndarray): Data to bin. May contain NaN values.
+            x_col (np.ndarray[Any, Any]): Data to bin. May contain NaN values.
             col_id (Any): Column identifier for error reporting.
             n_components (int): Number of mixture components to create. Must be positive.
 

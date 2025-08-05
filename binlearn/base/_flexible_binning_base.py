@@ -284,9 +284,9 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     def _fit_per_column(
         self,
-        X: np.ndarray,
+        X: np.ndarray[Any, Any],
         columns: ColumnList,
-        guidance_data: np.ndarray | None = None,
+        guidance_data: np.ndarray[Any, Any] | None = None,
         **fit_params: Any,
     ) -> FlexibleBinningBase:
         """Fit flexible bins per column with optional guidance data.
@@ -297,9 +297,9 @@ class FlexibleBinningBase(GeneralBinningBase):
         as parameters or starting points but do not skip the fitting process.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
-            guidance_data (np.ndarray, optional): Optional guidance data that can
+            guidance_data (np.ndarray[Any, Any], optional): Optional guidance data that can
                 influence bin calculation. Defaults to None.
             **fit_params: Additional parameters passed to fitting methods.
 
@@ -331,7 +331,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         except Exception as e:
             raise ValueError(f"Failed to fit per-column bins: {str(e)}") from e
 
-    def _fit_jointly(self, X: np.ndarray, columns: ColumnList, **fit_params: Any) -> None:
+    def _fit_jointly(self, X: np.ndarray[Any, Any], columns: ColumnList, **fit_params: Any) -> None:
         """Fit flexible bins jointly across all columns.
 
         Computes bins using all data across all columns simultaneously, creating
@@ -339,7 +339,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         want consistent binning across features with mixed data types.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
             **fit_params: Additional parameters passed to fitting methods.
 
@@ -388,7 +388,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         validate_flexible_bins(self.bin_spec_, self.bin_representatives_)
 
     def _calculate_flexible_bins_jointly(
-        self, all_data: np.ndarray, columns: ColumnList
+        self, all_data: np.ndarray[Any, Any], columns: ColumnList
     ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bins from all flattened data for joint binning.
 
@@ -398,7 +398,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         joint binning strategies that consider all data simultaneously.
 
         Args:
-            all_data (np.ndarray): Flattened data array containing all values
+            all_data (np.ndarray[Any, Any]): Flattened data array containing all values
                 from all columns concatenated together.
             columns (ColumnList): List of column identifiers for reference.
 
@@ -470,7 +470,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
     @abstractmethod
     def _calculate_flexible_bins(
-        self, x_col: np.ndarray, col_id: Any, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: Any, guidance_data: np.ndarray | None = None
     ) -> tuple[FlexibleBinDefs, BinEdges]:
         """Calculate flexible bin definitions and representatives for a column.
 
@@ -480,7 +480,7 @@ class FlexibleBinningBase(GeneralBinningBase):
             Data for a single column.
         col_id : Any
             Column identifier.
-        guidance_data : Optional[np.ndarray], default=None
+        guidance_data : Optional[np.ndarray[Any, Any]], default=None
             Optional guidance data that can influence bin calculation.
 
         Returns
@@ -526,7 +526,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
 
-    def _transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
+    def _transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
         """Transform columns to bin indices using flexible bins.
 
         Converts values in each column to discrete bin indices using the fitted
@@ -534,11 +534,11 @@ class FlexibleBinningBase(GeneralBinningBase):
         and interval bins (range matches), as well as missing values.
 
         Args:
-            X (np.ndarray): Input data array with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Input data array with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
 
         Returns:
-            np.ndarray: Array of bin indices with same shape as input, where each
+            np.ndarray[Any, Any]: Array of bin indices with same shape as input, where each
                 value represents the bin index for the corresponding input value.
                 MISSING_VALUE constant is used for values that don't match any bin.
         """
@@ -559,7 +559,7 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         return result
 
-    def _inverse_transform_columns(self, X: np.ndarray, columns: ColumnList) -> np.ndarray:
+    def _inverse_transform_columns(self, X: np.ndarray[Any, Any], columns: ColumnList) -> np.ndarray:
         """Transform bin indices back to representative values for flexible bins.
 
         Converts bin indices back to continuous representative values using the
@@ -567,11 +567,11 @@ class FlexibleBinningBase(GeneralBinningBase):
         converting them back to NaN.
 
         Args:
-            X (np.ndarray): Array of bin indices with shape (n_samples, n_features).
+            X (np.ndarray[Any, Any]): Array of bin indices with shape (n_samples, n_features).
             columns (ColumnList): List of column identifiers corresponding to X columns.
 
         Returns:
-            np.ndarray: Array of representative values with same shape as input,
+            np.ndarray[Any, Any]: Array of representative values with same shape as input,
                 where each bin index is replaced by its corresponding representative
                 value. Missing values become NaN.
         """

@@ -12,3 +12,6 @@ except ImportError:  # pragma: no cover
     # pylint: disable=invalid-name
     pd = None  # pragma: no cover
     PANDAS_AVAILABLE = False  # pragma: no cover
+
+# Explicit exports for mypy
+__all__ = ["pd", "PANDAS_AVAILABLE"]

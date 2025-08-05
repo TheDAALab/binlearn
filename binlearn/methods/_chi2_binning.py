@@ -195,7 +195,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         # validate guidance_columns here
 
     def _calculate_bins(
-        self, x_col: np.ndarray, col_id: ColumnId, guidance_data: np.ndarray | None = None
+        self, x_col: np.ndarray[Any, Any], col_id: ColumnId, guidance_data: np.ndarray | None = None
     ) -> tuple[list[float], list[float]]:
         """Calculate chi-square based bins for a single column.
 
@@ -206,10 +206,10 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         the significance level.
 
         Args:
-            x_col (np.ndarray): Feature data for binning with shape (n_samples,).
+            x_col (np.ndarray[Any, Any]): Feature data for binning with shape (n_samples,).
                 May contain NaN values which are handled appropriately.
             col_id (ColumnId): Column identifier for error reporting and logging.
-            guidance_data (np.ndarray, optional): Target data for supervised
+            guidance_data (np.ndarray[Any, Any], optional): Target data for supervised
                 binning with shape (n_samples,). Required for chi-square binning.
 
         Returns:
@@ -286,7 +286,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             ) from e
 
     def _merge_bins_chi2(
-        self, x_data: np.ndarray, y_data: np.ndarray, initial_edges: np.ndarray
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, initial_edges: np.ndarray
     ) -> list[float]:
         """Merge bins based on chi-square statistic.
 
@@ -295,9 +295,9 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         significantly different (p-value > alpha).
 
         Args:
-            x_data (np.ndarray): Clean feature data without missing values.
-            y_data (np.ndarray): Clean target data without missing values.
-            initial_edges (np.ndarray): Initial bin edges from equal-width discretization.
+            x_data (np.ndarray[Any, Any]): Clean feature data without missing values.
+            y_data (np.ndarray[Any, Any]): Clean target data without missing values.
+            initial_edges (np.ndarray[Any, Any]): Initial bin edges from equal-width discretization.
 
         Returns:
             list[float]: Final bin edges after merging.
@@ -325,7 +325,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return current_edges
 
     def _find_best_merge_pair(
-        self, x_data: np.ndarray, y_data: np.ndarray, edges: list[float]
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, edges: list[float]
     ) -> int | None:
         """Find the best pair of adjacent intervals to merge.
 
@@ -333,8 +333,8 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         chi-square statistic (least significant difference).
 
         Args:
-            x_data (np.ndarray): Feature data.
-            y_data (np.ndarray): Target data.
+            x_data (np.ndarray[Any, Any]): Feature data.
+            y_data (np.ndarray[Any, Any]): Target data.
             edges (list[float]): Current bin edges.
 
         Returns:
@@ -361,7 +361,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return best_idx
 
     def _calculate_chi2_for_pair(
-        self, x_data: np.ndarray, y_data: np.ndarray, edges: list[float], pair_idx: int
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, edges: list[float], pair_idx: int
     ) -> tuple[float, float]:
         """Calculate chi-square statistic for a pair of adjacent intervals.
 
@@ -369,8 +369,8 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         between the combined interval and the target variable.
 
         Args:
-            x_data (np.ndarray): Feature data.
-            y_data (np.ndarray): Target data.
+            x_data (np.ndarray[Any, Any]): Feature data.
+            y_data (np.ndarray[Any, Any]): Target data.
             edges (list[float]): Current bin edges.
             pair_idx (int): Index of the left interval in the pair.
 
@@ -435,11 +435,11 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             # Handle edge cases where chi2 calculation fails
             return 0.0, 1.0
 
-    def _create_edges_from_unique_values(self, unique_values: np.ndarray) -> list[float]:
+    def _create_edges_from_unique_values(self, unique_values: np.ndarray[Any, Any]) -> list[float]:
         """Create bin edges from unique values when there aren't enough values.
 
         Args:
-            unique_values (np.ndarray): Sorted unique values from the feature.
+            unique_values (np.ndarray[Any, Any]): Sorted unique values from the feature.
 
         Returns:
             list[float]: Bin edges that separate the unique values.
@@ -473,7 +473,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
             centers.append(center)
         return centers
 
-    def _extract_guidance_column(self, guidance_data_validated: np.ndarray) -> np.ndarray:
+    def _extract_guidance_column(self, guidance_data_validated: np.ndarray[Any, Any]) -> np.ndarray:
         """Extract guidance column from validated guidance data.
 
         Args:
@@ -508,7 +508,7 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
         return None
 
     def _should_stop_merging_for_significance(
-        self, x_data: np.ndarray, y_data: np.ndarray, current_edges: list[float], best_pair_idx: int
+        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray, current_edges: list[float], best_pair_idx: int
     ) -> bool:
         """Check if merging should stop based on significance when at max_bins.
 
