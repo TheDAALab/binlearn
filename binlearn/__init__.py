@@ -114,6 +114,13 @@ from .utils.errors import (
     ValidationError,
 )
 
+# Parameter conversion utilities
+from .utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    resolve_string_parameter,
+    validate_numeric_parameter,
+)
+
 # Sklearn utilities
 from .utils.sklearn_integration import SklearnCompatibilityMixin
 
@@ -190,6 +197,10 @@ __all__ = [
     "validate_bins",
     "default_representatives",
     "create_bin_masks",
+    # Parameter conversion utilities
+    "resolve_n_bins_parameter",
+    "resolve_string_parameter",
+    "validate_numeric_parameter",
     # Concrete methods
     "Chi2Binning",
     "EqualFrequencyBinning",

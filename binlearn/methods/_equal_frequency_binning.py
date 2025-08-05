@@ -16,6 +16,11 @@ import numpy as np
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError
+from ..utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+)
 from ..utils.types import BinEdgesDict
 
 
@@ -52,7 +57,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        n_bins: int = 10,
+        n_bins: int | str = 10,
         quantile_range: tuple[float, float] | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
@@ -68,8 +73,15 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         ensures balanced bin populations but may result in unequal bin widths.
 
         Args:
-            n_bins (int, optional): Number of bins to create for each feature.
-                Must be a positive integer. Defaults to 10.
+            n_bins (Union[int, str], optional): Number of bins to create for each feature.
+                Can be an integer or string specification:
+                - int: Direct specification (e.g., 10)
+                - "sqrt": Square root of number of samples
+                - "log": Natural logarithm of number of samples
+                - "log2": Base-2 logarithm of number of samples
+                - "log10": Base-10 logarithm of number of samples
+                - "sturges": Sturges' rule (1 + log2(n_samples))
+                Defaults to 10.
             quantile_range (Optional[Tuple[float, float]], optional): Custom quantile
                 range for binning as (min_quantile, max_quantile). Values should be
                 between 0 and 1. If None, uses the full data range (0, 1).
@@ -152,6 +164,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         Raises:
             ValueError: If n_bins is less than 1 or if the data contains insufficient
                 non-NaN values for quantile calculation.
+            ConfigurationError: If string n_bins specification cannot be resolved.
 
         Note:
             - For per-column fitting: uses column-specific quantiles
@@ -159,9 +172,14 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
             - Handles all-NaN data by creating a default [0, 1] range
             - Guidance data is ignored as equal-frequency binning is unsupervised
             - May create fewer than n_bins if data has many duplicate values
+            - String n_bins specifications are resolved using data shape
         """
-        if self.n_bins < 1:
-            raise ValueError(f"n_bins must be >= 1, got {self.n_bins}")
+        # Handle integer n_bins validation first (for backward compatibility with tests)
+        validate_bin_number_for_calculation(self.n_bins, param_name="n_bins")
+
+        resolved_n_bins = resolve_n_bins_parameter(
+            self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
+        )
 
         # Get quantile range for this data
         if self.quantile_range is not None:
@@ -170,7 +188,7 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
             min_quantile, max_quantile = 0.0, 1.0
 
         return self._create_equal_frequency_bins(
-            x_col, col_id, min_quantile, max_quantile, self.n_bins
+            x_col, col_id, min_quantile, max_quantile, resolved_n_bins
         )
 
     # pylint: disable=too-many-locals
@@ -297,12 +315,8 @@ class EqualFrequencyBinning(ReprMixin, IntervalBinningBase):
         # Call parent validation first (handles bin edges and representatives)
         super()._validate_params()
 
-        # Validate n_bins
-        if not isinstance(self.n_bins, int) or self.n_bins < 1:
-            raise ConfigurationError(
-                "n_bins must be a positive integer",
-                suggestions=["Set n_bins to a positive integer (e.g., n_bins=10)"],
-            )
+        # Validate n_bins using centralized utility
+        validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
         # Validate quantile_range if provided
         if self.quantile_range is not None:

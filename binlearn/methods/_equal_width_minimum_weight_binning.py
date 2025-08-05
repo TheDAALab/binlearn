@@ -16,6 +16,11 @@ import numpy as np
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError, DataQualityWarning, FittingError
+from ..utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+)
 from ..utils.types import BinEdgesDict, ColumnList, GuidanceColumns
 
 
@@ -58,7 +63,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        n_bins: int = 10,
+        n_bins: int | str = 10,
         minimum_weight: float = 1.0,
         bin_range: tuple[float, float] | None = None,
         clip: bool | None = None,
@@ -76,7 +81,16 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         least the specified minimum total weight from the guidance column.
 
         Args:
-            n_bins (int, optional): Initial number of bins to create for each feature.
+            n_bins (Union[int, str], optional): Initial number of bins to create for each feature.
+                Can be an integer or string specification:
+                - int: Direct specification (e.g., 10)
+                - "sqrt": Square root of number of samples
+                - "log": Natural logarithm of number of samples
+                - "log2": Base-2 logarithm of number of samples
+                - "log10": Base-10 logarithm of number of samples
+                - "sturges": Sturges' rule (1 + log2(n_samples))
+                The algorithm may reduce this number to satisfy weight constraints.
+                Defaults to 10.
                 Must be a positive integer. The actual number of bins may be lower
                 due to minimum weight constraints. Defaults to 10.
             minimum_weight (float, optional): Minimum total weight required per bin
@@ -171,6 +185,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             ValueError: If n_bins <= 0, if guidance_data is None, if guidance_data
                 contains negative values, or if data is insufficient for binning.
             FittingError: If no valid bins can be created due to weight constraints.
+            ConfigurationError: If string n_bins specification cannot be resolved.
             DataQualityWarning: If guidance_data contains NaN values or if all
                 weights are zero.
 
@@ -180,9 +195,16 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             >>> weights = np.array([0.5, 0.5, 0.5, 0.5, 2.0, 2.0, 0.5, 0.5, 2.0, 2.0])
             >>> edges, reps = binner._calculate_bins(data, 0, weights)
         """
+        # Handle integer n_bins validation first (for backward compatibility with tests)
+        validate_bin_number_for_calculation(self.n_bins, param_name="n_bins")
+
+        resolved_n_bins = resolve_n_bins_parameter(
+            self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
+        )
+
         # Validate inputs
-        if self.n_bins <= 0:
-            raise ValueError("n_bins must be >= 1")
+        if resolved_n_bins <= 0:
+            raise ValueError("resolved n_bins must be >= 1")
 
         if guidance_data is None:
             raise ValueError(
@@ -230,11 +252,15 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
                 f"Need at least 2 values, got {len(x_valid)}"
             )
 
-        return self._create_weight_constrained_bins(x_valid, weights_valid, col_id)
+        return self._create_weight_constrained_bins(x_valid, weights_valid, col_id, resolved_n_bins)
 
     # pylint: disable=too-many-locals
     def _create_weight_constrained_bins(
-        self, x_data: np.ndarray[Any, Any], weights: np.ndarray[Any, Any], col_id: Any
+        self,
+        x_data: np.ndarray[Any, Any],
+        weights: np.ndarray[Any, Any],
+        col_id: Any,
+        resolved_n_bins: int,
     ) -> tuple[list[float], list[float]]:
         """Create equal-width bins with minimum weight constraint.
 
@@ -242,6 +268,7 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
             x_data (np.ndarray[Any, Any]): Valid (non-NaN) data values.
             weights (np.ndarray[Any, Any]): Valid (non-NaN) weight values.
             col_id (Any): Column identifier for error reporting.
+            resolved_n_bins (int): Resolved number of bins to create.
 
         Returns:
             Tuple[List[float], List[float]]: Bin edges and representatives.
@@ -265,17 +292,17 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
                 return bin_edges, bin_representatives
 
             # Create initial equal-width bins
-            initial_edges = np.linspace(data_min, data_max, self.n_bins + 1)
+            initial_edges = np.linspace(data_min, data_max, resolved_n_bins + 1)
 
             # Assign data points to initial bins and calculate weights per bin
             bin_indices = np.digitize(x_data, initial_edges) - 1
 
             # Handle edge case: values equal to data_max get assigned to bin n_bins
-            bin_indices = np.clip(bin_indices, 0, self.n_bins - 1)
+            bin_indices = np.clip(bin_indices, 0, resolved_n_bins - 1)
 
             # Calculate total weight in each bin
-            bin_weights = np.zeros(self.n_bins)
-            for i in range(self.n_bins):
+            bin_weights = np.zeros(resolved_n_bins)
+            for i in range(resolved_n_bins):
                 mask = bin_indices == i
                 if np.any(mask):
                     bin_weights[i] = np.sum(weights[mask])
@@ -377,9 +404,8 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         """
         super()._validate_params()
 
-        # Validate n_bins
-        if not isinstance(self.n_bins, int) or self.n_bins <= 0:
-            raise ConfigurationError("n_bins must be a positive integer")
+        # Validate n_bins using centralized utility
+        validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
         # Validate minimum_weight
         if not isinstance(self.minimum_weight, int | float) or self.minimum_weight <= 0:

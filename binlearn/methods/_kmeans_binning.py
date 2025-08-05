@@ -16,6 +16,11 @@ import numpy as np
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError
+from ..utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+)
 from ..utils.types import BinEdgesDict
 
 
@@ -53,7 +58,7 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        n_bins: int = 10,
+        n_bins: int | str = 10,
         random_state: int | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
@@ -69,8 +74,15 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         at the midpoints between adjacent cluster centroids.
 
         Args:
-            n_bins (int, optional): Number of bins (clusters) to create for each feature.
-                Must be a positive integer. Defaults to 10.
+            n_bins (Union[int, str], optional): Number of bins (clusters) to create
+                for each feature. Can be an integer or string specification:
+                - int: Direct specification (e.g., 10)
+                - "sqrt": Square root of number of samples
+                - "log": Natural logarithm of number of samples
+                - "log2": Base-2 logarithm of number of samples
+                - "log10": Base-10 logarithm of number of samples
+                - "sturges": Sturges' rule (1 + log2(n_samples))
+                Defaults to 10.
             random_state (Optional[int], optional): Random seed for reproducible
                 K-means clustering results. If None, clustering may produce
                 different results on repeated runs. Defaults to None.
@@ -128,11 +140,12 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         col_id: Any,
         guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
-        """Calculate K-means clustering-based bins for a single column or joint binning data.
+        """Calculate K-means bins for a single column or joint binning data.
 
         Computes bin edges and representatives for either a single feature (per-column
         fitting) or from all flattened data (joint fitting). Uses K-means clustering
-        to find natural groupings and creates bin edges at midpoints between centroids.
+        to find natural groupings in the data and creates bin edges at the midpoints
+        between adjacent cluster centroids.
 
         Args:
             x_col (np.ndarray[Any, Any]): Data for binning. For per-column fitting, this is
@@ -154,6 +167,7 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         Raises:
             ValueError: If n_bins is less than 1 or if the data contains insufficient
                 non-NaN values for clustering.
+            ConfigurationError: If string n_bins specification cannot be resolved.
 
         Note:
             - For per-column fitting: uses column-specific clustering
@@ -161,11 +175,16 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
             - Handles all-NaN data by creating a default [0, 1] range
             - Guidance data is ignored as K-means binning is unsupervised
             - May create fewer than n_bins if data has insufficient unique values
+            - String n_bins specifications are resolved using data shape
         """
-        if self.n_bins < 1:
-            raise ValueError(f"n_bins must be >= 1, got {self.n_bins}")
+        # Handle integer n_bins validation first (for backward compatibility with tests)
+        validate_bin_number_for_calculation(self.n_bins, param_name="n_bins")
 
-        return self._create_kmeans_bins(x_col, col_id, self.n_bins)
+        resolved_n_bins = resolve_n_bins_parameter(
+            self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
+        )
+
+        return self._create_kmeans_bins(x_col, col_id, resolved_n_bins)
 
     # pylint: disable=too-many-locals
     def _create_kmeans_bins(
@@ -322,12 +341,8 @@ class KMeansBinning(ReprMixin, IntervalBinningBase):
         # Call parent validation first (handles bin edges and representatives)
         super()._validate_params()
 
-        # Validate n_bins
-        if not isinstance(self.n_bins, int) or self.n_bins < 1:
-            raise ConfigurationError(
-                "n_bins must be a positive integer",
-                suggestions=["Set n_bins to a positive integer (e.g., n_bins=10)"],
-            )
+        # Validate n_bins using centralized utility
+        validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
         # Validate random_state if provided
         if self.random_state is not None:

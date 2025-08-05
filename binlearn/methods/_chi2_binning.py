@@ -12,7 +12,7 @@ Classes:
     Chi2Binning: Main transformer for chi-square binning operations.
 """
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from scipy.stats import chi2_contingency
@@ -435,8 +435,8 @@ class Chi2Binning(ReprMixin, SupervisedBinningBase):
 
         # Calculate chi-square statistic
         try:
-            chi2_val, p_val, _, _ = chi2_contingency(contingency_table)
-            return float(chi2_val), float(p_val)
+            chi2_stat, p_value, _, _ = chi2_contingency(contingency_table)
+            return float(cast(float, chi2_stat)), float(cast(float, p_value))
         except ValueError:
             # Handle edge cases where chi2 calculation fails
             return 0.0, 1.0

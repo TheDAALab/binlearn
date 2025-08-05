@@ -530,3 +530,55 @@ class TestGaussianMixtureBinningFitGetParamsWorkflow:
         current_params = gmb.get_params()
         for key, value in original_params.items():
             assert current_params[key] == value
+
+    def test_string_n_components_parameter_support(self):
+        """Test support for string n_components parameters like 'sqrt', 'log', etc."""
+        X = np.random.rand(100, 2) * 100
+
+        # Test sqrt specification
+        gmb_sqrt = GaussianMixtureBinning(n_components="sqrt")
+        result_sqrt = gmb_sqrt.fit_transform(X)
+        assert result_sqrt is not None
+
+        # Test log specification
+        gmb_log = GaussianMixtureBinning(n_components="log")
+        result_log = gmb_log.fit_transform(X)
+        assert result_log is not None
+
+        # Test case insensitive
+        gmb_upper = GaussianMixtureBinning(n_components="SQRT")
+        result_upper = gmb_upper.fit_transform(X)
+        assert result_upper is not None
+
+    def test_edge_case_validation_paths(self):
+        """Test specific validation edge cases for coverage."""
+        # Test that normal operation works
+        X = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]]).T
+        gmb = GaussianMixtureBinning(n_components=2)
+        result = gmb.fit_transform(X)
+        assert result is not None
+
+    def test_resolved_n_components_validation_edge_case(self):
+        """Test the resolved_n_components < 1 validation path (line 189)."""
+        from unittest.mock import patch
+
+        X = np.array([1.0, 2.0, 3.0, 4.0, 5.0])  # 1D array
+
+        gmb = GaussianMixtureBinning(n_components=2)
+
+        # Mock the functions as imported in the gaussian_mixture_binning module
+        with (
+            patch(
+                "binlearn.methods._gaussian_mixture_binning.validate_bin_number_for_calculation"
+            ) as mock_validate,
+            patch(
+                "binlearn.methods._gaussian_mixture_binning.resolve_n_bins_parameter",
+                return_value=0,
+            ),
+        ):
+
+            # Make validate_bin_number_for_calculation do nothing (just pass)
+            mock_validate.return_value = None
+
+            with pytest.raises(ValueError, match="n_components must be >= 1, got 0"):
+                gmb._calculate_bins(X, col_id="test_col")

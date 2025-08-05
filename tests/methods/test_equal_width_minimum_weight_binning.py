@@ -593,3 +593,59 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         X_binned = ewmwb.fit_transform(X, guidance_data=weights)
         assert X_binned.shape == (2, 1)
         assert np.all(X_binned >= 0)
+
+    def test_string_n_bins_parameter_support(self):
+        """Test support for string n_bins parameters like 'sqrt', 'log', etc."""
+        X = np.random.rand(100, 2) * 100
+        guidance = np.random.rand(100) * 10  # Random weights
+
+        # Test sqrt specification
+        ewmwb_sqrt = EqualWidthMinimumWeightBinning(n_bins="sqrt", minimum_weight=1.0)
+        result_sqrt = ewmwb_sqrt.fit_transform(X, guidance_data=guidance)
+        assert result_sqrt is not None
+
+        # Test log specification
+        ewmwb_log = EqualWidthMinimumWeightBinning(n_bins="log", minimum_weight=1.0)
+        result_log = ewmwb_log.fit_transform(X, guidance_data=guidance)
+        assert result_log is not None
+
+        # Test case insensitive
+        ewmwb_upper = EqualWidthMinimumWeightBinning(n_bins="SQRT", minimum_weight=1.0)
+        result_upper = ewmwb_upper.fit_transform(X, guidance_data=guidance)
+        assert result_upper is not None
+
+    def test_guidance_data_none_validation(self):
+        """Test that guidance_data=None raises appropriate error."""
+        X = np.array([[1.0, 2.0, 3.0, 4.0]]).T
+
+        ewmwb = EqualWidthMinimumWeightBinning(n_bins=2, minimum_weight=1.0)
+
+        # This should raise an error because guidance_data is None
+        with pytest.raises(ValueError, match="requires guidance_data"):
+            ewmwb._calculate_bins(X, col_id="test_col", guidance_data=None)
+
+    def test_resolved_n_bins_validation_edge_case(self):
+        """Test the resolved_n_bins <= 0 validation path (line 207)."""
+        from unittest.mock import patch
+
+        X = np.array([1.0, 2.0, 3.0, 4.0])  # 1D array
+        guidance = np.array([1.0, 1.0, 1.0, 1.0])  # 1D array same length
+
+        ewmwb = EqualWidthMinimumWeightBinning(n_bins=2, minimum_weight=1.0)
+
+        # Mock the functions as imported in the equal_width_minimum_weight_binning module
+        with (
+            patch(
+                "binlearn.methods._equal_width_minimum_weight_binning.validate_bin_number_for_calculation"
+            ) as mock_validate,
+            patch(
+                "binlearn.methods._equal_width_minimum_weight_binning.resolve_n_bins_parameter",
+                return_value=0,
+            ),
+        ):
+
+            # Make validate_bin_number_for_calculation do nothing (just pass)
+            mock_validate.return_value = None
+
+            with pytest.raises(ValueError, match="resolved n_bins must be >= 1"):
+                ewmwb._calculate_bins(X, col_id="test_col", guidance_data=guidance)

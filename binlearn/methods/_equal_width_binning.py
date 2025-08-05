@@ -15,6 +15,11 @@ import numpy as np
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError
+from ..utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+)
 from ..utils.types import BinEdgesDict
 
 
@@ -51,7 +56,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        n_bins: int = 10,
+        n_bins: int | str = 10,
         bin_range: tuple[float, float] | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
@@ -67,8 +72,15 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         strategies where each bin spans the same numeric range.
 
         Args:
-            n_bins (int, optional): Number of bins to create for each feature.
-                Must be a positive integer. Defaults to 10.
+            n_bins (Union[int, str], optional): Number of bins to create for each feature.
+                Can be an integer or string specification:
+                - int: Direct specification (e.g., 10)
+                - "sqrt": Square root of number of samples
+                - "log": Natural logarithm of number of samples
+                - "log2": Base-2 logarithm of number of samples
+                - "log10": Base-10 logarithm of number of samples
+                - "sturges": Sturges' rule (1 + log2(n_samples))
+                Defaults to 10.
             bin_range (Optional[Tuple[float, float]], optional): Custom range for
                 binning as (min, max). If None, uses the actual data range.
                 Useful for ensuring consistent binning across datasets. Defaults to None.
@@ -90,12 +102,15 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             **kwargs: Additional arguments passed to parent IntervalBinningBase.
 
         Raises:
-            ConfigurationError: If n_bins is not a positive integer or if bin_range
-                is invalid (not a tuple or min >= max).
+            ConfigurationError: If n_bins is not a positive integer or valid string,
+                or if bin_range is invalid (not a tuple or min >= max).
 
         Example:
             >>> # Basic usage with default parameters
             >>> binner = EqualWidthBinning(n_bins=5)
+
+            >>> # String specification for adaptive binning
+            >>> binner = EqualWidthBinning(n_bins="sqrt")
 
             >>> # Custom range for consistent binning
             >>> binner = EqualWidthBinning(n_bins=10, bin_range=(0, 100))
@@ -150,15 +165,21 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         Raises:
             ValueError: If n_bins is less than 1 or if the data contains only
                 infinite values making binning impossible.
+            ConfigurationError: If string n_bins specification cannot be resolved.
 
         Note:
             - For per-column fitting: uses column-specific data range when bin_range is None
             - For joint fitting: uses global range from all flattened data
             - Handles all-NaN data by creating a default [0, 1] range
             - Guidance data is ignored as equal-width binning is unsupervised
+            - String n_bins specifications are resolved using data shape
         """
-        if self.n_bins < 1:
-            raise ValueError(f"n_bins must be >= 1, got {self.n_bins}")
+        # Handle integer n_bins validation first (for backward compatibility with tests)
+        validate_bin_number_for_calculation(self.n_bins, param_name="n_bins")
+
+        resolved_n_bins = resolve_n_bins_parameter(
+            self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
+        )
 
         # Get range for this data
         if self.bin_range is not None:
@@ -167,7 +188,7 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
             # For both per-column and joint fitting, use the same range calculation
             min_val, max_val = self._get_data_range(x_col, col_id)
 
-        return self._create_equal_width_bins(min_val, max_val, self.n_bins)
+        return self._create_equal_width_bins(min_val, max_val, resolved_n_bins)
 
     def _get_data_range(self, x_col: np.ndarray[Any, Any], col_id: Any) -> tuple[float, float]:
         """Get the data range with robust handling of edge cases.
@@ -288,12 +309,8 @@ class EqualWidthBinning(ReprMixin, IntervalBinningBase):
         # Call parent validation first (handles bin edges and representatives)
         super()._validate_params()
 
-        # Validate n_bins
-        if not isinstance(self.n_bins, int) or self.n_bins < 1:
-            raise ConfigurationError(
-                "n_bins must be a positive integer",
-                suggestions=["Set n_bins to a positive integer (e.g., n_bins=10)"],
-            )
+        # Validate n_bins using centralized utility
+        validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
         # Validate bin_range if provided
         if self.bin_range is not None:

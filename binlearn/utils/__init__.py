@@ -49,6 +49,15 @@ from .inspection import (
     safe_get_constructor_info,
 )
 
+# Parameter conversion utilities
+from .parameter_conversion import (
+    resolve_n_bins_parameter,
+    resolve_string_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+    validate_numeric_parameter,
+)
+
 # Import sklearn integration utilities
 from .sklearn_integration import SklearnCompatibilityMixin
 
@@ -150,4 +159,8 @@ __all__ = [
     "get_constructor_info",
     "safe_get_class_parameters",
     "safe_get_constructor_info",
+    # Parameter conversion utilities
+    "resolve_n_bins_parameter",
+    "resolve_string_parameter",
+    "validate_numeric_parameter",
 ]

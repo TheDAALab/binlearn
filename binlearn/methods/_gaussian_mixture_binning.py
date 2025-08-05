@@ -18,6 +18,11 @@ from sklearn.mixture import GaussianMixture
 from ..base._interval_binning_base import IntervalBinningBase
 from ..base._repr_mixin import ReprMixin
 from ..utils.errors import ConfigurationError
+from ..utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+)
 from ..utils.types import BinEdgesDict
 
 
@@ -55,7 +60,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        n_components: int = 10,
+        n_components: int | str = 10,
         random_state: int | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
@@ -71,8 +76,15 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         at the decision boundaries between mixture components.
 
         Args:
-            n_components (int, optional): Number of mixture components (bins) to create for
-                each feature. Must be a positive integer. Defaults to 10.
+            n_components (Union[int, str], optional): Number of mixture components (bins) to
+                create for each feature. Can be an integer or string specification:
+                - int: Direct specification (e.g., 10)
+                - "sqrt": Square root of number of samples
+                - "log": Natural logarithm of number of samples
+                - "log2": Base-2 logarithm of number of samples
+                - "log10": Base-10 logarithm of number of samples
+                - "sturges": Sturges' rule (1 + log2(n_samples))
+                Defaults to 10.
             random_state (Optional[int], optional): Random seed for reproducible
                 GMM clustering results. If None, clustering may produce
                 different results on repeated runs. Defaults to None.
@@ -165,10 +177,18 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
             - Guidance data is ignored as GMM binning is unsupervised
             - May create fewer than n_components if data has insufficient unique values
         """
-        if self.n_components < 1:
-            raise ValueError(f"n_components must be >= 1, got {self.n_components}")
+        # Handle integer n_components validation first (for backward compatibility with tests)
+        validate_bin_number_for_calculation(self.n_components, param_name="n_components")
 
-        return self._create_gmm_bins(x_col, col_id, self.n_components)
+        # Resolve n_components if it's a string specification
+        resolved_n_components = resolve_n_bins_parameter(
+            self.n_components, param_name="n_components", data_shape=(len(x_col), 1)
+        )
+
+        if resolved_n_components < 1:
+            raise ValueError(f"n_components must be >= 1, got {resolved_n_components}")
+
+        return self._create_gmm_bins(x_col, col_id, resolved_n_components)
 
     # pylint: disable=too-many-locals
     def _create_gmm_bins(
@@ -328,7 +348,7 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
 
         Raises:
             ConfigurationError: If any parameter validation fails:
-                - n_components must be a positive integer
+                - n_components must be a positive integer or supported string
                 - random_state must be a non-negative integer if provided
 
         Example:
@@ -344,12 +364,8 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         # Call parent validation first (handles bin edges and representatives)
         super()._validate_params()
 
-        # Validate n_components
-        if not isinstance(self.n_components, int) or self.n_components < 1:
-            raise ConfigurationError(
-                "n_components must be a positive integer",
-                suggestions=["Set n_components to a positive integer (e.g., n_components=10)"],
-            )
+        # Validate n_components using centralized utility
+        validate_bin_number_parameter(self.n_components, param_name="n_components")
 
         # Validate random_state if provided
         if self.random_state is not None:
