@@ -245,6 +245,21 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
                 "to calculate weights for minimum weight constraint"
             )
 
+        # Handle guidance_data dimensionality - extract single column if 2D
+        if guidance_data.ndim == 2:
+            if guidance_data.shape[1] != 1:
+                raise ValueError(
+                    f"Column {col_id}: EqualWidthMinimumWeightBinning requires exactly 1 guidance column, "
+                    f"but received {guidance_data.shape[1]} columns. Please specify a single guidance column."
+                )
+            # Extract the first (and only) column
+            guidance_data = guidance_data[:, 0]
+        elif guidance_data.ndim != 1:
+            raise ValueError(
+                f"Column {col_id}: guidance_data must be 1D or 2D with single column, "
+                f"but has {guidance_data.ndim} dimensions."
+            )
+
         # Remove NaN values from both data and guidance
         valid_mask = ~(np.isnan(x_col) | np.isnan(guidance_data))
         if not np.any(valid_mask):
