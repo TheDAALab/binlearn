@@ -249,8 +249,10 @@ class EqualWidthMinimumWeightBinning(ReprMixin, IntervalBinningBase):
         if guidance_data.ndim == 2:
             if guidance_data.shape[1] != 1:
                 raise ValueError(
-                    f"Column {col_id}: EqualWidthMinimumWeightBinning requires exactly 1 guidance column, "
-                    f"but received {guidance_data.shape[1]} columns. Please specify a single guidance column."
+                    f"Column {col_id}: EqualWidthMinimumWeightBinning requires "
+                    f"exactly 1 guidance column, "
+                    f"but received {guidance_data.shape[1]} columns. "
+                    f"Please specify a single guidance column."
                 )
             # Extract the first (and only) column
             guidance_data = guidance_data[:, 0]

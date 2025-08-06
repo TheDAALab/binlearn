@@ -654,10 +654,12 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         X = np.array([1.0, 2.0, 3.0, 4.0])  # 1D array
         # Create 2D guidance data with multiple columns
         guidance = np.array([[1.0, 2.0], [1.5, 2.5], [2.0, 3.0], [2.5, 3.5]])  # 2D with 2 columns
-        
+
         ewmwb = EqualWidthMinimumWeightBinning(n_bins=2, minimum_weight=1.0)
-        
-        with pytest.raises(ValueError, match="requires exactly 1 guidance column.*but received 2 columns"):
+
+        with pytest.raises(
+            ValueError, match="requires exactly 1 guidance column.*but received 2 columns"
+        ):
             ewmwb._calculate_bins(X, col_id="test_col", guidance_data=guidance)
 
     def test_guidance_data_invalid_dimensions_error(self):
@@ -665,10 +667,12 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         X = np.array([1.0, 2.0, 3.0, 4.0])  # 1D array
         # Create 3D guidance data (invalid)
         guidance = np.array([[[1.0]], [[1.5]], [[2.0]], [[2.5]]])  # 3D array
-        
+
         ewmwb = EqualWidthMinimumWeightBinning(n_bins=2, minimum_weight=1.0)
-        
-        with pytest.raises(ValueError, match="guidance_data must be 1D or 2D.*but has 3 dimensions"):
+
+        with pytest.raises(
+            ValueError, match="guidance_data must be 1D or 2D.*but has 3 dimensions"
+        ):
             ewmwb._calculate_bins(X, col_id="test_col", guidance_data=guidance)
 
     def test_guidance_data_2d_single_column_success(self):
@@ -676,11 +680,11 @@ class TestEqualWidthMinimumWeightBinningWeightConstraints:
         X = np.array([1.0, 2.0, 3.0, 4.0])  # 1D array
         # Create 2D guidance data with single column (should work)
         guidance = np.array([[1.0], [1.5], [2.0], [2.5]])  # 2D with 1 column
-        
+
         ewmwb = EqualWidthMinimumWeightBinning(n_bins=2, minimum_weight=1.0)
-        
+
         # This should work and extract the single column
         bin_edges, weights = ewmwb._calculate_bins(X, col_id="test_col", guidance_data=guidance)
-        
+
         assert len(bin_edges) >= 2  # Should have at least 2 edges for 1+ bins
-        assert len(weights) >= 1   # Should have at least 1 weight
+        assert len(weights) >= 1  # Should have at least 1 weight

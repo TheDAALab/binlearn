@@ -624,9 +624,7 @@ def test_get_fitted_params_with_sklearn_internal_attrs():
     # Add some fitted attributes including sklearn internal ones using setattr
     setattr(obj, "some_param_", "fitted_value")  # noqa: B010
     setattr(obj, "n_features_in_", 5)  # sklearn internal - should be excluded  # noqa: B010
-    setattr(
-        obj, "feature_names_in_", ["col1", "col2"]
-    )  # sklearn internal - should be excluded  # noqa: B010
+    obj.feature_names_in_ = ["col1", "col2"]  # sklearn internal - should be excluded  # noqa: B010
     setattr(obj, "_private_attr_", "private")  # private - should be excluded  # noqa: B010
     setattr(obj, "__dunder__", "dunder")  # dunder - should be excluded  # noqa: B010
     setattr(obj, "none_value_", None)  # None value - should be excluded  # noqa: B010
