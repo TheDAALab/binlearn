@@ -156,11 +156,13 @@ class IntervalBinningBase(GeneralBinningBase):
             # Process and validate bin edges if provided
             if self.bin_edges is not None:
                 validate_bin_edges_format(self.bin_edges)
+                # Store constructor parameters as-is to maintain sklearn compatibility
                 self.bin_edges_ = self.bin_edges
 
             # Process and validate bin representatives if provided
             if self.bin_representatives is not None:
                 validate_bin_representatives_format(self.bin_representatives, self.bin_edges)
+                # Store constructor parameters as-is to maintain sklearn compatibility
                 self.bin_representatives_ = self.bin_representatives
 
                 # Validate compatibility with bin_edges if both are provided
@@ -364,8 +366,8 @@ class IntervalBinningBase(GeneralBinningBase):
 
         # Always calculate bins from data, overwriting any user-provided specs
         edges, reps = self._calculate_bins(col_data, col, guidance_data)
-        self.bin_edges_[col] = edges
-        self.bin_representatives_[col] = reps
+        self.bin_edges_[col] = self._convert_to_python_types(edges)
+        self.bin_representatives_[col] = self._convert_to_python_types(reps)
 
     def _validate_column_data(
         self, col_data: np.ndarray[Any, Any], col: ColumnId, col_index: int
@@ -432,8 +434,8 @@ class IntervalBinningBase(GeneralBinningBase):
 
             # Apply the same bins to all columns, overwriting any user-provided specs
             for col in columns:
-                self.bin_edges_[col] = edges
-                self.bin_representatives_[col] = reps
+                self.bin_edges_[col] = self._convert_to_python_types(edges)
+                self.bin_representatives_[col] = self._convert_to_python_types(reps)
 
             self._finalize_fitting()
 

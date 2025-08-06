@@ -254,7 +254,6 @@ class GeneralBinningBase(
 
             # Store original input info for sklearn compatibility
             arr, _ = self._prepare_input(X)
-            self._n_features_in = arr.shape[1]
 
             # Handle feature names manually to avoid sklearn conflicts
             if hasattr(X, "columns"):
@@ -265,6 +264,9 @@ class GeneralBinningBase(
                 # For numpy arrays without column names, use integer indices for
                 # backward compatibility
                 self._feature_names_in = list(range(arr.shape[1]))
+
+            # Set n_features_in to match feature_names_in count for consistency
+            self._n_features_in = len(self._feature_names_in)
 
             # Separate guidance and binning columns
             X_binning, X_guidance, binning_cols, _ = self._separate_columns(X)
@@ -668,21 +670,91 @@ class GeneralBinningBase(
         """
         fitted_params = {}
 
+        # Sklearn-internal attributes that should not be included in get_params()
+        sklearn_internal_attrs = {
+            "n_features_in_",
+            "feature_names_in_",
+        }
+
         # Automatically discover fitted attributes ending with underscore
         for attr_name in dir(self):
             if (
                 attr_name.endswith("_")
                 and not attr_name.startswith("_")  # Exclude private attributes
                 and not attr_name.endswith("__")  # Exclude dunder methods
+                and attr_name not in sklearn_internal_attrs  # Exclude sklearn internal attrs
                 and hasattr(self, attr_name)
             ):
                 value = getattr(self, attr_name)
                 if value is not None:
                     # Map to parameter names (remove trailing underscore)
                     param_name = attr_name.rstrip("_")
+                    # Store original value without type conversion to maintain sklearn compatibility
                     fitted_params[param_name] = value
 
         return fitted_params
+
+    def get_serializable_params(self, deep: bool = True) -> dict[str, Any]:
+        """Get parameters with type conversion for JSON serialization.
+
+        Similar to get_params() but applies type conversion to ensure all parameters
+        are JSON-serializable pure Python types. Use this method when you need to
+        serialize parameters for storage, transmission, or external tool integration.
+
+        Args:
+            deep (bool): If True, will return the parameters for this estimator and
+                contained subobjects that are estimators. Defaults to True.
+
+        Returns:
+            Dict[str, Any]: Parameter dictionary with all numpy types converted
+                to pure Python types for JSON compatibility.
+
+        Example:
+            >>> binner.fit(X)
+            >>> serializable_params = binner.get_serializable_params()
+            >>> import json
+            >>> json_str = json.dumps(serializable_params)  # Works perfectly
+        """
+        params = self.get_params(deep=deep)
+        return self._convert_to_python_types(params)  # type: ignore[no-any-return]
+
+    # pylint: disable=too-many-return-statements
+    def _convert_to_python_types(self, value: Any) -> Any:
+        """Convert NumPy types to pure Python types for serialization compatibility.
+
+        Recursively converts numpy numeric types to Python types while preserving
+        data structures. This ensures that get_params() returns JSON-serializable
+        values.
+
+        Args:
+            value: The value to convert (can be dict, list, numpy array, etc.)
+
+        Returns:
+            The value with numpy types converted to Python types
+        """
+
+        if isinstance(value, dict):
+            return {k: self._convert_to_python_types(v) for k, v in value.items()}
+        if isinstance(value, list | tuple):
+            converted = [self._convert_to_python_types(item) for item in value]
+            return type(value)(converted) if isinstance(value, tuple) else converted
+        if isinstance(value, np.ndarray):
+            # Convert numpy array to list with Python types
+            return self._convert_to_python_types(value.tolist())
+        if isinstance(value, np.number | np.bool_):
+            # Convert numpy scalar to Python type
+            # Direct type mapping approach for better coverage and simplicity
+            if isinstance(value, np.bool_):
+                return bool(value)
+            if isinstance(value, np.integer):
+                return int(value)
+            if isinstance(value, np.floating):
+                return float(value)
+            # Fallback for other numpy number types
+            return value.item()
+
+        # Return as-is for pure Python types
+        return value
 
     def set_params(self, **params: Any) -> GeneralBinningBase:
         """Set parameters with automatic handling and validation.

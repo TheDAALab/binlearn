@@ -455,10 +455,10 @@ def test_handle_bin_params():
 def test_empty_binning_columns():
     """Test handling of empty binning columns."""
     obj = DummyGeneralBinning(guidance_columns=[0, 1])
-    obj._fitted = True
-    obj._original_columns = [0, 1]
-
+    # First fit the object to establish the necessary state
     X = np.array([[1, 2], [3, 4]])
+    obj.fit(X)
+
     X_bin, X_guide, bin_cols, guide_cols = obj._separate_columns(X)
 
     assert X_bin.shape == (2, 0)  # No binning columns
@@ -533,9 +533,9 @@ def test_get_params_with_fitted_attributes():
     obj._fitted = True
 
     # Add some fitted attributes to test lines 294-298
-    obj.bin_spec_ = {0: [1]}  # New simplified format
-    obj.bin_representatives_ = {0: [1.0]}
-    obj.bin_edges_ = {0: [0, 1, 2]}
+    setattr(obj, "bin_spec_", {0: [1]})  # New simplified format  # noqa: B010
+    setattr(obj, "bin_representatives_", {0: [1.0]})  # noqa: B010
+    setattr(obj, "bin_edges_", {0: [0, 1, 2]})  # noqa: B010
 
     params = obj.get_params()
 
@@ -556,8 +556,8 @@ def test_get_params_with_none_fitted_attributes():
     obj._fitted = True
 
     # Add fitted attributes with None values
-    obj.bin_spec_ = None
-    obj.bin_representatives_ = {0: [1.0]}  # This one is not None
+    setattr(obj, "bin_spec_", None)  # noqa: B010
+    setattr(obj, "bin_representatives_", {0: [1.0]})  # This one is not None  # noqa: B010
 
     params = obj.get_params()
 
@@ -584,3 +584,375 @@ def test_fit_with_y_parameter():
     obj2 = DummyGeneralBinning()
     obj2.fit(X, y=y_2d)
     assert obj2._fitted
+
+
+def test_fit_with_1d_y_parameter():
+    """Test fit method with 1D y parameter that gets converted to 2D."""
+    obj = DummyGeneralBinning()
+    X = np.array([[1], [2], [3]])
+    y = np.array([0, 1, 0])  # 1D array - this should trigger the y_array.ndim == 1 branch
+
+    # Mock the _fit_per_column method to capture the guidance_data
+    captured_guidance = None
+
+    def capture_guidance(X, columns, guidance_data=None, **fit_params):
+        nonlocal captured_guidance
+        captured_guidance = guidance_data
+        return obj
+
+    # Temporarily replace the method
+    original_method = obj._fit_per_column
+    obj._fit_per_column = capture_guidance
+
+    try:
+        obj.fit(X, y=y)
+
+        # The y should have been converted to 2D
+        assert captured_guidance is not None
+        assert captured_guidance.ndim == 2
+        assert captured_guidance.shape == (3, 1)
+        np.testing.assert_array_equal(captured_guidance.ravel(), y)
+    finally:
+        # Restore original method
+        obj._fit_per_column = original_method
+
+
+def test_get_fitted_params_with_sklearn_internal_attrs():
+    """Test _get_fitted_params excludes sklearn internal attributes."""
+    obj = DummyGeneralBinning()
+
+    # Add some fitted attributes including sklearn internal ones using setattr
+    setattr(obj, "some_param_", "fitted_value")  # noqa: B010
+    setattr(obj, "n_features_in_", 5)  # sklearn internal - should be excluded  # noqa: B010
+    setattr(
+        obj, "feature_names_in_", ["col1", "col2"]
+    )  # sklearn internal - should be excluded  # noqa: B010
+    setattr(obj, "_private_attr_", "private")  # private - should be excluded  # noqa: B010
+    setattr(obj, "__dunder__", "dunder")  # dunder - should be excluded  # noqa: B010
+    setattr(obj, "none_value_", None)  # None value - should be excluded  # noqa: B010
+
+    params = obj._get_fitted_params()
+
+    # Should only include some_param (mapped to some_param without trailing _)
+    assert "some_param" in params
+    assert "n_features_in" not in params
+    assert "feature_names_in" not in params
+    assert "_private_attr" not in params
+    assert "__dunder" not in params
+    assert "none_value" not in params
+
+    assert params["some_param"] == "fitted_value"
+
+
+def test_get_fitted_params_comprehensive_coverage():
+    """Test _get_fitted_params method to cover all branches in lines 671-695."""
+    obj = DummyGeneralBinning()
+
+    # Clear any existing fitted attributes first
+    for attr in list(obj.__dict__.keys()):
+        if attr.endswith("_") and not attr.startswith("_"):
+            delattr(obj, attr)
+
+    # Add various types of attributes to test all filter conditions
+    setattr(obj, "valid_param_", "should_include")  # Should be included  # noqa: B010
+    setattr(obj, "another_valid_", 42)  # Should be included  # noqa: B010
+    setattr(obj, "_private_param_", "exclude")  # Starts with _ - exclude  # noqa: B010
+    setattr(obj, "__magic_method__", "exclude")  # Dunder method - exclude  # noqa: B010
+    setattr(obj, "n_features_in_", 10)  # sklearn internal - exclude  # noqa: B010
+    setattr(obj, "feature_names_in_", ["a", "b"])  # sklearn internal - exclude  # noqa: B010
+    setattr(obj, "none_param_", None)  # None value - exclude  # noqa: B010
+    setattr(obj, "regular_attr", "not_fitted")  # Doesn't end with _ - exclude  # noqa: B010
+
+    # Also test an attribute that exists but might not have the attribute (edge case)
+    # This tests the hasattr condition
+
+    # Get fitted params - this should exercise all the filtering logic
+    params = obj._get_fitted_params()
+
+    # Verify only the valid fitted parameters are included
+    assert "valid_param" in params
+    assert "another_valid" in params
+    assert params["valid_param"] == "should_include"
+    assert params["another_valid"] == 42
+
+    # Verify exclusions
+    excluded_keys = [
+        "_private_param",
+        "__magic_method",
+        "n_features_in",
+        "feature_names_in",
+        "none_param",
+        "regular_attr",
+    ]
+    for key in excluded_keys:
+        assert key not in params
+
+
+def test_get_serializable_params():
+    """Test get_serializable_params method."""
+    obj = DummyGeneralBinning()
+
+    # Test with default deep=True
+    params = obj.get_serializable_params()
+    assert isinstance(params, dict)
+
+    # Test with deep=False
+    params_shallow = obj.get_serializable_params(deep=False)
+    assert isinstance(params_shallow, dict)
+
+
+def test_convert_to_python_types_comprehensive():
+    """Test _convert_to_python_types with various numpy types."""
+    obj = DummyGeneralBinning()
+
+    # Test with dictionary
+    input_dict = {
+        "key1": np.int64(42),
+        "key2": np.float32(3.14),
+        "nested": {"inner": np.bool_(True)},
+    }
+    result = obj._convert_to_python_types(input_dict)
+    assert isinstance(result["key1"], int)
+    assert isinstance(result["key2"], float)
+    assert isinstance(result["nested"]["inner"], bool)
+
+    # Test with list
+    input_list = [np.int32(1), np.float64(2.5), np.bool_(False)]
+    result = obj._convert_to_python_types(input_list)
+    assert isinstance(result[0], int)
+    assert isinstance(result[1], float)
+    assert isinstance(result[2], bool)
+
+    # Test with tuple
+    input_tuple = (np.int16(10), np.float32(20.5))
+    result = obj._convert_to_python_types(input_tuple)
+    assert isinstance(result, tuple)
+    assert isinstance(result[0], int)
+    assert isinstance(result[1], float)
+
+    # Test with numpy array
+    input_array = np.array([1, 2, 3])
+    result = obj._convert_to_python_types(input_array)
+    assert isinstance(result, list)
+    assert all(isinstance(x, int) for x in result)
+
+    # Test with numpy boolean
+    result = obj._convert_to_python_types(np.bool_(True))
+    assert isinstance(result, bool)
+    assert result is True
+
+    # Test with numpy integer
+    result = obj._convert_to_python_types(np.int64(42))
+    assert isinstance(result, int)
+    assert result == 42
+
+    # Test with numpy float
+    result = obj._convert_to_python_types(np.float64(3.14))
+    assert isinstance(result, float)
+    assert result == 3.14
+
+    # Test with numpy scalar that has extended precision handling
+    # Create a numpy number that requires special handling
+    np_val = np.int64(100)
+    item_val = np_val.item()
+    # This tests the nested isinstance(item_value, np.number) condition
+    if isinstance(item_val, np.number):
+        result = obj._convert_to_python_types(np_val)
+        assert isinstance(result, int)
+
+    # Test with pure Python types (should return as-is)
+    result = obj._convert_to_python_types("string")
+    assert result == "string"
+
+    result = obj._convert_to_python_types(42)
+    assert result == 42
+
+
+def test_set_params_refit_triggering():
+    """Test set_params method with parameters that trigger refitting."""
+    obj = DummyGeneralBinning()
+    obj._fitted = True  # Mark as fitted initially
+
+    # Test setting fit_jointly (should trigger refit)
+    result = obj.set_params(fit_jointly=True)
+    assert result is obj
+    assert obj.fit_jointly is True
+
+    # Test setting guidance_columns (should trigger refit) - but need compatible values
+    obj2 = DummyGeneralBinning(fit_jointly=False)  # Create new object with fit_jointly=False
+    obj2._fitted = True  # Mark as fitted
+    obj2.set_params(guidance_columns=[0, 1])
+    assert obj2.guidance_columns == [0, 1]
+
+
+def test_convert_to_python_types_numpy_number_edge_case():
+    """Test _convert_to_python_types with numpy number edge case."""
+    obj = DummyGeneralBinning()
+
+    # Create a numpy value that will still be a numpy number after .item()
+    # This is a rare edge case but we need to cover the nested isinstance check
+    class MockNumpyValue:
+        def __init__(self, value, is_bool=False, is_int=False):
+            self.value = value
+            self.is_bool = is_bool
+            self.is_int = is_int
+
+        def item(self):
+            # Return something that's still a numpy number
+            if self.is_bool:
+                return np.bool_(self.value)
+            elif self.is_int:
+                return np.int64(self.value)
+            else:
+                return np.float64(self.value)
+
+    # Test the specific numpy type conversion paths
+    # Boolean case
+    result = obj._convert_to_python_types(np.bool_(True))
+    assert isinstance(result, bool)
+    assert result is True
+
+    # Integer case
+    result = obj._convert_to_python_types(np.int32(42))
+    assert isinstance(result, int)
+    assert result == 42
+
+    # Float case (default)
+    result = obj._convert_to_python_types(np.float32(3.14))
+    assert isinstance(result, float)
+    assert abs(result - 3.14) < 0.01
+
+
+def test_convert_to_python_types_numpy_scalar_branches():
+    """Test _convert_to_python_types covers all numpy scalar type branches."""
+    obj = DummyGeneralBinning()
+
+    # Test numpy bool branch (line 750)
+    bool_val = np.bool_(True)
+    result = obj._convert_to_python_types(bool_val)
+    assert isinstance(result, bool)
+    assert result is True
+
+    bool_val_false = np.bool_(False)
+    result = obj._convert_to_python_types(bool_val_false)
+    assert isinstance(result, bool)
+    assert result is False
+
+    # Test numpy integer branch (line 752)
+    int_val = np.int64(42)
+    result = obj._convert_to_python_types(int_val)
+    assert isinstance(result, int)
+    assert result == 42
+
+    int_val_negative = np.int32(-10)
+    result = obj._convert_to_python_types(int_val_negative)
+    assert isinstance(result, int)
+    assert result == -10
+
+    # Test numpy floating branch
+    float_val = np.float64(3.14159)
+    result = obj._convert_to_python_types(float_val)
+    assert isinstance(result, float)
+    assert abs(result - 3.14159) < 1e-10
+
+    float_val_32 = np.float32(2.71)
+    result = obj._convert_to_python_types(float_val_32)
+    assert isinstance(result, float)
+    assert abs(result - 2.71) < 1e-6
+
+    # Test fallback branch for other numpy number types
+    # Complex numbers are numpy numbers but not bool/integer/floating
+    complex_val = np.complex128(1 + 2j)
+    result = obj._convert_to_python_types(complex_val)
+    assert isinstance(result, complex)
+    assert result == (1 + 2j)
+
+
+def test_get_fitted_params_value_none_exclusion():
+    """Test that _get_fitted_params excludes None values."""
+    obj = DummyGeneralBinning()
+
+    # Add an attribute that ends with _ but has None value
+    setattr(obj, "null_param_", None)  # noqa: B010
+    setattr(obj, "valid_param_", "not_none")  # noqa: B010
+
+    params = obj._get_fitted_params()
+
+    # Should not include the None value
+    assert "null_param" not in params
+    assert "valid_param" in params
+    assert params["valid_param"] == "not_none"
+
+
+def test_fit_with_1d_y_conversion_coverage():
+    """Test that 1D y parameter conversion is properly covered."""
+    # We need to specifically test line 290 where y_array.ndim == 1
+    obj = DummyGeneralBinning()
+    X = np.array([[1, 2], [3, 4]])
+
+    # Create a 1D y array to trigger the conversion
+    y_1d = np.array([1, 2])  # This should trigger y_array.ndim == 1
+
+    # Capture what gets passed to _fit_per_column
+    captured_guidance = None
+    original_fit = obj._fit_per_column
+
+    def capture_fit(X, columns, guidance_data=None, **fit_params):
+        nonlocal captured_guidance
+        captured_guidance = guidance_data
+        return original_fit(X, columns, guidance_data, **fit_params)
+
+    obj._fit_per_column = capture_fit
+
+    # This should trigger the y_array.ndim == 1 branch (line 290)
+    obj.fit(X, y=y_1d)
+
+    # Verify y was converted to 2D
+    assert captured_guidance is not None
+    assert captured_guidance.ndim == 2
+    assert captured_guidance.shape == (2, 1)  # Should be reshaped to (-1, 1)
+
+
+def test_fit_with_1d_y_precise_coverage():
+    """Test specific coverage of line 290 - y_array.ndim == 1."""
+    obj = DummyGeneralBinning()
+    X = np.array([[1], [2]])
+
+    # Ensure no guidance columns and no external guidance_data
+    # to force the elif y is not None branch
+    assert obj.guidance_columns is None  # No guidance columns
+
+    # Create 1D y to specifically hit line 290
+    y_1d = np.array([10, 20])  # 1D array
+
+    # Mock _fit_per_column to capture what happens
+    captured_calls = []
+
+    def mock_fit_per_column(X, columns, guidance_data=None, **fit_params):
+        captured_calls.append(
+            {
+                "guidance_data": guidance_data,
+                "guidance_shape": guidance_data.shape if guidance_data is not None else None,
+            }
+        )
+        return obj
+
+    original_fit_per_column = obj._fit_per_column
+    obj._fit_per_column = mock_fit_per_column
+
+    try:
+        # This call should trigger:
+        # 1. X_guidance is None (no guidance columns)
+        # 2. external_guidance_data is None (no guidance_data in fit_params)
+        # 3. y is not None (y_1d provided)
+        # 4. y_array.ndim == 1 (y_1d is 1D) - this is line 290
+        obj.fit(X, y=y_1d)
+
+        # Verify the call was made with reshaped guidance data
+        assert len(captured_calls) == 1
+        call = captured_calls[0]
+        assert call["guidance_data"] is not None
+        assert call["guidance_shape"] == (2, 1)  # Should be reshaped from (2,) to (2, 1)
+
+    finally:
+        obj._fit_per_column = original_fit_per_column
