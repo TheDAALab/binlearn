@@ -34,8 +34,12 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **EqualWidthBinning** - Equal-width intervals across data range
   * **EqualFrequencyBinning** - Equal-frequency (quantile-based) bins  
   * **KMeansBinning** - K-means clustering-based discretization
+  * **GaussianMixtureBinning** - Gaussian mixture model clustering-based binning
+  * **DBSCANBinning** - Density-based clustering for natural groupings
   * **EqualWidthMinimumWeightBinning** - Weight-constrained equal-width binning
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
+  * **Chi2Binning** - Chi-square statistic-based supervised binning for optimal class separation
+  * **IsotonicBinning** - Isotonic regression-based supervised binning for monotonic relationships
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
   * **SingletonBinning** - Creates one bin per unique numeric value

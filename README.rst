@@ -51,8 +51,12 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **EqualWidthBinning** - Equal-width intervals across data range
   * **EqualFrequencyBinning** - Equal-frequency (quantile-based) bins  
   * **KMeansBinning** - K-means clustering-based discretization
+  * **GaussianMixtureBinning** - Gaussian mixture model clustering-based binning
+  * **DBSCANBinning** - Density-based clustering for natural groupings
   * **EqualWidthMinimumWeightBinning** - Weight-constrained equal-width binning
   * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
+  * **Chi2Binning** - Chi-square statistic-based supervised binning for optimal class separation
+  * **IsotonicBinning** - Isotonic regression-based supervised binning for monotonic relationships
   * **ManualIntervalBinning** - Custom interval boundary specification
   * **ManualFlexibleBinning** - Mixed interval and singleton bin definitions
   * **SingletonBinning** - Creates one bin per unique numeric value
@@ -117,8 +121,8 @@ A modern, type-safe Python library for data binning and discretization with comp
 .. code-block:: python
 
    from binlearn import SupervisedBinning
-   from sklearn.datasets import make_classification
    import numpy as np
+   from sklearn.datasets import make_classification
    
    # Create classification dataset
    X, y = make_classification(n_samples=1000, n_features=4, n_classes=2, random_state=42)
@@ -134,7 +138,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    )
    X_binned1 = sup_binner1.fit_transform(X_with_target)
    
-   # Method 2: Using y parameter (sklearn style) - NEW!
+   # Method 2: Using X and y parameters (sklearn style)
    # Pass features and target separately like sklearn
    sup_binner2 = SupervisedBinning(
        task_type='classification',
@@ -170,26 +174,26 @@ A modern, type-safe Python library for data binning and discretization with comp
 📚 **Available Methods**
 --------------------------
 
-**Interval-based Methods:**
+**Interval-based Methods (Unsupervised):**
 
 * ``EqualWidthBinning`` - Creates bins of equal width across the data range
 * ``EqualFrequencyBinning`` - Creates bins with approximately equal number of samples  
 * ``KMeansBinning`` - Uses K-means clustering to determine bin boundaries
+* ``GaussianMixtureBinning`` - Uses Gaussian mixture models for probabilistic clustering
+* ``DBSCANBinning`` - Uses density-based clustering for natural groupings
 * ``EqualWidthMinimumWeightBinning`` - Equal-width bins with weight constraints
-
-**Flexible Methods:**
-
 * ``ManualIntervalBinning`` - Specify custom interval boundaries
-* ``ManualFlexibleBinning`` - Define mixed interval and singleton bins
-
-**Numeric Value Methods:**
-
-* ``SingletonBinning`` - Creates one bin per unique numeric value
 
 **Supervised Methods:**
 
 * ``SupervisedBinning`` - Decision tree-based binning optimized for target variables (classification and regression)
 * ``Chi2Binning`` - Chi-square statistic-based binning for optimal feature-target association
+* ``IsotonicBinning`` - Isotonic regression-based binning for monotonic relationships
+
+**Flexible Methods:**
+
+* ``ManualFlexibleBinning`` - Define mixed interval and singleton bins
+* ``SingletonBinning`` - Creates one bin per unique numeric value
 
 ⚙️ **Requirements**
 ---------------------
