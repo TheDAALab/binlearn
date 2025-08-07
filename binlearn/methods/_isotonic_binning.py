@@ -1,144 +1,143 @@
-"""Isotonic regression-based monotonic binning transformer.
-
-This module implements monotonic binning using isotonic regression, where bin boundaries
-are determined by finding optimal cut points that preserve monotonic relationships
-between features and targets. This method is particularly useful when you know there
-should be a monotonic relationship between the feature and target.
-
-Classes:
-    IsotonicBinning: Main transformer for isotonic regression-based binning operations.
 """
+Clean Isotonic binning implementation for  architecture.
+
+This module provides IsotonicBinning that inherits from SupervisedBinningBase.
+Uses isotonic regression to find optimal cut points that preserve monotonic relationships.
+"""
+
+from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
 
-from ..base._repr_mixin import ReprMixin
-from ..base._supervised_binning_base import SupervisedBinningBase
+from ..config import apply_config_defaults
 from ..utils.errors import ConfigurationError, FittingError
+from ..utils.parameter_conversion import (
+    validate_bin_number_parameter,
+)
+from ..utils.types import BinEdgesDict
+from ..base._supervised_binning_base import SupervisedBinningBase
 
 
-# pylint: disable=too-many-ancestors
-class IsotonicBinning(ReprMixin, SupervisedBinningBase):
-    """Isotonic regression-based monotonic binning transformer.
+class IsotonicBinning(SupervisedBinningBase):
+    """Isotonic regression-based monotonic binning implementation using  architecture.
 
     Creates bins using isotonic regression to find optimal cut points that preserve
     monotonic relationships between features and targets. The transformer fits an
     isotonic (non-decreasing) function to the data and identifies significant changes
     in this function to determine bin boundaries.
 
-    This method is particularly effective when:
-    - There's a known monotonic relationship between feature and target
-    - You want bins that respect this monotonic ordering
-    - Traditional tree-based methods might create non-monotonic splits
-
-    The transformer supports both classification and regression tasks and automatically
-    handles the conversion of target values for isotonic regression fitting.
-
-    Attributes:
-        max_bins (int): Maximum number of bins to create per feature.
-        min_samples_per_bin (int): Minimum samples required per bin.
-        increasing (bool): Whether to enforce increasing monotonicity.
-        y_min (float): Lower bound for target values in isotonic regression.
-        y_max (float): Upper bound for target values in isotonic regression.
-        min_change_threshold (float): Minimum change in fitted values to create new bin.
-        preserve_dataframe (bool): Whether to preserve DataFrame format.
-        _isotonic_models (dict): Fitted isotonic regression models per feature.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import IsotonicBinning
-        >>> X = np.random.rand(100, 3)
-        >>> y = X[:, 0] + 0.1 * np.random.randn(100)  # Monotonic relationship
-        >>> binner = IsotonicBinning(max_bins=5)
-        >>> X_binned = binner.fit_transform(X, guidance_data=y)
+    This implementation follows the clean  architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        max_bins: int = 10,
-        min_samples_per_bin: int = 5,
-        increasing: bool = True,
+        max_bins: int | str | None = None,
+        min_samples_per_bin: int | None = None,
+        increasing: bool | None = None,
         y_min: float | None = None,
         y_max: float | None = None,
-        min_change_threshold: float = 0.01,
+        min_change_threshold: float | None = None,
         clip: bool | None = None,
-        preserve_dataframe: bool = False,
+        preserve_dataframe: bool | None = None,
         guidance_columns: Any = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize IsotonicBinning transformer.
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize Isotonic binning."""
+        # Prepare user parameters for config integration (exclude never-configurable params)
+        user_params = {
+            "max_bins": max_bins,
+            "min_samples_per_bin": min_samples_per_bin,
+            "increasing": increasing,
+            "y_min": y_min,
+            "y_max": y_max,
+            "min_change_threshold": min_change_threshold,
+            "clip": clip,
+            "preserve_dataframe": preserve_dataframe,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
 
-        Creates an isotonic regression-based binning transformer that finds optimal
-        cut points preserving monotonic relationships between features and targets.
+        # Apply configuration defaults for isotonic method
+        resolved_params = apply_config_defaults("isotonic", user_params)
 
-        Args:
-            max_bins (int, optional): Maximum number of bins to create for each feature.
-                The actual number of bins may be smaller if the data doesn't support
-                that many distinct bins. Defaults to 10.
-            min_samples_per_bin (int, optional): Minimum number of samples required
-                per bin. Bins with fewer samples will be merged with adjacent bins.
-                Defaults to 5.
-            increasing (bool, optional): Whether to enforce increasing monotonicity
-                (True) or decreasing monotonicity (False). If True, higher feature
-                values should correspond to higher target values. Defaults to True.
-            y_min (Optional[float], optional): Lower bound for target values used
-                in isotonic regression. If None, uses the minimum target value.
-                Defaults to None.
-            y_max (Optional[float], optional): Upper bound for target values used
-                in isotonic regression. If None, uses the maximum target value.
-                Defaults to None.
-            min_change_threshold (float, optional): Minimum relative change in fitted
-                isotonic values required to create a new bin boundary. Smaller values
-                create more bins, larger values create fewer bins. Defaults to 0.01.
-            clip (bool, optional): Whether to clip values outside bin ranges to nearest
-                bin edges. If True, out-of-range values are clipped to the nearest
-                bin boundary. If False, out-of-range values are assigned special
-                indicators. If None, uses global configuration default. Defaults to None.
-            preserve_dataframe (bool, optional): Whether to preserve pandas/polars
-                DataFrame format in the output. Defaults to False.
-            guidance_columns (Any, optional): Column identifier(s) to use as guidance/target
-                for supervised binning. Can be a single column identifier or list.
-                Defaults to None.
-            **kwargs: Additional keyword arguments passed to the parent SupervisedBinningBase.
-
-        Raises:
-            ConfigurationError: If parameters are invalid (e.g., max_bins < 1,
-                min_samples_per_bin < 1, invalid y_min/y_max bounds).
-
-        Example:
-            >>> # Basic usage with default parameters
-            >>> binner = IsotonicBinning(max_bins=5)
-
-            >>> # For decreasing monotonic relationships
-            >>> binner = IsotonicBinning(increasing=False, max_bins=8)
-
-            >>> # With custom bounds and change threshold
-            >>> binner = IsotonicBinning(
-            ...     y_min=0.0, y_max=1.0,
-            ...     min_change_threshold=0.05,
-            ...     min_samples_per_bin=10
-            ... )
-        """
-        # Store isotonic-specific parameters
-        self.max_bins = max_bins
-        self.min_samples_per_bin = min_samples_per_bin
-        self.increasing = increasing
-        self.y_min = y_min
-        self.y_max = y_max
-        self.min_change_threshold = min_change_threshold
+        # Store method-specific parameters
+        self.max_bins = resolved_params.get("max_bins", 10)
+        self.min_samples_per_bin = resolved_params.get("min_samples_per_bin", 5)
+        self.increasing = resolved_params.get("increasing", True)
+        self.y_min = resolved_params.get("y_min", None)
+        self.y_max = resolved_params.get("y_max", None)
+        self.min_change_threshold = resolved_params.get("min_change_threshold", 0.01)
 
         # Dictionary to store fitted isotonic models for each feature
         self._isotonic_models: dict[Any, IsotonicRegression] = {}
 
-        super().__init__(
-            clip=clip,
-            preserve_dataframe=preserve_dataframe,
-            guidance_columns=guidance_columns,
-            **kwargs,
+        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        SupervisedBinningBase.__init__(
+            self,
+            clip=resolved_params.get("clip"),
+            preserve_dataframe=resolved_params.get("preserve_dataframe"),
+            guidance_columns=guidance_columns,  # Never configurable
+            bin_edges=bin_edges,  # Never configurable
+            bin_representatives=bin_representatives,  # Never configurable
         )
+
+    def _validate_params(self) -> None:
+        """Validate Isotonic binning parameters."""
+        # Call parent validation
+        SupervisedBinningBase._validate_params(self)
+
+        # Validate max_bins using centralized utility
+        validate_bin_number_parameter(self.max_bins, param_name="max_bins")
+
+        # Validate min_samples_per_bin parameter
+        if not isinstance(self.min_samples_per_bin, int) or self.min_samples_per_bin < 1:
+            raise ConfigurationError(
+                "min_samples_per_bin must be a positive integer",
+                suggestions=["Example: min_samples_per_bin=5"],
+            )
+
+        # Validate increasing parameter
+        if not isinstance(self.increasing, bool):
+            raise ConfigurationError(
+                "increasing must be a boolean value",
+                suggestions=["Use increasing=True for increasing monotonicity"],
+            )
+
+        # Validate y_min and y_max parameters
+        if self.y_min is not None and not isinstance(self.y_min, (int, float)):
+            raise ConfigurationError(
+                "y_min must be a number or None",
+                suggestions=["Example: y_min=0.0"],
+            )
+
+        if self.y_max is not None and not isinstance(self.y_max, (int, float)):
+            raise ConfigurationError(
+                "y_max must be a number or None",
+                suggestions=["Example: y_max=1.0"],
+            )
+
+        if self.y_min is not None and self.y_max is not None and self.y_min >= self.y_max:
+            raise ConfigurationError(
+                "y_min must be less than y_max",
+                suggestions=["Example: y_min=0.0, y_max=1.0"],
+            )
+
+        # Validate min_change_threshold parameter
+        if (
+            not isinstance(self.min_change_threshold, (int, float))
+            or self.min_change_threshold <= 0
+        ):
+            raise ConfigurationError(
+                "min_change_threshold must be a positive number",
+                suggestions=["Example: min_change_threshold=0.01"],
+            )
 
     def _calculate_bins(
         self,
@@ -153,70 +152,32 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         the fitted function.
 
         Args:
-            x_col (np.ndarray[Any, Any]): Feature data for binning with shape (n_samples,).
-                May contain NaN values which will be handled appropriately.
-            col_id (Any): Column identifier for error reporting and model storage.
-            guidance_data (Optional[np.ndarray[Any, Any]], optional): Target/guidance data
-                for supervised binning. Must be provided for isotonic binning.
+            x_col: Preprocessed column data (from base class)
+            col_id: Column identifier for error reporting
+            guidance_data: Target/guidance data for supervised binning (required)
 
         Returns:
-            Tuple[List[float], List[float]]: A tuple containing:
-                - bin_edges (List[float]): List of bin boundary values
-                - bin_representatives (List[float]): List of representative values for each bin
+            Tuple of (bin_edges, bin_representatives)
 
         Raises:
-            FittingError: If guidance_data is None or if there's insufficient valid data.
-            ValueError: If isotonic regression fitting fails.
-
-        Note:
-            - Stores the fitted isotonic model in self._isotonic_models[col_id]
-            - Handles both classification and regression targets
-            - Automatically determines appropriate bin boundaries based on fitted function
+            FittingError: If guidance_data is None or insufficient data for binning
         """
         # Require guidance data for supervised binning
-        self.require_guidance_data(guidance_data, "isotonic binning")
+        if guidance_data is None:
+            raise FittingError(f"Column {col_id}: guidance_data is required for isotonic binning")
 
-        # At this point, guidance_data is guaranteed to be not None
-        assert guidance_data is not None, (
-            "guidance_data should not be None after require_guidance_data check"
-        )
-
-        # Convert categorical guidance data to numeric before validation
-        if guidance_data.dtype == object or not np.issubdtype(guidance_data.dtype, np.number):
-            # Pre-process categorical targets
-            unique_values = np.unique(guidance_data)
-            if len(unique_values) == 0:
-                raise FittingError(f"Column {col_id}: No valid guidance data found")
-            value_mapping = {val: i for i, val in enumerate(unique_values)}
-            guidance_data_numeric = np.array(
-                [value_mapping[val] for val in guidance_data], dtype=float
-            )
-        else:
-            guidance_data_numeric = guidance_data
-
-        # Validate and clean feature-target pairs
-        x_validated, y_validated, valid_mask = self.validate_feature_target_pair(
-            x_col, guidance_data_numeric, col_id
-        )
-
-        # Extract valid pairs
-        x_clean, y_clean = self.extract_valid_pairs(x_validated, y_validated, valid_mask)
-        n_valid = len(x_clean)
+        # Convert categorical guidance data to numeric before processing
+        guidance_data_numeric = self._prepare_target_values(guidance_data)
 
         # Check if we have sufficient data
-        if n_valid < self.min_samples_per_bin:
-            result = self.handle_insufficient_data(
-                x_validated, valid_mask, self.min_samples_per_bin, col_id
-            )
-            if result is not None:
-                return result
+        if len(x_col) < self.min_samples_per_bin:
             raise FittingError(
-                f"Column {col_id}: Insufficient valid data points ({n_valid}) "
+                f"Column {col_id}: Insufficient data points ({len(x_col)}) "
                 f"for isotonic binning. Need at least {self.min_samples_per_bin}."
             )
 
         # Create isotonic binning
-        return self._create_isotonic_bins(x_clean, y_clean, col_id)
+        return self._create_isotonic_bins(x_col, guidance_data_numeric, col_id)
 
     def _create_isotonic_bins(
         self, x_col: np.ndarray[Any, Any], y_col: np.ndarray[Any, Any], col_id: Any
@@ -227,29 +188,37 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         identifies optimal cut points based on changes in the fitted function.
 
         Args:
-            x_col (np.ndarray[Any, Any]): Clean feature data (no NaN values).
-            y_col (np.ndarray[Any, Any]): Clean target data (no NaN values).
-            col_id (Any): Column identifier for model storage.
+            x_col: Clean feature data (no NaN values)
+            y_col: Clean target data (no NaN values)
+            col_id: Column identifier for model storage
 
         Returns:
-            Tuple[List[float], List[float]]: Bin edges and representatives.
+            Tuple of (bin_edges, bin_representatives)
 
-        Raises:
-            ValueError: If isotonic regression fitting fails.
+        Note:
+            The data is already preprocessed by the base class, so we don't need
+            to handle NaN/inf values or constant data here.
         """
         # Handle constant feature data
         if len(np.unique(x_col)) == 1:
-            return self.handle_insufficient_data(
-                x_col, np.ones(len(x_col), dtype=bool), self.min_samples_per_bin, col_id
-            ) or ([float(x_col[0]) - 0.1, float(x_col[0]) + 0.1], [float(x_col[0])])
+            x_val = float(x_col[0])
+            return ([x_val - 0.1, x_val + 0.1], [x_val])
 
         # Sort data by feature values for isotonic regression
         sort_indices = np.argsort(x_col)
         x_sorted = x_col[sort_indices]
         y_sorted = y_col[sort_indices]
 
-        # Prepare target values for isotonic regression
-        y_processed = self._prepare_target_values(y_sorted)
+        # Ensure both arrays are 1D for sklearn's IsotonicRegression
+        x_sorted = x_sorted.flatten()
+        y_sorted = y_sorted.flatten()
+
+        # Verify shapes match
+        if len(x_sorted) != len(y_sorted):
+            raise ValueError(
+                f"Column {col_id}: Feature and target arrays have mismatched lengths: "
+                f"{len(x_sorted)} vs {len(y_sorted)}"
+            )
 
         # Fit isotonic regression
         try:
@@ -259,7 +228,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
                 y_max=self.y_max,
                 out_of_bounds="clip",
             )
-            y_fitted = isotonic_model.fit_transform(x_sorted, y_processed)
+            y_fitted = isotonic_model.fit_transform(x_sorted, y_sorted)
         except Exception as e:
             raise ValueError(f"Column {col_id}: Isotonic regression failed: {e}") from e
 
@@ -278,10 +247,10 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         Converts categorical targets to numeric values and applies bounds if specified.
 
         Args:
-            y_values (np.ndarray[Any, Any]): Raw target values.
+            y_values: Raw target values
 
         Returns:
-            np.ndarray[Any, Any]: Processed target values suitable for isotonic regression.
+            Processed target values suitable for isotonic regression
         """
         # Handle object/categorical data
         if y_values.dtype == object or not np.issubdtype(y_values.dtype, np.number):
@@ -295,7 +264,7 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         return y_processed
 
     def _find_cut_points(
-        self, _: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any]
+        self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any]
     ) -> list[int]:
         """Find cut points based on changes in fitted isotonic function.
 
@@ -303,11 +272,11 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
         that warrant creating new bin boundaries.
 
         Args:
-            x_sorted (np.ndarray[Any, Any]): Sorted feature values.
-            y_fitted (np.ndarray[Any, Any]): Fitted isotonic regression values.
+            x_sorted: Sorted feature values
+            y_fitted: Fitted isotonic regression values
 
         Returns:
-            List[int]: Indices of cut points in the sorted arrays.
+            Indices of cut points in the sorted arrays
         """
         cut_indices = [0]  # Always start with first point
 
@@ -341,20 +310,20 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
     def _create_bins_from_cuts(
         self,
         x_sorted: np.ndarray[Any, Any],
-        _: np.ndarray[Any, Any],
+        y_fitted: np.ndarray[Any, Any],
         cut_indices: list[int],
-        __: Any,
+        col_id: Any,
     ) -> tuple[list[float], list[float]]:
         """Create bin edges and representatives from cut points.
 
         Args:
-            x_sorted (np.ndarray[Any, Any]): Sorted feature values.
-            y_fitted (np.ndarray[Any, Any]): Fitted isotonic regression values.
-            cut_indices (List[int]): Indices of cut points.
-            col_id (Any): Column identifier for error reporting.
+            x_sorted: Sorted feature values
+            y_fitted: Fitted isotonic regression values
+            cut_indices: Indices of cut points
+            col_id: Column identifier for error reporting
 
         Returns:
-            Tuple[List[float], List[float]]: Bin edges and representatives.
+            Tuple of (bin_edges, bin_representatives)
         """
         if len(cut_indices) == 1:
             # Only one cut point - create single bin
@@ -393,52 +362,3 @@ class IsotonicBinning(ReprMixin, SupervisedBinningBase):
             bin_representatives.append(float(np.mean(x_sorted)))
 
         return bin_edges, bin_representatives
-
-    def _validate_params(self) -> None:
-        """Validate isotonic binning parameters.
-
-        Raises:
-            ConfigurationError: If any parameter validation fails.
-        """
-        # Call parent validation
-        super()._validate_params()
-
-        # Validate max_bins
-        if not isinstance(self.max_bins, int) or self.max_bins < 1:
-            raise ConfigurationError(
-                "max_bins must be a positive integer",
-                suggestions=["Set max_bins to a positive integer (e.g., max_bins=10)"],
-            )
-
-        # Validate min_samples_per_bin
-        if not isinstance(self.min_samples_per_bin, int) or self.min_samples_per_bin < 1:
-            raise ConfigurationError(
-                "min_samples_per_bin must be a positive integer",
-                suggestions=[
-                    "Set min_samples_per_bin to a positive integer (e.g., min_samples_per_bin=5)"
-                ],
-            )
-
-        # Validate increasing parameter
-        if not isinstance(self.increasing, bool):
-            raise ConfigurationError(
-                "increasing must be a boolean",
-                suggestions=["Set increasing=True for increasing monotonicity or increasing=False"],
-            )
-
-        # Validate y bounds if provided
-        if self.y_min is not None and self.y_max is not None:
-            if self.y_min >= self.y_max:
-                raise ConfigurationError(
-                    "y_min must be less than y_max",
-                    suggestions=["Ensure y_min < y_max, e.g., y_min=0.0, y_max=1.0"],
-                )
-
-        # Validate min_change_threshold
-        if not isinstance(self.min_change_threshold, int | float) or self.min_change_threshold <= 0:
-            raise ConfigurationError(
-                "min_change_threshold must be a positive number",
-                suggestions=[
-                    "Set min_change_threshold to a positive value (e.g., min_change_threshold=0.01)"
-                ],
-            )

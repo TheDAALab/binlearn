@@ -1,7 +1,7 @@
 """
-Clean Tree binning implementation for V2 architecture.
+Clean Tree binning implementation for  architecture.
 
-This module provides TreeBinningV2 that inherits from SupervisedBinningBaseV2.
+This module provides TreeBinning that inherits from SupervisedBinningBase.
 Uses decision tree splits to find optimal cut points based on guidance data.
 """
 
@@ -16,17 +16,17 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from ..config import apply_config_defaults, get_config
 from ..utils.errors import ConfigurationError, FittingError
 from ..utils.types import BinEdgesDict
-from ..base._supervised_binning_base_v2 import SupervisedBinningBaseV2
+from ..base._supervised_binning_base import SupervisedBinningBase
 
 
-class TreeBinningV2(SupervisedBinningBaseV2):
-    """Tree-based supervised binning implementation using V2 architecture.
+class TreeBinning(SupervisedBinningBase):
+    """Tree-based supervised binning implementation using  architecture.
 
     Creates bins using decision tree splits guided by a target column. This method
     fits a decision tree to predict the guidance column from the features to be
     binned, then uses the tree's split thresholds to define bin boundaries.
 
-    This implementation follows the clean V2 architecture with straight inheritance,
+    This implementation follows the clean  architecture with straight inheritance,
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
@@ -72,7 +72,7 @@ class TreeBinningV2(SupervisedBinningBaseV2):
         self._tree_template: DecisionTreeClassifier | DecisionTreeRegressor | None = None
 
         # Initialize parent with resolved parameters (never-configurable params passed as-is)
-        SupervisedBinningBaseV2.__init__(
+        SupervisedBinningBase.__init__(
             self,
             clip=resolved_params.get("clip"),
             preserve_dataframe=resolved_params.get("preserve_dataframe"),
@@ -87,7 +87,7 @@ class TreeBinningV2(SupervisedBinningBaseV2):
     def _validate_params(self) -> None:
         """Validate Tree binning parameters."""
         # Call parent validation
-        SupervisedBinningBaseV2._validate_params(self)
+        SupervisedBinningBase._validate_params(self)
 
         # Validate task_type parameter
         if self.task_type not in ["classification", "regression"]:

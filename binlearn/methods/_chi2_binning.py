@@ -1,545 +1,363 @@
-"""Chi-square binning transformer.
+"""
+Clean Chi-square binning implementation.
 
-This module implements chi-square binning, a supervised discretization method that
-uses the chi-square statistic to find optimal split points. The method iteratively
-merges adjacent intervals to minimize the chi-square statistic, creating bins that
-maximize the association between features and target variables.
-
-Chi-square binning is particularly effective for classification tasks where the goal
-is to create bins that separate different classes as effectively as possible.
-
-Classes:
-    Chi2Binning: Main transformer for chi-square binning operations.
+This module provides Chi2Binning that inherits from SupervisedBinningBase.
+Uses chi-square statistic to find optimal bin boundaries for classification tasks.
 """
 
-from typing import Any, cast
+from __future__ import annotations
+
+from typing import Any
+import warnings
 
 import numpy as np
 from scipy.stats import chi2_contingency
 
-from ..base._repr_mixin import ReprMixin
+from ..config import get_config, apply_config_defaults
+from ..utils.types import BinEdgesDict
+from ..utils.errors import ConfigurationError, FittingError, DataQualityWarning
 from ..base._supervised_binning_base import SupervisedBinningBase
-from ..utils.errors import ConfigurationError, FittingError, InvalidDataError
-from ..utils.types import BinEdgesDict, ColumnId, GuidanceColumns
 
 
-# pylint: disable=too-many-ancestors
-class Chi2Binning(ReprMixin, SupervisedBinningBase):
-    """Chi-square binning transformer for supervised discretization.
+class Chi2Binning(SupervisedBinningBase):
+    """Chi-square binning implementation.
 
     Creates bins using the chi-square statistic to find optimal split points that
-    maximize the association between features and target variables. The method
-    starts with an initial discretization and then iteratively merges adjacent
-    intervals that have the smallest chi-square statistic until a stopping
-    criterion is met.
+    maximize the association between numeric features and target variables. Only supports numeric data.
+    The method starts with an initial discretization and then iteratively merges adjacent
+    intervals that have the smallest chi-square statistic until a stopping criterion is met.
 
-    This approach creates bins that are optimized for classification tasks, as
-    they capture the most informative feature ranges for distinguishing between
-    different target classes. The resulting bins often lead to better downstream
-    classification performance compared to unsupervised binning methods.
-
-    The transformer is fully sklearn-compatible and supports pandas/polars DataFrames.
-    It automatically handles both categorical and continuous features.
-
-    Attributes:
-        max_bins (int): Maximum number of bins to create.
-        min_bins (int): Minimum number of bins to create.
-        alpha (float): Significance level for chi-square test.
-        initial_bins (int): Number of initial bins for equal-width discretization.
-        guidance_columns (list): Columns to use for supervised guidance.
-        preserve_dataframe (bool): Whether to preserve DataFrame format.
-        bin_edges_ (dict): Computed bin edges after fitting.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import Chi2Binning
-        >>> X = np.random.rand(100, 3)
-        >>> y = np.random.randint(0, 2, 100)  # Binary target
-        >>> X_with_target = np.column_stack([X, y])
-        >>> binner = Chi2Binning(guidance_columns=[3], max_bins=5)
-        >>> X_binned = binner.fit_transform(X_with_target)
+    This approach creates bins that are optimized for classification tasks.
+    This implementation follows the clean  architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        max_bins: int = 10,
-        min_bins: int = 2,
-        alpha: float = 0.05,
-        initial_bins: int = 20,
+        max_bins: int | None = None,
+        min_bins: int | None = None,
+        alpha: float | None = None,
+        initial_bins: int | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
+        guidance_columns: Any = None,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        guidance_columns: GuidanceColumns | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize the Chi2Binning transformer.
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize Chi-square binning."""
+        # Prepare user parameters for config integration (exclude never-configurable params)
+        user_params = {
+            "max_bins": max_bins,
+            "min_bins": min_bins,
+            "alpha": alpha,
+            "initial_bins": initial_bins,
+            "clip": clip,
+            "preserve_dataframe": preserve_dataframe,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
 
-        Creates a chi-square binning transformer that uses the chi-square statistic
-        to find optimal bin boundaries based on the association between features
-        and target variables. The method starts with an initial equal-width
-        discretization and then merges adjacent intervals based on chi-square tests.
+        # Apply configuration defaults for chi2 method
+        params = apply_config_defaults("chi2", user_params)
 
-        Args:
-            max_bins (int, optional): Maximum number of bins to create for each
-                feature. Must be at least 2. The algorithm will stop merging
-                intervals when this number is reached. Defaults to 10.
-            min_bins (int, optional): Minimum number of bins to create for each
-                feature. Must be at least 2 and less than or equal to max_bins.
-                The algorithm will continue merging until either this number is
-                reached or the significance criterion is met. Defaults to 2.
-            alpha (float, optional): Significance level for the chi-square test.
-                Adjacent intervals are merged if their chi-square statistic
-                corresponds to a p-value greater than alpha. Must be between
-                0 and 1. Defaults to 0.05.
-            initial_bins (int, optional): Number of initial bins for the equal-width
-                discretization before merging. Should be larger than max_bins to
-                allow for meaningful merging. Defaults to 20.
-            clip (bool, optional): Whether to clip values outside bin ranges to nearest
-                bin edges. If True, out-of-range values are clipped to the nearest
-                bin boundary. If False, out-of-range values are assigned special
-                indicators. If None, uses global configuration default. Defaults to None.
-            preserve_dataframe (bool, optional): Whether to preserve DataFrame
-                format in output. If None, uses global configuration default.
-                Defaults to None.
-            bin_edges (BinEdgesDict, optional): Pre-computed bin edges for each
-                column. If provided, these edges are used instead of calculating
-                from data. Defaults to None.
-            bin_representatives (BinEdgesDict, optional): Pre-computed representative
-                values for each bin. If provided along with bin_edges, these
-                representatives are used. Defaults to None.
-            guidance_columns (GuidanceColumns, optional): Columns to use for
-                supervised guidance. Must be specified for chi-square binning
-                to work properly. Should contain categorical target variable(s).
-                Defaults to None.
-            **kwargs: Additional arguments passed to SupervisedBinningBase.
+        # Store chi-square specific parameters with config defaults
+        self.max_bins = params.get("max_bins", max_bins if max_bins is not None else 10)
+        self.min_bins = params.get("min_bins", min_bins if min_bins is not None else 2)
+        self.alpha = params.get("alpha", alpha if alpha is not None else 0.05)
+        self.initial_bins = params.get(
+            "initial_bins", initial_bins if initial_bins is not None else 20
+        )
 
-        Raises:
-            ConfigurationError: If max_bins < min_bins, if min_bins < 2, if
-                alpha is not between 0 and 1, or if initial_bins < max_bins.
-
-        Example:
-            >>> # Basic usage with default parameters
-            >>> binner = Chi2Binning(guidance_columns=[3], max_bins=5)
-
-            >>> # Custom parameters for more conservative binning
-            >>> binner = Chi2Binning(
-            ...     guidance_columns=[3],
-            ...     max_bins=8,
-            ...     min_bins=3,
-            ...     alpha=0.01,
-            ...     initial_bins=30
-            ... )
-
-            >>> # With pre-specified bin edges
-            >>> edges = {0: [0, 25, 50, 75, 100]}
-            >>> binner = Chi2Binning(guidance_columns=[3], bin_edges=edges)
-        """
-        # Store chi2-specific parameters BEFORE calling super().__init__
-        self.max_bins = max_bins
-        self.min_bins = min_bins
-        self.alpha = alpha
-        self.initial_bins = initial_bins
-
-        # Chi2 binning is always classification-based - store as class attribute
-        self.task_type = "classification"
-
-        # Chi2 binning is always classification-based
-        super().__init__(
-            clip=clip,
-            preserve_dataframe=preserve_dataframe,
+        # Initialize parent with resolved config parameters (no fit_jointly for supervised)
+        # Note: guidance_columns, bin_edges, bin_representatives are never set from config
+        SupervisedBinningBase.__init__(
+            self,
+            clip=params.get("clip"),
+            preserve_dataframe=params.get("preserve_dataframe"),
+            guidance_columns=guidance_columns,
             bin_edges=bin_edges,
             bin_representatives=bin_representatives,
-            guidance_columns=guidance_columns,
-            **kwargs,
         )
 
     def _validate_params(self) -> None:
-        """Validate chi-square binning specific parameters.
-
-        Performs comprehensive validation of all Chi2Binning parameters to ensure
-        they meet the expected constraints and are logically consistent.
-
-        Raises:
-            ConfigurationError: If any parameter validation fails.
-        """
-        super()._validate_params()
+        """Validate Chi-square binning specific parameters."""
+        # Call parent validation
+        SupervisedBinningBase._validate_params(self)
 
         # Validate max_bins
-        if not isinstance(self.max_bins, int) or self.max_bins < 2:
-            raise ConfigurationError(f"max_bins must be an integer >= 2, got {self.max_bins}")
+        if not isinstance(self.max_bins, int) or self.max_bins < 1:
+            raise ValueError("max_bins must be a positive integer")
 
         # Validate min_bins
-        if not isinstance(self.min_bins, int) or self.min_bins < 2:
-            raise ConfigurationError(f"min_bins must be an integer >= 2, got {self.min_bins}")
+        if not isinstance(self.min_bins, int) or self.min_bins < 1:
+            raise ValueError("min_bins must be a positive integer")
 
-        # Check min_bins <= max_bins
+        # Validate bin constraints
         if self.min_bins > self.max_bins:
-            raise ConfigurationError(
-                f"min_bins ({self.min_bins}) must be <= max_bins ({self.max_bins})"
-            )
+            raise ValueError("min_bins must be <= max_bins")
 
         # Validate alpha
-        if not isinstance(self.alpha, int | float) or not 0 < self.alpha < 1:
-            raise ConfigurationError(f"alpha must be a number between 0 and 1, got {self.alpha}")
+        if not isinstance(self.alpha, (int, float)) or not (0.0 < self.alpha < 1.0):
+            raise ValueError("alpha must be a float between 0 and 1")
 
         # Validate initial_bins
         if not isinstance(self.initial_bins, int) or self.initial_bins < self.max_bins:
-            raise ConfigurationError(
-                f"initial_bins ({self.initial_bins}) must be >= max_bins ({self.max_bins})"
-            )
+            raise ValueError("initial_bins must be an integer >= max_bins")
 
-        # Note: Chi2 binning requires guidance data, but this can come from
-        # either guidance_columns or the y parameter in fit(), so we don't
-        # validate guidance_columns here
-
-    # pylint: disable=too-many-locals
     def _calculate_bins(
         self,
         x_col: np.ndarray[Any, Any],
-        col_id: ColumnId,
+        col_id: Any,
         guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
-        """Calculate chi-square based bins for a single column.
+        """Calculate bin edges and representatives using chi-square optimization.
 
-        Implements the chi-square binning algorithm that starts with equal-width
-        discretization and then iteratively merges adjacent intervals based on
-        chi-square tests. The algorithm continues merging until either the minimum
-        number of bins is reached or no more intervals can be merged based on
-        the significance level.
+        Chi2 binning is a supervised method and requires guidance data.
 
         Args:
-            x_col (np.ndarray[Any, Any]): Feature data for binning with shape (n_samples,).
-                May contain NaN values which are handled appropriately.
-            col_id (ColumnId): Column identifier for error reporting and logging.
-            guidance_data (np.ndarray[Any, Any], optional): Target data for supervised
-                binning with shape (n_samples,). Required for chi-square binning.
+            x_col: Clean feature data (no missing values)
+            col_id: Column identifier
+            guidance_data: Target data with shape (n_samples, 1). Required.
 
         Returns:
-            tuple[list[float], list[float]]: A tuple containing:
-                - bin_edges (list[float]): List of bin edge values
-                - bin_representatives (list[float]): List of bin center values
+            Tuple of (bin_edges, bin_representatives)
 
         Raises:
-            FittingError: If guidance_data is None or if the chi-square binning
-                algorithm fails to converge.
-            InvalidDataError: If the feature data is invalid or incompatible
-                with chi-square binning.
+            ValueError: If guidance_data is None (supervised method requires targets)
         """
-        # Require guidance data (raises ValueError if None)
-        self.require_guidance_data(guidance_data, "Chi-square binning")
+        if guidance_data is None:
+            raise ValueError(
+                "Chi2 binning is a supervised method and requires guidance data (targets)"
+            )
 
-        # At this point guidance_data is guaranteed to be not None
-        assert guidance_data is not None
+        # Extract the single target column (guaranteed to have shape (n_samples, 1) by SupervisedBinningBase)
+        y_col = guidance_data[:, 0]
 
-        try:
-            # Validate guidance data (ensures single column requirement)
-            guidance_data_validated = self.validate_guidance_data(guidance_data)
+        return self._calculate_chi2_bins(x_col, y_col, col_id)
 
-            # Extract the single guidance column as 1D array
-            # Note: validate_guidance_data always returns 1D, but keep this for explicit clarity
-            guidance_col = self._extract_guidance_column(guidance_data_validated)
-
-            # Remove missing values from both feature and target
-            valid_mask = ~(np.isnan(x_col) | np.isnan(guidance_col))
-            if not valid_mask.any():
-                raise InvalidDataError(
-                    f"No valid data points for column {col_id} after removing missing values"
-                )
-
-            x_clean = x_col[valid_mask]
-            y_clean = guidance_col[valid_mask]
-
-            if len(x_clean) < self.min_bins:
-                raise InvalidDataError(
-                    f"Insufficient data for column {col_id}: {len(x_clean)} samples "
-                    f"but need at least {self.min_bins} for binning"
-                )
-
-            # Check if feature has enough unique values
-            unique_values = np.unique(x_clean)
-            if len(unique_values) < self.min_bins:
-                # Fallback to using unique values as bin edges
-                bin_edges = self._create_edges_from_unique_values(unique_values)
-                bin_centers = self._calculate_bin_centers(bin_edges)
-                return bin_edges, bin_centers
-
-            # Start with equal-width initial discretization
-            data_min, data_max = np.min(x_clean), np.max(x_clean)
-            constant_edges = self._handle_constant_feature_values(data_min, data_max)
-            if constant_edges is not None:
-                return constant_edges
-
-            # Create initial bins
-            initial_edges = np.linspace(data_min, data_max, self.initial_bins + 1)
-
-            # Perform chi-square based merging
-            final_edges = self._merge_bins_chi2(x_clean, y_clean, initial_edges)
-
-            # Calculate bin centers
-            bin_centers = self._calculate_bin_centers(final_edges)
-
-            return final_edges, bin_centers
-
-        except Exception as e:
-            if isinstance(e, FittingError | InvalidDataError | ValueError):
-                raise
-            raise FittingError(
-                f"Failed to calculate chi-square bins for column {col_id}: {str(e)}"
-            ) from e
-
-    def _merge_bins_chi2(
+    def _calculate_chi2_bins(
         self,
-        x_data: np.ndarray[Any, Any],
-        y_data: np.ndarray[Any, Any],
-        initial_edges: np.ndarray[Any, Any],
-    ) -> list[float]:
-        """Merge bins based on chi-square statistic.
-
-        Implements the core chi-square merging algorithm. Adjacent intervals are
-        iteratively merged if their chi-square statistic indicates they are not
-        significantly different (p-value > alpha).
+        x_col: np.ndarray[Any, Any],
+        y_col: np.ndarray[Any, Any],
+        col_id: Any,
+    ) -> tuple[list[float], list[float]]:
+        """Calculate chi-square optimized bin edges and representatives.
 
         Args:
-            x_data (np.ndarray[Any, Any]): Clean feature data without missing values.
-            y_data (np.ndarray[Any, Any]): Clean target data without missing values.
-            initial_edges (np.ndarray[Any, Any]): Initial bin edges from equal-width discretization.
+            x_col: Preprocessed feature data (already handled by base class)
+            y_col: Target data - 1D array (may have been filtered by SupervisedBinningBase)
+            col_id: Column identifier
 
         Returns:
-            list[float]: Final bin edges after merging.
+            Tuple of (bin_edges, bin_representatives)
+
+        Raises:
+            FittingError: If data is insufficient for chi-square binning
         """
-        current_edges = list(initial_edges)
+        # The feature data (x_col) is already preprocessed by IntervalBinningBase
+        # The target data (y_col) has been handled by SupervisedBinningBase
+        # We can now work directly with the data
 
-        while len(current_edges) - 1 > self.min_bins:
-            # Find the best pair of adjacent intervals to merge
-            best_pair_idx = self._find_best_merge_pair(x_data, y_data, current_edges)
+        if len(x_col) < 2:
+            raise FittingError(
+                f"Column {col_id} has too few data points ({len(x_col)}). "
+                "Chi2 binning requires at least 2 data points."
+            )
 
-            if best_pair_idx is None:
-                # No more merging possible based on significance level
+        # Get unique target classes
+        unique_classes = np.unique(y_col)
+        if len(unique_classes) < 2:
+            raise FittingError(
+                f"Column {col_id} target has insufficient class diversity ({len(unique_classes)} classes). "
+                "Chi2 binning requires at least 2 target classes."
+            )
+
+        # Step 1: Create initial equal-width binning
+        data_min = float(np.min(x_col))
+        data_max = float(np.max(x_col))
+
+        initial_edges = np.linspace(data_min, data_max, self.initial_bins + 1)
+
+        # Step 2: Create contingency tables for initial bins
+        bin_indices = np.digitize(x_col, initial_edges) - 1
+        bin_indices = np.clip(bin_indices, 0, len(initial_edges) - 2)
+
+        # Build initial contingency table
+        intervals = self._build_intervals(bin_indices, y_col, initial_edges, unique_classes)
+
+        if not intervals:
+            raise FittingError(
+                f"Failed to create initial intervals for column {col_id}. "
+                "Data distribution may be unsuitable for chi2 binning."
+            )
+
+        # Step 3: Iteratively merge intervals with smallest chi-square
+        final_intervals = self._merge_intervals(intervals, unique_classes)
+
+        # Step 4: Extract edges and representatives
+        edges = [final_intervals[0]["min"]]
+        representatives = []
+
+        for interval in final_intervals:
+            edges.append(interval["max"])
+            # Representative is the midpoint of the interval
+            representatives.append((interval["min"] + interval["max"]) / 2)
+
+        return edges, representatives
+
+    def _build_intervals(
+        self,
+        bin_indices: np.ndarray[Any, Any],
+        y_col: np.ndarray[Any, Any],
+        initial_edges: np.ndarray[Any, Any],
+        unique_classes: np.ndarray[Any, Any],
+    ) -> list[dict[str, Any]]:
+        """Build initial intervals with contingency information."""
+        intervals = []
+
+        for i in range(len(initial_edges) - 1):
+            mask = bin_indices == i
+            if not np.any(mask):
+                continue  # Skip empty intervals
+
+            # Count occurrences of each class in this interval
+            y_interval = y_col[mask]
+            class_counts = {}
+            for cls in unique_classes:
+                class_counts[cls] = int(np.sum(y_interval == cls))
+
+            interval = {
+                "min": float(initial_edges[i]),
+                "max": float(initial_edges[i + 1]),
+                "class_counts": class_counts,
+                "total_count": int(np.sum(mask)),
+            }
+
+            if interval["total_count"] > 0:  # Only add non-empty intervals
+                intervals.append(interval)
+
+        return intervals
+
+    def _merge_intervals(
+        self,
+        intervals: list[dict[str, Any]],
+        unique_classes: np.ndarray[Any, Any],
+    ) -> list[dict[str, Any]]:
+        """Iteratively merge intervals to optimize chi-square statistic."""
+        current_intervals = intervals.copy()
+
+        while len(current_intervals) > self.max_bins:
+            # Find the pair of adjacent intervals with smallest chi-square
+            min_chi2 = float("inf")
+            merge_idx = -1
+
+            for i in range(len(current_intervals) - 1):
+                chi2_stat = self._calculate_chi2_for_merge(
+                    current_intervals[i], current_intervals[i + 1], unique_classes
+                )
+                if chi2_stat < min_chi2:
+                    min_chi2 = chi2_stat
+                    merge_idx = i
+
+            # Check if we should stop merging based on significance
+            if len(current_intervals) <= self.min_bins:
                 break
 
-            # Check if we should stop merging based on significance when at max_bins
-            should_stop = self._should_stop_merging_for_significance(
-                x_data, y_data, current_edges, best_pair_idx
-            )
-            if should_stop:
-                break  # pragma: no cover
+            # If chi-square is significant and we have more than min_bins, stop
+            if min_chi2 > self._get_chi2_critical_value(len(unique_classes) - 1):
+                if len(current_intervals) >= self.min_bins:
+                    break
 
-            # Merge the best pair
-            current_edges.pop(best_pair_idx + 1)
+            # Merge the intervals
+            if merge_idx >= 0:
+                merged_interval = self._merge_two_intervals(
+                    current_intervals[merge_idx], current_intervals[merge_idx + 1]
+                )
+                current_intervals = (
+                    current_intervals[:merge_idx]
+                    + [merged_interval]
+                    + current_intervals[merge_idx + 2 :]
+                )
 
-        return current_edges
+        return current_intervals
 
-    def _find_best_merge_pair(
-        self, x_data: np.ndarray[Any, Any], y_data: np.ndarray[Any, Any], edges: list[float]
-    ) -> int | None:
-        """Find the best pair of adjacent intervals to merge.
-
-        Evaluates all adjacent interval pairs and finds the one with the smallest
-        chi-square statistic (least significant difference).
-
-        Args:
-            x_data (np.ndarray[Any, Any]): Feature data.
-            y_data (np.ndarray[Any, Any]): Target data.
-            edges (list[float]): Current bin edges.
-
-        Returns:
-            int | None: Index of the left interval in the best pair to merge,
-                or None if no valid pairs can be merged.
-        """
-        best_idx = None
-        min_chi2 = float("inf")
-
-        for i in range(len(edges) - 2):  # -2 because we need pairs of intervals
-            try:
-                chi2_stat, p_value = self._calculate_chi2_for_pair(x_data, y_data, edges, i)
-
-                # Only consider merging if p-value > alpha or we're above max_bins
-                if p_value > self.alpha or len(edges) - 1 > self.max_bins:
-                    if chi2_stat < min_chi2:
-                        min_chi2 = chi2_stat
-                        best_idx = i
-
-            except (ValueError, RuntimeWarning):
-                # Skip pairs that cause computational issues
-                continue
-
-        return best_idx
-
-    # pylint: disable=too-many-locals
-    def _calculate_chi2_for_pair(
+    def _calculate_chi2_for_merge(
         self,
-        x_data: np.ndarray[Any, Any],
-        y_data: np.ndarray[Any, Any],
-        edges: list[float],
-        pair_idx: int,
-    ) -> tuple[float, float]:
-        """Calculate chi-square statistic for a pair of adjacent intervals.
-
-        Computes the chi-square statistic and p-value for testing independence
-        between the combined interval and the target variable.
-
-        Args:
-            x_data (np.ndarray[Any, Any]): Feature data.
-            y_data (np.ndarray[Any, Any]): Target data.
-            edges (list[float]): Current bin edges.
-            pair_idx (int): Index of the left interval in the pair.
-
-        Returns:
-            tuple[float, float]: Chi-square statistic and p-value.
-        """
-        # Create interval indicators for the pair
-        left_edge = edges[pair_idx]
-        middle_edge = edges[pair_idx + 1]
-        right_edge = edges[pair_idx + 2]
-
-        # Find data points in each interval
-        left_mask = (x_data >= left_edge) & (x_data < middle_edge)
-        right_mask = (x_data >= middle_edge) & (x_data < right_edge)
-
-        # Handle the rightmost bin boundary
-        if pair_idx + 2 == len(edges) - 1:
-            right_mask = (x_data >= middle_edge) & (x_data <= right_edge)
-
-        # Get target values for each interval
-        left_targets = y_data[left_mask]
-        right_targets = y_data[right_mask]
-
-        # Create contingency table
-        unique_targets = np.unique(y_data)
-
-        contingency_table: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = np.zeros(
-            (2, len(unique_targets))
-        )
-
-        for j, target_val in enumerate(unique_targets):
-            contingency_table[0, j] = np.sum(left_targets == target_val)
-            contingency_table[1, j] = np.sum(right_targets == target_val)
-
-        # Remove columns with all zeros
-        non_zero_cols = contingency_table.sum(axis=0) > 0
-        if not non_zero_cols.any():
-            return float("inf"), 0.0
-
-        contingency_table = contingency_table[:, non_zero_cols]
-
-        # Remove rows with all zeros
-        non_zero_rows = contingency_table.sum(axis=1) > 0
-        if non_zero_rows.sum() < 2:
-            return 0.0, 1.0  # Perfect independence if only one interval has data
-
-        contingency_table = contingency_table[non_zero_rows, :]
-
-        # Check if contingency table is valid for chi-square test
-        if contingency_table.shape[0] < 2 or contingency_table.shape[1] < 2:
-            return 0.0, 1.0
-
-        # Calculate chi-square statistic
+        interval1: dict[str, Any],
+        interval2: dict[str, Any],
+        unique_classes: np.ndarray[Any, Any],
+    ) -> float:
+        """Calculate chi-square statistic for merging two intervals."""
         try:
-            chi2_stat, p_value, _, _ = chi2_contingency(contingency_table)
-            return float(cast(float, chi2_stat)), float(cast(float, p_value))
-        except ValueError:
-            # Handle edge cases where chi2 calculation fails
-            return 0.0, 1.0
+            # Build contingency table for the two intervals
+            contingency_table = []
 
-    def _create_edges_from_unique_values(self, unique_values: np.ndarray[Any, Any]) -> list[float]:
-        """Create bin edges from unique values when there aren't enough values.
+            for cls in unique_classes:
+                row = [interval1["class_counts"].get(cls, 0), interval2["class_counts"].get(cls, 0)]
+                contingency_table.append(row)
 
-        Args:
-            unique_values (np.ndarray[Any, Any]): Sorted unique values from the feature.
+            contingency_table = np.array(contingency_table)
 
-        Returns:
-            list[float]: Bin edges that separate the unique values.
-        """
-        if len(unique_values) == 1:
-            val = unique_values[0]
-            return [val - 0.1, val + 0.1]
+            # Remove empty rows/columns
+            row_sums = contingency_table.sum(axis=1)
+            col_sums = contingency_table.sum(axis=0)
 
-        edges = [unique_values[0] - (unique_values[1] - unique_values[0]) * 0.1]
+            valid_rows = row_sums > 0
+            valid_cols = col_sums > 0
 
-        for i in range(len(unique_values) - 1):
-            mid_point = (unique_values[i] + unique_values[i + 1]) / 2
-            edges.append(mid_point)
+            if not np.any(valid_rows) or not np.any(valid_cols):
+                return 0.0
 
-        edges.append(unique_values[-1] + (unique_values[-1] - unique_values[-2]) * 0.1)
+            contingency_table = contingency_table[valid_rows][:, valid_cols]
 
-        return edges
+            if (
+                contingency_table.size == 0
+                or contingency_table.shape[0] < 2
+                or contingency_table.shape[1] < 2
+            ):
+                return 0.0
 
-    def _calculate_bin_centers(self, bin_edges: list[float]) -> list[float]:
-        """Calculate bin center points from bin edges.
+            # Calculate chi-square statistic
+            try:
+                chi2_stat, _, _, _ = chi2_contingency(contingency_table)
+                return float(chi2_stat) if isinstance(chi2_stat, (int, float, np.number)) else 0.0
+            except Exception:
+                return 0.0
 
-        Args:
-            bin_edges (list[float]): List of bin edge values.
+        except (ValueError, ZeroDivisionError):
+            return 0.0
 
-        Returns:
-            list[float]: List of bin center values.
-        """
-        centers = []
-        for i in range(len(bin_edges) - 1):
-            center = (bin_edges[i] + bin_edges[i + 1]) / 2
-            centers.append(center)
-        return centers
-
-    def _extract_guidance_column(
-        self, guidance_data_validated: np.ndarray[Any, Any]
-    ) -> np.ndarray[Any, Any]:
-        """Extract guidance column from validated guidance data.
-
-        Args:
-            guidance_data_validated: Validated guidance data from validate_guidance_data
-
-        Returns:
-            1D array of guidance values
-        """
-        # This method allows testing both 1D and 2D paths
-        if guidance_data_validated.ndim == 2:
-            return guidance_data_validated[:, 0]  # Line would be here
-
-        return guidance_data_validated  # This line can be tested
-
-    def _handle_constant_feature_values(
-        self, data_min: float, data_max: float
-    ) -> tuple[list[float], list[float]] | None:
-        """Handle case where all feature values are the same.
-
-        Args:
-            data_min: Minimum value in the feature data
-            data_max: Maximum value in the feature data
-
-        Returns:
-            Tuple of (bin_edges, bin_centers) if constant values, None otherwise
-        """
-        if data_min == data_max:
-            # All values are the same - lines 268-270 equivalent
-            bin_edges = [data_min - 0.1, data_max + 0.1]
-            bin_centers = [data_min]
-            return bin_edges, bin_centers
-        return None
-
-    def _should_stop_merging_for_significance(
+    def _merge_two_intervals(
         self,
-        x_data: np.ndarray[Any, Any],
-        y_data: np.ndarray[Any, Any],
-        current_edges: list[float],
-        best_pair_idx: int,
-    ) -> bool:
-        """Check if merging should stop based on significance when at max_bins.
+        interval1: dict[str, Any],
+        interval2: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Merge two adjacent intervals."""
+        merged_class_counts = {}
 
-        Args:
-            x_data: Feature data
-            y_data: Target data
-            current_edges: Current bin edges
-            best_pair_idx: Index of best pair to merge
+        # Combine class counts
+        all_classes = set(interval1["class_counts"].keys()) | set(interval2["class_counts"].keys())
+        for cls in all_classes:
+            merged_class_counts[cls] = interval1["class_counts"].get(cls, 0) + interval2[
+                "class_counts"
+            ].get(cls, 0)
 
-        Returns:
-            True if should stop merging, False otherwise
-        """
-        if len(current_edges) - 1 <= self.max_bins:
-            # We've reached max_bins, check if we should stop based on significance
-            _, p_value = self._calculate_chi2_for_pair(x_data, y_data, current_edges, best_pair_idx)
-            if p_value <= self.alpha:
-                # Significant difference, don't merge - line 324 equivalent
-                return True
+        return {
+            "min": interval1["min"],
+            "max": interval2["max"],
+            "class_counts": merged_class_counts,
+            "total_count": interval1["total_count"] + interval2["total_count"],
+        }
 
-        return False
+    def _get_chi2_critical_value(self, dof: int) -> float:
+        """Get critical chi-square value for given degrees of freedom and alpha."""
+        # Approximation for common alpha values
+        # This could be made more precise with scipy.stats.chi2.ppf
+        if self.alpha >= 0.1:
+            return 2.706  # Very lenient
+        elif self.alpha >= 0.05:
+            return 3.841 if dof == 1 else 5.991  # Standard
+        else:
+            return 6.635 if dof == 1 else 9.210  # Strict

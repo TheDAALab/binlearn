@@ -1,155 +1,109 @@
-"""Manual flexible binning transformer.
-
-This module implements manual flexible binning, where bin specifications are
-explicitly provided by the user and can include both singleton bins (exact values)
-and interval bins (ranges). This provides maximum flexibility for complex binning
-requirements.
-
-Classes:
-    ManualFlexibleBinning: Main transformer for user-defined flexible binning.
 """
+Clean Manual Flexible binning implementation for  architecture.
+
+This module provides ManualFlexibleBinning that inherits from FlexibleBinningBase.
+Uses user-provided flexible bin specifications with both singleton and interval bins.
+"""
+
+from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
-from ..base._flexible_binning_base import FlexibleBinningBase
-from ..base._repr_mixin import ReprMixin
+from ..config import apply_config_defaults
 from ..utils.errors import BinningError, ConfigurationError
-from ..utils.types import BinEdgesDict, BinReps, FlexibleBinDefs, FlexibleBinSpec
+from ..utils.types import FlexibleBinDefs, BinReps, FlexibleBinSpec, BinEdgesDict, ArrayLike
+from ..base._flexible_binning_base import FlexibleBinningBase
 
 
-# pylint: disable=too-many-ancestors
-class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
-    """Manual flexible binning transformer with user-defined bin specifications.
+class ManualFlexibleBinning(FlexibleBinningBase):
+    """Manual flexible binning implementation using  architecture.
 
     Creates bins using explicitly provided bin specifications that can include both:
     - Singleton bins: exact numeric value matches (e.g., specific values or outliers)
     - Interval bins: numeric range matches (e.g., [min, max) intervals)
 
-    This transformer never infers bin specifications from data - they must always
-    be provided by the user. This approach offers maximum flexibility for complex
-    binning scenarios that combine singleton exact matches with traditional
-    interval binning.
-
-    This is ideal for:
-    - Numeric data requiring both exact and range matching
-    - Complex domain-specific numeric binning rules
-    - Standardized binning with both singleton and continuous elements
-    - Integration with external flexible binning specifications
-
-    The transformer is sklearn-compatible and supports pandas/polars DataFrames.
-    It includes comprehensive validation of user-provided bin specifications and
-    automatic generation of bin representatives when needed.
-
-    Attributes:
-        bin_specs (dict): User-provided flexible bin specifications for each feature.
-        bin_representatives (dict, optional): User-provided or auto-generated representatives.
-        preserve_dataframe (bool): Whether to preserve DataFrame format.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import ManualFlexibleBinning
-        >>>
-        >>> # Define mixed numeric bin specifications
-        >>> specs = {
-        ...     'grade': [
-        ...         95,            # Singleton bin for high grade
-        ...         85,            # Another singleton bin
-        ...         (0, 60),       # Interval bin for failing grades
-        ...         (60, 80),      # Interval bin for passing grades
-        ...         (80, 100)      # Interval bin for high grades
-        ...     ],
-        ...     'age': [
-        ...         (0, 18),       # Minors
-        ...         (18, 35),      # Young adults
-        ...         (35, 65),      # Middle-aged
-        ...         65             # Seniors (singleton for exact match)
-        ...     ]
-        ... }
-        >>>
-        >>> binner = ManualFlexibleBinning(bin_specs=specs)
-        >>> # Data with numeric values
-        >>> X = [[95, 25], [85, 45], [75, 17], [42, 65]]
-        >>> X_binned = binner.fit_transform(X)
+    This implementation follows the clean  architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         bin_spec: FlexibleBinSpec,
         bin_representatives: BinEdgesDict | None = None,
         preserve_dataframe: bool | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize ManualFlexibleBinning transformer.
-
-        Creates a manual flexible binning transformer that uses user-provided bin
-        specifications instead of inferring them from data. Bin specifications can
-        include both singleton bins (exact numeric values) and interval bins (numeric ranges).
-
-        Args:
-            bin_spec (FlexibleBinSpec): Dictionary mapping column identifiers to
-                their flexible bin specification lists. Each specification can be:
-                - Numeric scalar values for singleton bins (exact matches)
-                - Tuples (min, max) for interval bins (range matches)
-                Keys can be column names (str/int) or indices.
-            bin_representatives (Optional[BinEdgesDict], optional): Dictionary
-                mapping column identifiers to their bin representative values.
-                If None, representatives are auto-generated based on bin type.
-                Must have compatible structure with bin_spec. Defaults to None.
-            preserve_dataframe (Optional[bool], optional): Whether to return
-                DataFrames when input is DataFrame. If None, uses global
-                configuration. Defaults to None.
-            **kwargs: Additional arguments passed to parent FlexibleBinningBase.
-
-        Raises:
-            ConfigurationError: If bin_spec is not provided, empty, or contains
-                invalid bin specifications.
-
-        Example:
-            >>> # Basic usage with mixed numeric bin types
-            >>> specs = {
-            ...     0: [1.5, (2, 5), (5, 10), 15],  # Mix of singletons and intervals
-            ...     1: [(0, 25), (25, 50), (50, 100)]  # Only intervals
-            ... }
-            >>> binner = ManualFlexibleBinning(bin_spec=specs)
-
-            >>> # With custom representatives
-            >>> specs = {0: [(0, 10), (10, 20), 25]}
-            >>> reps = {0: [5, 15, 25]}  # Custom representatives
-            >>> binner = ManualFlexibleBinning(bin_spec=specs, bin_representatives=reps)
-
-            >>> # For DataFrame with named columns
-            >>> specs = {
-            ...     'category': [1, 2, 3],  # Numeric categorical bins
-            ...     'score': [(0, 60), (60, 80), (80, 100)]  # Score ranges
-            ... }
-            >>> binner = ManualFlexibleBinning(bin_spec=specs)
-
-        Note:
-            - bin_spec is required and cannot be None
-            - Each bin can be either a scalar (singleton) or tuple (interval)
-            - Singleton bins match exact values
-            - Interval bins are inclusive of lower bound, exclusive of upper bound
-            - If bin_representatives is not provided, they are auto-generated
-        """
-        # Validate that bin_spec is provided
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize Manual Flexible binning."""
+        # For manual flexible binning, bin_spec is required and passed directly
         if bin_spec is None:
             raise ConfigurationError(
                 "bin_spec must be provided for ManualFlexibleBinning",
                 suggestions=[
-                    "Provide bin_spec as a dictionary mapping columns to bin specification lists",
+                    "Provide bin_spec as a dictionary mapping columns to flexible bin lists",
                     "Example: bin_spec={0: [1.5, (2, 5), (5, 10)], 1: [(0, 25), (25, 50)]}",
                 ],
             )
 
-        super().__init__(
-            preserve_dataframe=preserve_dataframe,
-            bin_spec=bin_spec,
-            bin_representatives=bin_representatives,
-            **kwargs,
+        # Prepare user parameters for config integration (exclude never-configurable params)
+        user_params = {
+            "preserve_dataframe": preserve_dataframe,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
+
+        # Apply configuration defaults for manual_flexible method
+        resolved_params = apply_config_defaults("manual_flexible", user_params)
+
+        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        # Manual flexible binning doesn't need guidance_columns
+        FlexibleBinningBase.__init__(
+            self,
+            preserve_dataframe=resolved_params.get("preserve_dataframe"),
+            guidance_columns=None,  # Not needed for unsupervised manual binning
+            bin_spec=bin_spec,  # Required for manual flexible binning
+            bin_representatives=bin_representatives,  # Never configurable
         )
+
+    def fit(
+        self, X: ArrayLike, y: ArrayLike | None = None, **fit_params: Any
+    ) -> "ManualFlexibleBinning":
+        """Fit the Manual Flexible binning (no-op since bin specs are pre-defined).
+
+        For manual flexible binning, no fitting is required since bin specifications
+        are provided by the user. This method performs validation and returns self.
+
+        Args:
+            X: Input data (used only for validation)
+            y: Target values (ignored for manual binning)
+            **fit_params: Additional fit parameters (ignored)
+
+        Returns:
+            Self (fitted transformer)
+        """
+        # Validate parameters but don't actually fit anything
+        self._validate_params()
+
+        # Manual flexible binning is always "fitted" since bin specs are pre-defined
+        self._is_fitted = True
+        return self
+
+    def _validate_params(self) -> None:
+        """Validate Manual Flexible binning parameters."""
+        # Call parent validation
+        FlexibleBinningBase._validate_params(self)
+
+        # ManualFlexibleBinning specific validation: bin_spec is required
+        if self.bin_spec is None or len(self.bin_spec) == 0:
+            raise ConfigurationError(
+                "bin_spec must be provided and non-empty for ManualFlexibleBinning",
+                suggestions=[
+                    "Provide bin_spec as a dictionary: {column: [spec1, spec2, ...]}",
+                    "Example: bin_spec={0: [1.5, (2, 5)], 1: [(0, 25), (25, 50)]}",
+                ],
+            )
 
     def _calculate_flexible_bins(
         self,
@@ -164,42 +118,55 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
         any data-based calculations.
 
         Args:
-            x_col (np.ndarray[Any, Any]): Input data column (ignored in manual binning).
-            col_id (Any): Column identifier to retrieve pre-defined bin specifications.
-            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data (ignored).
-                Defaults to None.
+            x_col: Input data column (ignored in manual binning)
+            col_id: Column identifier to retrieve pre-defined bin specifications
+            guidance_data: Not used for manual flexible binning
 
         Returns:
-            Tuple[FlexibleBinDefs, BinReps]: A tuple containing:
-                - bin_specs (FlexibleBinDefs): Pre-defined flexible bin specifications for this
-                  column
-                - bin_representatives (BinReps): Pre-defined or auto-generated representative
-                  values for this column
+            Tuple of (bin_specs, bin_representatives)
 
         Raises:
-            BinningError: If no bin specifications are defined for the specified column.
-
-        Note:
-            - Input data is ignored since bins are manually specified
-            - If no representatives are provided, they are auto-generated based on bin type
-            - Singleton bins get the exact value as representative
-            - Interval bins get the midpoint as representative
+            BinningError: If no bin specifications are defined for the specified column
         """
+        # Handle column name mapping for numpy arrays
+        # The  architecture uses feature_N names internally, but users provide 0, 1, etc.
+        actual_col_key = col_id
+
+        # If col_id is like 'feature_N' and not found, try mapping to integer N
+        if (self.bin_spec is None or col_id not in self.bin_spec) and isinstance(col_id, str):
+            if col_id.startswith("feature_") and self.bin_spec is not None:
+                try:
+                    # Extract the number from 'feature_N'
+                    col_idx = int(col_id.replace("feature_", ""))
+                    if col_idx in self.bin_spec:
+                        actual_col_key = col_idx
+                except ValueError:
+                    pass
+
+        # If original integer key and not found, try mapping to feature_N
+        elif (self.bin_spec is None or col_id not in self.bin_spec) and isinstance(col_id, int):
+            if self.bin_spec is not None:
+                feature_name = f"feature_{col_id}"
+                if feature_name in self.bin_spec:
+                    actual_col_key = feature_name
+
         # Get pre-defined bin specifications for this column
-        if self.bin_spec is None or col_id not in self.bin_spec:
+        if self.bin_spec is None or actual_col_key not in self.bin_spec:
             raise BinningError(
                 f"No bin specifications defined for column {col_id}",
                 suggestions=[
                     f"Add bin specifications for column {col_id} in the bin_spec dictionary",
+                    "For numpy arrays, use integer keys (0, 1, 2, ...) in bin_spec",
+                    "For DataFrames, use column names as keys in bin_spec",
                     "Ensure all data columns have corresponding bin specification definitions",
                 ],
             )
 
-        specs = list(self.bin_spec[col_id])
+        specs = list(self.bin_spec[actual_col_key])
 
         # Get or generate representatives
-        if self.bin_representatives is not None and col_id in self.bin_representatives:
-            representatives = list(self.bin_representatives[col_id])
+        if self.bin_representatives is not None and actual_col_key in self.bin_representatives:
+            representatives = list(self.bin_representatives[actual_col_key])
         else:
             # Auto-generate representatives based on bin type
             representatives = []
@@ -220,32 +187,3 @@ class ManualFlexibleBinning(ReprMixin, FlexibleBinningBase):
                     representatives.append(0.0)
 
         return specs, representatives
-
-    def _validate_params(self) -> None:
-        """Validate parameters for manual flexible binning.
-
-        Performs validation specific to ManualFlexibleBinning - checks for presence
-        and emptiness of required parameters. Content validation is handled by the
-        base class FlexibleBinningBase._validate_params().
-
-        Raises:
-            ConfigurationError: If any parameter validation fails:
-                - bin_spec must be provided and non-empty
-
-        Note:
-            - Called automatically during fit() for early error detection
-            - Only checks presence/emptiness - content validation in base class
-            - Part of sklearn-compatible parameter validation pattern
-        """
-        # Call parent validation first (handles content validation)
-        super()._validate_params()
-
-        # ManualFlexibleBinning specific validation: bin_spec is required
-        if self.bin_spec is None or len(self.bin_spec) == 0:
-            raise ConfigurationError(
-                "bin_spec must be provided and non-empty for ManualFlexibleBinning",
-                suggestions=[
-                    "Provide bin_spec as a dictionary: {column: [spec1, spec2, ...]}",
-                    "Example: bin_spec={0: [1.5, (2, 5)], 1: [(0, 25), (25, 50)]}",
-                ],
-            )

@@ -87,14 +87,17 @@ from .config import get_config, load_config, reset_config, set_config
 # Concrete binning methods
 from .methods import (
     Chi2Binning,
+    DBSCANBinning,
     EqualFrequencyBinning,
     EqualWidthBinning,
     EqualWidthMinimumWeightBinning,
+    GaussianMixtureBinning,
+    IsotonicBinning,
     KMeansBinning,
     ManualFlexibleBinning,
     ManualIntervalBinning,
     SingletonBinning,
-    SupervisedBinning,
+    TreeBinning,
 )
 
 # Tools and integrations
@@ -203,14 +206,17 @@ __all__ = [
     "validate_numeric_parameter",
     # Concrete methods
     "Chi2Binning",
+    "DBSCANBinning",
     "EqualFrequencyBinning",
     "EqualWidthBinning",
     "EqualWidthMinimumWeightBinning",
+    "GaussianMixtureBinning",
+    "IsotonicBinning",
     "KMeansBinning",
     "ManualFlexibleBinning",
     "ManualIntervalBinning",
     "SingletonBinning",
-    "SupervisedBinning",
+    "TreeBinning",
     # Optional dependencies
     "PANDAS_AVAILABLE",
     "pd",

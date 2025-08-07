@@ -10,7 +10,7 @@ Classes:
 
 Functions:
     make_binning_scorer: Create a scorer that includes binning in evaluation.
-    _import_supervised_binning: Helper function to import SupervisedBinning.
+    _import_supervised_binning: Helper function to import Chi2Binning.
 """
 
 from typing import Any
@@ -23,7 +23,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
-from ..methods import EqualWidthBinning, SingletonBinning, SupervisedBinning
+from ..methods import Chi2Binning, EqualWidthBinning, SingletonBinning
 
 
 class BinningFeatureSelector(BaseEstimator, TransformerMixin):  # type: ignore[misc,unused-ignore]
@@ -92,7 +92,7 @@ class BinningFeatureSelector(BaseEstimator, TransformerMixin):  # type: ignore[m
         if self.binning_method == "equal_width":
             binner = EqualWidthBinning(**self.binning_params)
         elif self.binning_method == "supervised":
-            binner = SupervisedBinning(**self.binning_params)
+            binner = Chi2Binning(**self.binning_params)
         elif self.binning_method == "singleton":
             binner = SingletonBinning(**self.binning_params)
         else:
@@ -200,9 +200,7 @@ class BinningPipeline:
             or just the binning transformer if final_estimator is None.
         """
 
-        binner = SupervisedBinning(
-            task_type=task_type, tree_params=tree_params, guidance_columns=[guidance_column]
-        )
+        binner = Chi2Binning(guidance_columns=[guidance_column])
 
         if final_estimator is not None:
             return Pipeline([("binning", binner), ("estimator", final_estimator)])
@@ -254,7 +252,7 @@ def make_binning_scorer(
 
         if binning_method == "supervised":
             params.setdefault("guidance_columns", [-1])  # Assume last column is target
-            binner = SupervisedBinning(**params)
+            binner = Chi2Binning(**params)
             # For supervised binning, we need to include the target
             X_with_target = np.column_stack([X, y])
             X_binned = binner.fit_transform(X_with_target)

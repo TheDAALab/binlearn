@@ -1,229 +1,127 @@
 """
-SingletonBinning transformer for creating singleton bins from unique values.
+Clean singleton binning implementation for  architecture.
 
-This module implements a specialized binning method that creates one bin per unique
-value in the data. This transformer maintains the original data shape while creating
-singleton bins using a simplified format (just the value itself).
-
-The transformer is designed for scenarios where you want to treat each unique value
-as its own bin, useful for categorical data represented as numbers or when you need
-fine-grained binning based on actual data values.
+This module provides SingletonBinning that inherits from FlexibleBinningBase.
+Each unique value gets its own bin.
 """
 
+from __future__ import annotations
+
 from typing import Any
+import warnings
 
 import numpy as np
 
+from ..config import get_config, apply_config_defaults
+from ..utils.types import BinEdgesDict
+from ..utils.errors import DataQualityWarning
 from ..base._flexible_binning_base import FlexibleBinningBase
-from ..base._repr_mixin import ReprMixin
-from ..utils.types import BinEdges, BinEdgesDict, ColumnId, FlexibleBinDefs, FlexibleBinSpec
 
 
-# pylint: disable=too-many-ancestors
-class SingletonBinning(ReprMixin, FlexibleBinningBase):
-    """Creates a singleton bin for each unique value in numeric data.
+class SingletonBinning(FlexibleBinningBase):
+    """Singleton binning implementation using  architecture.
 
-    This transformer creates one bin per unique value found in the data, where each
-    bin is simply the value itself (simplified format). Unlike traditional one-hot encoding that
-    expands columns, this maintains the original data shape while creating fine-grained
-    bins based on actual data values.
+    Creates one bin for each unique value in the numeric data. Only supports numeric data.
+    Each unique numeric value becomes both a bin edge and its own representative.
+    This is useful for discrete numeric variables or when preserving all distinct values.
 
-    The method supports both per-column and joint fitting strategies:
-    - Per-column fitting: Each column gets bins based on its own unique values
-    - Joint fitting: All columns share the same bins based on all unique values across features
-
-    The method is particularly useful for:
-    - Categorical data represented as numbers
-    - Fine-grained binning where each unique value should be its own bin
-    - Preprocessing for models that benefit from value-specific binning
-    - Ensuring consistent binning across multiple related features (joint fitting)
-
-    **Important**: This method only supports numeric data. Non-numeric data will
-    raise a ValueError during fitting.
-
-    Args:
-        preserve_dataframe (bool, optional): Whether to preserve DataFrame format in output.
-            If None, uses global configuration default.
-        bin_spec (FlexibleBinSpec, optional): Pre-defined bin specifications for columns.
-            If provided, skips automatic bin generation.
-        bin_representatives (BinEdgesDict, optional): Pre-computed bin representatives.
-        fit_jointly (bool, optional): Whether to fit bins jointly across all columns.
-            If True, all columns will share the same bins based on unique values
-            found across all features. If None, uses global configuration default.
-        max_unique_values (int): Maximum number of unique values allowed per column
-            before raising an error. Prevents memory issues with high cardinality data.
-        **kwargs: Additional arguments passed to the parent FlexibleBinningBase.
-
-    Attributes:
-        max_unique_values (int): Maximum unique values allowed per column.
-        bin_spec_ (FlexibleBinDefs): Generated bin specifications after fitting.
-        bin_representatives_ (BinEdgesDict): Computed bin representatives after fitting.
-
-    Raises:
-        ValueError: If non-numeric data is provided or if unique values exceed max_unique_values.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import SingletonBinning
-        >>> X = np.array([[1.0, 10.0], [2.0, 20.0], [1.0, 10.0]])
-        >>> binner = SingletonBinning()
-        >>> X_binned = binner.fit_transform(X)
-        >>> # Each unique value gets its own bin: 1.0->bin0, 2.0->bin1, etc.
+    This implementation follows the clean  architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
     def __init__(
         self,
         preserve_dataframe: bool | None = None,
-        bin_spec: FlexibleBinSpec | None = None,
-        bin_representatives: BinEdgesDict | None = None,
-        max_unique_values: int = 100,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize SingletonBinning transformer.
+        fit_jointly: bool | None = None,
+        bin_spec: Any | None = None,  # FlexibleBinSpec
+        bin_representatives: Any | None = None,  # BinEdgesDict
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize singleton binning."""
+        # Prepare user parameters for config integration (exclude never-configurable params)
+        user_params = {
+            "preserve_dataframe": preserve_dataframe,
+            "fit_jointly": fit_jointly,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
 
-        Creates a specialized binning transformer that generates singleton bins for
-        each unique value in the data. This is NOT traditional one-hot encoding that
-        expands features into multiple columns. Instead, it maintains the original
-        data shape while creating fine-grained bins where each bin contains exactly
-        one unique value.
+        # Apply configuration defaults for singleton method
+        params = apply_config_defaults("singleton", user_params)
 
-        The transformer supports both per-column and joint fitting strategies:
-        - Per-column fitting (default): Each column gets bins based on its own unique values
-        - Joint fitting: All columns share the same bins based on all unique values across features
-
-        Args:
-            preserve_dataframe (Optional[bool], optional): Whether to preserve
-                pandas DataFrame structure in output. If None, uses global
-                configuration default. Defaults to None.
-            bin_spec (Optional[FlexibleBinSpec], optional): Pre-defined bin
-                specifications for columns. If provided, skips automatic bin
-                generation during fitting. Defaults to None.
-            bin_representatives (Optional[BinEdgesDict], optional): Pre-defined
-                bin representative values used for inverse transformation. Should
-                correspond to the bin_spec if provided. Defaults to None.
-            max_unique_values (int, optional): Maximum number of unique values
-                allowed per column (per-column fitting) or across all columns
-                (joint fitting) before raising an error. This prevents memory
-                issues with high-cardinality data. Defaults to 100.
-            **kwargs: Additional arguments passed to FlexibleBinningBase parent
-                class, including fit_jointly (bool, optional) to control fitting strategy.
-
-        Raises:
-            ValueError: If max_unique_values is not a positive integer.
-
-        Example:
-            >>> # Basic usage for low-cardinality numeric data
-            >>> binner = SingletonBinning()
-
-            >>> # With pre-defined bin specifications (simplified input format)
-            >>> spec = {0: [1.0, 2.0]}  # Input: just the values
-            >>> binner = SingletonBinning(bin_spec=spec)
-            >>> # Internally stored as: {0: [1.0, 2.0]}
-
-        Note:
-            - Supports both per-column and joint fitting strategies
-            - Joint fitting creates consistent bins across all features using all unique values
-            - Only supports numeric data; non-numeric data will raise errors
-            - Input format simplified: [1, 2, (3, 5)] but internally stored as dicts for
-                compatibility
-        """
-        # Set subclass-specific parameters first
-        self.max_unique_values = max_unique_values
-
-        super().__init__(
+        # Initialize parent with resolved config parameters (no guidance_columns for singleton binning)
+        # Note: bin_spec and bin_representatives are never set from config
+        FlexibleBinningBase.__init__(
+            self,
+            preserve_dataframe=params.get("preserve_dataframe"),
+            fit_jointly=params.get("fit_jointly"),
+            guidance_columns=None,  # Singleton binning doesn't use guidance
             bin_spec=bin_spec,
             bin_representatives=bin_representatives,
-            preserve_dataframe=preserve_dataframe,
-            **kwargs,
         )
 
     def _validate_params(self) -> None:
-        """Validate SingletonBinning specific parameters.
-
-        Performs validation of parameters specific to SingletonBinning in addition
-        to the base class parameter validation. Ensures that the max_unique_values
-        parameter is properly configured to prevent memory issues with high-cardinality data.
-
-        Raises:
-            ValueError: If max_unique_values is not a positive integer. This
-                parameter is critical for preventing memory exhaustion when
-                dealing with high-cardinality categorical data.
-
-        Note:
-            - Called automatically during initialization and parameter setting
-            - Supplements the base class _validate_params() method
-            - Focuses specifically on SingletonBinning parameter constraints
-        """
-        super()._validate_params()
-
-        if not isinstance(self.max_unique_values, int) or self.max_unique_values <= 0:
-            raise ValueError("max_unique_values must be a positive integer")
+        """Validate singleton binning parameters."""
+        # Call parent validation
+        FlexibleBinningBase._validate_params(self)
+        # No additional validation needed for singleton binning
 
     def _calculate_flexible_bins(
         self,
         x_col: np.ndarray[Any, Any],
-        col_id: ColumnId,
+        col_id: Any,
         guidance_data: np.ndarray[Any, Any] | None = None,
-    ) -> tuple[FlexibleBinDefs, BinEdges]:
-        """Calculate singleton bins for each unique value in the column.
-
-        Creates one bin per unique value found in the data. Each bin is defined as
-        creates a bin containing exactly one unique value. This method only
-        supports numeric data and will raise an error for non-numeric inputs.
+    ) -> tuple[list[Any], list[Any]]:
+        """Calculate singleton bins - one bin per unique value.
 
         Args:
-            x_col (np.ndarray[Any, Any]): Numeric data for a single column to analyze.
-            col_id (ColumnId): Column identifier for error reporting.
-            guidance_data (Optional[np.ndarray[Any, Any]]): Optional guidance data, not used
-                in one-hot binning but kept for interface compatibility.
+            x_col: Column data to analyze
+            col_id: Column identifier (unused for singleton)
+            guidance_data: Optional guidance data (unused for singleton)
 
         Returns:
-            Tuple[FlexibleBinDefs, BinEdges]: A tuple containing:
-                - List of singleton bin definitions: [val1, val2, ...]
-                - List of representative values: [val1, val2, ...]
-
-        Raises:
-            ValueError: If the column contains non-numeric data or if the number of
-                unique values exceeds max_unique_values.
-
-        Note:
-            NaN and infinite values are filtered out before determining unique values.
-            If all values are NaN/inf, a default bin with value 0.0 is created.
+            Tuple of (unique_values, unique_values) - both are the same for singleton binning
         """
-        # Convert to numeric array - this will raise an error for non-numeric data
-        try:
-            x_col = np.asarray(x_col, dtype=float)
-        except (ValueError, TypeError) as e:
-            raise ValueError(
-                f"SingletonBinning only supports numeric data. "
-                f"Column {col_id} contains non-numeric values. "
-                f"Original error: {str(e)}"
-            ) from e
+        # Find unique values, excluding NaN and inf
+        mask_valid = np.isfinite(x_col)
+        valid_data = x_col[mask_valid]
 
-        # Remove NaN/inf values for finding unique values
-        finite_mask = np.isfinite(x_col)
-        if not finite_mask.any():
-            # All values are NaN/inf - create a default bin
-            return [0.0], [0.0]
-
-        finite_values = x_col[finite_mask]
-        unique_values = np.unique(finite_values)
-
-        # Check if we have too many unique values
-        if len(unique_values) > self.max_unique_values:
-            raise ValueError(
-                f"Column {col_id} has {len(unique_values)} unique values, "
-                f"which exceeds max_unique_values={self.max_unique_values}. "
-                f"Consider using a different binning method for high-cardinality data."
+        if len(valid_data) == 0:
+            # Handle case where all values are NaN/inf - create a minimal valid bin
+            warnings.warn(
+                f"Column {col_id} contains only NaN/inf values. Creating default bin.",
+                DataQualityWarning,
             )
+            unique_values = [0.0]  # Default fallback
+        else:
+            unique_values = np.unique(valid_data).tolist()
+            # Ensure we have at least one bin
+            if len(unique_values) == 0:
+                unique_values = [0.0]
 
-        # Create singleton bins for each unique value
-        bin_defs = []
-        representatives = []
+        # For singleton binning, representatives are the same as the unique values
+        representatives = unique_values.copy()
 
-        for val in unique_values:
-            val = float(val)  # Convert to Python float
-            bin_defs.append(val)  # Simplified format: just the value
-            representatives.append(val)
+        return unique_values, representatives
 
-        return bin_defs, representatives
+    def _match_values_to_bin(
+        self, column_data: np.ndarray[Any, Any], bin_value: Any, bin_idx: int, col_id: Any
+    ) -> np.ndarray[Any, Any]:
+        """Match values exactly to their singleton bins.
+
+        Args:
+            column_data: The column data to match
+            bin_value: The exact value that defines this bin
+            bin_idx: The index of this bin
+            col_id: Column identifier (unused)
+
+        Returns:
+            Boolean mask of exact matches
+        """
+        # Handle NaN values specially
+        if np.isnan(bin_value) if isinstance(bin_value, (int, float)) else False:
+            return np.isnan(column_data)
+
+        # Exact match for singleton binning
+        return column_data == bin_value

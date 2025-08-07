@@ -1,22 +1,17 @@
-"""Gaussian Mixture Model clustering-based binning transformer.
-
-This module implements Gaussian Mixture binning, where continuous data is divided into bins
-based on Gaussian Mixture Model clustering. The bin edges are determined by the decision
-boundaries between adjacent mixture components, creating bins that naturally group similar
-values together based on probabilistic clustering.
-
-Classes:
-    GaussianMixtureBinning: Main transformer for Gaussian Mixture clustering-based binning
-        operations.
 """
+Clean Gaussian Mixture binning implementation for  architecture.
+
+This module provides GaussianMixtureBinning that inherits from IntervalBinningBase.
+Uses Gaussian Mixture Model clustering to find natural probabilistic bin boundaries.
+"""
+
+from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 from sklearn.mixture import GaussianMixture
 
-from ..base._interval_binning_base import IntervalBinningBase
-from ..base._repr_mixin import ReprMixin
 from ..config import apply_config_defaults
 from ..utils.errors import ConfigurationError
 from ..utils.parameter_conversion import (
@@ -25,144 +20,76 @@ from ..utils.parameter_conversion import (
     validate_bin_number_parameter,
 )
 from ..utils.types import BinEdgesDict
+from ..base._interval_binning_base import IntervalBinningBase
 
 
-# pylint: disable=too-many-ancestors
-class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
-    """Gaussian Mixture Model clustering-based binning transformer.
+class GaussianMixtureBinning(IntervalBinningBase):
+    """Gaussian Mixture Model clustering-based binning implementation using  architecture.
 
-    Creates bins based on Gaussian Mixture Model (GMM) clustering of each feature. The bin edges are
-    determined by finding the decision boundaries between adjacent mixture components, which
-    naturally groups similar values together based on probabilistic clustering. This approach is
-    particularly useful when the data has natural Gaussian-like clusters or when you want bins
-    that adapt to the probabilistic structure of the data distribution.
+    Creates bins based on Gaussian Mixture Model (GMM) clustering of each feature.
+    The bin edges are determined by the decision boundaries between mixture components,
+    creating bins that represent natural probabilistic groupings in the data.
 
-    This transformer is sklearn-compatible and supports pandas/polars DataFrames.
-    It includes advanced features like random state control, clipping, and
-    comprehensive error handling.
-
-    Attributes:
-        n_components (int): Number of mixture components (bins) per feature.
-        random_state (int, optional): Random seed for reproducible clustering.
-        clip (bool, optional): Whether to clip values outside bin range.
-        columns (list, optional): Specific columns to bin.
-        guidance_columns (list, optional): Columns to exclude from binlearn.
-        preserve_dataframe (bool): Whether to preserve DataFrame format.
-        _bin_edges (dict): Computed bin edges after fitting.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import GaussianMixtureBinning
-        >>> X = np.random.rand(100, 3)
-        >>> binner = GaussianMixtureBinning(n_components=5)
-        >>> X_binned = binner.fit_transform(X)
+    This implementation follows the clean  architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        n_components: int | str = 10,
+        n_components: int | str | None = None,
         random_state: int | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
+        fit_jointly: bool | None = None,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        fit_jointly: bool | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize GaussianMixtureBinning transformer.
-
-        Creates a Gaussian Mixture Model clustering-based binning transformer that uses GMM
-        clustering to find natural probabilistic groupings in the data and creates bin edges
-        at the decision boundaries between mixture components.
-
-        Args:
-            n_components (Union[int, str], optional): Number of mixture components (bins) to
-                create for each feature. Can be an integer or string specification:
-                - int: Direct specification (e.g., 10)
-                - "sqrt": Square root of number of samples
-                - "log": Natural logarithm of number of samples
-                - "log2": Base-2 logarithm of number of samples
-                - "log10": Base-10 logarithm of number of samples
-                - "sturges": Sturges' rule (1 + log2(n_samples))
-                Defaults to 10.
-            random_state (Optional[int], optional): Random seed for reproducible
-                GMM clustering results. If None, clustering may produce
-                different results on repeated runs. Defaults to None.
-            clip (Optional[bool], optional): Whether to clip out-of-range values
-                to the nearest bin edge. If None, uses global configuration.
-                Defaults to None.
-            preserve_dataframe (Optional[bool], optional): Whether to return
-                DataFrames when input is DataFrame. If None, uses global
-                configuration. Defaults to None.
-            bin_edges (Optional[BinEdgesDict], optional): Pre-specified bin edges
-                for each column. If provided, these edges are used instead of
-                calculating from GMM clustering. Defaults to None.
-            bin_representatives (Optional[BinEdgesDict], optional): Pre-specified
-                representative values for each bin. If provided along with bin_edges,
-                these representatives are used. Defaults to None.
-            fit_jointly (Optional[bool], optional): Whether to fit parameters
-                jointly across all columns using the same global clustering. If None,
-                uses global configuration. Defaults to None.
-            **kwargs: Additional arguments passed to parent IntervalBinningBase.
-
-        Raises:
-            ConfigurationError: If n_components is not a positive integer or if random_state
-                is not a valid integer.
-
-        Example:
-            >>> # Basic usage with default parameters
-            >>> binner = GaussianMixtureBinning(n_components=5)
-
-            >>> # With reproducible results
-            >>> binner = GaussianMixtureBinning(n_components=10, random_state=42)
-
-            >>> # With pre-specified bin edges
-            >>> edges = {0: [0, 25, 50, 75, 100]}
-            >>> binner = GaussianMixtureBinning(bin_edges=edges)
-        """
-        # Apply configuration defaults for parameters not explicitly provided
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize Gaussian Mixture binning."""
+        # Prepare user parameters for config integration (exclude never-configurable params)
         user_params = {
             "n_components": n_components,
             "random_state": random_state,
             "clip": clip,
             "preserve_dataframe": preserve_dataframe,
-            "bin_edges": bin_edges,
-            "bin_representatives": bin_representatives,
             "fit_jointly": fit_jointly,
         }
         # Remove None values to allow config defaults to take effect
         user_params = {k: v for k, v in user_params.items() if v is not None}
 
         # Apply configuration defaults for gaussian_mixture method
-        params = apply_config_defaults("gaussian_mixture", user_params, **kwargs)
+        resolved_params = apply_config_defaults("gaussian_mixture", user_params)
 
-        # Store GMM specific parameters BEFORE calling super().__init__
-        # because parent class calls _validate_params() which needs these attributes
-        self.n_components = params.get("n_components", n_components)
-        self.random_state = params.get("random_state", random_state)
+        # Store method-specific parameters
+        self.n_components = resolved_params.get("n_components", 10)
+        self.random_state = resolved_params.get("random_state", None)
 
-        super().__init__(
-            clip=params.get("clip", clip),
-            preserve_dataframe=params.get("preserve_dataframe", preserve_dataframe),
-            bin_edges=params.get("bin_edges", bin_edges),
-            bin_representatives=params.get("bin_representatives", bin_representatives),
-            fit_jointly=params.get("fit_jointly", fit_jointly),
-            **{
-                k: v
-                for k, v in params.items()
-                if k
-                not in {
-                    "n_components",
-                    "random_state",
-                    "clip",
-                    "preserve_dataframe",
-                    "bin_edges",
-                    "bin_representatives",
-                    "fit_jointly",
-                }
-            },
+        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        IntervalBinningBase.__init__(
+            self,
+            clip=resolved_params.get("clip"),
+            preserve_dataframe=resolved_params.get("preserve_dataframe"),
+            fit_jointly=resolved_params.get("fit_jointly"),
+            guidance_columns=None,  # Not needed for unsupervised binning
+            bin_edges=bin_edges,  # Never configurable
+            bin_representatives=bin_representatives,  # Never configurable
         )
+
+    def _validate_params(self) -> None:
+        """Validate Gaussian Mixture binning parameters."""
+        # Call parent validation
+        IntervalBinningBase._validate_params(self)
+
+        # Validate n_components using centralized utility
+        validate_bin_number_parameter(self.n_components, param_name="n_components")
+
+        # Validate random_state parameter
+        if self.random_state is not None and not isinstance(self.random_state, int):
+            raise ConfigurationError(
+                "random_state must be an integer or None",
+                suggestions=["Example: random_state=42"],
+            )
 
     def _calculate_bins(
         self,
@@ -170,238 +97,127 @@ class GaussianMixtureBinning(ReprMixin, IntervalBinningBase):
         col_id: Any,
         guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
-        """Calculate Gaussian Mixture Model clustering-based bins for a single column or
-        joint binning data.
+        """Calculate Gaussian Mixture Model clustering-based bins for a single column.
 
-        Computes bin edges and representatives for either a single feature (per-column
-        fitting) or from all flattened data (joint fitting). Uses GMM clustering
-        to find natural probabilistic groupings and creates bin edges at decision boundaries
-        between mixture components.
+        Uses GMM clustering to find natural probabilistic groupings
+        and creates bin boundaries at decision boundaries between components.
 
         Args:
-            x_col (np.ndarray[Any, Any]): Data for binning. For per-column fitting, this is
-                data for a single column with shape (n_samples,). For joint fitting,
-                this is flattened data from all columns. May contain NaN values.
-            col_id (Any): Column identifier (name or index) for error reporting
-                and logging purposes. For joint fitting, this is typically the
-                first column identifier.
-            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data for
-                supervised binning. Not used in GMM binning as it's an
-                unsupervised method. Defaults to None.
+            x_col: Preprocessed column data (from base class)
+            col_id: Column identifier for error reporting
+            guidance_data: Not used for GMM binning (unsupervised)
 
         Returns:
-            Tuple[List[float], List[float]]: A tuple containing:
-                - bin_edges (List[float]): List of bin edge values with length n_components+1
-                - bin_representatives (List[float]): List of representative values
-                  (mixture component means) with length n_components
+            Tuple of (bin_edges, bin_representatives)
 
         Raises:
-            ValueError: If n_components is less than 1 or if the data contains insufficient
-                non-NaN values for clustering.
-
-        Note:
-            - For per-column fitting: uses column-specific clustering
-            - For joint fitting: uses global clustering from all flattened data
-            - Handles all-NaN data by creating a default [0, 1] range
-            - Guidance data is ignored as GMM binning is unsupervised
-            - May create fewer than n_components if data has insufficient unique values
+            ValueError: If n_components is invalid or insufficient data for clustering
         """
-        # Handle integer n_components validation first (for backward compatibility with tests)
+        # Validate n_components for calculation
         validate_bin_number_for_calculation(self.n_components, param_name="n_components")
 
-        # Resolve n_components if it's a string specification
         resolved_n_components = resolve_n_bins_parameter(
-            self.n_components, param_name="n_components", data_shape=(len(x_col), 1)
+            self.n_components, data_shape=(len(x_col), 1), param_name="n_components"
         )
-
-        if resolved_n_components < 1:
-            raise ValueError(f"n_components must be >= 1, got {resolved_n_components}")
 
         return self._create_gmm_bins(x_col, col_id, resolved_n_components)
 
-    # pylint: disable=too-many-locals
     def _create_gmm_bins(
-        self, x_col: np.ndarray[Any, Any], col_id: Any, n_components: int
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        n_components: int,
     ) -> tuple[list[float], list[float]]:
         """Create Gaussian Mixture Model clustering-based bins.
 
-        Generates bin edges and representative values using GMM clustering
-        to identify natural probabilistic groupings in the data and creates bin boundaries
-        at the decision boundaries between mixture components.
-
         Args:
-            x_col (np.ndarray[Any, Any]): Data to bin. May contain NaN values.
-            col_id (Any): Column identifier for error reporting.
-            n_components (int): Number of mixture components to create. Must be positive.
+            x_col: Preprocessed column data (no NaN/inf values)
+            col_id: Column identifier for error reporting
+            n_components: Number of mixture components to create
 
         Returns:
-            Tuple[List[float], List[float]]: A tuple containing:
-                - bin_edges (List[float]): List of n_components+1 edge values that
-                  define the bin boundaries based on component decision boundaries
-                - bin_representatives (List[float]): List of n_components representative
-                  values (mixture component means) that represent each bin
-
-        Raises:
-            ValueError: If data contains insufficient non-NaN values for clustering.
-
-        Example:
-            >>> data = np.array([1, 2, 3, 10, 11, 12, 20, 21, 22])
-            >>> binner._create_gmm_bins(data, 'col1', 3)
-            ([1.0, 6.5, 16.0, 22.0], [2.0, 11.0, 21.0])
+            Tuple of (bin_edges, bin_representatives)
 
         Note:
-            - Uses sklearn.mixture.GaussianMixture for probabilistic clustering
-            - Handles constant data by adding small epsilon
-            - May create fewer bins if data has insufficient unique values
-            - Representatives are the mixture component means
+            The data is already preprocessed by the base class, so we don't need
+            to handle NaN/inf values or constant data here.
         """
-        # Remove NaN values for clustering
-        clean_data = x_col[~np.isnan(x_col)]
-
-        if len(clean_data) == 0:
-            # All NaN data - create default range
-            edges_array = np.linspace(0.0, 1.0, n_components + 1)
-            edges = list(edges_array)
-            reps = [(edges[i] + edges[i + 1]) / 2 for i in range(n_components)]
-            return edges, reps
-
-        if len(clean_data) < n_components:
+        if len(x_col) < n_components:
             raise ValueError(
-                f"Column {col_id}: Insufficient non-NaN values ({len(clean_data)}) "
+                f"Column {col_id}: Insufficient values ({len(x_col)}) "
                 f"for {n_components} components. Need at least {n_components} values."
             )
 
-        # Handle case where all values are the same
-        if len(np.unique(clean_data)) == 1:
-            # All data points are the same - create equal-width bins around the value
-            value = clean_data[0]
-            epsilon = 1e-8 if value != 0 else 1e-8
-            edges_array = np.linspace(value - epsilon, value + epsilon, n_components + 1)
-            edges = list(edges_array)
-            reps = [(edges[i] + edges[i + 1]) / 2 for i in range(n_components)]
+        # Reshape data for GMM (expects 2D array)
+        X_reshaped = x_col.reshape(-1, 1)
+
+        try:
+            # Apply Gaussian Mixture Model clustering
+            gmm = GaussianMixture(
+                n_components=n_components, random_state=self.random_state, covariance_type="full"
+            )
+            gmm.fit(X_reshaped)
+
+            # Get component means and sort them
+            means = np.array(gmm.means_).flatten()
+            sorted_indices = np.argsort(means)
+            sorted_means = means[sorted_indices]
+
+            # Calculate component boundaries
+            edges = [float(np.min(x_col))]  # Start with data minimum
+
+            # Create boundaries between adjacent components
+            for i in range(len(sorted_means) - 1):
+                boundary = (sorted_means[i] + sorted_means[i + 1]) / 2
+                edges.append(float(boundary))
+
+            edges.append(float(np.max(x_col)))  # End with data maximum
+
+            # Representatives are the component means
+            reps = [float(mean) for mean in sorted_means]
+
             return edges, reps
 
-        # Handle case where we have fewer unique values than desired components
-        unique_values = np.unique(clean_data)
-        if len(unique_values) < n_components:
-            # Create bins around each unique value
-            sorted_values = np.sort(unique_values)
-            unique_edges: list[float] = []
-
-            # First edge: extend slightly below minimum
-            unique_edges.append(sorted_values[0] - (sorted_values[-1] - sorted_values[0]) * 0.01)
-
-            # Intermediate edges: midpoints between consecutive unique values
-            for i in range(len(sorted_values) - 1):
-                mid = (sorted_values[i] + sorted_values[i + 1]) / 2
-                unique_edges.append(mid)
-
-            # Last edge: extend slightly above maximum
-            unique_edges.append(sorted_values[-1] + (sorted_values[-1] - sorted_values[0]) * 0.01)
-
-            # Representatives are the unique values themselves
-            reps = list(sorted_values)
-
-            return unique_edges, reps
-
-        # Perform Gaussian Mixture Model clustering
-        try:
-            # Reshape data for sklearn (needs 2D array)
-            data_2d = clean_data.reshape(-1, 1)
-
-            # Create and fit GMM
-            gmm = GaussianMixture(
-                n_components=n_components,
-                covariance_type="full",  # Always use "full" for maximum flexibility
-                random_state=self.random_state,
-            )
-            gmm.fit(data_2d)
-
-            # Get component means (representatives)
-            means = np.array(gmm.means_).flatten()
-
         except Exception as e:
-            raise ValueError(f"Column {col_id}: Error in GMM clustering: {e}") from e
+            # Fall back to equal-width binning if GMM fails
+            return self._fallback_equal_width_bins(x_col, col_id, n_components, e)
 
-        # Sort means to ensure proper ordering
-        means_list = sorted(means.tolist())
-
-        # Create bin edges as midpoints between adjacent means
-        gmm_edges: list[float] = []
-
-        # First edge: extend below the minimum mean
-        data_min: float = np.min(clean_data)
-        if means_list[0] > data_min:
-            gmm_edges.append(data_min)
-        else:
-            # Extend slightly below the first mean
-            edge_extension = (means_list[-1] - means_list[0]) * 0.05
-            gmm_edges.append(means_list[0] - edge_extension)
-
-        # Intermediate edges: midpoints between consecutive means
-        for i in range(len(means_list) - 1):
-            midpoint = (means_list[i] + means_list[i + 1]) / 2
-            gmm_edges.append(midpoint)
-
-        # Last edge: extend above the maximum mean
-        data_max: float = np.max(clean_data)
-        last_edge = self._calculate_gmm_last_edge(means_list, data_max)
-        gmm_edges.append(last_edge)
-
-        return gmm_edges, means_list
-
-    def _calculate_gmm_last_edge(self, means: list[float], data_max: float) -> float:
-        """Calculate the last bin edge for GMM based on means and data maximum.
+    def _fallback_equal_width_bins(
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        n_components: int,
+        original_error: Exception,
+    ) -> tuple[list[float], list[float]]:
+        """Fallback to equal-width binning when GMM fails.
 
         Args:
-            means: List of sorted GMM component means
-            data_max: Maximum value in the data
+            x_col: Preprocessed column data
+            col_id: Column identifier for error reporting
+            n_components: Number of bins to create
+            original_error: The original GMM error
 
         Returns:
-            float: The last bin edge value
+            Tuple of (bin_edges, bin_representatives)
         """
-        if means[-1] < data_max:
-            return data_max
+        import warnings
+        from ..utils.errors import DataQualityWarning
 
-        # Extend slightly above the last mean
-        edge_extension = (means[-1] - means[0]) * 0.05
-        return means[-1] + edge_extension
+        warnings.warn(
+            f"Column {col_id}: GMM clustering failed ({original_error}). "
+            f"Falling back to equal-width binning.",
+            DataQualityWarning,
+        )
 
-    def _validate_params(self) -> None:
-        """Validate parameters for sklearn compatibility and logical consistency.
+        min_val, max_val = float(np.min(x_col)), float(np.max(x_col))
 
-        Performs comprehensive validation of all GaussianMixtureBinning parameters
-        to ensure they meet the expected types, ranges, and logical constraints.
-        This method provides early error detection and clear error messages
-        for common configuration mistakes.
+        # Create equal-width bins
+        edges = np.linspace(min_val, max_val, n_components + 1)
 
-        Raises:
-            ConfigurationError: If any parameter validation fails:
-                - n_components must be a positive integer or supported string
-                - random_state must be a non-negative integer if provided
+        # Create representatives as bin centers
+        reps = []
+        for i in range(n_components):
+            rep = (edges[i] + edges[i + 1]) / 2
+            reps.append(rep)
 
-        Example:
-            >>> # This will raise ConfigurationError
-            >>> binner = GaussianMixtureBinning(n_components=0)  # n_components must be positive
-
-        Note:
-            - Called automatically during fit() for early error detection
-            - Provides helpful suggestions in error messages
-            - Focuses on parameter validation, not data validation
-            - Part of sklearn-compatible parameter validation pattern
-        """
-        # Call parent validation first (handles bin edges and representatives)
-        super()._validate_params()
-
-        # Validate n_components using centralized utility
-        validate_bin_number_parameter(self.n_components, param_name="n_components")
-
-        # Validate random_state if provided
-        if self.random_state is not None:
-            if not isinstance(self.random_state, int) or self.random_state < 0:
-                raise ConfigurationError(
-                    "random_state must be a non-negative integer",
-                    suggestions=[
-                        "Set random_state to a non-negative integer (e.g., random_state=42)"
-                    ],
-                )
+        return list(edges), reps

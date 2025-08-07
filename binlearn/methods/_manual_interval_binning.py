@@ -1,204 +1,103 @@
-"""Manual interval binning transformer.
-
-This module implements manual interval binning, where bin edges are explicitly
-provided by the user rather than inferred from data. This allows for complete
-control over binning boundaries and ensures consistent binning across different
-datasets.
-
-Classes:
-    ManualIntervalBinning: Main transformer for user-defined interval binning.
 """
+Clean Manual Interval binning implementation for  architecture.
+
+This module provides ManualIntervalBinning that inherits from IntervalBinningBase.
+Uses user-provided bin edges rather than inferring them from data.
+"""
+
+from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
-from ..base._interval_binning_base import IntervalBinningBase
-from ..base._repr_mixin import ReprMixin
+from ..config import apply_config_defaults
 from ..utils.errors import BinningError, ConfigurationError
-from ..utils.types import BinEdgesDict
+from ..utils.types import BinEdgesDict, ArrayLike
+from ..base._interval_binning_base import IntervalBinningBase
 
 
-# pylint: disable=too-many-ancestors
-class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
-    """Manual interval binning transformer with user-defined bin edges.
+class ManualIntervalBinning(IntervalBinningBase):
+    """Manual interval binning implementation using  architecture.
 
     Creates bins using explicitly provided bin edges, giving users complete control
     over binning boundaries. Unlike automatic binning methods, this transformer
     never infers bin edges from data - they must always be provided by the user.
 
-    This approach is ideal for:
-    - Standardized binning across multiple datasets
-    - Domain-specific binning requirements
-    - Reproducible binning with known boundaries
-    - Integration with external binning specifications
-
-    The transformer is sklearn-compatible and supports pandas/polars DataFrames.
-    It includes comprehensive validation of user-provided bin edges and optional
-    automatic generation of bin representatives.
-
-    Attributes:
-        bin_edges (dict): User-provided bin edges for each feature.
-        bin_representatives (dict, optional): User-provided or auto-generated representatives.
-        clip (bool, optional): Whether to clip values outside bin range.
-        preserve_dataframe (bool): Whether to preserve DataFrame format.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import ManualIntervalBinning
-        >>>
-        >>> # Define custom bin edges for features
-        >>> edges = {
-        ...     0: [0, 25, 50, 75, 100],        # Feature 0: age groups
-        ...     1: [0, 1000, 5000, 10000],      # Feature 1: income brackets
-        ...     'score': [0, 60, 80, 90, 100]   # Feature 'score': grade boundaries
-        ... }
-        >>>
-        >>> binner = ManualIntervalBinning(bin_edges=edges)
-        >>> X = np.random.rand(100, 3) * 100
-        >>> X_binned = binner.fit_transform(X)
+    This implementation follows the clean  architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         bin_edges: BinEdgesDict,
         bin_representatives: BinEdgesDict | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
-        fit_jointly: bool | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize ManualIntervalBinning transformer.
-
-        Creates a manual interval binning transformer that uses user-provided bin
-        edges instead of inferring them from data. This gives complete control over
-        binning boundaries and ensures consistency across different datasets.
-
-        Args:
-            bin_edges (BinEdgesDict): Dictionary mapping column identifiers to
-                their bin edge lists. Each edge list must be sorted in ascending
-                order with at least 2 elements. Keys can be column names (str/int)
-                or indices, and values are lists/arrays of bin boundaries.
-            bin_representatives (Optional[BinEdgesDict], optional): Dictionary
-                mapping column identifiers to their bin representative values.
-                If None, representatives are auto-generated as bin centers.
-                Must have compatible structure with bin_edges. Defaults to None.
-            clip (Optional[bool], optional): Whether to clip out-of-range values
-                to the nearest bin edge. If None, uses global configuration.
-                Defaults to None.
-            preserve_dataframe (Optional[bool], optional): Whether to return
-                DataFrames when input is DataFrame. If None, uses global
-                configuration. Defaults to None.
-            fit_jointly (Optional[bool], optional): Whether to treat all columns
-                with the same binning parameters. Not applicable for manual binning
-                since edges are explicitly provided. Defaults to None.
-            **kwargs: Additional arguments passed to parent IntervalBinningBase.
-
-        Raises:
-            ConfigurationError: If bin_edges is not provided, empty, or contains
-                invalid edge specifications.
-
-        Example:
-            >>> # Basic usage with custom bin edges
-            >>> edges = {0: [0, 10, 20, 30], 1: [0, 5, 15, 25, 50]}
-            >>> binner = ManualIntervalBinning(bin_edges=edges)
-
-            >>> # With custom representatives
-            >>> edges = {0: [0, 10, 20, 30]}
-            >>> reps = {0: [5, 15, 25]}  # Custom bin centers
-            >>> binner = ManualIntervalBinning(bin_edges=edges, bin_representatives=reps)
-
-            >>> # For DataFrame with named columns
-            >>> edges = {'age': [0, 18, 35, 50, 65, 100], 'income': [0, 30000, 60000, 100000]}
-            >>> binner = ManualIntervalBinning(bin_edges=edges)
-
-        Note:
-            - bin_edges is required and cannot be None
-            - Each edge list must be sorted and have at least 2 elements
-            - If bin_representatives is not provided, bin centers are used as representatives
-            - fit_jointly parameter is ignored since bins are manually specified
-        """
-        super().__init__(
-            clip=clip,
-            preserve_dataframe=preserve_dataframe,
-            bin_edges=bin_edges,
-            bin_representatives=bin_representatives,
-            fit_jointly=fit_jointly,
-            **kwargs,
-        )
-
-    def _calculate_bins(
-        self,
-        x_col: np.ndarray[Any, Any],
-        col_id: Any,
-        guidance_data: np.ndarray[Any, Any] | None = None,
-    ) -> tuple[list[float], list[float]]:
-        """Return pre-defined bins without calculation.
-
-        Since ManualIntervalBinning uses user-provided bin edges, this method
-        simply returns the pre-specified edges and representatives without
-        performing any data-based calculations.
-
-        Args:
-            x_col (np.ndarray[Any, Any]): Input data column (ignored in manual binning).
-            col_id (Any): Column identifier to retrieve pre-defined bins.
-            guidance_data (Optional[np.ndarray[Any, Any]], optional): Guidance data (ignored).
-                Defaults to None.
-
-        Returns:
-            Tuple[List[float], List[float]]: A tuple containing:
-                - bin_edges (List[float]): Pre-defined bin edges for this column
-                - bin_representatives (List[float]): Pre-defined or auto-generated
-                  representative values for this column
-
-        Raises:
-            BinningError: If no bin edges are defined for the specified column.
-
-        Note:
-            - Input data is ignored since bins are manually specified
-            - If no representatives are provided, bin centers are auto-generated
-            - This method is called during fitting but doesn't analyze data
-        """
-        # Get pre-defined edges for this column
-        if self.bin_edges is None or col_id not in self.bin_edges:
-            raise BinningError(
-                f"No bin edges defined for column {col_id}",
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize Manual Interval binning."""
+        # For manual binning, bin_edges is required and passed directly
+        if bin_edges is None:
+            raise ConfigurationError(
+                "bin_edges must be provided for ManualIntervalBinning",
                 suggestions=[
-                    f"Add bin edges for column {col_id} in the bin_edges dictionary",
-                    "Ensure all data columns have corresponding bin edge definitions",
+                    "Provide bin_edges as a dictionary mapping columns to edge lists",
+                    "Example: bin_edges={0: [0, 10, 20, 30], 1: [0, 5, 15, 25]}",
                 ],
             )
 
-        edges = list(self.bin_edges[col_id])
+        # Prepare user parameters for config integration (exclude never-configurable params)
+        user_params = {
+            "clip": clip,
+            "preserve_dataframe": preserve_dataframe,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
 
-        # Get or generate representatives
-        if self.bin_representatives is not None and col_id in self.bin_representatives:
-            representatives = list(self.bin_representatives[col_id])
-        else:
-            # Auto-generate representatives as bin centers
-            representatives = [(edges[i] + edges[i + 1]) / 2 for i in range(len(edges) - 1)]
+        # Apply configuration defaults for manual_interval method
+        resolved_params = apply_config_defaults("manual_interval", user_params)
 
-        return edges, representatives
+        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        # Manual binning doesn't need fit_jointly or guidance_columns
+        IntervalBinningBase.__init__(
+            self,
+            clip=resolved_params.get("clip"),
+            preserve_dataframe=resolved_params.get("preserve_dataframe"),
+            fit_jointly=False,  # Manual binning doesn't fit from data
+            guidance_columns=None,  # Not needed for unsupervised manual binning
+            bin_edges=bin_edges,  # Required for manual binning
+            bin_representatives=bin_representatives,  # Never configurable
+        )
+
+    def fit(
+        self, X: ArrayLike, y: ArrayLike | None = None, **fit_params: Any
+    ) -> "ManualIntervalBinning":
+        """Fit the Manual Interval binning (no-op since bins are pre-defined).
+
+        For manual binning, no fitting is required since bin edges are provided
+        by the user. This method performs validation and returns self.
+
+        Args:
+            X: Input data (used only for validation)
+            y: Target values (ignored for manual binning)
+            **fit_params: Additional fit parameters (ignored)
+
+        Returns:
+            Self (fitted transformer)
+        """
+        # Validate parameters but don't actually fit anything
+        self._validate_params()
+
+        # Manual binning is always "fitted" since bins are pre-defined
+        self._is_fitted = True
+        return self
 
     def _validate_params(self) -> None:
-        """Validate parameters for manual interval binning.
-
-        Performs validation specific to ManualIntervalBinning - checks for presence
-        and emptiness of required parameters. Content validation is handled by the
-        base class IntervalBinningBase._validate_params().
-
-        Raises:
-            ConfigurationError: If any parameter validation fails:
-                - bin_edges must be provided and non-empty
-
-        Note:
-            - Called automatically during initialization for early error detection
-            - Only checks presence/emptiness - content validation in base class
-            - Part of sklearn-compatible parameter validation pattern
-        """
-        # Call parent validation first (handles content validation)
-        super()._validate_params()
+        """Validate Manual Interval binning parameters."""
+        # Call parent validation
+        IntervalBinningBase._validate_params(self)
 
         # ManualIntervalBinning specific validation: bin_edges is required
         if self.bin_edges is None:
@@ -218,3 +117,71 @@ class ManualIntervalBinning(ReprMixin, IntervalBinningBase):
                     "Example: bin_edges={0: [0, 10, 20, 30]}",
                 ],
             )
+
+    def _calculate_bins(
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
+    ) -> tuple[list[float], list[float]]:
+        """Return pre-defined bins without calculation.
+
+        Since ManualIntervalBinning uses user-provided bin edges, this method
+        simply returns the pre-specified edges and representatives without
+        performing any data-based calculations.
+
+        Args:
+            x_col: Input data column (ignored in manual binning)
+            col_id: Column identifier to retrieve pre-defined bins
+            guidance_data: Not used for manual binning
+
+        Returns:
+            Tuple of (bin_edges, bin_representatives)
+
+        Raises:
+            BinningError: If no bin edges are defined for the specified column
+        """
+        # Handle column name mapping for numpy arrays
+        # The  architecture uses feature_N names internally, but users provide 0, 1, etc.
+        actual_col_key = col_id
+
+        # If col_id is like 'feature_N' and not found, try mapping to integer N
+        if (self.bin_edges is None or col_id not in self.bin_edges) and isinstance(col_id, str):
+            if col_id.startswith("feature_") and self.bin_edges is not None:
+                try:
+                    # Extract the number from 'feature_N'
+                    col_idx = int(col_id.replace("feature_", ""))
+                    if col_idx in self.bin_edges:
+                        actual_col_key = col_idx
+                except ValueError:
+                    pass
+
+        # If original integer key and not found, try mapping to feature_N
+        elif (self.bin_edges is None or col_id not in self.bin_edges) and isinstance(col_id, int):
+            if self.bin_edges is not None:
+                feature_name = f"feature_{col_id}"
+                if feature_name in self.bin_edges:
+                    actual_col_key = feature_name
+
+        # Get pre-defined edges for this column
+        if self.bin_edges is None or actual_col_key not in self.bin_edges:
+            raise BinningError(
+                f"No bin edges defined for column {col_id}",
+                suggestions=[
+                    f"Add bin edges for column {col_id} in the bin_edges dictionary",
+                    "For numpy arrays, use integer keys (0, 1, 2, ...) in bin_edges",
+                    "For DataFrames, use column names as keys in bin_edges",
+                    "Ensure all data columns have corresponding bin edge definitions",
+                ],
+            )
+
+        edges = list(self.bin_edges[actual_col_key])
+
+        # Get or generate representatives
+        if self.bin_representatives is not None and actual_col_key in self.bin_representatives:
+            representatives = list(self.bin_representatives[actual_col_key])
+        else:
+            # Auto-generate representatives as bin centers
+            representatives = [(edges[i] + edges[i + 1]) / 2 for i in range(len(edges) - 1)]
+
+        return edges, representatives
