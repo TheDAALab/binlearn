@@ -1,220 +1,207 @@
-"""Equal-frequency binning transformer (V2 Architecture).
-
-This module implements equal-frequency binning (also known as quantile binning)
-using the V2 architecture, where continuous data is divided into bins containing
-approximately equal numbers of observations.
-
-Classes:
-    EqualFrequencyBinningV2: V2 architecture equal-frequency binning transformer.
 """
+Clean equal frequency binning implementation for V2 architecture.
+
+This module provides EqualFrequencyBinningV2 that inherits from IntervalBinningBaseV2.
+Creates bins containing approximately equal numbers of observations.
+"""
+
+from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 
-from ..base._binning_utils_mixin import EdgeBasedBinningMixin, BinningUtilsMixin
-from ..base._general_binning_base_v2 import GeneralBinningBaseV2
-from ..utils.validation import (
-    validate_int,
-    validate_float,
-    validate_tuple,
-    validate_bool,
-    validate_n_bins,
-    ParameterValidator,
+from ..config import get_config, apply_config_defaults
+from ..utils.errors import ConfigurationError
+from ..utils.parameter_conversion import (
+    resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
 )
-from ..utils.types import ColumnList
+from ..utils.types import BinEdgesDict
+from ..base._interval_binning_base_v2 import IntervalBinningBaseV2
 
 
-class EqualFrequencyBinningV2(EdgeBasedBinningMixin, BinningUtilsMixin, GeneralBinningBaseV2):
-    """Equal-frequency (quantile) binning transformer using V2 architecture.
+class EqualFrequencyBinningV2(IntervalBinningBaseV2):
+    """Equal frequency binning implementation using V2 architecture.
 
     Creates bins containing approximately equal numbers of observations across
     each feature. Each bin contains roughly the same number of data points,
     making this method useful when you want balanced bin populations regardless
     of the underlying data distribution.
 
-    This V2 implementation provides:
-    - Clean parameter validation using utility functions
-    - Multi-format I/O handling (numpy, pandas, polars)
-    - Complete parameter reconstruction workflows
-    - Minimal implementation using utility mixins
-    - Enhanced error handling and validation
-
-    Attributes:
-        n_bins (int): Number of bins per feature.
-        quantile_range (tuple, optional): Custom quantile range for binning.
-        clip (bool, optional): Whether to clip values outside bin range.
-        bin_edges_ (dict): Computed bin edges after fitting.
-
-    Example:
-        >>> import numpy as np
-        >>> from binlearn.methods import EqualFrequencyBinningV2
-        >>> X = np.random.rand(100, 3)
-        >>> binner = EqualFrequencyBinningV2(n_bins=5)
-        >>> X_binned = binner.fit_transform(X)
+    This implementation follows the clean V2 architecture with straight inheritance,
+    dynamic column resolution, and parameter reconstruction capabilities.
     """
 
     def __init__(
         self,
-        n_bins: int = 10,
+        n_bins: int | str | None = None,
         quantile_range: tuple[float, float] | None = None,
-        clip: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        """Initialize EqualFrequencyBinningV2 transformer.
+        clip: bool | None = None,
+        preserve_dataframe: bool | None = None,
+        fit_jointly: bool | None = None,
+        bin_edges: BinEdgesDict | None = None,
+        bin_representatives: BinEdgesDict | None = None,
+        class_: str | None = None,  # For reconstruction compatibility
+        module_: str | None = None,  # For reconstruction compatibility
+    ):
+        """Initialize equal frequency binning."""
+        # Prepare user parameters for config integration (exclude never-configurable params)
+        user_params = {
+            "n_bins": n_bins,
+            "quantile_range": quantile_range,
+            "clip": clip,
+            "preserve_dataframe": preserve_dataframe,
+            "fit_jointly": fit_jointly,
+        }
+        # Remove None values to allow config defaults to take effect
+        user_params = {k: v for k, v in user_params.items() if v is not None}
 
-        Args:
-            n_bins (int): Number of bins to create for each feature. Must be >= 1.
-                Defaults to 10.
-            quantile_range (Optional[Tuple[float, float]], optional): Custom quantile
-                range for binning as (min_quantile, max_quantile). Values should be
-                between 0 and 1. If None, uses the full data range (0, 1).
-                Defaults to None.
-            clip (bool): Whether to clip out-of-range values to the nearest bin edge.
-                Defaults to True.
-            **kwargs: Additional arguments for future extensibility.
+        # Apply configuration defaults for equal_frequency method
+        resolved_params = apply_config_defaults("equal_frequency", user_params)
 
-        Raises:
-            ValueError: If parameter validation fails.
-        """
-        # Validate parameters using V2 utilities
-        validator = ParameterValidator("EqualFrequencyBinningV2")
-        validated_params = validator.validate(
-            n_bins=(n_bins, validate_n_bins),
-            clip=(clip, validate_bool, "clip"),
+        # Store method-specific parameters
+        self.n_bins = resolved_params.get("n_bins", 10)
+        self.quantile_range = resolved_params.get("quantile_range", None)
+
+        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        IntervalBinningBaseV2.__init__(
+            self,
+            clip=resolved_params.get("clip"),
+            preserve_dataframe=resolved_params.get("preserve_dataframe"),
+            fit_jointly=resolved_params.get("fit_jointly"),
+            guidance_columns=None,  # Not needed for unsupervised binning
+            bin_edges=bin_edges,  # Never configurable
+            bin_representatives=bin_representatives,  # Never configurable
         )
 
-        if quantile_range is not None:
-            validated_range = validate_tuple(
-                quantile_range, "quantile_range", expected_length=2, element_type=float
-            )
-            if validated_range is not None:
-                min_q, max_q = validated_range
-                validate_float(min_q, "quantile_range[0]", min_val=0.0, max_val=1.0)
-                validate_float(max_q, "quantile_range[1]", min_val=0.0, max_val=1.0)
-                if min_q >= max_q:
-                    raise ValueError("quantile_range[0] must be less than quantile_range[1]")
-                self.quantile_range = validated_range
-            else:
-                self.quantile_range = None
-        else:
-            self.quantile_range = None
+    def _validate_params(self) -> None:
+        """Validate equal frequency binning parameters."""
+        # Call parent validation
+        IntervalBinningBaseV2._validate_params(self)
 
-        # Store validated parameters
-        self.n_bins = validated_params["n_bins"]
-        self.clip = validated_params["clip"]
+        # Validate n_bins using centralized utility
+        validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
-        # Initialize bin_edges_ for storing fitted parameters
-        self.bin_edges_ = {}
-
-        # Initialize parent class
-        super().__init__(**kwargs)
-
-    def _fit_per_column_independently(
-        self, X: np.ndarray, columns: ColumnList, guidance_data=None, **fit_params
-    ) -> None:
-        """Fit equal-frequency bins independently for each column.
-
-        Args:
-            X: Input data for binning columns.
-            columns: Column identifiers for binning columns.
-            guidance_data: Ignored for equal-frequency binning.
-            **fit_params: Additional fitting parameters.
-        """
-        for i, col in enumerate(columns):
-            column_data = X[:, i]
-
-            # Remove NaN values for quantile calculation
-            clean_data = column_data[~np.isnan(column_data)]
-
-            if len(clean_data) == 0:
-                # All NaN data - create default range
-                edges = np.linspace(0.0, 1.0, self.n_bins + 1)
-            elif len(clean_data) < self.n_bins:
-                raise ValueError(
-                    f"Column {col}: Insufficient non-NaN values ({len(clean_data)}) "
-                    f"for {self.n_bins} bins. Need at least {self.n_bins} values."
+        # Validate quantile_range if provided
+        if self.quantile_range is not None:
+            if not isinstance(self.quantile_range, tuple) or len(self.quantile_range) != 2:
+                raise ConfigurationError(
+                    "quantile_range must be a tuple (min_quantile, max_quantile)",
+                    suggestions=["Example: quantile_range=(0.1, 0.9)"],
                 )
-            else:
-                # Get quantile range
-                if self.quantile_range is not None:
-                    min_quantile, max_quantile = self.quantile_range
-                else:
-                    min_quantile, max_quantile = 0.0, 1.0
 
-                # Create quantile points from min_quantile to max_quantile
-                quantile_points = np.linspace(min_quantile, max_quantile, self.n_bins + 1)
+            min_q, max_q = self.quantile_range
+            if (
+                not isinstance(min_q, (int, float))
+                or not isinstance(max_q, (int, float))
+                or min_q < 0
+                or max_q > 1
+                or min_q >= max_q
+            ):
+                raise ConfigurationError(
+                    "quantile_range values must be numbers between 0 and 1 with min < max",
+                    suggestions=["Example: quantile_range=(0.1, 0.9)"],
+                )
 
-                # Calculate quantile values
-                try:
-                    edges = np.quantile(clean_data, quantile_points)
-                except (ValueError, IndexError) as e:
-                    raise ValueError(f"Column {col}: Error calculating quantiles: {e}") from e
+    def _calculate_bins(
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        guidance_data: np.ndarray[Any, Any] | None = None,
+    ) -> tuple[list[float], list[float]]:
+        """Calculate equal-frequency bins for a single column.
 
-                # Handle case where quantiles result in duplicate edges (constant regions)
-                if edges[0] == edges[-1]:
-                    # All data points are the same - add small epsilon
-                    epsilon = 1e-8
-                    edges[0] -= epsilon
-                    edges[-1] += epsilon
-
-                # Ensure edges are strictly increasing
-                for j in range(1, len(edges)):
-                    if edges[j] <= edges[j - 1]:
-                        edges[j] = edges[j - 1] + 1e-8
-
-            self.bin_edges_[col] = edges
-
-    def _fit_jointly_across_columns(self, X: np.ndarray, columns: ColumnList, **fit_params) -> None:
-        """Fit equal-frequency parameters jointly across all columns.
-
-        Uses the global quantiles across all columns to create uniform bins.
+        Computes bin edges and representatives using quantiles to ensure
+        approximately equal numbers of observations in each bin.
 
         Args:
-            X: Input data for all binning columns.
-            columns: Column identifiers for all columns.
-            **fit_params: Additional fitting parameters.
+            x_col: Preprocessed column data (from base class)
+            col_id: Column identifier for error reporting
+            guidance_data: Not used for equal-frequency binning (unsupervised)
+
+        Returns:
+            Tuple of (bin_edges, bin_representatives)
+
+        Raises:
+            ValueError: If n_bins is invalid or insufficient data for calculation
         """
-        # Flatten all data for joint quantile calculation
-        flat_data = X.flatten()
-        clean_data = flat_data[~np.isnan(flat_data)]
+        # Validate n_bins for calculation
+        validate_bin_number_for_calculation(self.n_bins, param_name="n_bins")
 
-        if len(clean_data) == 0:
-            # All NaN data - create default range
-            edges = np.linspace(0.0, 1.0, self.n_bins + 1)
-        elif len(clean_data) < self.n_bins:
-            raise ValueError(
-                f"Insufficient non-NaN values ({len(clean_data)}) "
-                f"for {self.n_bins} bins. Need at least {self.n_bins} values."
-            )
+        resolved_n_bins = resolve_n_bins_parameter(
+            self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
+        )
+
+        # Get quantile range for this data
+        if self.quantile_range is not None:
+            min_quantile, max_quantile = self.quantile_range
         else:
-            # Get quantile range
-            if self.quantile_range is not None:
-                min_quantile, max_quantile = self.quantile_range
+            min_quantile, max_quantile = 0.0, 1.0
+
+        return self._create_equal_frequency_bins(
+            x_col, col_id, min_quantile, max_quantile, resolved_n_bins
+        )
+
+    def _create_equal_frequency_bins(
+        self,
+        x_col: np.ndarray[Any, Any],
+        col_id: Any,
+        min_quantile: float,
+        max_quantile: float,
+        n_bins: int,
+    ) -> tuple[list[float], list[float]]:
+        """Create equal-frequency bins using quantiles.
+
+        Args:
+            x_col: Preprocessed column data (no NaN/inf values)
+            col_id: Column identifier for error reporting
+            min_quantile: Minimum quantile (0.0 to 1.0)
+            max_quantile: Maximum quantile (0.0 to 1.0)
+            n_bins: Number of bins to create
+
+        Returns:
+            Tuple of (bin_edges, bin_representatives)
+
+        Note:
+            The data is already preprocessed by the base class, so we don't need
+            to handle NaN/inf values or constant data here.
+        """
+        if len(x_col) < n_bins:
+            raise ValueError(
+                f"Column {col_id}: Insufficient values ({len(x_col)}) "
+                f"for {n_bins} bins. Need at least {n_bins} values."
+            )
+
+        # Create quantile points from min_quantile to max_quantile
+        quantile_points = np.linspace(min_quantile, max_quantile, n_bins + 1)
+
+        # Calculate quantile values
+        try:
+            edges = np.quantile(x_col, quantile_points)
+        except (ValueError, IndexError) as e:
+            raise ValueError(f"Column {col_id}: Error calculating quantiles: {e}") from e
+
+        # Convert to list and ensure edges are strictly increasing
+        edges = list(edges)
+        for i in range(1, len(edges)):
+            if edges[i] <= edges[i - 1]:
+                edges[i] = edges[i - 1] + 1e-8
+
+        # Create representatives as bin centers based on quantiles
+        reps = []
+        for i in range(n_bins):
+            # Calculate representative as the median of values in this bin
+            bin_mask = (x_col >= edges[i]) & (x_col <= edges[i + 1])
+            bin_data = x_col[bin_mask]
+
+            if len(bin_data) > 0:
+                # Use median of bin data as representative
+                rep = float(np.median(bin_data))
             else:
-                min_quantile, max_quantile = 0.0, 1.0
+                # Fallback to bin center if no data in bin
+                rep = (edges[i] + edges[i + 1]) / 2
+            reps.append(rep)
 
-            # Create quantile points from min_quantile to max_quantile
-            quantile_points = np.linspace(min_quantile, max_quantile, self.n_bins + 1)
-
-            # Calculate quantile values
-            try:
-                edges = np.quantile(clean_data, quantile_points)
-            except (ValueError, IndexError) as e:
-                raise ValueError(f"Error calculating joint quantiles: {e}") from e
-
-            # Handle case where quantiles result in duplicate edges (constant regions)
-            if edges[0] == edges[-1]:
-                # All data points are the same - add small epsilon
-                epsilon = 1e-8
-                edges[0] -= epsilon
-                edges[-1] += epsilon
-
-            # Ensure edges are strictly increasing
-            for j in range(1, len(edges)):
-                if edges[j] <= edges[j - 1]:
-                    edges[j] = edges[j - 1] + 1e-8
-
-        # Apply same edges to all columns
-        for col in columns:
-            self.bin_edges_[col] = edges
+        return edges, reps

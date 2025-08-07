@@ -10,11 +10,13 @@ from typing import Any
 import numpy as np
 
 from ..config import get_config
+from ..utils.constants import MISSING_VALUE
 from ..utils.errors import ConfigurationError
 from ..utils.types import ArrayLike, FlexibleBinSpec, FlexibleBinDefs, BinEdgesDict, ColumnList
 from ..utils import (
     validate_bin_representatives_format,
     validate_flexible_bin_spec_format,
+    transform_value_to_flexible_bin,
 )
 from ._general_binning_base_v2 import GeneralBinningBaseV2
 
@@ -153,29 +155,20 @@ class FlexibleBinningBaseV2(GeneralBinningBaseV2):
         if X.size == 0:
             return np.empty((X.shape[0], 0))
 
-        result = np.empty_like(X, dtype=int)
+        result = np.full(X.shape, MISSING_VALUE, dtype=int)
         available_keys = list(self.bin_spec_.keys())
 
         for i, col in enumerate(columns):
-            # Get the right bin specification using column key resolution
+            # Find the right bin specification
             key = self._get_column_key(col, available_keys, i)
-            bin_values = np.array(self.bin_spec_[key])
-            column_data = X[:, i]
+            bin_defs = self.bin_spec_[key]
 
-            # Create mapping from values to bin indices
-            bin_indices = np.full(column_data.shape, -1, dtype=int)
+            # Transform this column
+            col_data = X[:, i]
 
-            for bin_idx, bin_value in enumerate(bin_values):
-                # For flexible binning, we typically match exact values or use custom logic
-                matches = self._match_values_to_bin(column_data, bin_value, bin_idx, key)
-                bin_indices[matches] = bin_idx
-
-            # Handle unmatched values (assign to last bin or raise error)
-            unmatched = bin_indices == -1
-            if np.any(unmatched):
-                bin_indices[unmatched] = len(bin_values) - 1  # Default: assign to last bin
-
-            result[:, i] = bin_indices
+            for row_idx, value in enumerate(col_data):
+                # Use utility function for transformation
+                result[row_idx, i] = transform_value_to_flexible_bin(value, bin_defs)
 
         return result
 
@@ -246,23 +239,6 @@ class FlexibleBinningBaseV2(GeneralBinningBaseV2):
             result[:, i] = representatives[bin_indices]
 
         return result
-
-    def _match_values_to_bin(
-        self, column_data: np.ndarray[Any, Any], bin_value: Any, bin_idx: int, col_id: Any
-    ) -> np.ndarray[Any, Any]:
-        """Match column values to bin - override in subclasses for custom logic.
-
-        Args:
-            column_data: The column data to match
-            bin_value: The bin value/edge to match against
-            bin_idx: The index of this bin
-            col_id: Column identifier
-
-        Returns:
-            Boolean mask of matches
-        """
-        # Default: exact match for flexible binning
-        return column_data == bin_value
 
     @abstractmethod
     def _calculate_flexible_bins(
