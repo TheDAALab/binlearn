@@ -15,6 +15,11 @@ from ._manual_interval_binning import ManualIntervalBinning
 from ._singleton_binning import SingletonBinning
 from ._supervised_binning import SupervisedBinning
 
+# V2 implementations
+from ._equal_width_binning_v2 import EqualWidthBinningV2
+from ._singleton_binning_v2 import SingletonBinningV2
+from ._chi2_binning_v2 import Chi2BinningV2
+
 __all__ = [
     "Chi2Binning",
     "DBSCANBinning",
@@ -28,4 +33,8 @@ __all__ = [
     "ManualFlexibleBinning",
     "SingletonBinning",
     "SupervisedBinning",
+    # V2 implementations
+    "EqualWidthBinningV2",
+    "SingletonBinningV2",
+    "Chi2BinningV2",
 ]

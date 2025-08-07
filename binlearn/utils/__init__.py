@@ -94,6 +94,19 @@ from .types import (
     OptionalColumnList,
     OptionalFlexibleBinSpec,
 )
+from .validation import (
+    validate_int,
+    validate_float,
+    validate_bool,
+    validate_string,
+    validate_tuple,
+    validate_array_like,
+    validate_callable,
+    validate_random_state,
+    validate_n_bins,
+    validate_binning_columns,
+    ParameterValidator,
+)
 
 __all__ = [
     # Constants
@@ -163,4 +176,16 @@ __all__ = [
     "resolve_n_bins_parameter",
     "resolve_string_parameter",
     "validate_numeric_parameter",
+    # Parameter validation
+    "validate_int",
+    "validate_float",
+    "validate_bool",
+    "validate_string",
+    "validate_tuple",
+    "validate_array_like",
+    "validate_callable",
+    "validate_random_state",
+    "validate_n_bins",
+    "validate_binning_columns",
+    "ParameterValidator",
 ]

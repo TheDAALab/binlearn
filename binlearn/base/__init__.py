@@ -62,6 +62,25 @@ from ..utils.types import (
     OptionalColumnList,
     OptionalFlexibleBinSpec,
 )
+
+# New v2 classes
+from ._sklearn_integration_v2 import SklearnIntegrationV2
+from ._data_handling_v2 import DataHandlingV2
+from ._general_binning_base_v2 import GeneralBinningBaseV2
+from ._interval_binning_base_v2 import IntervalBinningBaseV2
+from ._flexible_binning_base_v2 import FlexibleBinningBaseV2
+from ._supervised_binning_base_v2 import SupervisedBinningBaseV2
+from ._binning_utils_mixin import (
+    EdgeBasedBinningMixin,
+    CenterBasedBinningMixin,
+    BinningUtilsMixin,
+    FlexibleBinningMixin,
+)
+
+# Previous refactored components
+from ._data_handling_mixin import DataHandlingMixin
+from ._sklearn_integration_mixin import SklearnIntegrationMixin
+
 from ._flexible_binning_base import FlexibleBinningBase
 
 # Base classes
@@ -119,7 +138,23 @@ __all__ = [
     "get_flexible_bin_count",
     # Base classes
     "GeneralBinningBase",
+    "GeneralBinningBaseV2",  # Final refactored version
     "IntervalBinningBase",
     "FlexibleBinningBase",
     "SupervisedBinningBase",
+    # Refactored mixins
+    "DataHandlingMixin",
+    "SklearnIntegrationMixin",
+    # New v2 classes
+    "SklearnIntegrationV2",
+    "DataHandlingV2",
+    "GeneralBinningBaseV2",
+    "IntervalBinningBaseV2",
+    "FlexibleBinningBaseV2",
+    "SupervisedBinningBaseV2",
+    # Binning utilities
+    "EdgeBasedBinningMixin",
+    "CenterBasedBinningMixin",
+    "BinningUtilsMixin",
+    "FlexibleBinningMixin",
 ]

@@ -66,9 +66,10 @@ class BinningConfig:
     equal_width_min_weight_threshold: float = 0.05
 
     # Chi2Binning specific defaults
-    chi2_default_bins: int = 10
-    chi2_significance_level: float = 0.05
-    chi2_min_expected_frequency: float = 5.0
+    chi2_max_bins: int = 10
+    chi2_min_bins: int = 2
+    chi2_alpha: float = 0.05
+    chi2_initial_bins: int = 20
 
     # DBSCANBinning specific defaults
     dbscan_eps: float = 0.5
@@ -264,9 +265,10 @@ class BinningConfig:
         elif method_name == "chi2":
             defaults.update(
                 {
-                    "n_bins": self.chi2_default_bins,
-                    "significance_level": self.chi2_significance_level,
-                    "min_expected_frequency": self.chi2_min_expected_frequency,
+                    "max_bins": self.chi2_max_bins,
+                    "min_bins": self.chi2_min_bins,
+                    "alpha": self.chi2_alpha,
+                    "initial_bins": self.chi2_initial_bins,
                 }
             )
         elif method_name == "dbscan":

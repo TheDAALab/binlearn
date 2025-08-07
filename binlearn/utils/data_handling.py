@@ -112,16 +112,17 @@ def _determine_columns(
     columns : List[Any]
         Column identifiers
     """
+    # Priority order for column determination:
+    # 1. Column names from input data itself (DataFrame columns)
     if col_names is not None:
         return col_names
-    if hasattr(X, "shape") and len(X.shape) == 2:
-        # For numpy arrays, use the actual number of columns
-        return list(range(X.shape[1]))
+    # 2. For fitted estimators, use stored original columns
     if fitted and original_columns is not None:
-        # Use stored columns from fitting
         return original_columns
-
-    # Fallback
+    # 3. For numpy arrays, use numeric indices
+    if hasattr(X, "shape") and len(X.shape) == 2:
+        return list(range(X.shape[1]))
+    # 4. Fallback to numeric indices
     return list(range(arr_shape[1]))
 
 
