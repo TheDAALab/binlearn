@@ -16,7 +16,7 @@ from ..utils.data_handling import prepare_input_with_columns, return_like_input
 from ..utils.types import ArrayLike, ColumnList, OptionalColumnList
 
 
-class DataHandling(SklearnIntegration, ValidationMixin):
+class DataHandlingBase(SklearnIntegration, ValidationMixin):
     """Pure data handling for multi-format inputs and outputs.
 
     Handles data format conversion, validation, and preservation without
