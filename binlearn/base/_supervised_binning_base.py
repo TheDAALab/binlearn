@@ -113,22 +113,6 @@ class SupervisedBinningBase(IntervalBinningBase):
                 f"Supervised binning requires exactly one target column, got {guidance_data.shape[1]} columns"
             )
 
-        # Warn about single-class targets (poor for supervised binning)
-        unique_values = np.unique(guidance_data[:, 0])
-        if len(unique_values) == 1:
-            warnings.warn(
-                "Target has only one unique value. Supervised binning may not be effective.",
-                DataQualityWarning,
-                stacklevel=2,
-            )
-        elif len(unique_values) < 3:
-            warnings.warn(
-                f"Target has only {len(unique_values)} unique values. "
-                "Supervised binning works best with more target diversity.",
-                DataQualityWarning,
-                stacklevel=2,
-            )
-
         return guidance_data  # type: ignore[no-any-return]
 
     def _validate_feature_target_pair(

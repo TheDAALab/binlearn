@@ -185,33 +185,33 @@ class TestSupervisedBinningBase:
         with pytest.raises(ValidationError, match="requires exactly one target column, got 2"):
             binner.validate_guidance_data(data)
 
-    def test_validate_guidance_data_single_class_warning(self):
-        """Test warning for single-class target."""
+    def test_validate_guidance_data_single_class_no_warning(self):
+        """Test that single-class target does not warn (warnings removed)."""
         binner = MockSupervisedBinner()
         data = np.array([1, 1, 1, 1])  # All same class
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            binner.validate_guidance_data(data)
+            result = binner.validate_guidance_data(data)
             quality_warnings = [
                 warning for warning in w if issubclass(warning.category, DataQualityWarning)
             ]
-            assert len(quality_warnings) == 1
-            assert "only one unique value" in str(quality_warnings[0].message)
+            assert len(quality_warnings) == 0  # No warnings expected
+            assert result.shape == (4, 1)  # Should still process correctly
 
-    def test_validate_guidance_data_two_classes_warning(self):
-        """Test warning for two-class target (low diversity)."""
+    def test_validate_guidance_data_two_classes_no_warning(self):
+        """Test that two-class target does not warn (warnings removed)."""
         binner = MockSupervisedBinner()
         data = np.array([0, 1, 0, 1])  # Only 2 classes
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            binner.validate_guidance_data(data)
+            result = binner.validate_guidance_data(data)
             quality_warnings = [
                 warning for warning in w if issubclass(warning.category, DataQualityWarning)
             ]
-            assert len(quality_warnings) == 1
-            assert "only 2 unique values" in str(quality_warnings[0].message)
+            assert len(quality_warnings) == 0  # No warnings expected
+            assert result.shape == (4, 1)  # Should still process correctly
 
     def test_validate_guidance_data_sufficient_classes_no_warning(self):
         """Test no warning for sufficient target diversity."""
@@ -410,18 +410,18 @@ class TestSupervisedBinningBase:
             binner.validate_guidance_data(None, name="custom_target")
 
     def test_guidance_data_edge_case_exactly_two_unique_values(self):
-        """Test guidance data with exactly 2 unique values (boundary case)."""
+        """Test guidance data with exactly 2 unique values (no warning expected)."""
         binner = MockSupervisedBinner()
         data = np.array([0, 1])  # Exactly 2 unique values
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            binner.validate_guidance_data(data)
+            result = binner.validate_guidance_data(data)
             quality_warnings = [
                 warning for warning in w if issubclass(warning.category, DataQualityWarning)
             ]
-            assert len(quality_warnings) == 1
-            assert "only 2 unique values" in str(quality_warnings[0].message)
+            assert len(quality_warnings) == 0  # No warnings expected anymore
+            assert result.shape == (2, 1)  # Should still process correctly
 
     def test_guidance_data_edge_case_exactly_three_unique_values(self):
         """Test guidance data with exactly 3 unique values (no warning boundary)."""
