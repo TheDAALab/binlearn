@@ -132,24 +132,24 @@ class DBSCANBinning(IntervalBinningBase):
         """Create DBSCAN clustering-based bins.
 
         Args:
-            x_col: Preprocessed column data (no NaN/inf values)
+            x_col: Column data that may contain NaN/inf values
             col_id: Column identifier for error reporting
 
         Returns:
             Tuple of (bin_edges, bin_representatives)
-
-        Note:
-            The data is already preprocessed by the base class, so we don't need
-            to handle NaN/inf values or constant data here.
         """
-        if len(x_col) < self.min_samples:
+        # Filter out NaN and infinite values for DBSCAN fitting
+        finite_mask = np.isfinite(x_col)
+        x_col_clean = x_col[finite_mask]
+
+        if len(x_col_clean) < self.min_samples:
             raise ValueError(
-                f"Column {col_id}: Insufficient values ({len(x_col)}) "
+                f"Column {col_id}: Insufficient finite values ({len(x_col_clean)}) "
                 f"for DBSCAN clustering. Need at least {self.min_samples} values."
             )
 
         # Reshape data for DBSCAN (expects 2D array)
-        X_reshaped = x_col.reshape(-1, 1)
+        X_reshaped = x_col_clean.reshape(-1, 1)
 
         # Apply DBSCAN clustering
         dbscan = DBSCAN(eps=self.eps, min_samples=self.min_samples)
@@ -160,14 +160,14 @@ class DBSCANBinning(IntervalBinningBase):
 
         if len(unique_clusters) < self.min_bins:
             # Fall back to equal-width binning if too few clusters
-            return self._fallback_equal_width_bins(x_col, col_id)
+            return self._fallback_equal_width_bins(x_col_clean, col_id)
 
         # Calculate cluster centers and boundaries
         cluster_centers = []
 
         for cluster_id in unique_clusters:
             cluster_mask = cluster_labels == cluster_id
-            cluster_data = x_col[cluster_mask]
+            cluster_data = x_col_clean[cluster_mask]
 
             # Calculate cluster center
             center = float(np.mean(cluster_data))
@@ -199,7 +199,7 @@ class DBSCANBinning(IntervalBinningBase):
         """Fallback to equal-width binning when DBSCAN produces too few clusters.
 
         Args:
-            x_col: Preprocessed column data
+            x_col: Clean column data (finite values only)
             col_id: Column identifier for error reporting
 
         Returns:
