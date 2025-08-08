@@ -23,9 +23,9 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 # Import existing utilities we'll reuse
 from binlearn.config import get_config
-from binlearn.utils.data_handling import prepare_input_with_columns, return_like_input
-from binlearn.utils.errors import BinningError, ValidationMixin
-from binlearn.utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
+from binlearn.utils._data_handling import prepare_input_with_columns, return_like_input
+from binlearn.utils._errors import BinningError, ValidationMixin
+from binlearn.utils._types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
 
 
 # ============================================================================

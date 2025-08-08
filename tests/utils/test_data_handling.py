@@ -24,7 +24,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 
-from binlearn.utils.data_handling import (
+from binlearn.utils._data_handling import (
     _determine_columns,
     _is_pandas_df,
     _is_polars_df,

@@ -10,9 +10,9 @@ from typing import Any
 import numpy as np
 
 from ..config import get_config
-from ..utils.constants import MISSING_VALUE
-from ..utils.errors import ConfigurationError
-from ..utils.types import ArrayLike, FlexibleBinSpec, FlexibleBinDefs, BinEdgesDict, ColumnList
+from ..utils._constants import MISSING_VALUE
+from ..utils._errors import ConfigurationError
+from ..utils._types import ArrayLike, FlexibleBinSpec, FlexibleBinDefs, BinEdgesDict, ColumnList
 from ..utils import (
     validate_bin_representatives_format,
     validate_flexible_bin_spec_format,

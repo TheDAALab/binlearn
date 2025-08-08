@@ -6,8 +6,8 @@ import pytest
 
 from binlearn import PANDAS_AVAILABLE, pd
 from binlearn.base._interval_binning_base import IntervalBinningBase
-from binlearn.utils.constants import ABOVE_RANGE, BELOW_RANGE
-from binlearn.utils.errors import BinningError, ConfigurationError, DataQualityWarning
+from binlearn.utils._constants import ABOVE_RANGE, BELOW_RANGE
+from binlearn.utils._errors import BinningError, ConfigurationError, DataQualityWarning
 
 
 class DummyIntervalBinning(IntervalBinningBase):
@@ -279,7 +279,7 @@ def test_inverse_transform_columns_missing_key():
 
 def test_inverse_transform_columns_all_special_values():
     """Test _inverse_transform_columns when all values are special (nan, inf, etc)."""
-    from binlearn.utils.constants import ABOVE_RANGE, MISSING_VALUE
+    from binlearn.utils._constants import ABOVE_RANGE, MISSING_VALUE
 
     obj = DummyIntervalBinning()
     obj.bin_representatives_ = {0: [1.0, 2.0, 3.0]}
@@ -658,7 +658,7 @@ def test_lookup_bin_widths_method():
 
 def test_lookup_bin_widths_all_invalid():
     """Test lookup_bin_widths when all bin indices are invalid."""
-    from binlearn.utils.constants import MISSING_VALUE
+    from binlearn.utils._constants import MISSING_VALUE
 
     obj = DummyIntervalBinning()
     obj.bin_edges_ = {0: [0, 1, 3]}  # Valid bin indices: 0, 1

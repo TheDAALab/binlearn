@@ -12,8 +12,8 @@ from typing import Any
 import numpy as np
 
 from ..config import apply_config_defaults
-from ..utils.errors import BinningError, ConfigurationError
-from ..utils.types import FlexibleBinDefs, BinReps, FlexibleBinSpec, BinEdgesDict, ArrayLike
+from ..utils._errors import BinningError, ConfigurationError
+from ..utils._types import FlexibleBinDefs, BinReps, FlexibleBinSpec, BinEdgesDict, ArrayLike
 from ..base._flexible_binning_base import FlexibleBinningBase
 
 

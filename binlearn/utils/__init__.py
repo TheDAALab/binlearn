@@ -7,22 +7,22 @@ organized into logical submodules for better maintainability and discoverability
 
 # Import constants
 # Import utility functions
-from .bin_operations import (
+from ._bin_operations import (
     create_bin_masks,
     default_representatives,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
 )
-from .constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
-from .data_handling import (
+from ._constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
+from ._data_handling import (
     prepare_array,
     prepare_input_with_columns,
     return_like_input,
 )
 
 # Import error classes
-from .errors import (
+from ._errors import (
     BinningError,
     ConfigurationError,
     DataQualityWarning,
@@ -31,7 +31,7 @@ from .errors import (
     TransformationError,
     ValidationError,
 )
-from .flexible_bin_operations import (
+from ._flexible_bin_operations import (
     calculate_flexible_bin_width,
     find_flexible_bin_for_value,
     generate_default_flexible_representatives,
@@ -43,7 +43,7 @@ from .flexible_bin_operations import (
 )
 
 # Parameter conversion utilities
-from .parameter_conversion import (
+from ._parameter_conversion import (
     resolve_n_bins_parameter,
     resolve_string_parameter,
     validate_bin_number_for_calculation,
@@ -52,7 +52,7 @@ from .parameter_conversion import (
 )
 
 # Import type aliases for re-export
-from .types import (
+from ._types import (
     # Numpy array types
     Array1D,
     Array2D,

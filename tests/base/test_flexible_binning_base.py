@@ -328,7 +328,7 @@ def test_inverse_transform_columns_missing_key():
 
 def test_inverse_transform_columns_all_missing():
     """Test _inverse_transform_columns when all values are missing."""
-    from binlearn.utils.constants import MISSING_VALUE
+    from binlearn.utils._constants import MISSING_VALUE
 
     obj = DummyFlexibleBinning()
     obj.bin_representatives_ = {0: [1.0, 2.0]}

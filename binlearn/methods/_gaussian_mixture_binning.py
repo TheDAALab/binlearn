@@ -13,13 +13,13 @@ import numpy as np
 from sklearn.mixture import GaussianMixture
 
 from ..config import apply_config_defaults
-from ..utils.errors import ConfigurationError
-from ..utils.parameter_conversion import (
+from ..utils._errors import ConfigurationError
+from ..utils._parameter_conversion import (
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils.types import BinEdgesDict
+from ..utils._types import BinEdgesDict
 from ..base._interval_binning_base import IntervalBinningBase
 
 
@@ -201,7 +201,7 @@ class GaussianMixtureBinning(IntervalBinningBase):
             Tuple of (bin_edges, bin_representatives)
         """
         import warnings
-        from ..utils.errors import DataQualityWarning
+        from ..utils._errors import DataQualityWarning
 
         warnings.warn(
             f"Column {col_id}: GMM clustering failed ({original_error}). "

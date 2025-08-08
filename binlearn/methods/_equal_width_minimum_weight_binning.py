@@ -13,13 +13,13 @@ from typing import Any
 import numpy as np
 
 from ..config import apply_config_defaults
-from ..utils.errors import ConfigurationError, DataQualityWarning, FittingError
-from ..utils.parameter_conversion import (
+from ..utils._errors import ConfigurationError, DataQualityWarning, FittingError
+from ..utils._parameter_conversion import (
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils.types import BinEdgesDict
+from ..utils._types import BinEdgesDict
 from ..base._supervised_binning_base import SupervisedBinningBase
 
 

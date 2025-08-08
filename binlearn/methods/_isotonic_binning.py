@@ -13,11 +13,11 @@ import numpy as np
 from sklearn.isotonic import IsotonicRegression
 
 from ..config import apply_config_defaults
-from ..utils.errors import ConfigurationError, FittingError
-from ..utils.parameter_conversion import (
+from ..utils._errors import ConfigurationError, FittingError
+from ..utils._parameter_conversion import (
     validate_bin_number_parameter,
 )
-from ..utils.types import BinEdgesDict
+from ..utils._types import BinEdgesDict
 from ..base._supervised_binning_base import SupervisedBinningBase
 
 

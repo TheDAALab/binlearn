@@ -3,22 +3,22 @@ The module brings together the foundations.
 """
 
 # Core types and constants
-from ..utils.bin_operations import (
+from ..utils._bin_operations import (
     create_bin_masks,
     default_representatives,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
 )
-from ..utils.constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
+from ..utils._constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
 
 # Utility functions
-from ..utils.data_handling import (
+from ..utils._data_handling import (
     prepare_array,
     prepare_input_with_columns,
     return_like_input,
 )
-from ..utils.flexible_bin_operations import (
+from ..utils._flexible_bin_operations import (
     calculate_flexible_bin_width,
     find_flexible_bin_for_value,
     generate_default_flexible_representatives,
@@ -30,7 +30,7 @@ from ..utils.flexible_bin_operations import (
 )
 
 # Type aliases
-from ..utils.types import (
+from ..utils._types import (
     # Array types
     Array1D,
     Array2D,

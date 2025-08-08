@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from binlearn.base._supervised_binning_base import SupervisedBinningBase
-from binlearn.utils.errors import ValidationError
+from binlearn.utils._errors import ValidationError
 
 
 class DummySupervisedBinning(SupervisedBinningBase):

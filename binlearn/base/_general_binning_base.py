@@ -13,8 +13,8 @@ import numpy as np
 from sklearn.base import TransformerMixin
 
 from ..config import get_config
-from ..utils.errors import BinningError
-from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
+from ..utils._errors import BinningError
+from ..utils._types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
 from ._data_handling_base import DataHandlingBase
 
 

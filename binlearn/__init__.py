@@ -108,7 +108,7 @@ from .tools import (
 )
 
 # Error handling
-from .utils.errors import (
+from .utils._errors import (
     BinningError,
     ConfigurationError,
     FittingError,
@@ -118,7 +118,7 @@ from .utils.errors import (
 )
 
 # Parameter conversion utilities
-from .utils.parameter_conversion import (
+from .utils._parameter_conversion import (
     resolve_n_bins_parameter,
     resolve_string_parameter,
     validate_numeric_parameter,

@@ -12,7 +12,7 @@ from typing import Any, cast
 import numpy as np
 
 from ..config import get_config
-from ..utils.errors import InvalidDataError, DataQualityWarning
+from ..utils._errors import InvalidDataError, DataQualityWarning
 
 
 class ValidationMixin:

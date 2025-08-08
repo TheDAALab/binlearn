@@ -27,7 +27,7 @@ from sklearn.preprocessing import StandardScaler
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.methods._equal_width_binning import EqualWidthBinning
-from binlearn.utils.errors import ConfigurationError, DataQualityWarning
+from binlearn.utils._errors import ConfigurationError, DataQualityWarning
 
 try:
     from scipy import sparse
