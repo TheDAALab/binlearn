@@ -4,4 +4,4 @@ Write tests for the binning method to cover all lines. The tests should test the
 * trying if fit works repeatedly, on the reconstructed state, too
 * trying the various types of input and output formats after the fitted state is reconstructed through set_params(params) or constructor(**params)
 * testing the sklearn pipeline integration
-* edge cases with nans and infs
+* edge cases with nans and infs and constant columns
