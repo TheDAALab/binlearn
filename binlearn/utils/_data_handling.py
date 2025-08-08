@@ -16,6 +16,26 @@ from binlearn import _pandas_config, _polars_config
 from ._types import ArrayLike, OptionalColumnList
 
 
+def convert_to_python_types(value: Any) -> Any:
+    """Convert numpy types to pure Python types recursively for serialization."""
+    if isinstance(value, dict):
+        return {k: convert_to_python_types(v) for k, v in value.items()}
+    if isinstance(value, list | tuple):
+        converted = [convert_to_python_types(item) for item in value]
+        return type(value)(converted) if isinstance(value, tuple) else converted
+    if isinstance(value, np.ndarray):
+        return convert_to_python_types(value.tolist())
+    if isinstance(value, np.number | np.bool_):
+        if isinstance(value, np.bool_):
+            return bool(value)
+        if isinstance(value, np.integer):
+            return int(value)
+        if isinstance(value, np.floating):
+            return float(value)
+        return value.item()
+    return value
+
+
 def _is_pandas_df(obj: Any) -> bool:
     """Check if object is a pandas DataFrame."""
     pandas_module = _pandas_config.pd

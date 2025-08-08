@@ -15,10 +15,237 @@ from binlearn.utils._data_handling import (
     _determine_columns,
     _is_pandas_df,
     _is_polars_df,
+    convert_to_python_types,
     prepare_array,
     prepare_input_with_columns,
     return_like_input,
 )
+
+
+class TestConvertToPythonTypes:
+    """Test suite for convert_to_python_types function."""
+
+    def test_basic_python_types_passthrough(self):
+        """Test that basic Python types pass through unchanged."""
+        # Test basic types
+        assert convert_to_python_types(42) == 42
+        assert convert_to_python_types(3.14) == 3.14
+        assert convert_to_python_types("hello") == "hello"
+        assert convert_to_python_types(True) is True
+        assert convert_to_python_types(None) is None
+
+    def test_numpy_boolean_conversion(self):
+        """Test conversion of numpy boolean types."""
+        np_true = np.bool_(True)
+        np_false = np.bool_(False)
+
+        result_true = convert_to_python_types(np_true)
+        result_false = convert_to_python_types(np_false)
+
+        assert result_true is True
+        assert result_false is False
+        assert isinstance(result_true, bool)
+        assert isinstance(result_false, bool)
+
+    def test_numpy_integer_conversion(self):
+        """Test conversion of numpy integer types."""
+        # Test different numpy integer types
+        np_int8 = np.int8(42)
+        np_int16 = np.int16(1000)
+        np_int32 = np.int32(100000)
+        np_int64 = np.int64(10000000000)
+        np_uint8 = np.uint8(255)
+
+        assert convert_to_python_types(np_int8) == 42
+        assert convert_to_python_types(np_int16) == 1000
+        assert convert_to_python_types(np_int32) == 100000
+        assert convert_to_python_types(np_int64) == 10000000000
+        assert convert_to_python_types(np_uint8) == 255
+
+        # Ensure they're actual Python ints
+        assert isinstance(convert_to_python_types(np_int8), int)
+        assert isinstance(convert_to_python_types(np_uint8), int)
+
+    def test_numpy_floating_conversion(self):
+        """Test conversion of numpy floating point types."""
+        # Test different numpy float types
+        np_float16 = np.float16(3.14)
+        np_float32 = np.float32(2.718)
+        np_float64 = np.float64(1.414)
+
+        assert abs(convert_to_python_types(np_float16) - 3.14) < 0.01  # float16 has lower precision
+        assert abs(convert_to_python_types(np_float32) - 2.718) < 0.001
+        assert abs(convert_to_python_types(np_float64) - 1.414) < 0.001
+
+        # Ensure they're actual Python floats
+        assert isinstance(convert_to_python_types(np_float32), float)
+        assert isinstance(convert_to_python_types(np_float64), float)
+
+    def test_numpy_complex_conversion(self):
+        """Test conversion of numpy complex types."""
+        np_complex = np.complex64(1 + 2j)
+        result = convert_to_python_types(np_complex)
+
+        # Complex numbers use .item() method
+        assert result == (1 + 2j)
+
+    def test_numpy_array_conversion(self):
+        """Test conversion of numpy arrays."""
+        # 1D array
+        arr_1d = np.array([1, 2, 3])
+        result_1d = convert_to_python_types(arr_1d)
+        assert result_1d == [1, 2, 3]
+        assert isinstance(result_1d, list)
+
+        # 2D array
+        arr_2d = np.array([[1, 2], [3, 4]])
+        result_2d = convert_to_python_types(arr_2d)
+        assert result_2d == [[1, 2], [3, 4]]
+        assert isinstance(result_2d, list)
+        assert isinstance(result_2d[0], list)
+
+        # Array with numpy types
+        arr_mixed = np.array([np.int32(1), np.float64(2.5), np.bool_(True)])
+        result_mixed = convert_to_python_types(arr_mixed)
+        assert result_mixed == [1, 2.5, True]
+        assert all(isinstance(x, (int | float | bool)) for x in result_mixed)
+
+    def test_list_conversion(self):
+        """Test conversion of lists."""
+        # List with numpy types
+        list_with_numpy = [np.int32(1), np.float64(2.5), np.bool_(True), "string"]
+        result = convert_to_python_types(list_with_numpy)
+        assert result == [1, 2.5, True, "string"]
+        assert isinstance(result, list)
+
+        # Nested list
+        nested_list = [[np.int32(1), np.float64(2.5)], [np.bool_(False), "text"]]
+        result_nested = convert_to_python_types(nested_list)
+        assert result_nested == [[1, 2.5], [False, "text"]]
+        assert isinstance(result_nested, list)
+        assert isinstance(result_nested[0], list)
+
+    def test_tuple_conversion(self):
+        """Test conversion of tuples."""
+        # Tuple with numpy types
+        tuple_with_numpy = (np.int32(1), np.float64(2.5), np.bool_(True))
+        result = convert_to_python_types(tuple_with_numpy)
+        assert result == (1, 2.5, True)
+        assert isinstance(result, tuple)
+
+        # Nested tuple
+        nested_tuple = ((np.int32(1), np.float64(2.5)), (np.bool_(False), np.int64(100)))
+        result_nested = convert_to_python_types(nested_tuple)
+        assert result_nested == ((1, 2.5), (False, 100))
+        assert isinstance(result_nested, tuple)
+        assert isinstance(result_nested[0], tuple)
+
+    def test_dict_conversion(self):
+        """Test conversion of dictionaries."""
+        # Dict with numpy types
+        dict_with_numpy = {
+            "int": np.int32(42),
+            "float": np.float64(3.14),
+            "bool": np.bool_(True),
+            "array": np.array([1, 2, 3]),
+        }
+        result = convert_to_python_types(dict_with_numpy)
+        expected = {"int": 42, "float": 3.14, "bool": True, "array": [1, 2, 3]}
+        assert result == expected
+        assert isinstance(result, dict)
+        assert isinstance(result["array"], list)
+
+        # Nested dict
+        nested_dict = {
+            "outer": {"inner": np.int32(123), "list": [np.float64(1.1), np.bool_(False)]}
+        }
+        result_nested = convert_to_python_types(nested_dict)
+        expected_nested = {"outer": {"inner": 123, "list": [1.1, False]}}
+        assert result_nested == expected_nested
+
+    def test_complex_nested_structure(self):
+        """Test conversion of complex nested structures."""
+        complex_data = {
+            "array": np.array([[np.int32(1), np.float64(2.5)], [np.bool_(True), np.int64(100)]]),
+            "list": [
+                {"nested": np.array([np.float32(1.1), np.float32(2.2)])},
+                (np.int16(42), np.bool_(False)),
+            ],
+            "tuple": (np.array([1, 2, 3]), {"key": np.float64(3.14159)}),
+        }
+
+        result = convert_to_python_types(complex_data)
+        expected = {
+            "array": [[1, 2.5], [True, 100]],
+            "list": [
+                {"nested": [1.1000000238418579, 2.200000047683716]},  # float32 precision
+                (42, False),
+            ],
+            "tuple": ([1, 2, 3], {"key": 3.14159}),
+        }
+
+        assert result == expected
+        assert isinstance(result["array"], list)
+        assert isinstance(result["list"][1], tuple)
+        assert isinstance(result["tuple"], tuple)
+
+    def test_empty_containers(self):
+        """Test conversion of empty containers."""
+        # Empty containers
+        assert convert_to_python_types([]) == []
+        assert convert_to_python_types(()) == ()
+        assert convert_to_python_types({}) == {}
+        assert convert_to_python_types(np.array([])) == []
+
+        # Empty nested containers
+        nested_empty = {"empty_list": [], "empty_dict": {}, "empty_tuple": ()}
+        result = convert_to_python_types(nested_empty)
+        assert result == {"empty_list": [], "empty_dict": {}, "empty_tuple": ()}
+
+    def test_special_numpy_values(self):
+        """Test conversion of special numpy values."""
+        # NaN and inf values
+        nan_val = np.nan
+        inf_val = np.inf
+        ninf_val = -np.inf
+
+        result_nan = convert_to_python_types(nan_val)
+        result_inf = convert_to_python_types(inf_val)
+        result_ninf = convert_to_python_types(ninf_val)
+
+        assert np.isnan(result_nan)
+        assert np.isinf(result_inf) and result_inf > 0
+        assert np.isinf(result_ninf) and result_ninf < 0
+
+        # Arrays with special values
+        special_array = np.array([1.0, np.nan, np.inf, -np.inf])
+        result_array = convert_to_python_types(special_array)
+        assert len(result_array) == 4
+        assert result_array[0] == 1.0
+        assert np.isnan(result_array[1])
+        assert np.isinf(result_array[2]) and result_array[2] > 0
+        assert np.isinf(result_array[3]) and result_array[3] < 0
+
+    def test_zero_dimensional_array(self):
+        """Test conversion of zero-dimensional numpy arrays."""
+        scalar_array = np.array(42)
+        result = convert_to_python_types(scalar_array)
+        assert result == 42  # Should become the scalar value directly
+        assert isinstance(result, int)
+
+    def test_large_numpy_values(self):
+        """Test conversion of large numpy values."""
+        # Test large integers
+        large_int = np.int64(9223372036854775807)  # Max int64
+        result_int = convert_to_python_types(large_int)
+        assert result_int == 9223372036854775807
+        assert isinstance(result_int, int)
+
+        # Test very small float
+        small_float = np.float64(1e-308)
+        result_float = convert_to_python_types(small_float)
+        assert result_float == 1e-308
+        assert isinstance(result_float, float)
 
 
 class TestPrepareArray:

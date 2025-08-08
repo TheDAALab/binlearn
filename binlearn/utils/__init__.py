@@ -25,6 +25,7 @@ from ._binning_operations import (
 
 # Import data handling utilities
 from ._data_handling import (
+    convert_to_python_types,
     prepare_array,
     prepare_input_with_columns,
     return_like_input,
@@ -149,6 +150,7 @@ __all__ = [
     "get_flexible_bin_count",
     "_validate_single_flexible_bin_def",
     # Data handling utilities
+    "convert_to_python_types",
     "prepare_array",
     "return_like_input",
     "prepare_input_with_columns",

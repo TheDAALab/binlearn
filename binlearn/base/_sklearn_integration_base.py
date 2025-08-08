@@ -7,30 +7,10 @@ management, fitted state tracking, and reconstruction workflows.
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
-import numpy as np
 from sklearn.base import BaseEstimator
-
-
-def convert_to_python_types(value: Any) -> Any:
-    """Convert numpy types to pure Python types recursively for serialization."""
-    if isinstance(value, dict):
-        return {k: convert_to_python_types(v) for k, v in value.items()}
-    if isinstance(value, list | tuple):
-        converted = [convert_to_python_types(item) for item in value]
-        return type(value)(converted) if isinstance(value, tuple) else converted
-    if isinstance(value, np.ndarray):
-        return convert_to_python_types(value.tolist())
-    if isinstance(value, np.number | np.bool_):
-        if isinstance(value, np.bool_):
-            return bool(value)
-        if isinstance(value, np.integer):
-            return int(value)
-        if isinstance(value, np.floating):
-            return float(value)
-        return value.item()
-    return value
 
 
 class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
@@ -55,13 +35,16 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
         # Check if any configured fitted attributes have content
         for attr_name in self._fitted_attributes:
             attr_value = getattr(self, attr_name, None)
-            if attr_value:
-                if isinstance(attr_value, dict) and attr_value:
-                    return True
-                elif isinstance(attr_value, list) and attr_value:
-                    return True
-                elif attr_value and not isinstance(attr_value, dict | list):
-                    return True
+            if attr_value is not None:
+                if isinstance(attr_value, dict):
+                    if attr_value:  # Non-empty dict
+                        return True
+                elif isinstance(attr_value, list):
+                    if attr_value:  # Non-empty list
+                        return True
+                else:  # Not dict or list
+                    if attr_value:  # Truthy value
+                        return True
         return False
 
     def _set_fitted_attributes(self, **fitted_params: Any) -> None:
@@ -80,7 +63,6 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
 
     def get_params(self, deep: bool = True) -> dict[str, Any]:
         """Enhanced get_params with automatic fitted parameter inclusion."""
-        import inspect
 
         # Get the constructor signature
         init_signature = inspect.signature(self.__class__.__init__)
