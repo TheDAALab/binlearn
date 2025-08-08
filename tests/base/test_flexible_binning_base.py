@@ -434,3 +434,65 @@ class TestFlexibleBinningBase:
             "col1" not in binner.bin_representatives_
             or binner.bin_representatives_["col1"] != "not_a_list"
         )
+
+    def test_transform_columns_column_count_validation(self):
+        """Test column count validation in _transform_columns_to_bins."""
+        # Create binner with specification for only 1 column
+        bin_spec = {0: [1.0, 2.0, 3.0]}
+        binner = MockFlexibleBinner(bin_spec=bin_spec)
+
+        # Try to transform data with 2 columns
+        X_multi = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
+
+        # Should raise ValueError for column count mismatch
+        with pytest.raises(
+            ValueError,
+            match="Input data has 2 columns but bin specifications are provided for 1 columns",
+        ):
+            binner._transform_columns_to_bins(X_multi, [0, 1])
+
+        # Should work fine with matching column count
+        X_single = np.array([[1.0], [2.0], [3.0]])
+        result = binner._transform_columns_to_bins(X_single, [0])
+        assert result.shape == X_single.shape
+
+    def test_non_numeric_singleton_bin_exception_handling(self):
+        """Test exception handling for non-numeric singleton bins."""
+
+        # Create bin_spec with non-numeric singleton values to trigger the exception path
+        class NonNumericValue:
+            """A value that can't be converted to float."""
+
+            def __float__(self):
+                raise ValueError("Cannot convert to float")
+
+        non_numeric = NonNumericValue()
+        bin_spec = {0: [1.0, non_numeric, 3.0]}  # This should trigger the exception path
+
+        binner = MockFlexibleBinner(bin_spec=bin_spec)
+
+        # The non-numeric value should have been replaced with 0.0 placeholder
+        expected_representatives = [1.0, 0.0, 3.0]  # non_numeric becomes 0.0
+        assert binner.bin_representatives_[0] == expected_representatives
+
+    def test_unexpected_format_fallback(self):
+        """Test fallback for unexpected formats in bin specifications."""
+        # Create bin_spec with unexpected formats (not tuple and not convertible to float)
+        # This should trigger the "Fallback for unexpected formats" branch
+        bin_spec = {0: [1.0, (2, 3, 4), 5.0]}  # 3-element tuple should trigger fallback
+
+        binner = MockFlexibleBinner(bin_spec=bin_spec)
+
+        # The 3-element tuple should have been replaced with 0.0 fallback
+        expected_representatives = [1.0, 0.0, 5.0]  # (2,3,4) becomes 0.0
+        assert binner.bin_representatives_[0] == expected_representatives
+
+    def test_transform_empty_data(self):
+        """Test _transform_columns_to_bins with empty data."""
+        bin_spec = {0: [1.0, 2.0, 3.0]}
+        binner = MockFlexibleBinner(bin_spec=bin_spec)
+
+        # Empty data should return empty result
+        X_empty = np.array([]).reshape(0, 1)
+        result = binner._transform_columns_to_bins(X_empty, [0])
+        assert result.shape == (0, 0)

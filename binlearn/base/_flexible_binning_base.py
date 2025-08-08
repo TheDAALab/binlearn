@@ -10,7 +10,6 @@ from typing import Any
 import numpy as np
 
 from ..utils import (
-    MISSING_VALUE,
     BinEdgesDict,
     ColumnList,
     ConfigurationError,
@@ -80,13 +79,28 @@ class FlexibleBinningBase(GeneralBinningBase):
                     validate_bin_representatives_format(self.bin_representatives)
                     self.bin_representatives_ = self.bin_representatives
                 elif self.bin_spec_:
-                    # For flexible binning, representatives are typically the unique values themselves
+                    # For flexible binning, auto-generate proper numeric representatives
+                    # bin_spec contains mixed values (singletons and tuples for intervals)
+                    # but representatives must be all numeric
                     self.bin_representatives_ = {}
                     for col, spec in self.bin_spec_.items():
-                        # For flexible binning, spec might be the actual values
-                        # Representatives are usually the same as the bin spec values
                         if isinstance(spec, list):
-                            self.bin_representatives_[col] = spec.copy()
+                            representatives = []
+                            for spec_item in spec:
+                                if isinstance(spec_item, tuple) and len(spec_item) == 2:
+                                    # Interval bin: use midpoint as representative
+                                    representatives.append(float((spec_item[0] + spec_item[1]) / 2))
+                                elif not isinstance(spec_item, tuple):
+                                    # Singleton bin: use the value itself as representative
+                                    try:
+                                        representatives.append(float(spec_item))
+                                    except (ValueError, TypeError):
+                                        # For non-numeric singleton bins, use a placeholder
+                                        representatives.append(0.0)
+                                else:
+                                    # Fallback for unexpected formats
+                                    representatives.append(0.0)
+                            self.bin_representatives_[col] = representatives
 
                 # If we have complete specifications, mark as fitted and set sklearn attributes
                 if self.bin_spec_ and self.bin_representatives_:
@@ -155,11 +169,18 @@ class FlexibleBinningBase(GeneralBinningBase):
         if X.size == 0:
             return np.empty((X.shape[0], 0))
 
-        result = np.full(X.shape, MISSING_VALUE, dtype=int)
+        # Validate that input has same number of columns as bin specifications
+        if X.shape[1] != len(self.bin_spec_):
+            raise ValueError(
+                f"Input data has {X.shape[1]} columns but bin specifications "
+                f"are provided for {len(self.bin_spec_)} columns"
+            )
+
+        result = np.empty_like(X, dtype=int)
         available_keys = list(self.bin_spec_.keys())
 
         for i, col in enumerate(columns):
-            # Find the right bin specification
+            # Find the right bin specification - this will raise ValueError for missing columns
             key = self._get_column_key(col, available_keys, i)
             bin_defs = self.bin_spec_[key]
 

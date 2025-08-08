@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 
 from binlearn import POLARS_AVAILABLE, pd, pl
 from binlearn.methods import ManualIntervalBinning
-from binlearn.utils import BinningError, ConfigurationError, ValidationError
+from binlearn.utils import ConfigurationError, ValidationError
 
 # Skip polars tests if not available
 polars_skip = pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
@@ -129,7 +129,7 @@ class TestManualIntervalBinning:
         result = binner.fit(sample_data["simple"])
 
         assert result is binner
-        assert binner._is_fitted is True
+        assert binner._fitted is True
 
     def test_fit_with_y_parameter(self, sample_data, sample_bin_edges):
         """Test that fit ignores y parameter (manual binning is unsupervised)."""
@@ -138,7 +138,7 @@ class TestManualIntervalBinning:
         result = binner.fit(sample_data["simple"], y=y)
 
         assert result is binner
-        assert binner._is_fitted is True
+        assert binner._fitted is True
 
     # Input format tests with preserve_dataframe=False
 
@@ -512,80 +512,74 @@ class TestManualIntervalBinning:
         # Note: Column count may vary based on base class implementation
 
     def test_missing_column_in_bin_edges(self, sample_data):
-        """Test behavior when column is missing from bin_edges."""
+        """Test behavior when input data has more columns than bin specifications."""
         # Define edges only for column 0, but try to transform 2-column data
         bin_edges = {0: [0.0, 5.0, 10.0]}
         binner = ManualIntervalBinning(bin_edges=bin_edges)
 
-        # Currently the implementation may not properly validate missing columns
-        # This test documents the current behavior rather than ideal behavior
         binner.fit(sample_data["multi_col"])
 
-        # The transform may succeed but produce unreliable results for missing columns
-        # In the future, this should be improved to raise BinningError
-        result = binner.transform(sample_data["multi_col"])
+        # Should raise an error for mismatched column count (wrapped by transform's exception handler)
+        with pytest.raises(
+            ValueError,
+            match="Failed to transform data.*Input data has 2 columns but bin specifications are provided for 1 columns",
+        ):
+            binner.transform(sample_data["multi_col"])
+        # Column 1 behavior for missing edges is implementation-dependent
 
-        # At least verify the result has the expected shape
-        assert result.shape == sample_data["multi_col"].shape
-
-        # TODO: Improve ManualIntervalBinning to validate all columns have bin edges
-        # and raise BinningError for missing columns
-
-    def test_calculate_bins_missing_column_error(self, sample_data):
-        """Test that _calculate_bins raises BinningError for missing columns."""
-        bin_edges = {0: [0.0, 5.0, 10.0]}
-        binner = ManualIntervalBinning(bin_edges=bin_edges)
-
-        # Test the _calculate_bins method directly with a missing column
-        with pytest.raises(BinningError, match="No bin edges defined for column 999"):
-            binner._calculate_bins(sample_data["simple"][:, 0], col_id=999)
-
-    def test_calculate_bins_none_bin_edges_error(self, sample_data):
-        """Test that _calculate_bins raises BinningError when bin_edges is None."""
-        bin_edges = {0: [0.0, 5.0, 10.0]}
-        binner = ManualIntervalBinning(bin_edges=bin_edges)
-
-        # Manually set bin_edges to None to test the error path
-        binner.bin_edges = None
-
-        with pytest.raises(BinningError, match="No bin edges defined for column 0"):
-            binner._calculate_bins(sample_data["simple"][:, 0], col_id=0)
-
-    def test_custom_representatives_path(
+    def test_custom_representatives_behavior(
         self, sample_data, sample_bin_edges, sample_representatives
     ):
-        """Test the path where custom representatives are provided."""
+        """Test the behavior when custom representatives are provided."""
         binner = ManualIntervalBinning(
             bin_edges=sample_bin_edges["single_col"],
             bin_representatives=sample_representatives["custom"],
         )
 
-        # Test the _calculate_bins method directly to ensure custom representatives path is covered
-        edges, reps = binner._calculate_bins(sample_data["simple"][:, 0], col_id=0)
+        # Fit and transform to test that custom representatives are used properly
+        binner.fit(sample_data["simple"])
+        result = binner.transform(sample_data["simple"])
 
-        # Should use the custom representatives
+        # Verify transform works
+        assert result is not None
+        assert result.shape == sample_data["simple"].shape
+
+        # Test inverse transform uses the custom representatives
+        recovered = binner.inverse_transform(result)
+
+        # The recovered values should be from the custom representatives
         expected_reps = sample_representatives["custom"][0]
-        np.testing.assert_array_equal(reps, expected_reps)
+        unique_recovered = np.unique(recovered)
 
-        # Edges should match
-        expected_edges = sample_bin_edges["single_col"][0]
-        np.testing.assert_array_equal(edges, expected_edges)
+        # All recovered values should be from our custom representatives
+        for val in unique_recovered:
+            assert any(abs(val - rep) < 1e-10 for rep in expected_reps)
 
-    def test_auto_generated_representatives_path(self, sample_data, sample_bin_edges):
-        """Test the path where representatives are auto-generated as bin centers."""
+    def test_auto_generated_representatives_behavior(self, sample_data, sample_bin_edges):
+        """Test the behavior when representatives are auto-generated as bin centers."""
         binner = ManualIntervalBinning(bin_edges=sample_bin_edges["single_col"])
 
-        # Test the _calculate_bins method directly without bin_representatives to trigger auto-generation
-        edges, reps = binner._calculate_bins(sample_data["simple"][:, 0], col_id=0)
+        # Fit and transform to test auto-generated representatives
+        binner.fit(sample_data["simple"])
+        result = binner.transform(sample_data["simple"])
 
-        # Should auto-generate representatives as bin centers
+        # Verify transform works
+        assert result is not None
+        assert result.shape == sample_data["simple"].shape
+
+        # Test inverse transform uses auto-generated representatives (bin centers)
+        recovered = binner.inverse_transform(result)
+
+        # Calculate expected representatives as bin centers
         expected_edges = sample_bin_edges["single_col"][0]
         expected_reps = [
             (expected_edges[i] + expected_edges[i + 1]) / 2 for i in range(len(expected_edges) - 1)
         ]
 
-        np.testing.assert_array_equal(edges, expected_edges)
-        np.testing.assert_array_almost_equal(reps, expected_reps)
+        # All recovered values should be from the auto-generated representatives
+        unique_recovered = np.unique(recovered)
+        for val in unique_recovered:
+            assert any(abs(val - rep) < 1e-10 for rep in expected_reps)
 
     # Specific Manual Interval binning tests
 

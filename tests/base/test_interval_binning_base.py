@@ -509,3 +509,34 @@ class TestIntervalBinningBase:
         # Should not have set any sklearn attributes due to early exit
         assert not hasattr(binner, "_feature_names_in")
         assert not hasattr(binner, "_n_features_in")
+
+    def test_transform_columns_column_count_validation(self):
+        """Test column count validation in _transform_columns_to_bins."""
+        # Create binner with specification for only 1 column
+        bin_edges = {0: [0.0, 5.0, 10.0]}
+        binner = MockIntervalBinner(bin_edges=bin_edges)
+
+        # Try to transform data with 2 columns
+        X_multi = np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0]])
+
+        # Should raise ValueError for column count mismatch
+        with pytest.raises(
+            ValueError,
+            match="Input data has 2 columns but bin specifications are provided for 1 columns",
+        ):
+            binner._transform_columns_to_bins(X_multi, [0, 1])
+
+        # Should work fine with matching column count
+        X_single = np.array([[1.0], [2.0], [3.0]])
+        result = binner._transform_columns_to_bins(X_single, [0])
+        assert result.shape == X_single.shape
+
+    def test_transform_empty_data(self):
+        """Test _transform_columns_to_bins with empty data."""
+        bin_edges = {0: [0.0, 5.0, 10.0]}
+        binner = MockIntervalBinner(bin_edges=bin_edges)
+
+        # Empty data should return empty result
+        X_empty = np.array([]).reshape(0, 1)
+        result = binner._transform_columns_to_bins(X_empty, [0])
+        assert result.shape == (0, 0)

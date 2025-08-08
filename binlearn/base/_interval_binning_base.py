@@ -167,6 +167,13 @@ class IntervalBinningBase(GeneralBinningBase):
         if X.size == 0:
             return np.empty((X.shape[0], 0))
 
+        # Validate that input has same number of columns as bin specifications
+        if X.shape[1] != len(self.bin_edges_):
+            raise ValueError(
+                f"Input data has {X.shape[1]} columns but bin specifications "
+                f"are provided for {len(self.bin_edges_)} columns"
+            )
+
         result = np.empty_like(X, dtype=int)
         available_keys = list(self.bin_edges_.keys())
 

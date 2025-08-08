@@ -13,7 +13,7 @@ import numpy as np
 
 from ..base._interval_binning_base import IntervalBinningBase
 from ..config import apply_config_defaults
-from ..utils import ArrayLike, BinEdgesDict, BinningError, ConfigurationError
+from ..utils import ArrayLike, BinEdgesDict, ConfigurationError
 
 
 class ManualIntervalBinning(IntervalBinningBase):
@@ -75,8 +75,8 @@ class ManualIntervalBinning(IntervalBinningBase):
     ) -> ManualIntervalBinning:
         """Fit the Manual Interval binning (no-op since bins are pre-defined).
 
-        For manual binning, no fitting is required since bin edges are provided
-        by the user. This method performs validation and returns self.
+        For manual binning, the object is already fitted during initialization.
+        This method only performs validation.
 
         Args:
             X: Input data (used only for validation)
@@ -86,11 +86,8 @@ class ManualIntervalBinning(IntervalBinningBase):
         Returns:
             Self (fitted transformer)
         """
-        # Validate parameters but don't actually fit anything
+        # Just validate parameters - object is already fitted
         self._validate_params()
-
-        # Manual binning is always "fitted" since bins are pre-defined
-        self._is_fitted = True
         return self
 
     def _validate_params(self) -> None:
@@ -123,42 +120,12 @@ class ManualIntervalBinning(IntervalBinningBase):
         col_id: Any,
         guidance_data: np.ndarray[Any, Any] | None = None,
     ) -> tuple[list[float], list[float]]:
-        """Return pre-defined bins without calculation.
+        """Should never be called for manual binning.
 
-        Since ManualIntervalBinning uses user-provided bin edges, this method
-        simply returns the pre-specified edges and representatives without
-        performing any data-based calculations.
-
-        Args:
-            x_col: Input data column (ignored in manual binning)
-            col_id: Column identifier to retrieve pre-defined bins
-            guidance_data: Not used for manual binning
-
-        Returns:
-            Tuple of (bin_edges, bin_representatives)
-
-        Raises:
-            BinningError: If no bin edges are defined for the specified column
+        Manual binning uses pre-defined specifications, so this method
+        should never be invoked. If called, it indicates a logic error.
         """
-        # Get pre-defined edges for this column
-        if self.bin_edges is None or col_id not in self.bin_edges:
-            raise BinningError(
-                f"No bin edges defined for column {col_id}",
-                suggestions=[
-                    f"Add bin edges for column {col_id} in the bin_edges dictionary",
-                    "For numpy arrays, use integer keys (0, 1, 2, ...) in bin_edges",
-                    "For DataFrames, use column names as keys in bin_edges",
-                    "Ensure all data columns have corresponding bin edge definitions",
-                ],
-            )
-
-        edges = list(self.bin_edges[col_id])
-
-        # Get or generate representatives
-        if self.bin_representatives is not None and col_id in self.bin_representatives:
-            representatives = list(self.bin_representatives[col_id])
-        else:
-            # Auto-generate representatives as bin centers
-            representatives = [(edges[i] + edges[i + 1]) / 2 for i in range(len(edges) - 1)]
-
-        return edges, representatives
+        raise NotImplementedError(
+            "Manual binning uses pre-defined specifications. "
+            "_calculate_bins should never be called for ManualIntervalBinning."
+        )

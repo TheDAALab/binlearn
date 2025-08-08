@@ -16,7 +16,6 @@ from ..config import apply_config_defaults
 from ..utils import (
     ArrayLike,
     BinEdgesDict,
-    BinningError,
     BinReps,
     ConfigurationError,
     FlexibleBinDefs,
@@ -79,8 +78,8 @@ class ManualFlexibleBinning(FlexibleBinningBase):
     ) -> ManualFlexibleBinning:
         """Fit the Manual Flexible binning (no-op since bin specs are pre-defined).
 
-        For manual flexible binning, no fitting is required since bin specifications
-        are provided by the user. This method performs validation and returns self.
+        For manual binning, the object is already fitted during initialization.
+        This method only performs validation.
 
         Args:
             X: Input data (used only for validation)
@@ -90,18 +89,12 @@ class ManualFlexibleBinning(FlexibleBinningBase):
         Returns:
             Self (fitted transformer)
         """
-        # Validate parameters but don't actually fit anything
+        # Just validate parameters - object is already fitted
         self._validate_params()
-
-        # Manual flexible binning is always "fitted" since bin specs are pre-defined
-        self._is_fitted = True
         return self
 
     def _validate_params(self) -> None:
         """Validate Manual Flexible binning parameters."""
-        # Call parent validation
-        FlexibleBinningBase._validate_params(self)
-
         # ManualFlexibleBinning specific validation: bin_spec is required
         if self.bin_spec is None or len(self.bin_spec) == 0:
             raise ConfigurationError(
@@ -111,6 +104,9 @@ class ManualFlexibleBinning(FlexibleBinningBase):
                     "Example: bin_spec={0: [1.5, (2, 5)], 1: [(0, 25), (25, 50)]}",
                 ],
             )
+
+        # Call parent validation for common checks
+        FlexibleBinningBase._validate_params(self)
 
     def _calculate_flexible_bins(
         self,
@@ -135,62 +131,7 @@ class ManualFlexibleBinning(FlexibleBinningBase):
         Raises:
             BinningError: If no bin specifications are defined for the specified column
         """
-        # Handle column name mapping for numpy arrays
-        # The  architecture uses feature_N names internally, but users provide 0, 1, etc.
-        actual_col_key = col_id
-
-        # If col_id is like 'feature_N' and not found, try mapping to integer N
-        if (self.bin_spec is None or col_id not in self.bin_spec) and isinstance(col_id, str):
-            if col_id.startswith("feature_") and self.bin_spec is not None:
-                try:
-                    # Extract the number from 'feature_N'
-                    col_idx = int(col_id.replace("feature_", ""))
-                    if col_idx in self.bin_spec:
-                        actual_col_key = col_idx
-                except ValueError:
-                    pass
-
-        # If original integer key and not found, try mapping to feature_N
-        elif (self.bin_spec is None or col_id not in self.bin_spec) and isinstance(col_id, int):
-            if self.bin_spec is not None:
-                feature_name = f"feature_{col_id}"
-                if feature_name in self.bin_spec:
-                    actual_col_key = feature_name
-
-        # Get pre-defined bin specifications for this column
-        if self.bin_spec is None or actual_col_key not in self.bin_spec:
-            raise BinningError(
-                f"No bin specifications defined for column {col_id}",
-                suggestions=[
-                    f"Add bin specifications for column {col_id} in the bin_spec dictionary",
-                    "For numpy arrays, use integer keys (0, 1, 2, ...) in bin_spec",
-                    "For DataFrames, use column names as keys in bin_spec",
-                    "Ensure all data columns have corresponding bin specification definitions",
-                ],
-            )
-
-        specs = list(self.bin_spec[actual_col_key])
-
-        # Get or generate representatives
-        if self.bin_representatives is not None and actual_col_key in self.bin_representatives:
-            representatives = list(self.bin_representatives[actual_col_key])
-        else:
-            # Auto-generate representatives based on bin type
-            representatives = []
-            for spec in specs:
-                if isinstance(spec, tuple) and len(spec) == 2:
-                    # Interval bin: use midpoint as representative
-                    representatives.append(float((spec[0] + spec[1]) / 2))
-                elif not isinstance(spec, tuple):
-                    # Singleton bin: use the value itself as representative
-                    # Ensure we can convert to float
-                    try:
-                        representatives.append(float(spec))
-                    except (ValueError, TypeError):
-                        # For non-numeric singleton bins, use a placeholder
-                        representatives.append(0.0)
-                else:
-                    # Fallback for unexpected formats
-                    representatives.append(0.0)
-
-        return specs, representatives
+        raise NotImplementedError(
+            "Manual binning uses pre-defined specifications. "
+            "_calculate_bins should never be called for ManualIntervalBinning."
+        )
