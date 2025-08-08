@@ -15,8 +15,6 @@ This module tests all functionality of the config.py module including:
 
 import json
 import os
-import tempfile
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -403,7 +401,6 @@ class TestConfigManager:
             json.dump(config_data, f)
 
         manager = ConfigManager()
-        original_tolerance = manager.config.float_tolerance
 
         manager.load_config(str(config_file))
         assert manager.config.float_tolerance == 1e-7
@@ -624,7 +621,7 @@ class TestConfigurationUtilities:
         assert "equal_width_default_bins" in schema
 
         # Check structure of schema entries
-        for param_name, param_info in schema.items():
+        for _param_name, param_info in schema.items():
             assert "type" in param_info
             assert "default" in param_info
             assert "description" in param_info

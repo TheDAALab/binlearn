@@ -4,43 +4,42 @@ Comprehensive tests for binlearn.utils._types module.
 Tests all type constants and type aliases with 100% coverage.
 """
 
+
 import numpy as np
-import pytest
-from typing import Any, get_args, get_origin
 
 from binlearn.utils import (
+    ABOVE_RANGE,
+    BELOW_RANGE,
     # Constants
     MISSING_VALUE,
-    BELOW_RANGE,
-    ABOVE_RANGE,
-    # Basic types
-    ColumnId,
-    ColumnList,
-    OptionalColumnList,
-    ArrayLike,
     Array1D,
     Array2D,
-    BooleanMask,
+    ArrayLike,
+    BinCountDict,
     # Binning types
     BinEdges,
     BinEdgesDict,
     BinReps,
     BinRepsDict,
-    OptionalBinEdgesDict,
-    OptionalBinRepsDict,
+    BooleanMask,
+    # Basic types
+    ColumnId,
+    ColumnList,
+    FitParams,
+    FlexibleBinCalculationResult,
     # Flexible binning types
     FlexibleBinDef,
     FlexibleBinDefs,
     FlexibleBinSpec,
-    OptionalFlexibleBinSpec,
-    # Result types
-    IntervalBinCalculationResult,
-    FlexibleBinCalculationResult,
-    BinCountDict,
     # Parameter types
     GuidanceColumns,
-    FitParams,
+    # Result types
+    IntervalBinCalculationResult,
     JointParams,
+    OptionalBinEdgesDict,
+    OptionalBinRepsDict,
+    OptionalColumnList,
+    OptionalFlexibleBinSpec,
 )
 
 
@@ -413,12 +412,12 @@ class TestTypeConsistency:
         }
 
         # Each column should have a list of bin definitions
-        for col, defs in spec.items():
+        for _col, defs in spec.items():
             assert isinstance(defs, list)
             assert len(defs) > 0
             for bin_def in defs:
                 # Each definition should be either a number or tuple
-                assert isinstance(bin_def, (int, float, tuple))
+                assert isinstance(bin_def, int | float | tuple)
 
     def test_result_types_match_inputs(self) -> None:
         """Test that result types match their corresponding input types."""

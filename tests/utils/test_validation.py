@@ -7,8 +7,8 @@ Tests all validation and parameter conversion functions with 100% coverage.
 import numpy as np
 import pytest
 
-from binlearn.utils import ConfigurationError
 from binlearn.utils import (
+    ConfigurationError,
     resolve_n_bins_parameter,
     resolve_string_parameter,
     validate_bin_number_for_calculation,
@@ -211,7 +211,7 @@ class TestResolveStringParameter:
 
     def test_resolve_empty_options(self) -> None:
         """Test behavior with empty options dict."""
-        options = {}
+        options: dict[str, str] = {}
 
         # Any string should be invalid
         with pytest.raises(ConfigurationError):
@@ -743,7 +743,7 @@ class TestValidationIntegration:
             except (ConfigurationError, ValueError) as e:
                 # All should be proper exception types with messages
                 assert len(str(e)) > 0
-                assert isinstance(e, (ConfigurationError, ValueError))
+                assert isinstance(e, ConfigurationError | ValueError)
 
     def test_parameter_name_propagation(self) -> None:
         """Test that parameter names are properly used in error messages."""

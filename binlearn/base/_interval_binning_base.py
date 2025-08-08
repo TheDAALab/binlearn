@@ -288,7 +288,7 @@ class IntervalBinningBase(GeneralBinningBase):
             raise FittingError(f"Column {col_id} contains only NaN values. Cannot perform binning.")
 
         # Work with a copy to avoid modifying input data
-        x_processed = x_col.copy()
+        x_processed: np.ndarray[Any, Any] = x_col.copy()
 
         # Handle inf/-inf values by replacing with finite boundary values
         if np.any(np.isinf(x_processed)):

@@ -5,7 +5,6 @@ Tests all error classes, warning classes, and utility functions with 100% covera
 """
 
 import warnings
-from typing import Any
 
 import pytest
 
@@ -288,8 +287,8 @@ class TestErrorIntegration:
         with pytest.raises(ValidationError) as exc_info:
             try:
                 raise ValueError("Something went wrong")
-            except ValueError:
-                raise ValidationError("Validation failed", ["Check input"])
+            except ValueError as err:
+                raise ValidationError("Validation failed", ["Check input"]) from err
 
         assert "Validation failed" in str(exc_info.value)
         assert "Check input" in str(exc_info.value)

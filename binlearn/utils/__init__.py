@@ -7,6 +7,7 @@ organized into logical modules for better maintainability and discoverability.
 
 # Import from binning operations (interval + flexible binning)
 from ._binning_operations import (
+    _validate_single_flexible_bin_def,
     calculate_flexible_bin_width,
     create_bin_masks,
     default_representatives,
@@ -20,7 +21,6 @@ from ._binning_operations import (
     validate_bins,
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
-    _validate_single_flexible_bin_def,
 )
 
 # Import data handling utilities
@@ -33,14 +33,14 @@ from ._data_handling import (
 # Import error classes
 from ._errors import (
     BinningError,
+    BinningWarning,
     ConfigurationError,
     DataQualityWarning,
     FittingError,
     InvalidDataError,
+    PerformanceWarning,
     TransformationError,
     ValidationError,
-    PerformanceWarning,
-    BinningWarning,
     suggest_alternatives,
 )
 

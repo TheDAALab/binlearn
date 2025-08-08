@@ -36,6 +36,18 @@ class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
         self._original_columns: OptionalColumnList = None
         self._feature_names_in: list[str] | None = None
 
+    # Use dynamic input columns computation
+    def get_input_columns(self) -> ColumnList | None:
+        """Get input columns for data preparation.
+
+        This method should be overridden by derived classes to provide
+        appropriate column information without exposing binning-specific concepts.
+
+        Returns:
+            Column information or None if not available
+        """
+        return None
+
     def _prepare_input(self, X: ArrayLike) -> tuple[np.ndarray[Any, Any], ColumnList]:
         """Prepare input data and extract column information."""
         fitted = getattr(self, "_fitted", False)
@@ -47,8 +59,7 @@ class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
             and hasattr(self, "_get_binning_columns")
             and callable(getattr(self, "_get_binning_columns", None))
         ):
-            # Use dynamic binning columns computation
-            original_columns = self._get_binning_columns()
+            original_columns = self.get_input_columns()
 
         return prepare_input_with_columns(X, fitted=fitted, original_columns=original_columns)
 

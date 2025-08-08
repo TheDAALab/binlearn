@@ -7,7 +7,7 @@ This module provides the core binning orchestration logic with guidance support.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from sklearn.base import TransformerMixin
@@ -165,7 +165,7 @@ class GeneralBinningBase(
 
     def _resolve_guidance_data_priority(
         self, X_guidance: np.ndarray[Any, Any] | None, external_guidance: Any, y: Any
-    ) -> np.ndarray[Any, Any] | None:
+    ) -> np.ndarray[Any, Any] | None | Any:
         """Resolve guidance data with clear priority order.
 
         Priority: X_guidance > external_guidance > y
@@ -188,7 +188,8 @@ class GeneralBinningBase(
             y_array = np.asarray(y)
             if y_array.ndim == 1:
                 y_array = y_array.reshape(-1, 1)
-            return y_array  # type: ignore[no-any-return]
+            # mypy doesn't understand that np.asarray returns the right type
+            return y_array
 
         return None
 
@@ -299,6 +300,17 @@ class GeneralBinningBase(
                     "fit_jointly=True cannot be used with guidance_columns. "
                     "Guidance-based fitting requires per-column processing."
                 )
+
+    def get_input_columns(self) -> ColumnList | None:
+        """Get input columns for data preparation.
+
+        This method should be overridden by derived classes to provide
+        appropriate column information without exposing binning-specific concepts.
+
+        Returns:
+            Column information or None if not available
+        """
+        return self._get_binning_columns()
 
     # Abstract methods for subclasses - renamed for clarity
     @abstractmethod
