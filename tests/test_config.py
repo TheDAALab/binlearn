@@ -1,31 +1,22 @@
 """
-Comprehensive test suite for the binning configuration system.
+Comprehensive test suite for binlearn configuration system.
 
-This module provides extensive testing for the configuration management
-system in the binning package, including the BinningConfig dataclass,
-ConfigManager class, configuration loading/saving, environment variable
-handling, context management, and all configuration utilities.
-
-The test suite aims for 100% code coverage by systematically testing
-every configuration feature, edge case, and error condition.
-
-Test Classes:
-    TestBinningConfig: Tests for the BinningConfig dataclass including
-        initialization, validation, and dictionary conversion.
-    TestConfigManager: Tests for the ConfigManager singleton including
-        loading, saving, environment variable handling, and state management.
-    TestGlobalFunctions: Tests for global configuration functions like
-        get_config, set_config, load_config, and reset_config.
-    TestConfigContext: Tests for the ConfigContext context manager.
-    TestConfigEdgeCases: Tests for edge cases and error conditions.
-    TestConfigIntegration: Integration tests with binning transformers.
+This module tests all functionality of the config.py module including:
+- BinningConfig dataclass functionality
+- ConfigManager singleton pattern
+- Environment variable loading
+- File I/O operations
+- Parameter validation
+- Method-specific defaults
+- Configuration context managers
+- Global configuration functions
+- Configuration utilities and schema
 """
-
-# pylint: disable=protected-access
 
 import json
 import os
 import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -45,589 +36,766 @@ from binlearn.config import (
 )
 
 
-def test_basic_config_import():
-    """Basic test to ensure pytest discovers this module correctly.
-
-    Verifies that the main configuration classes can be imported
-    successfully and are available for testing.
-    """
-    assert BinningConfig is not None
-    assert ConfigManager is not None
-
-
 class TestBinningConfig:
-    """Comprehensive test suite for the BinningConfig dataclass.
+    """Test BinningConfig dataclass functionality."""
 
-    This test class verifies all aspects of the BinningConfig dataclass
-    including default initialization, dictionary conversion, validation,
-    and configuration parameter handling.
-    """
-
-    def test_init_defaults(self):
-        """Test initialization with default parameter values.
-
-        Verifies that the BinningConfig dataclass initializes correctly
-        with the expected default values for all configuration parameters.
-        """
+    def test_default_initialization(self):
+        """Test BinningConfig creates with expected defaults."""
         config = BinningConfig()
+
+        # Test core framework settings
+        assert config.float_tolerance == 1e-10
         assert config.preserve_dataframe is False
         assert config.fit_jointly is False
-        assert config.float_tolerance == 1e-10
+
+        # Test interval binning defaults
         assert config.default_clip is True
+        assert config.default_n_bins == 10
+        assert config.default_random_state is None
+
+        # Test specific method defaults
         assert config.equal_width_default_bins == 5
+        assert config.equal_width_default_range_strategy == "min_max"
+        assert config.equal_frequency_default_bins == 10
+        assert config.kmeans_default_bins == 10
+        assert config.gaussian_mixture_default_components == 10
 
-    def test_from_dict_valid_keys(self):
-        """Test configuration creation from dictionary with valid keys.
+        # Test flexible binning defaults
+        assert config.singleton_max_unique_values == 1000
+        assert config.singleton_sort_values is True
 
-        Verifies that the from_dict method correctly creates a BinningConfig
-        instance from a dictionary with valid configuration parameters.
-        """
-        config_dict = {"preserve_dataframe": True, "fit_jointly": True, "float_tolerance": 1e-8}
-        config = BinningConfig.from_dict(config_dict)
-        assert config.preserve_dataframe is True
-        assert config.fit_jointly is True
+        # Test supervised binning defaults
+        assert config.supervised_default_max_depth == 3
+        assert config.supervised_default_min_samples_leaf == 5
+        assert config.supervised_default_min_samples_split == 10
+        assert config.supervised_default_task_type == "classification"
+
+        # Test validation settings
+        assert config.strict_validation is True
+        assert config.allow_empty_bins is False
+        assert config.validate_input_types is True
+
+        # Test performance settings
+        assert config.parallel_processing is False
+        assert config.enable_caching is False
+
+        # Test data handling
+        assert config.missing_value_strategy == "preserve"
+        assert config.infinite_value_strategy == "clip"
+        assert config.auto_detect_numeric_columns is True
+
+    def test_custom_initialization(self):
+        """Test BinningConfig with custom parameters."""
+        config = BinningConfig(
+            float_tolerance=1e-8,
+            equal_width_default_bins=7,
+            supervised_default_max_depth=5,
+            strict_validation=False,
+        )
+
         assert config.float_tolerance == 1e-8
+        assert config.equal_width_default_bins == 7
+        assert config.supervised_default_max_depth == 5
+        assert config.strict_validation is False
+        # Other values should remain defaults
+        assert config.default_n_bins == 10
 
-    def test_from_dict_filters_invalid_keys(self):
-        """Test from_dict filters out invalid keys."""
+    def test_from_dict(self):
+        """Test creating config from dictionary."""
         config_dict = {
-            "preserve_dataframe": True,
-            "invalid_key": "should_be_ignored",
-            "another_invalid": 123,
+            "float_tolerance": 1e-9,
+            "equal_width_default_bins": 8,
+            "unknown_parameter": "ignored",  # Should be ignored
         }
+
         config = BinningConfig.from_dict(config_dict)
-        assert config.preserve_dataframe is True
-        assert not hasattr(config, "invalid_key")
+        assert config.float_tolerance == 1e-9
+        assert config.equal_width_default_bins == 8
+        assert not hasattr(config, "unknown_parameter")
 
     def test_to_dict(self):
-        """Test to_dict conversion."""
-        config = BinningConfig(preserve_dataframe=True, fit_jointly=True)
+        """Test converting config to dictionary."""
+        config = BinningConfig(float_tolerance=1e-9)
         config_dict = config.to_dict()
+
         assert isinstance(config_dict, dict)
-        assert config_dict["preserve_dataframe"] is True
-        assert config_dict["fit_jointly"] is True
+        assert config_dict["float_tolerance"] == 1e-9
+        assert "equal_width_default_bins" in config_dict
 
-    def test_load_from_file(self):
-        """Test loading from JSON file."""
-        config_data = {"preserve_dataframe": True, "equal_width_default_bins": 10}
+    def test_load_from_file(self, tmp_path):
+        """Test loading configuration from JSON file."""
+        config_data = {
+            "float_tolerance": 1e-9,
+            "equal_width_default_bins": 7,
+            "preserve_dataframe": True,
+        }
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as file_handle:
-            json.dump(config_data, file_handle)
-            temp_path = file_handle.name
+        config_file = tmp_path / "test_config.json"
+        with open(config_file, "w") as f:
+            json.dump(config_data, f)
 
-        try:
-            config = BinningConfig.load_from_file(temp_path)
-            assert config.preserve_dataframe is True
-            assert config.equal_width_default_bins == 10
-        finally:
-            os.unlink(temp_path)
-
-    def test_save_to_file(self):
-        """Test saving to JSON file."""
-        config = BinningConfig(preserve_dataframe=True, fit_jointly=True)
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as file_handle:
-            temp_path = file_handle.name
-
-        try:
-            config.save_to_file(temp_path)
-
-            # Verify file contents
-            with open(temp_path, encoding="utf-8") as file_handle:
-                saved_data = json.load(file_handle)
-
-            assert saved_data["preserve_dataframe"] is True
-            assert saved_data["fit_jointly"] is True
-        finally:
-            os.unlink(temp_path)
-
-    def test_update(self):
-        """Test update method."""
-        config = BinningConfig()
-        config.update(preserve_dataframe=True, fit_jointly=True)
+        config = BinningConfig.load_from_file(str(config_file))
+        assert config.float_tolerance == 1e-9
+        assert config.equal_width_default_bins == 7
         assert config.preserve_dataframe is True
-        assert config.fit_jointly is True
+
+    def test_load_from_file_nonexistent(self):
+        """Test loading from nonexistent file raises error."""
+        with pytest.raises(FileNotFoundError):
+            BinningConfig.load_from_file("nonexistent.json")
+
+    def test_save_to_file(self, tmp_path):
+        """Test saving configuration to JSON file."""
+        config = BinningConfig(float_tolerance=1e-9, equal_width_default_bins=7)
+
+        config_file = tmp_path / "test_save.json"
+        config.save_to_file(str(config_file))
+
+        assert config_file.exists()
+        with open(config_file) as f:
+            saved_data = json.load(f)
+
+        assert saved_data["float_tolerance"] == 1e-9
+        assert saved_data["equal_width_default_bins"] == 7
+
+    def test_update_valid_parameters(self):
+        """Test updating configuration with valid parameters."""
+        config = BinningConfig()
+        config.update(float_tolerance=1e-8, equal_width_default_bins=6, preserve_dataframe=True)
+
+        assert config.float_tolerance == 1e-8
+        assert config.equal_width_default_bins == 6
+        assert config.preserve_dataframe is True
 
     def test_update_invalid_parameter(self):
-        """Test update with invalid parameter raises error."""
+        """Test updating with invalid parameter raises error."""
         config = BinningConfig()
-
         with pytest.raises(ValueError, match="Unknown configuration parameter"):
-            config.update(invalid_parameter="value")
+            config.update(invalid_param="value")
 
-    def test_update_validation(self):
-        """Test update method with validation."""
+    def test_update_strategy_parameter_valid(self):
+        """Test updating strategy parameters with valid values."""
+        config = BinningConfig()
+        config.update(
+            equal_width_default_range_strategy="percentile",
+            missing_value_strategy="error",
+            infinite_value_strategy="preserve",
+        )
+
+        assert config.equal_width_default_range_strategy == "percentile"
+        assert config.missing_value_strategy == "error"
+        assert config.infinite_value_strategy == "preserve"
+
+    def test_update_strategy_parameter_invalid(self):
+        """Test updating strategy parameters with invalid values."""
         config = BinningConfig()
 
-        # Test positive depth validation - negative value should raise error
+        with pytest.raises(ValueError, match="must be one of"):
+            config.update(equal_width_default_range_strategy="invalid")
+
+        with pytest.raises(ValueError, match="must be one of"):
+            config.update(missing_value_strategy="invalid")
+
+    def test_update_depth_parameter_validation(self):
+        """Test validation of depth parameters."""
+        config = BinningConfig()
+
+        # Valid depth
+        config.update(supervised_default_max_depth=5)
+        assert config.supervised_default_max_depth == 5
+
+        # Invalid depth (negative)
         with pytest.raises(ValueError, match="must be positive"):
             config.update(supervised_default_max_depth=-1)
 
-        # Test positive depth validation - positive value should work
-        config.update(supervised_default_max_depth=5)  # Should pass validation
-        assert config.supervised_default_max_depth == 5
+        # Invalid depth (zero)
+        with pytest.raises(ValueError, match="must be positive"):
+            config.update(supervised_default_max_depth=0)
 
-        # Test float tolerance validation - negative should raise error
-        with pytest.raises(ValueError, match="float_tolerance must be positive"):
-            config.update(float_tolerance=-1.0)
-
-        # Test float tolerance validation - positive should work
-        config.update(float_tolerance=0.001)  # Should pass validation
-        assert config.float_tolerance == 0.001
-
-        # Test NEGATION: depth parameter with non-integer value (should skip depth
-        # validation branch)
-        # This covers the case where key matches pattern but isinstance(value, int) is False
-        config.update(supervised_default_max_depth="3")  # String instead of int, skips validation
-        # Test that the config actually stores the wrong type (testing edge case)
-        assert str(config.supervised_default_max_depth) == "3"
-
-        # Test NEGATION: float_tolerance with non-numeric value (should skip tolerance validation
-        # branch)
-        # This covers the case where key == "float_tolerance" but isinstance(value, (int, float))
-        # is False
-        config.update(float_tolerance="0.001")  # String instead of number, skips validation
-        # Test that the config actually stores the wrong type (testing edge case)
-        assert str(config.float_tolerance) == "0.001"
-
-    def test_validate_strategy_parameter(self):
-        """Test _validate_strategy_parameter method."""
+    def test_update_float_tolerance_validation(self):
+        """Test validation of float_tolerance parameter."""
         config = BinningConfig()
 
-        # Valid values
-        config._validate_strategy_parameter("equal_width_default_range_strategy", "min_max")
-        config._validate_strategy_parameter("equal_width_default_range_strategy", "percentile")
-        config._validate_strategy_parameter("equal_width_default_range_strategy", "std")
+        # Valid tolerance
+        config.update(float_tolerance=1e-8)
+        assert config.float_tolerance == 1e-8
 
-        # Invalid value
-        with pytest.raises(ValueError, match="must be one of"):
-            config._validate_strategy_parameter("equal_width_default_range_strategy", "invalid")
+        # Invalid tolerance (negative)
+        with pytest.raises(ValueError, match="must be positive"):
+            config.update(float_tolerance=-1e-8)
 
-    def test_get_method_defaults(self):
-        """Test get_method_defaults for different methods."""
+        # Invalid tolerance (zero)
+        with pytest.raises(ValueError, match="must be positive"):
+            config.update(float_tolerance=0)
+
+    def test_validate_strategy_parameter_coverage(self):
+        """Test _validate_strategy_parameter method covers all strategies."""
         config = BinningConfig()
 
-        # Equal width
-        ew_defaults = config.get_method_defaults("equal_width")
-        assert "n_bins" in ew_defaults
-        assert "clip" in ew_defaults
-        assert ew_defaults["n_bins"] == config.equal_width_default_bins
+        # Test strategy parameters (only those ending with "_strategy")
+        strategies_to_test = [
+            ("equal_width_default_range_strategy", ["min_max", "percentile", "std"]),
+            ("missing_value_strategy", ["preserve", "error", "ignore"]),
+            ("infinite_value_strategy", ["clip", "error", "preserve"]),
+        ]
 
-        # Supervised
-        sup_defaults = config.get_method_defaults("supervised")
-        assert "max_depth" in sup_defaults
-        assert "min_samples_leaf" in sup_defaults
+        for strategy_key, valid_values in strategies_to_test:
+            # Test valid values
+            for valid_value in valid_values:
+                config.update(**{strategy_key: valid_value})
+                assert getattr(config, strategy_key) == valid_value
 
-        # Singleton
-        singleton_defaults = config.get_method_defaults("singleton")
-        assert "max_unique_values" in singleton_defaults
+            # Test invalid value
+            with pytest.raises(ValueError):
+                config.update(**{strategy_key: "invalid_value"})
 
-        # Unknown method - should return base defaults
-        unknown_defaults = config.get_method_defaults("UnknownMethod")
-        assert "preserve_dataframe" in unknown_defaults
-        assert "fit_jointly" in unknown_defaults
+        # Test default_column_selection separately since it doesn't end with "_strategy"
+        # but is still validated internally
+        for valid_value in ["numeric", "all", "explicit"]:
+            config.update(default_column_selection=valid_value)
+            assert config.default_column_selection == valid_value
 
-    def test_get_method_defaults_comprehensive(self):
-        """Test get_method_defaults for all supported methods to ensure complete coverage."""
+    def test_get_method_defaults_equal_width(self):
+        """Test get_method_defaults for equal_width method."""
         config = BinningConfig()
+        defaults = config.get_method_defaults("equal_width")
 
-        # Test equal_frequency method
-        eq_freq_defaults = config.get_method_defaults("equal_frequency")
-        assert "n_bins" in eq_freq_defaults
-        assert "quantile_range" in eq_freq_defaults
-        assert eq_freq_defaults["n_bins"] == config.equal_frequency_default_bins
-        assert eq_freq_defaults["quantile_range"] == config.equal_frequency_default_quantile_range
+        expected_keys = {
+            "preserve_dataframe",
+            "fit_jointly",
+            "strict_validation",
+            "clip",
+            "n_bins",
+            "range_strategy",
+        }
+        assert set(defaults.keys()) == expected_keys
+        assert defaults["n_bins"] == config.equal_width_default_bins
+        assert defaults["range_strategy"] == config.equal_width_default_range_strategy
 
-        # Test kmeans method
-        kmeans_defaults = config.get_method_defaults("kmeans")
-        assert "n_bins" in kmeans_defaults
-        assert "random_state" in kmeans_defaults
-        assert kmeans_defaults["n_bins"] == config.kmeans_default_bins
-        assert kmeans_defaults["random_state"] == config.kmeans_random_state
+    def test_get_method_defaults_equal_frequency(self):
+        """Test get_method_defaults for equal_frequency method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("equal_frequency")
 
-        # Test gaussian_mixture method
-        gm_defaults = config.get_method_defaults("gaussian_mixture")
-        assert "n_components" in gm_defaults
-        assert "random_state" in gm_defaults
-        assert gm_defaults["n_components"] == config.gaussian_mixture_default_components
-        assert gm_defaults["random_state"] == config.gaussian_mixture_random_state
+        assert "n_bins" in defaults
+        assert "quantile_range" in defaults
+        assert defaults["n_bins"] == config.equal_frequency_default_bins
 
-        # Test equal_width_minimum_weight method
-        ewmw_defaults = config.get_method_defaults("equal_width_minimum_weight")
-        assert "n_bins" in ewmw_defaults
-        assert "minimum_weight" in ewmw_defaults
-        assert ewmw_defaults["n_bins"] == config.equal_width_min_weight_default_bins
-        assert ewmw_defaults["minimum_weight"] == config.equal_width_min_weight_threshold
+    def test_get_method_defaults_kmeans(self):
+        """Test get_method_defaults for kmeans method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("kmeans")
 
-        # Test chi2 method (line 265)
-        chi2_defaults = config.get_method_defaults("chi2")
-        assert "n_bins" in chi2_defaults
-        assert "significance_level" in chi2_defaults
-        assert "min_expected_frequency" in chi2_defaults
-        assert chi2_defaults["n_bins"] == config.chi2_default_bins
-        assert chi2_defaults["significance_level"] == config.chi2_significance_level
-        assert chi2_defaults["min_expected_frequency"] == config.chi2_min_expected_frequency
+        assert "n_bins" in defaults
+        assert "random_state" in defaults
+        assert defaults["n_bins"] == config.kmeans_default_bins
 
-        # Test dbscan method (line 273)
-        dbscan_defaults = config.get_method_defaults("dbscan")
-        assert "eps" in dbscan_defaults
-        assert "min_samples" in dbscan_defaults
-        assert "random_state" in dbscan_defaults
-        assert dbscan_defaults["eps"] == config.dbscan_eps
-        assert dbscan_defaults["min_samples"] == config.dbscan_min_samples
-        assert dbscan_defaults["random_state"] == config.dbscan_random_state
+    def test_get_method_defaults_gaussian_mixture(self):
+        """Test get_method_defaults for gaussian_mixture method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("gaussian_mixture")
 
-        # Test isotonic method (line 281)
-        isotonic_defaults = config.get_method_defaults("isotonic")
-        assert "n_bins" in isotonic_defaults
-        assert "increasing" in isotonic_defaults
-        assert isotonic_defaults["n_bins"] == config.isotonic_default_bins
-        assert isotonic_defaults["increasing"] == config.isotonic_increasing
+        assert "n_components" in defaults
+        assert "random_state" in defaults
+        assert defaults["n_components"] == config.gaussian_mixture_default_components
+
+    def test_get_method_defaults_equal_width_minimum_weight(self):
+        """Test get_method_defaults for equal_width_minimum_weight method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("equal_width_minimum_weight")
+
+        assert "n_bins" in defaults
+        assert "minimum_weight" in defaults
+        assert defaults["n_bins"] == config.equal_width_min_weight_default_bins
+
+    def test_get_method_defaults_chi2(self):
+        """Test get_method_defaults for chi2 method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("chi2")
+
+        assert "max_bins" in defaults
+        assert "min_bins" in defaults
+        assert "alpha" in defaults
+        assert "initial_bins" in defaults
+
+    def test_get_method_defaults_dbscan(self):
+        """Test get_method_defaults for dbscan method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("dbscan")
+
+        assert "eps" in defaults
+        assert "min_samples" in defaults
+        assert "random_state" in defaults
+
+    def test_get_method_defaults_isotonic(self):
+        """Test get_method_defaults for isotonic method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("isotonic")
+
+        assert "n_bins" in defaults
+        assert "increasing" in defaults
+
+    def test_get_method_defaults_singleton(self):
+        """Test get_method_defaults for singleton method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("singleton")
+
+        assert "max_unique_values" in defaults
+        assert "sort_values" in defaults
+
+    def test_get_method_defaults_supervised(self):
+        """Test get_method_defaults for supervised method."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("supervised")
+
+        expected_supervised_keys = {
+            "max_depth",
+            "min_samples_leaf",
+            "min_samples_split",
+            "task_type",
+            "random_state",
+        }
+        for key in expected_supervised_keys:
+            assert key in defaults
+
+    def test_get_method_defaults_unknown_method(self):
+        """Test get_method_defaults for unknown method returns generic defaults."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("unknown_method")
+
+        assert "n_bins" in defaults
+        assert "random_state" in defaults
+        assert defaults["n_bins"] == config.default_n_bins
 
 
 class TestConfigManager:
-    """Test ConfigManager singleton."""
+    """Test ConfigManager singleton functionality."""
 
-    def test_singleton_behavior(self):
-        """Test that ConfigManager is a singleton."""
+    def test_singleton_pattern(self):
+        """Test ConfigManager implements singleton pattern."""
         manager1 = ConfigManager()
         manager2 = ConfigManager()
         assert manager1 is manager2
 
     def test_config_property(self):
-        """Test config property access."""
+        """Test config property returns BinningConfig instance."""
         manager = ConfigManager()
         config = manager.config
         assert isinstance(config, BinningConfig)
 
     def test_update_config(self):
-        """Test update_config method."""
+        """Test updating configuration through manager."""
         manager = ConfigManager()
-        manager.update_config(preserve_dataframe=True)
-        assert manager.config.preserve_dataframe is True
-        manager.reset_to_defaults()  # Clean up
+        original_tolerance = manager.config.float_tolerance
 
-    def test_load_config_from_file(self):
-        """Test load_config method."""
-        config_data = {"preserve_dataframe": True}
+        manager.update_config(float_tolerance=1e-8)
+        assert manager.config.float_tolerance == 1e-8
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        # Reset for other tests
+        manager.update_config(float_tolerance=original_tolerance)
+
+    def test_load_config_from_file(self, tmp_path):
+        """Test loading config from file through manager."""
+        config_data = {"float_tolerance": 1e-7}
+        config_file = tmp_path / "manager_test.json"
+
+        with open(config_file, "w") as f:
             json.dump(config_data, f)
-            temp_path = f.name
 
-        manager = None
-        try:
-            manager = ConfigManager()
-            manager.load_config(temp_path)
-            assert manager.config.preserve_dataframe is True
-        finally:
-            os.unlink(temp_path)
-            if manager is not None:
-                manager.reset_to_defaults()  # Clean up
+        manager = ConfigManager()
+        original_tolerance = manager.config.float_tolerance
+
+        manager.load_config(str(config_file))
+        assert manager.config.float_tolerance == 1e-7
+
+        # Reset
+        manager.reset_to_defaults()
+        assert manager.config.float_tolerance != 1e-7
 
     def test_reset_to_defaults(self):
-        """Test reset_to_defaults method."""
+        """Test resetting configuration to defaults."""
         manager = ConfigManager()
-        manager.update_config(preserve_dataframe=True)
+        manager.update_config(float_tolerance=1e-8, equal_width_default_bins=20)
 
         manager.reset_to_defaults()
-        assert manager.config.preserve_dataframe is False  # Default value
 
-    def test_load_from_env(self):
-        """Test _load_from_env with environment variables."""
-        env_vars = {
-            "BINNING_PRESERVE_DATAFRAME": "true",
-            "BINNING_FIT_JOINTLY": "false",
+        # Should be back to defaults
+        default_config = BinningConfig()
+        assert manager.config.float_tolerance == default_config.float_tolerance
+        assert manager.config.equal_width_default_bins == default_config.equal_width_default_bins
+
+    @patch.dict(
+        os.environ,
+        {
             "BINNING_FLOAT_TOLERANCE": "1e-8",
-            "BINNING_EQUAL_WIDTH_BINS": "10",
-        }
-
-        with patch.dict(os.environ, env_vars):
-            manager = ConfigManager()
-            manager._load_from_env()
-
-            assert manager.config.preserve_dataframe is True
-            assert manager.config.fit_jointly is False
-            assert manager.config.float_tolerance == 1e-8
-            assert manager.config.equal_width_default_bins == 10
-
-        manager.reset_to_defaults()  # Clean up
-
-    def test_load_from_env_invalid_values(self):
-        """Test _load_from_env with invalid environment values."""
-        env_vars = {
-            "BINNING_PRESERVE_DATAFRAME": "invalid_bool",
-            "BINNING_FLOAT_TOLERANCE": "not_a_number",
-        }
-
-        with patch.dict(os.environ, env_vars):
-            manager = ConfigManager()
-            # Test with raise_on_config_errors=False
-            manager.config.raise_on_config_errors = False
-            manager._load_from_env()  # Should not raise
-
-            # Test with raise_on_config_errors=True
-            manager.config.raise_on_config_errors = True
-            with pytest.raises(ValueError, match="Invalid environment variable"):
-                manager._load_from_env()
-
-        # Clean up after exiting the patch context
-        manager.reset_to_defaults()
-
-    def test_load_config_file_error(self):
-        """Test error handling in load_config."""
+            "BINNING_DEFAULT_CLIP": "false",
+            "BINNING_PRESERVE_DATAFRAME": "true",
+            "BINNING_STRICT_VALIDATION": "no",
+            "BINNING_SHOW_WARNINGS": "1",
+            "BINNING_EQUAL_WIDTH_BINS": "15",
+            "BINNING_SUPERVISED_MAX_DEPTH": "7",
+        },
+        clear=False,
+    )
+    def test_load_from_env_success(self):
+        """Test loading configuration from environment variables successfully."""
+        # Create a new manager to trigger environment loading
+        ConfigManager._instance = None
         manager = ConfigManager()
 
-        with pytest.raises(FileNotFoundError):
-            manager.load_config("/nonexistent/file.json")
+        assert manager.config.float_tolerance == 1e-8
+        assert manager.config.default_clip is False
+        assert manager.config.preserve_dataframe is True
+        assert manager.config.strict_validation is False
+        assert manager.config.show_warnings is True
+        assert manager.config.equal_width_default_bins == 15
+        assert manager.config.supervised_default_max_depth == 7
+
+        # Reset singleton for other tests
+        ConfigManager._instance = None
+
+    @patch.dict(
+        os.environ,
+        {"BINNING_FLOAT_TOLERANCE": "invalid_float", "BINNING_EQUAL_WIDTH_BINS": "not_an_int"},
+        clear=False,
+    )
+    def test_load_from_env_invalid_values_with_raise(self):
+        """Test invalid environment values raise errors when configured to do so."""
+        ConfigManager._instance = None
+
+        with pytest.raises(ValueError, match="Invalid environment variable"):
+            ConfigManager()
+
+        # Reset singleton
+        ConfigManager._instance = None
+
+    def test_load_from_env_invalid_values_no_raise(self):
+        """Test invalid environment values don't raise when configured not to."""
+        ConfigManager._instance = None
+
+        # Create a manager first (without invalid env vars)
+        manager = ConfigManager()
+        # Then set raise_on_config_errors to False
+        manager._config.raise_on_config_errors = False
+
+        # Now test with invalid environment variable
+        with patch.dict(os.environ, {"BINNING_FLOAT_TOLERANCE": "invalid_float"}, clear=False):
+            # Should not raise an error even with invalid values
+            try:
+                manager._load_from_env()
+                # If we get here, the test passes - invalid values were ignored
+            except Exception as e:
+                pytest.fail(
+                    f"_load_from_env should not raise when raise_on_config_errors=False, but got: {e}"
+                )
+
+        # Reset singleton
+        ConfigManager._instance = None
+
+    def test_load_from_env_boolean_variations(self):
+        """Test different boolean value formats in environment variables."""
+        bool_variations = [
+            ("true", True),
+            ("True", True),
+            ("1", True),
+            ("yes", True),
+            ("on", True),
+            ("false", False),
+            ("False", False),
+            ("0", False),
+            ("no", False),
+            ("off", False),
+            ("other", False),
+        ]
+
+        for env_value, expected in bool_variations:
+            with patch.dict(os.environ, {"BINNING_DEFAULT_CLIP": env_value}, clear=False):
+                ConfigManager._instance = None
+                manager = ConfigManager()
+                assert manager.config.default_clip == expected
+                ConfigManager._instance = None
 
 
-class TestGlobalFunctions:
+class TestGlobalConfigFunctions:
     """Test global configuration functions."""
 
     def test_get_config(self):
-        """Test get_config function."""
+        """Test get_config returns current configuration."""
         config = get_config()
         assert isinstance(config, BinningConfig)
 
     def test_set_config(self):
-        """Test set_config function."""
-        set_config(preserve_dataframe=True)
-        assert get_config().preserve_dataframe is True
-        reset_config()  # Clean up
+        """Test set_config updates global configuration."""
+        original_tolerance = get_config().float_tolerance
 
-    def test_load_config_function(self):
+        set_config(float_tolerance=1e-8)
+        assert get_config().float_tolerance == 1e-8
+
+        # Reset
+        set_config(float_tolerance=original_tolerance)
+
+    def test_load_config(self, tmp_path):
         """Test load_config function."""
-        config_data = {"preserve_dataframe": True}
+        config_data = {"equal_width_default_bins": 12}
+        config_file = tmp_path / "global_test.json"
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        with open(config_file, "w") as f:
             json.dump(config_data, f)
-            temp_path = f.name
 
-        try:
-            load_config(temp_path)
-            assert get_config().preserve_dataframe is True
-        finally:
-            os.unlink(temp_path)
-            reset_config()  # Clean up
+        load_config(str(config_file))
+        assert get_config().equal_width_default_bins == 12
 
-    def test_reset_config_function(self):
-        """Test reset_config function."""
-        set_config(preserve_dataframe=True)
+        # Reset
         reset_config()
-        assert get_config().preserve_dataframe is False  # Default
 
-    def test_apply_config_defaults(self):
-        """Test apply_config_defaults function."""
-        set_config(preserve_dataframe=True, fit_jointly=True)
+    def test_reset_config(self):
+        """Test reset_config function."""
+        set_config(float_tolerance=1e-8)
+        reset_config()
 
-        # Test with method name
-        params = apply_config_defaults("equal_width")
-        assert params["preserve_dataframe"] is True
-        assert params["fit_jointly"] is True
-        assert "n_bins" in params  # Method-specific default
+        default_config = BinningConfig()
+        assert get_config().float_tolerance == default_config.float_tolerance
 
-        # Test with user_params preservation
-        params = apply_config_defaults("equal_width", user_params={"preserve_dataframe": False})
-        assert params["preserve_dataframe"] is False
 
-        # Test with override parameters
-        params = apply_config_defaults(
-            "equal_width", user_params={"n_bins": 5}, n_bins=10
-        )  # Override should win
-        assert params["n_bins"] == 10
+class TestConfigurationUtilities:
+    """Test configuration utility functions."""
 
-        # Test with None and empty user_params
-        params = apply_config_defaults("equal_width", user_params=None)
-        assert "n_bins" in params
+    def test_apply_config_defaults_basic(self):
+        """Test apply_config_defaults with basic usage."""
+        result = apply_config_defaults("equal_width")
 
-        params = apply_config_defaults("equal_width", user_params={})
-        assert "n_bins" in params
+        assert isinstance(result, dict)
+        assert "n_bins" in result
+        assert "preserve_dataframe" in result
 
-        reset_config()  # Clean up
+    def test_apply_config_defaults_with_user_params(self):
+        """Test apply_config_defaults with user parameters."""
+        user_params = {"n_bins": 8, "custom_param": "value"}
+        result = apply_config_defaults("equal_width", user_params)
 
-    def test_validate_config_parameter(self):
-        """Test validate_config_parameter function."""
-        # Valid parameters
-        assert validate_config_parameter("preserve_dataframe", True) is True
-        assert validate_config_parameter("fit_jointly", False) is True
+        assert result["n_bins"] == 8
+        assert result["custom_param"] == "value"
+
+    def test_apply_config_defaults_with_overrides(self):
+        """Test apply_config_defaults with override parameters."""
+        user_params = {"n_bins": 8}
+        result = apply_config_defaults(
+            "equal_width",
+            user_params,
+            n_bins=15,  # Should override user_params
+            preserve_dataframe=True,
+        )
+
+        assert result["n_bins"] == 15  # Override wins
+        assert result["preserve_dataframe"] is True
+
+    def test_apply_config_defaults_precedence(self):
+        """Test parameter precedence in apply_config_defaults."""
+        # Test all precedence levels
+        result = apply_config_defaults(
+            "equal_width",
+            user_params={"n_bins": 8, "clip": False},
+            n_bins=20,  # Override should win
+            preserve_dataframe=True,  # New override param
+        )
+
+        assert result["n_bins"] == 20  # Override beats user_params
+        assert result["clip"] is False  # User param preserved
+        assert result["preserve_dataframe"] is True  # Override added
+
+    def test_validate_config_parameter_valid(self):
+        """Test validate_config_parameter with valid parameters."""
         assert validate_config_parameter("float_tolerance", 1e-8) is True
         assert validate_config_parameter("equal_width_default_bins", 10) is True
+        assert validate_config_parameter("preserve_dataframe", True) is True
 
-        # Invalid parameter names
-        assert validate_config_parameter("invalid_param", "value") is False
+    def test_validate_config_parameter_invalid(self):
+        """Test validate_config_parameter with invalid parameters."""
         assert validate_config_parameter("nonexistent_param", "value") is False
-
-        # Invalid strategy value
-        assert validate_config_parameter("equal_width_default_range_strategy", "invalid") is False
+        assert validate_config_parameter("float_tolerance", -1e-8) is False
+        assert validate_config_parameter("supervised_default_max_depth", -1) is False
 
     def test_get_config_schema(self):
-        """Test get_config_schema function."""
+        """Test get_config_schema returns complete schema."""
         schema = get_config_schema()
 
         assert isinstance(schema, dict)
-        assert "preserve_dataframe" in schema
-        assert "fit_jointly" in schema
         assert "float_tolerance" in schema
+        assert "equal_width_default_bins" in schema
 
-        # Check schema structure
-        param_schema = schema["preserve_dataframe"]
-        assert "type" in param_schema
-        assert "default" in param_schema
-        assert "description" in param_schema
+        # Check structure of schema entries
+        for param_name, param_info in schema.items():
+            assert "type" in param_info
+            assert "default" in param_info
+            assert "description" in param_info
 
-    def test_get_parameter_description(self):
-        """Test _get_parameter_description function."""
+    def test_get_parameter_description_known(self):
+        """Test _get_parameter_description with known parameters."""
+        desc = _get_parameter_description("float_tolerance")
+        assert "tolerance" in desc.lower()
+
         desc = _get_parameter_description("preserve_dataframe")
-        assert isinstance(desc, str)
-        assert len(desc) > 0
+        assert "dataframe" in desc.lower()
 
-        # Test fallback for unknown parameter
+    def test_get_parameter_description_unknown(self):
+        """Test _get_parameter_description with unknown parameter."""
         desc = _get_parameter_description("unknown_param")
         assert desc == "No description available"
 
 
 class TestConfigContext:
-    """Test ConfigContext context manager for 100% coverage."""
+    """Test ConfigContext context manager."""
 
-    def test_context_manager_basic(self):
+    def test_config_context_basic(self):
         """Test basic ConfigContext functionality."""
-        # Set initial config
-        reset_config()
-        original_preserve = get_config().preserve_dataframe
+        original_tolerance = get_config().float_tolerance
 
-        # Use context manager to temporarily change config
-        with ConfigContext(preserve_dataframe=True, fit_jointly=True):
-            config = get_config()
-            assert config.preserve_dataframe is True
-            assert config.fit_jointly is True
+        with ConfigContext(float_tolerance=1e-8):
+            assert get_config().float_tolerance == 1e-8
 
-        # Config should be restored after context
-        config = get_config()
-        assert config.preserve_dataframe == original_preserve
-        assert config.fit_jointly is False  # Default value
+        # Should be restored
+        assert get_config().float_tolerance == original_tolerance
 
-    def test_context_manager_exception_handling(self):
-        """Test ConfigContext properly restores config even with exceptions."""
-        reset_config()
-        original_preserve = get_config().preserve_dataframe
+    def test_config_context_multiple_params(self):
+        """Test ConfigContext with multiple parameters."""
+        original_config = get_config()
+        original_tolerance = original_config.float_tolerance
+        original_bins = original_config.equal_width_default_bins
+
+        with ConfigContext(float_tolerance=1e-8, equal_width_default_bins=15):
+            assert get_config().float_tolerance == 1e-8
+            assert get_config().equal_width_default_bins == 15
+
+        # Should be restored
+        assert get_config().float_tolerance == original_tolerance
+        assert get_config().equal_width_default_bins == original_bins
+
+    def test_config_context_with_exception(self):
+        """Test ConfigContext restores config even when exception occurs."""
+        original_tolerance = get_config().float_tolerance
 
         try:
-            with ConfigContext(preserve_dataframe=True):
-                assert get_config().preserve_dataframe is True
+            with ConfigContext(float_tolerance=1e-8):
+                assert get_config().float_tolerance == 1e-8
                 raise ValueError("Test exception")
         except ValueError:
             pass
 
-        # Config should still be restored after exception
-        config = get_config()
-        assert config.preserve_dataframe == original_preserve
+        # Should still be restored
+        assert get_config().float_tolerance == original_tolerance
 
-    def test_context_manager_nested(self):
-        """Test nested ConfigContext usage."""
-        reset_config()
+    def test_config_context_nested(self):
+        """Test nested ConfigContext managers."""
+        original_tolerance = get_config().float_tolerance
 
-        with ConfigContext(preserve_dataframe=True):
-            assert get_config().preserve_dataframe is True
+        with ConfigContext(float_tolerance=1e-8):
+            assert get_config().float_tolerance == 1e-8
 
-            with ConfigContext(fit_jointly=True):
-                config = get_config()
-                assert config.preserve_dataframe is True  # Still preserved
-                assert config.fit_jointly is True
+            with ConfigContext(float_tolerance=1e-9):
+                assert get_config().float_tolerance == 1e-9
 
-            # Inner context restored
-            config = get_config()
-            assert config.preserve_dataframe is True
-            assert config.fit_jointly is False  # Restored
+            # Inner context should be restored to outer
+            assert get_config().float_tolerance == 1e-8
 
-        # Outer context restored
-        config = get_config()
-        assert config.preserve_dataframe is False
-        assert config.fit_jointly is False
+        # Outer context should be restored to original
+        assert get_config().float_tolerance == original_tolerance
+
+    def test_config_context_return_self(self):
+        """Test ConfigContext __enter__ returns self."""
+        with ConfigContext(float_tolerance=1e-8) as ctx:
+            assert isinstance(ctx, ConfigContext)
 
 
-class TestConfigEdgeCases:
-    """Test edge cases and error conditions."""
+class TestEdgeCasesAndErrorHandling:
+    """Test edge cases and error handling scenarios."""
 
-    def test_config_file_not_found(self):
-        """Test loading from non-existent file."""
-        with pytest.raises(FileNotFoundError):
-            BinningConfig.load_from_file("/non/existent/file.json")
-
-    def test_config_file_invalid_json(self):
-        """Test loading from file with invalid JSON."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+    def test_config_file_json_decode_error(self, tmp_path):
+        """Test handling of invalid JSON in config file."""
+        config_file = tmp_path / "invalid.json"
+        with open(config_file, "w") as f:
             f.write("invalid json content")
-            temp_path = f.name
+
+        with pytest.raises(json.JSONDecodeError):
+            BinningConfig.load_from_file(str(config_file))
+
+    def test_config_file_permission_error(self, tmp_path):
+        """Test handling of permission errors in file operations."""
+        config_file = tmp_path / "no_permission.json"
+        config_file.touch()
+        config_file.chmod(0o000)
 
         try:
-            with pytest.raises(json.JSONDecodeError):
-                BinningConfig.load_from_file(temp_path)
+            with pytest.raises(PermissionError):
+                BinningConfig.load_from_file(str(config_file))
         finally:
-            os.unlink(temp_path)
+            # Restore permissions for cleanup
+            config_file.chmod(0o644)
 
-    def test_save_to_file_permission_error(self):
-        """Test saving to file with permission error."""
+    def test_save_to_invalid_directory(self):
+        """Test saving to invalid directory path."""
         config = BinningConfig()
 
-        # Try to save to a directory that doesn't exist
         with pytest.raises(FileNotFoundError):
-            config.save_to_file("/non/existent/directory/config.json")
+            config.save_to_file("/nonexistent/directory/config.json")
+
+    def test_update_with_none_values(self):
+        """Test updating config with None values."""
+        config = BinningConfig()
+
+        # Some parameters should accept None
+        config.update(default_random_state=None)
+        assert config.default_random_state is None
+
+    def test_environment_variable_type_conversion_edge_cases(self):
+        """Test edge cases in environment variable type conversion."""
+        with patch.dict(os.environ, {"BINNING_FLOAT_TOLERANCE": "0.0001"}, clear=False):
+            ConfigManager._instance = None
+            manager = ConfigManager()
+            assert manager.config.float_tolerance == 0.0001
+            ConfigManager._instance = None
 
 
-class TestConfigIntegration:
-    """Integration tests for complete configuration workflow."""
+class TestAllMethodDefaults:
+    """Test that all method defaults are properly covered."""
 
-    def test_full_workflow(self):
-        """Test complete configuration workflow."""
-        # Start with defaults
-        reset_config()
+    def test_all_implemented_methods_have_defaults(self):
+        """Test that get_method_defaults handles all known methods."""
+        config = BinningConfig()
 
-        # Update config
-        set_config(preserve_dataframe=True, equal_width_default_bins=8)
-        config = get_config()
-        assert config.preserve_dataframe is True
-        assert config.equal_width_default_bins == 8
+        # List of all methods that should have specific defaults
+        methods_with_defaults = [
+            "equal_width",
+            "equal_frequency",
+            "kmeans",
+            "gaussian_mixture",
+            "equal_width_minimum_weight",
+            "chi2",
+            "dbscan",
+            "isotonic",
+            "singleton",
+            "supervised",
+        ]
 
-        # Save to file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-            temp_path = f.name
+        for method in methods_with_defaults:
+            defaults = config.get_method_defaults(method)
+            assert isinstance(defaults, dict)
+            assert len(defaults) > 0
+            # All should have basic common parameters
+            assert "preserve_dataframe" in defaults
+            assert "fit_jointly" in defaults
+            assert "strict_validation" in defaults
+            assert "clip" in defaults
 
-        try:
-            config.save_to_file(temp_path)
+    def test_generic_method_defaults(self):
+        """Test generic defaults for unknown methods."""
+        config = BinningConfig()
+        defaults = config.get_method_defaults("unknown_method")
 
-            # Reset and reload
-            reset_config()
-            assert get_config().preserve_dataframe is False  # Back to default
+        # Should get generic defaults
+        assert "n_bins" in defaults
+        assert "random_state" in defaults
+        assert defaults["n_bins"] == config.default_n_bins
 
-            load_config(temp_path)
-            config = get_config()
-            assert config.preserve_dataframe is True
-            assert config.equal_width_default_bins == 8
 
-        finally:
-            os.unlink(temp_path)
-            reset_config()
-
-    def test_method_defaults_integration(self):
-        """Test method defaults integration with configuration."""
-        reset_config()
-
-        # Modify config
-        set_config(equal_width_default_bins=7, default_clip=False, preserve_dataframe=True)
-
-        config = get_config()
-
-        # Test method defaults
-        ew_defaults = config.get_method_defaults("equal_width")
-        assert ew_defaults["n_bins"] == 7
-        assert ew_defaults["clip"] is False
-
-        # Test apply_config_defaults
-        params = apply_config_defaults("equal_width")
-
-        assert params["n_bins"] == 7
-        assert params["clip"] is False
-        assert params["preserve_dataframe"] is True
-
-        reset_config()
+if __name__ == "__main__":
+    pytest.main([__file__])
