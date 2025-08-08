@@ -72,15 +72,17 @@ def return_like_input(
         return arr
 
     if _is_pandas_df(original_input):
+        # pandas_module is guaranteed to be not None if _is_pandas_df returns True
         pandas_module = _pandas_config.pd
-        if pandas_module is not None:
-            cols = columns if columns is not None else list(original_input.columns)
-            return pandas_module.DataFrame(arr, columns=cols, index=original_input.index)
+        assert pandas_module is not None  # This should always be true
+        cols = columns if columns is not None else list(original_input.columns)
+        return pandas_module.DataFrame(arr, columns=cols, index=original_input.index)
     elif _is_polars_df(original_input):
+        # polars_module is guaranteed to be not None if _is_polars_df returns True
         polars_module = _polars_config.pl
-        if polars_module is not None:
-            cols = columns if columns is not None else list(original_input.columns)
-            return polars_module.DataFrame(arr, schema=cols)
+        assert polars_module is not None  # This should always be true
+        cols = columns if columns is not None else list(original_input.columns)
+        return polars_module.DataFrame(arr, schema=cols)
 
     return arr
 

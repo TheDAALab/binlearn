@@ -7,6 +7,7 @@ to achieve 100% test coverage, including edge cases and error conditions.
 import numpy as np
 import pandas as pd
 import pytest
+from unittest.mock import patch
 
 from binlearn.utils._data_handling import (
     prepare_array,
@@ -147,6 +148,62 @@ class TestReturnLikeInput:
         np.testing.assert_array_equal(result, processed)
         assert isinstance(result, np.ndarray)
 
+    def test_return_polars_dataframe_preserve(self):
+        """Test returning data as polars DataFrame when preserve_dataframe=True."""
+        try:
+            import polars as pl
+
+            original = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+            processed = np.array([[10, 20], [30, 40]])
+            columns = ["A", "B"]
+
+            result = return_like_input(processed, original, columns, preserve_dataframe=True)
+
+            # Should return polars DataFrame if module is available
+            assert isinstance(result, pl.DataFrame)
+            expected = pl.DataFrame(processed, schema=columns)
+            assert result.equals(expected)
+
+        except ImportError:
+            pytest.skip("Polars not available for testing")
+
+    def test_return_polars_dataframe_module_none(self):
+        """Test polars DataFrame handling when polars module is None."""
+        # Test the case where we have a polars DataFrame but the polars module is None in _polars_config
+        try:
+            import polars as pl
+
+            # Create a polars DataFrame
+            original = pl.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+            processed = np.array([[10, 20], [30, 40]])
+
+            # Mock _polars_config.pl to be None to simulate the case where polars module is None
+            with patch("binlearn.utils._data_handling._polars_config") as mock_polars_config:
+                mock_polars_config.pl = None  # Simulate polars module being None
+
+                # This should fall back to returning the array since polars module is None
+                result = return_like_input(processed, original, None, preserve_dataframe=True)
+                np.testing.assert_array_equal(result, processed)
+                assert isinstance(result, np.ndarray)
+
+        except ImportError:
+            pytest.skip("Polars not available for testing")
+
+    def test_return_pandas_dataframe_module_none(self):
+        """Test pandas DataFrame handling when pandas module is None."""
+        # Test the case where we have a pandas DataFrame but the pandas module is None in _pandas_config
+        original = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+        processed = np.array([[10, 20], [30, 40]])
+
+        # Mock _pandas_config.pd to be None to simulate the case where pandas module is None
+        with patch("binlearn.utils._data_handling._pandas_config") as mock_pandas_config:
+            mock_pandas_config.pd = None  # Simulate pandas module being None
+
+            # This should fall back to returning the array since pandas module is None
+            result = return_like_input(processed, original, None, preserve_dataframe=True)
+            np.testing.assert_array_equal(result, processed)
+            assert isinstance(result, np.ndarray)
+
 
 class TestPrepareInputWithColumns:
     """Test suite for prepare_input_with_columns function."""
@@ -270,6 +327,35 @@ class TestHelperFunctions:
 
         # Test with None
         assert _is_polars_df(None) is False
+
+        # Try to test with actual polars DataFrame if available
+        try:
+            import polars as pl
+
+            # Create a polars DataFrame and test
+            polars_df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+            assert _is_polars_df(polars_df) is True
+        except ImportError:
+            # Polars not available, just pass
+            pass
+
+    def test_polars_dataframe_input(self):
+        """Test polars DataFrame input (if available)."""
+        try:
+            import polars as pl
+
+            # Create polars DataFrame
+            data = pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]})
+            array, columns, index = prepare_array(data)
+
+            # Should convert to numpy array
+            expected = np.array([[1, 4, 7], [2, 5, 8], [3, 6, 9]])
+            np.testing.assert_array_equal(array, expected)
+            assert columns == ["A", "B", "C"]
+            assert index is None  # Polars returns None for index
+
+        except ImportError:
+            pytest.skip("Polars not available for testing")
 
     def test_determine_columns_helper(self):
         """Test the _determine_columns helper function."""
