@@ -10,13 +10,13 @@ from typing import Any
 
 import numpy as np
 
-from ._sklearn_integration_base import SklearnIntegrationBase
+from ._sklearn_integration import SklearnIntegration
 from ._validation_mixin import ValidationMixin
 from ..utils.data_handling import prepare_input_with_columns, return_like_input
 from ..utils.types import ArrayLike, ColumnList, OptionalColumnList
 
 
-class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
+class DataHandling(SklearnIntegration, ValidationMixin):
     """Pure data handling for multi-format inputs and outputs.
 
     Handles data format conversion, validation, and preservation without
@@ -25,7 +25,7 @@ class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
 
     def __init__(self):
         """Initialize data handling mixin."""
-        SklearnIntegrationBase.__init__(self)
+        SklearnIntegration.__init__(self)
         ValidationMixin.__init__(self)
         # Column management for input/output format preservation
         self._original_columns: OptionalColumnList = None

@@ -33,7 +33,7 @@ def convert_to_python_types(value: Any) -> Any:
     return value
 
 
-class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
+class SklearnIntegration(BaseEstimator):  # type: ignore[misc,unused-ignore]
     """Clean sklearn integration for V2 architecture.
 
     Provides core sklearn compatibility without assumptions about specific fitted attributes.
@@ -138,7 +138,7 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
 
         return fitted_params
 
-    def set_params(self, **params: Any) -> "SklearnIntegrationBase":
+    def set_params(self, **params: Any) -> "SklearnIntegration":
         """Set the parameters of this estimator.
 
         This method supports reconstruction workflows by handling fitted parameters

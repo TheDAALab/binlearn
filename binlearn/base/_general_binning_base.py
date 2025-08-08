@@ -15,12 +15,12 @@ from sklearn.base import TransformerMixin
 from ..config import get_config
 from ..utils.errors import BinningError
 from ..utils.types import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
-from ._data_handling_base import DataHandlingBase
+from ._data_handling import DataHandling
 
 
 class GeneralBinningBase(
     ABC,
-    DataHandlingBase,
+    DataHandling,
     TransformerMixin,  # type: ignore[misc,unused-ignore]
 ):
     """Clean binning base class focusing on orchestration and guidance logic.
@@ -39,7 +39,7 @@ class GeneralBinningBase(
         guidance_columns: GuidanceColumns = None,
     ):
         """Initialize the binning transformer."""
-        DataHandlingBase.__init__(self)
+        DataHandling.__init__(self)
         TransformerMixin.__init__(self)
 
         # Load configuration defaults
