@@ -42,6 +42,7 @@ from .flexible_bin_operations import (
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
 )
+
 # Parameter conversion utilities
 from .parameter_conversion import (
     resolve_n_bins_parameter,

@@ -11,7 +11,7 @@ removed_files = [
     "flexible_bin_operations_new.py (empty file)",
     "integration.py (unused)",
     "sklearn_integration.py (unused SklearnCompatibilityMixin)",
-    "validation.py (unused validation functions)"
+    "validation.py (unused validation functions)",
 ]
 
 for i, file in enumerate(removed_files, 1):
@@ -20,13 +20,13 @@ for i, file in enumerate(removed_files, 1):
 print("\n✅ FILES KEPT (8 files):")
 kept_files = [
     "bin_operations.py - interval binning utilities",
-    "constants.py - framework constants", 
+    "constants.py - framework constants",
     "data_handling.py - input/output handling",
     "errors.py - exception classes and warnings",
     "flexible_bin_operations.py - flexible binning utilities",
     "inspection.py - class/parameter introspection",
-    "parameter_conversion.py - parameter validation/conversion", 
-    "types.py - type definitions"
+    "parameter_conversion.py - parameter validation/conversion",
+    "types.py - type definitions",
 ]
 
 for i, file in enumerate(kept_files, 1):
@@ -42,10 +42,10 @@ print(f"  • Zero breaking changes - all 12 methods still work perfectly!")
 print("\n🎯 BENEFITS:")
 benefits = [
     "Reduced codebase complexity",
-    "Eliminated unused/dead code", 
+    "Eliminated unused/dead code",
     "Cleaner import structure",
     "Easier maintenance and navigation",
-    "Focused utils module with only essential functions"
+    "Focused utils module with only essential functions",
 ]
 
 for benefit in benefits:
