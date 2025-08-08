@@ -74,42 +74,42 @@ class TestSklearnIntegrationBase:
         """Test _fitted property with dict fitted attributes."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_dict_"]
-        estimator.test_dict_ = {"key": "value"}
+        estimator.test_dict_ = {"key": "value"}  # type: ignore
         assert estimator._fitted
 
     def test_fitted_property_with_empty_dict(self):
         """Test _fitted property with empty dict fitted attribute."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_dict_"]
-        estimator.test_dict_ = {}
+        estimator.test_dict_ = {}  # type: ignore
         assert not estimator._fitted
 
     def test_fitted_property_with_list_content(self):
         """Test _fitted property with list fitted attributes."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_list_"]
-        estimator.test_list_ = [1, 2, 3]
+        estimator.test_list_ = [1, 2, 3]  # type: ignore
         assert estimator._fitted
 
     def test_fitted_property_with_empty_list(self):
         """Test _fitted property with empty list fitted attribute."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_list_"]
-        estimator.test_list_ = []
+        estimator.test_list_ = []  # type: ignore
         assert not estimator._fitted
 
     def test_fitted_property_with_other_content(self):
         """Test _fitted property with non-dict/list fitted attributes."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_value_"]
-        estimator.test_value_ = "some_value"
+        estimator.test_value_ = "some_value"  # type: ignore
         assert estimator._fitted
 
     def test_fitted_property_with_falsy_content(self):
         """Test _fitted property with falsy fitted attribute."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_value_"]
-        estimator.test_value_ = None
+        estimator.test_value_ = None  # type: ignore
         assert not estimator._fitted
 
     def test_fitted_property_with_missing_attribute(self):
@@ -122,8 +122,8 @@ class TestSklearnIntegrationBase:
         """Test _fitted property with multiple attributes where some are empty."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["empty_", "filled_"]
-        estimator.empty_ = None
-        estimator.filled_ = "content"
+        estimator.empty_ = None  # type: ignore
+        estimator.filled_ = "content"  # type: ignore
         assert estimator._fitted
 
     def test_set_fitted_attributes(self):
@@ -135,7 +135,7 @@ class TestSklearnIntegrationBase:
 
         assert estimator.bin_edges_ == [[0, 1, 2]]
         assert estimator.bin_representatives_ == [[0.5, 1.5]]
-        assert estimator.custom_attr_ == "custom_value"
+        assert estimator.custom_attr_ == "custom_value"  # type: ignore
 
     def test_check_fitted_when_not_fitted(self):
         """Test _check_fitted raises error when not fitted."""
@@ -215,8 +215,8 @@ class TestSklearnIntegrationBase:
         """Test that get_params removes class_ and module_ if they exist as attributes."""
         estimator = MockEstimator()
         # Set class_ and module_ attributes
-        estimator.class_ = "ShouldBeRemoved"
-        estimator.module_ = "ShouldBeRemoved"
+        estimator.class_ = "ShouldBeRemoved"  # type: ignore
+        estimator.module_ = "ShouldBeRemoved"  # type: ignore
 
         params = estimator.get_params()
 
@@ -244,7 +244,7 @@ class TestSklearnIntegrationBase:
         estimator = MockEstimator()
         estimator.bin_edges_ = [[0, 1, 2]]
         estimator.bin_representatives_ = [[0.5, 1.5]]
-        estimator.custom_fitted_ = "custom_value"
+        estimator.custom_fitted_ = "custom_value"  # type: ignore
         estimator.n_features_in_ = 2  # Should be excluded
         estimator.feature_names_in_ = ["a", "b"]  # Should be excluded
 
@@ -259,9 +259,9 @@ class TestSklearnIntegrationBase:
     def test_extract_fitted_params_excludes_private_attributes(self):
         """Test _extract_fitted_params excludes private attributes."""
         estimator = MockEstimator()
-        estimator._private_attr_ = "should_be_excluded"
-        estimator.__dunder_attr__ = "should_be_excluded"
-        estimator.public_attr_ = "should_be_included"
+        estimator._private_attr_ = "should_be_excluded"  # type: ignore
+        estimator.__dunder_attr__ = "should_be_excluded"  # type: ignore
+        estimator.public_attr_ = "should_be_included"  # type: ignore
 
         fitted_params = estimator._extract_fitted_params()
 
@@ -272,8 +272,8 @@ class TestSklearnIntegrationBase:
     def test_extract_fitted_params_excludes_none_values(self):
         """Test _extract_fitted_params excludes None values."""
         estimator = MockEstimator()
-        estimator.valid_attr_ = "value"
-        estimator.none_attr_ = None
+        estimator.valid_attr_ = "value"  # type: ignore
+        estimator.none_attr_ = None  # type: ignore
 
         fitted_params = estimator._extract_fitted_params()
 
@@ -433,18 +433,18 @@ class TestSklearnIntegrationBase:
         assert not estimator._fitted
 
         # Use setattr to add attributes dynamically
-        estimator.custom_attr_ = "value"
+        estimator.custom_attr_ = "value"  # type: ignore
         assert estimator._fitted
 
-        estimator.custom_attr_ = None
-        estimator.another_attr_ = [1, 2, 3]
+        estimator.custom_attr_ = None  # type: ignore
+        estimator.another_attr_ = [1, 2, 3]  # type: ignore
         assert estimator._fitted
 
     def test_edge_case_empty_string_fitted_attribute(self):
         """Test fitted property with empty string (falsy but not None)."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_attr_"]
-        estimator.test_attr_ = ""
+        estimator.test_attr_ = ""  # type: ignore
 
         # Empty string is falsy, so should not be considered fitted
         assert not estimator._fitted
@@ -453,7 +453,7 @@ class TestSklearnIntegrationBase:
         """Test fitted property with zero value (falsy but not None)."""
         estimator = MockEstimator()
         estimator._fitted_attributes = ["test_attr_"]
-        estimator.test_attr_ = 0
+        estimator.test_attr_ = 0  # type: ignore
 
         # Zero is falsy, so should not be considered fitted
         assert not estimator._fitted
@@ -476,23 +476,23 @@ class TestSklearnIntegrationBase:
         estimator._fitted_attributes = ["dict_attr_", "list_attr_", "str_attr_"]
 
         # All empty - not fitted
-        estimator.dict_attr_ = {}
-        estimator.list_attr_ = []
-        estimator.str_attr_ = None
+        estimator.dict_attr_ = {}  # type: ignore
+        estimator.list_attr_ = []  # type: ignore
+        estimator.str_attr_ = None  # type: ignore
         assert not estimator._fitted
 
         # One has content - fitted
-        estimator.dict_attr_ = {"key": "value"}
+        estimator.dict_attr_ = {"key": "value"}  # type: ignore
         assert estimator._fitted
 
         # Reset and try with list
-        estimator.dict_attr_ = {}
-        estimator.list_attr_ = ["item"]
+        estimator.dict_attr_ = {}  # type: ignore
+        estimator.list_attr_ = ["item"]  # type: ignore
         assert estimator._fitted
 
         # Reset and try with string
-        estimator.list_attr_ = []
-        estimator.str_attr_ = "content"
+        estimator.list_attr_ = []  # type: ignore
+        estimator.str_attr_ = "content"  # type: ignore
         assert estimator._fitted
 
     def test_fitted_property_non_dict_non_list_truthy_value(self):
@@ -501,11 +501,11 @@ class TestSklearnIntegrationBase:
         estimator._fitted_attributes = ["test_attr_"]
 
         # Set a truthy value that's not a dict or list
-        estimator.test_attr_ = 42  # integer
+        estimator.test_attr_ = 42  # integer  # type: ignore
         assert estimator._fitted
 
         # Set another type - tuple (truthy, not dict or list)
-        estimator.test_attr_ = 1, 2, 3
+        estimator.test_attr_ = 1, 2, 3  # type: ignore
         assert estimator._fitted
 
     def test_set_params_empty_filtered_regular_params(self):
@@ -544,7 +544,9 @@ class TestSklearnIntegrationBase:
         # Set a truthy value that's not a dict but will fail isinstance(attr_value, list)
         # This tests the branch 46->39 where the elif isinstance(attr_value, list) condition is False
         # but we still have a truthy value that's not a dict
-        estimator.test_attr_ = "string_value"  # String is not dict, not list, but truthy
+        estimator.test_attr_ = (
+            "string_value"  # String is not dict, not list, but truthy  # type: ignore
+        )
         assert estimator._fitted
 
     def test_set_params_no_fitted_params_to_set_no_sklearn_setter(self):
@@ -566,8 +568,10 @@ class TestSklearnIntegrationBase:
         # Set first attribute to a non-list truthy value, second to None
         # This should test the branch where isinstance(attr_value, list) is False
         # and we continue to check the next attribute in the loop
-        estimator.attr1_ = "not_a_list"  # Truthy, not dict, not list -> should return True
-        estimator.attr2_ = None
+        estimator.attr1_ = (
+            "not_a_list"  # Truthy, not dict, not list -> should return True  # type: ignore
+        )
+        estimator.attr2_ = None  # type: ignore
 
         # The first attribute should make it fitted, but we want to test the branch logic
         assert estimator._fitted
@@ -579,7 +583,7 @@ class TestSklearnIntegrationBase:
 
         # Set to a value that's truthy, not dict, not list
         # This should go through: if attr_value (True) -> if isinstance(dict) (False) -> elif isinstance(list) (False) -> elif (True)
-        estimator.test_attr_ = 42  # Number: truthy, not dict, not list
+        estimator.test_attr_ = 42  # Number: truthy, not dict, not list  # type: ignore
         assert estimator._fitted
 
     def test_set_params_fitted_params_no_sklearn_setter(self):
@@ -599,7 +603,7 @@ class TestSklearnIntegrationBase:
 
         # Should set the fitted parameter
         assert hasattr(estimator, "bin_edges_")
-        assert estimator.bin_edges_ == [[0, 1, 2]]
+        assert estimator.bin_edges_ == [[0, 1, 2]]  # type: ignore
 
         # This covers the branch where fitted_params_to_set is not empty
         # but sklearn_setter is None (since BasicEstimator doesn't have that method)
@@ -611,8 +615,8 @@ class TestSklearnIntegrationBase:
 
         # First attribute: empty list (should fail isinstance check and continue loop)
         # Second attribute: valid content
-        estimator.empty_list_ = []  # Empty list: truthy check fails, loop continues
-        estimator.valid_attr_ = "valid"
+        estimator.empty_list_ = []  # Empty list: truthy check fails, loop continues  # type: ignore
+        estimator.valid_attr_ = "valid"  # type: ignore
 
         # Should be fitted due to second attribute
         assert estimator._fitted
@@ -624,8 +628,10 @@ class TestSklearnIntegrationBase:
 
         # Set first to falsy (fails initial if check, continues loop)
         # Set second to truthy non-dict/non-list
-        estimator.falsy_attr_ = None  # Falsy: if attr_value fails, continues to next iteration
-        estimator.truthy_attr_ = "string_value"  # Should make it fitted
+        estimator.falsy_attr_ = (
+            None  # Falsy: if attr_value fails, continues to next iteration  # type: ignore
+        )
+        estimator.truthy_attr_ = "string_value"  # Should make it fitted  # type: ignore
 
         assert estimator._fitted
 
@@ -636,8 +642,8 @@ class TestSklearnIntegrationBase:
 
         # Create a scenario that forces the elif isinstance(attr_value, list) to be False
         # but continues to next iteration: set first attr to string (not list), second to None
-        estimator.test1_ = {1, 2, 3}  # Set: truthy, not dict, not list
-        estimator.test2_ = None  # None: falsy
+        estimator.test1_ = {1, 2, 3}  # Set: truthy, not dict, not list  # type: ignore
+        estimator.test2_ = None  # None: falsy  # type: ignore
 
         # This should cover the branch 46->39 (from elif isinstance list check back to loop)
         assert estimator._fitted
