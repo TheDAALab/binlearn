@@ -680,17 +680,22 @@ class TestIntegrationScenarios:
             [[1, 2], [3, 4]],  # List (should work)
             42,  # Scalar (should work)
             np.array([1, 2, 3]),  # 1D array (gets reshaped)
-            pd.Series([5, 6, 7]),  # Series (gets reshaped)
         ]
 
         for input_data in inputs:
-            # Skip pandas series test if pandas not available
-            if isinstance(input_data, pd.Series) and not PANDAS_AVAILABLE:
-                continue
             array, columns, index = prepare_array(input_data)
             # Should always return 2D array
             assert len(array.shape) == 2
             assert array.shape[0] >= 1  # At least one row
+
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
+    def test_mixed_input_types_with_pandas_series(self):
+        """Test handling of pandas Series input."""
+        data = pd.Series([5, 6, 7])  # Series (gets reshaped)
+        array, columns, index = prepare_array(data)
+        # Should always return 2D array
+        assert len(array.shape) == 2
+        assert array.shape[0] >= 1  # At least one row
 
     def test_error_handling_edge_cases(self):
         """Test error handling for edge cases."""

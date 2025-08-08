@@ -25,7 +25,7 @@ class MockEstimator(SklearnIntegrationBase):
         self.bin_representatives = bin_representatives
         self.bin_spec = bin_spec
         # Configure which attributes indicate fitted state
-        self._fitted_attributes = ["bin_edges_", "bin_representatives_"]
+        self._fitted_attributes = ["bin_edges_", "bin_representatives_", "bin_spec_"]
 
     def fit(self, X):
         """Mock fit method."""
@@ -38,6 +38,9 @@ class MockEstimator(SklearnIntegrationBase):
         """Mock sklearn attribute setter."""
         self.n_features_in_ = 2
         self.feature_names_in_ = ["feature1", "feature2"]
+        # Ensure bin_spec_ is available for tests
+        if not hasattr(self, "bin_spec_"):
+            self.bin_spec_ = None
 
 
 class TestSklearnIntegrationBase:
@@ -293,8 +296,10 @@ class TestSklearnIntegrationBase:
 
         assert estimator.n_bins == 10
         # class_ and module_ should not be set as attributes
-        assert not hasattr(estimator, "class_") or estimator.class_ != "IgnoreMe"
-        assert not hasattr(estimator, "module_") or estimator.module_ != "IgnoreMe"
+        assert not hasattr(estimator, "class_") or getattr(estimator, "class_", None) != "IgnoreMe"
+        assert (
+            not hasattr(estimator, "module_") or getattr(estimator, "module_", None) != "IgnoreMe"
+        )
 
     def test_set_params_fitted_parameters(self):
         """Test set_params with fitted parameters (reconstruction)."""
