@@ -17,11 +17,11 @@ from ..utils import (
     prepare_input_with_columns,
     return_like_input,
 )
-from ._sklearn_integration import SklearnIntegration
+from ._sklearn_integration_base import SklearnIntegrationBase
 from ._validation_mixin import ValidationMixin
 
 
-class DataHandlingBase(SklearnIntegration, ValidationMixin):
+class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
     """Pure data handling for multi-format inputs and outputs.
 
     Handles data format conversion, validation, and preservation without
@@ -30,7 +30,7 @@ class DataHandlingBase(SklearnIntegration, ValidationMixin):
 
     def __init__(self) -> None:
         """Initialize data handling mixin."""
-        SklearnIntegration.__init__(self)
+        SklearnIntegrationBase.__init__(self)
         ValidationMixin.__init__(self)
         # Column management for input/output format preservation
         self._original_columns: OptionalColumnList = None
@@ -42,9 +42,13 @@ class DataHandlingBase(SklearnIntegration, ValidationMixin):
 
         # For fitted transformers, try to use stored feature names for inverse transformation
         original_columns = None
-        if fitted and hasattr(self, "_get_binning_columns"):
+        if (
+            fitted
+            and hasattr(self, "_get_binning_columns")
+            and callable(getattr(self, "_get_binning_columns", None))
+        ):
             # Use dynamic binning columns computation
-            original_columns = self._get_binning_columns()
+            original_columns = getattr(self, "_get_binning_columns")()
 
         return prepare_input_with_columns(X, fitted=fitted, original_columns=original_columns)
 

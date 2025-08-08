@@ -65,7 +65,7 @@ from ._general_binning_base import GeneralBinningBase
 from ._interval_binning_base import IntervalBinningBase
 
 # New classes
-from ._sklearn_integration import SklearnIntegration
+from ._sklearn_integration_base import SklearnIntegrationBase
 from ._supervised_binning_base import SupervisedBinningBase
 from ._validation_mixin import ValidationMixin
 
@@ -123,7 +123,7 @@ __all__ = [
     "FlexibleBinningBase",
     "SupervisedBinningBase",
     # New classes
-    "SklearnIntegration",
+    "SklearnIntegrationBase",
     "ValidationMixin",
     "DataHandlingBase",
 ]

@@ -20,6 +20,7 @@ from ._binning_operations import (
     validate_bins,
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
+    _validate_single_flexible_bin_def,
 )
 
 # Import data handling utilities
@@ -38,6 +39,8 @@ from ._errors import (
     InvalidDataError,
     TransformationError,
     ValidationError,
+    PerformanceWarning,
+    BinningWarning,
     suggest_alternatives,
 )
 
@@ -126,6 +129,8 @@ __all__ = [
     "TransformationError",
     "ValidationError",
     "DataQualityWarning",
+    "PerformanceWarning",
+    "BinningWarning",
     "suggest_alternatives",
     # Interval binning utilities
     "validate_bin_edges_format",
@@ -142,6 +147,7 @@ __all__ = [
     "calculate_flexible_bin_width",
     "transform_value_to_flexible_bin",
     "get_flexible_bin_count",
+    "_validate_single_flexible_bin_def",
     # Data handling utilities
     "prepare_array",
     "return_like_input",

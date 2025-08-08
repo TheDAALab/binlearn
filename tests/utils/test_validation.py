@@ -7,8 +7,8 @@ Tests all validation and parameter conversion functions with 100% coverage.
 import numpy as np
 import pytest
 
-from binlearn.utils._errors import ConfigurationError
-from binlearn.utils._validation import (
+from binlearn.utils import ConfigurationError
+from binlearn.utils import (
     resolve_n_bins_parameter,
     resolve_string_parameter,
     validate_bin_number_for_calculation,

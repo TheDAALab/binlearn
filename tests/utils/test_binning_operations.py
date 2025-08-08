@@ -7,7 +7,7 @@ to achieve 100% test coverage, including edge cases and error conditions.
 import numpy as np
 import pytest
 
-from binlearn.utils._binning_operations import (
+from binlearn.utils import (
     ABOVE_RANGE,
     BELOW_RANGE,
     MISSING_VALUE,

@@ -5,14 +5,22 @@ to achieve 100% test coverage, including edge cases and error conditions.
 """
 
 import numpy as np
-import pandas as pd
 import pytest
 from unittest.mock import patch
+
+# Import binlearn level config variables
+from binlearn import PANDAS_AVAILABLE
+from binlearn import POLARS_AVAILABLE
+
+from binlearn import pd, pl
 
 from binlearn.utils._data_handling import (
     prepare_array,
     return_like_input,
     prepare_input_with_columns,
+    _is_pandas_df,
+    _is_polars_df,
+    _determine_columns,
 )
 
 
@@ -28,6 +36,7 @@ class TestPrepareArray:
         assert columns is None
         assert index is None
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_dataframe_input(self):
         """Test preparation of pandas DataFrame input."""
         data = pd.DataFrame([[1, 2, 3], [4, 5, 6]], columns=["A", "B", "C"])
@@ -37,6 +46,7 @@ class TestPrepareArray:
         assert columns == ["A", "B", "C"]
         pd.testing.assert_index_equal(index, data.index)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_series_input(self):
         """Test that pandas Series input is converted properly."""
         data = pd.Series([1, 2, 3, 4], name="test_series")
@@ -109,6 +119,7 @@ class TestReturnLikeInput:
         np.testing.assert_array_equal(result, processed)
         assert isinstance(result, np.ndarray)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_return_pandas_dataframe_preserve(self):
         """Test returning data as pandas DataFrame when preserve_dataframe=True."""
         original = pd.DataFrame([[1, 2], [3, 4]], columns=["A", "B"])
@@ -120,6 +131,7 @@ class TestReturnLikeInput:
         expected = pd.DataFrame(processed, columns=columns, index=original.index)
         pd.testing.assert_frame_equal(result, expected)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_return_pandas_dataframe_no_preserve(self):
         """Test returning numpy array even for DataFrame input when preserve_dataframe=False."""
         original = pd.DataFrame([[1, 2], [3, 4]], columns=["A", "B"])
@@ -129,6 +141,7 @@ class TestReturnLikeInput:
         np.testing.assert_array_equal(result, processed)
         assert isinstance(result, np.ndarray)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_return_with_none_columns(self):
         """Test returning DataFrame with None columns (uses original columns)."""
         original = pd.DataFrame([[1, 2], [3, 4]], columns=["A", "B"])
@@ -148,47 +161,42 @@ class TestReturnLikeInput:
         np.testing.assert_array_equal(result, processed)
         assert isinstance(result, np.ndarray)
 
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_return_polars_dataframe_preserve(self):
         """Test returning data as polars DataFrame when preserve_dataframe=True."""
-        try:
-            import polars as pl
+        assert pl is not None
 
-            original = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
-            processed = np.array([[10, 20], [30, 40]])
-            columns = ["A", "B"]
+        original = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        processed = np.array([[10, 20], [30, 40]])
+        columns = ["A", "B"]
 
-            result = return_like_input(processed, original, columns, preserve_dataframe=True)
+        result = return_like_input(processed, original, columns, preserve_dataframe=True)
 
-            # Should return polars DataFrame if module is available
-            assert isinstance(result, pl.DataFrame)
-            expected = pl.DataFrame(processed, schema=columns)
-            assert result.equals(expected)
+        # Should return polars DataFrame if module is available
+        assert isinstance(result, pl.DataFrame)
+        expected = pl.DataFrame(processed, schema=columns)
+        assert result.equals(expected)
 
-        except ImportError:
-            pytest.skip("Polars not available for testing")
-
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_return_polars_dataframe_module_none(self):
         """Test polars DataFrame handling when polars module is None."""
         # Test the case where we have a polars DataFrame but the polars module is None in _polars_config
-        try:
-            import polars as pl
+        assert pl is not None
 
-            # Create a polars DataFrame
-            original = pl.DataFrame({"col1": [1, 2], "col2": [3, 4]})
-            processed = np.array([[10, 20], [30, 40]])
+        # Create a polars DataFrame
+        original = pl.DataFrame({"col1": [1, 2], "col2": [3, 4]})
+        processed = np.array([[10, 20], [30, 40]])
 
-            # Mock _polars_config.pl to be None to simulate the case where polars module is None
-            with patch("binlearn.utils._data_handling._polars_config") as mock_polars_config:
-                mock_polars_config.pl = None  # Simulate polars module being None
+        # Mock _polars_config.pl to be None to simulate the case where polars module is None
+        with patch("binlearn.utils._data_handling._polars_config") as mock_polars_config:
+            mock_polars_config.pl = None  # Simulate polars module being None
 
-                # This should fall back to returning the array since polars module is None
-                result = return_like_input(processed, original, None, preserve_dataframe=True)
-                np.testing.assert_array_equal(result, processed)
-                assert isinstance(result, np.ndarray)
+            # This should fall back to returning the array since polars module is None
+            result = return_like_input(processed, original, None, preserve_dataframe=True)
+            np.testing.assert_array_equal(result, processed)
+            assert isinstance(result, np.ndarray)
 
-        except ImportError:
-            pytest.skip("Polars not available for testing")
-
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_return_pandas_dataframe_module_none(self):
         """Test pandas DataFrame handling when pandas module is None."""
         # Test the case where we have a pandas DataFrame but the pandas module is None in _pandas_config
@@ -216,6 +224,7 @@ class TestPrepareInputWithColumns:
         np.testing.assert_array_equal(array, data)
         assert columns == [0, 1, 2]  # Numeric column indices
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_dataframe_no_fitted(self):
         """Test pandas DataFrame input when not fitted."""
         data = pd.DataFrame([[1, 2, 3], [4, 5, 6]], columns=["A", "B", "C"])
@@ -224,6 +233,7 @@ class TestPrepareInputWithColumns:
         np.testing.assert_array_equal(array, data.values)
         assert columns == ["A", "B", "C"]
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_series_input(self):
         """Test that pandas Series input is handled correctly."""
         data = pd.Series([1, 2, 3, 4], name="test_series")
@@ -242,6 +252,7 @@ class TestPrepareInputWithColumns:
         np.testing.assert_array_equal(array, expected)
         assert columns == [0, 1, 2]  # Numeric column indices
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_fitted_with_original_columns_dataframe(self):
         """Test fitted=True with original columns for DataFrame."""
         data = pd.DataFrame([[1, 2, 3], [4, 5, 6]], columns=["A", "B", "C"])
@@ -298,9 +309,9 @@ class TestPrepareInputWithColumns:
 class TestHelperFunctions:
     """Test suite for helper functions and edge cases."""
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_pandas_df_detection(self):
         """Test pandas DataFrame detection."""
-        from binlearn.utils._data_handling import _is_pandas_df
 
         # Test with DataFrame
         df = pd.DataFrame([[1, 2], [3, 4]])
@@ -313,9 +324,9 @@ class TestHelperFunctions:
         # Test with None
         assert _is_pandas_df(None) is False
 
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_df_detection(self):
         """Test polars DataFrame detection (if available)."""
-        from binlearn.utils._data_handling import _is_polars_df
 
         # Test with numpy array (should be False)
         arr = np.array([[1, 2], [3, 4]])
@@ -328,38 +339,30 @@ class TestHelperFunctions:
         # Test with None
         assert _is_polars_df(None) is False
 
-        # Try to test with actual polars DataFrame if available
-        try:
-            import polars as pl
+        assert pl is not None
 
-            # Create a polars DataFrame and test
-            polars_df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
-            assert _is_polars_df(polars_df) is True
-        except ImportError:
-            # Polars not available, just pass
-            pass
+        # Create a polars DataFrame and test
+        polars_df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        assert _is_polars_df(polars_df) is True
 
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_polars_dataframe_input(self):
         """Test polars DataFrame input (if available)."""
-        try:
-            import polars as pl
 
-            # Create polars DataFrame
-            data = pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]})
-            array, columns, index = prepare_array(data)
+        assert pl is not None
 
-            # Should convert to numpy array
-            expected = np.array([[1, 4, 7], [2, 5, 8], [3, 6, 9]])
-            np.testing.assert_array_equal(array, expected)
-            assert columns == ["A", "B", "C"]
-            assert index is None  # Polars returns None for index
+        # Create polars DataFrame
+        data = pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6], "C": [7, 8, 9]})
+        array, columns, index = prepare_array(data)
 
-        except ImportError:
-            pytest.skip("Polars not available for testing")
+        # Should convert to numpy array
+        expected = np.array([[1, 4, 7], [2, 5, 8], [3, 6, 9]])
+        np.testing.assert_array_equal(array, expected)
+        assert columns == ["A", "B", "C"]
+        assert index is None  # Polars returns None for index
 
     def test_determine_columns_helper(self):
         """Test the _determine_columns helper function."""
-        from binlearn.utils._data_handling import _determine_columns
 
         # Test with col_names provided
         result = _determine_columns(
@@ -383,6 +386,7 @@ class TestHelperFunctions:
 class TestIntegrationScenarios:
     """Test suite for integration scenarios combining multiple functions."""
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_complete_workflow_pandas_dataframe(self):
         """Test complete workflow with pandas DataFrame."""
         # Original data
@@ -423,6 +427,7 @@ class TestIntegrationScenarios:
         expected = np.array([[11, 12], [13, 14]])
         np.testing.assert_array_equal(result, expected)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_prepare_input_with_columns_workflow(self):
         """Test workflow with prepare_input_with_columns."""
         # Original data
@@ -455,6 +460,9 @@ class TestIntegrationScenarios:
         ]
 
         for input_data in inputs:
+            # Skip pandas series test if pandas not available
+            if isinstance(input_data, pd.Series) and not PANDAS_AVAILABLE:
+                continue
             array, columns, index = prepare_array(input_data)
             # Should always return 2D array
             assert len(array.shape) == 2
@@ -470,6 +478,7 @@ class TestIntegrationScenarios:
         assert columns is None
         assert index is None
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_preserve_data_types(self):
         """Test that data types are preserved where possible."""
         # Integer data
@@ -487,6 +496,7 @@ class TestIntegrationScenarios:
 
         assert isinstance(result, pd.DataFrame)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_large_data_handling(self):
         """Test handling of larger datasets."""
         # Create moderately large dataset
@@ -504,6 +514,7 @@ class TestIntegrationScenarios:
         assert prepared_array.shape == (1000, 10)
         assert prepared_columns == [f"col_{i}" for i in range(10)]
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_empty_dataframe_handling(self):
         """Test handling of empty DataFrames."""
         empty_df = pd.DataFrame(columns=["A", "B", "C"])
@@ -517,6 +528,7 @@ class TestIntegrationScenarios:
         assert prep_array.shape == (0, 3)
         assert prep_columns == ["A", "B", "C"]
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_single_column_dataframe(self):
         """Test handling of single-column DataFrames."""
         single_col_df = pd.DataFrame([1, 2, 3], columns=["single"])

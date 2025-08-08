@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from typing import Any, get_args, get_origin
 
-from binlearn.utils._types import (
+from binlearn.utils import (
     # Constants
     MISSING_VALUE,
     BELOW_RANGE,

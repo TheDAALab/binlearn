@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from binlearn.utils._errors import (
+from binlearn.utils import (
     BinningError,
     BinningWarning,
     ConfigurationError,
