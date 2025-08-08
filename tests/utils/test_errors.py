@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from binlearn.utils.errors import (
+from binlearn.utils._errors import (
     BinningError,
     BinningWarning,
     ConfigurationError,

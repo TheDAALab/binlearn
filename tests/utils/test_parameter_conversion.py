@@ -7,8 +7,8 @@ string parameter specifications for bin numbers across all binning methods.
 
 import pytest
 
-from binlearn.utils.errors import ConfigurationError
-from binlearn.utils.parameter_conversion import (
+from binlearn.utils._errors import ConfigurationError
+from binlearn.utils._parameter_conversion import (
     resolve_n_bins_parameter,
     resolve_string_parameter,
     validate_bin_number_for_calculation,

@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from .errors import ConfigurationError
+from ._errors import ConfigurationError
 
 
 # pylint: disable=too-many-branches

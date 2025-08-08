@@ -22,7 +22,7 @@ import pytest
 
 from binlearn import PANDAS_AVAILABLE, pd
 from binlearn.base._general_binning_base import GeneralBinningBase
-from binlearn.utils.errors import BinningError
+from binlearn.utils._errors import BinningError
 
 
 class DummyGeneralBinning(GeneralBinningBase):

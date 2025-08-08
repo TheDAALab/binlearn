@@ -11,8 +11,8 @@ from typing import Any
 
 import numpy as np
 
-from .constants import MISSING_VALUE
-from .types import (
+from ._constants import MISSING_VALUE
+from ._types import (
     BinCountDict,
     BinReps,
     BinRepsDict,

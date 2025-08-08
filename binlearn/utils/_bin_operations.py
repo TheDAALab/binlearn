@@ -10,8 +10,8 @@ from typing import Any
 
 import numpy as np
 
-from .constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
-from .types import (
+from ._constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
+from ._types import (
     BinEdges,
     BinEdgesDict,
     BinReps,

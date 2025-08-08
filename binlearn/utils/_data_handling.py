@@ -13,7 +13,7 @@ import numpy as np
 
 from binlearn import _pandas_config, _polars_config
 
-from .types import ArrayLike, OptionalColumnList
+from ._types import ArrayLike, OptionalColumnList
 
 
 def _is_pandas_df(obj: Any) -> bool:

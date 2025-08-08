@@ -11,7 +11,7 @@ import pytest
 
 from binlearn import PANDAS_AVAILABLE, pd
 from binlearn.methods import ManualFlexibleBinning
-from binlearn.utils.errors import BinningError, ConfigurationError
+from binlearn.utils._errors import BinningError, ConfigurationError
 
 
 class TestManualFlexibleBinningInitialization:

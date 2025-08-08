@@ -26,7 +26,7 @@ import pytest
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.methods._singleton_binning import SingletonBinning
-from binlearn.utils.errors import BinningError
+from binlearn.utils._errors import BinningError
 
 try:
     from scipy import sparse

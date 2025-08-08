@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from binlearn.methods._isotonic_binning import IsotonicBinning
-from binlearn.utils.errors import ConfigurationError, DataQualityWarning, FittingError
+from binlearn.utils._errors import ConfigurationError, DataQualityWarning, FittingError
 
 
 class TestIsotonicBinningInitialization:

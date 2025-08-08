@@ -26,7 +26,7 @@ from sklearn.preprocessing import StandardScaler
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.methods._manual_interval_binning import ManualIntervalBinning
-from binlearn.utils.errors import BinningError, ConfigurationError
+from binlearn.utils._errors import BinningError, ConfigurationError
 
 try:
     from scipy import sparse

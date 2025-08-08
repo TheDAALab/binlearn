@@ -11,7 +11,7 @@ from typing import Any
 import numpy as np
 
 from ..config import get_config, apply_config_defaults
-from ..utils.types import BinEdgesDict
+from ..utils._types import BinEdgesDict
 from ..base._interval_binning_base import IntervalBinningBase
 
 

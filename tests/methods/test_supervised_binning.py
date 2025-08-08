@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.methods._supervised_binning import SupervisedBinning
-from binlearn.utils.errors import (
+from binlearn.utils._errors import (
     ConfigurationError,
     DataQualityWarning,
     FittingError,
