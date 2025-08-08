@@ -131,7 +131,7 @@ class GaussianMixtureBinning(IntervalBinningBase):
         """Create Gaussian Mixture Model clustering-based bins.
 
         Args:
-            x_col: Preprocessed column data (no NaN/inf values)
+            x_col: Column data that may contain NaN/inf values
             col_id: Column identifier for error reporting
             n_components: Number of mixture components to create
 
@@ -139,17 +139,20 @@ class GaussianMixtureBinning(IntervalBinningBase):
             Tuple of (bin_edges, bin_representatives)
 
         Note:
-            The data is already preprocessed by the base class, so we don't need
-            to handle NaN/inf values or constant data here.
+            We need to filter out NaN/inf values before GMM fitting.
         """
-        if len(x_col) < n_components:
+        # Filter out NaN and infinite values for GMM fitting
+        finite_mask = np.isfinite(x_col)
+        x_col_clean = x_col[finite_mask]
+
+        if len(x_col_clean) < n_components:
             raise ValueError(
-                f"Column {col_id}: Insufficient values ({len(x_col)}) "
+                f"Column {col_id}: Insufficient finite values ({len(x_col_clean)}) "
                 f"for {n_components} components. Need at least {n_components} values."
             )
 
         # Reshape data for GMM (expects 2D array)
-        X_reshaped = x_col.reshape(-1, 1)
+        X_reshaped = x_col_clean.reshape(-1, 1)
 
         try:
             # Apply Gaussian Mixture Model clustering
@@ -163,15 +166,27 @@ class GaussianMixtureBinning(IntervalBinningBase):
             sorted_indices = np.argsort(means)
             sorted_means = means[sorted_indices]
 
+            # Check if GMM produced valid means (within data range)
+            min_val, max_val = float(np.min(x_col_clean)), float(np.max(x_col_clean))
+
+            # If any means are significantly outside the data range, fall back
+            tolerance = 1e-10  # Small tolerance for floating point precision
+            if np.any(sorted_means < min_val - tolerance) or np.any(
+                sorted_means > max_val + tolerance
+            ):
+                raise ValueError(
+                    f"GMM produced means outside data range: {sorted_means} not in [{min_val}, {max_val}]"
+                )
+
             # Calculate component boundaries
-            edges = [float(np.min(x_col))]  # Start with data minimum
+            edges = [min_val]  # Start with data minimum
 
             # Create boundaries between adjacent components
             for i in range(len(sorted_means) - 1):
                 boundary = (sorted_means[i] + sorted_means[i + 1]) / 2
                 edges.append(float(boundary))
 
-            edges.append(float(np.max(x_col)))  # End with data maximum
+            edges.append(max_val)  # End with data maximum
 
             # Representatives are the component means
             reps = [float(mean) for mean in sorted_means]
@@ -213,8 +228,28 @@ class GaussianMixtureBinning(IntervalBinningBase):
 
         min_val, max_val = float(np.min(x_col)), float(np.max(x_col))
 
-        # Create equal-width bins
-        edges = np.linspace(min_val, max_val, n_components + 1)
+        # Handle constant data case
+        if min_val == max_val:
+            # For constant data, create bins around the single value
+            # with small artificial spread to ensure monotonicity
+            epsilon = 1e-8  # Small value to create artificial range
+            edges = []
+            reps = []
+
+            # Create edges from (value - epsilon) to (value + epsilon)
+            for i in range(n_components + 1):
+                edge = min_val - epsilon + (2 * epsilon * i / n_components)
+                edges.append(edge)
+
+            # Create representatives as the constant value
+            for _i in range(n_components):
+                reps.append(min_val)
+
+            return edges, reps
+
+        # Create equal-width bins for non-constant data
+        edges_array = np.linspace(min_val, max_val, n_components + 1)
+        edges = list(edges_array)
 
         # Create representatives as bin centers
         reps = []
@@ -222,4 +257,4 @@ class GaussianMixtureBinning(IntervalBinningBase):
             rep = (edges[i] + edges[i + 1]) / 2
             reps.append(rep)
 
-        return list(edges), reps
+        return edges, reps
