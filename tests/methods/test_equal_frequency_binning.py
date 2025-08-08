@@ -10,20 +10,13 @@ Comprehensive tests for EqualFrequencyBinning method covering all scenarios:
 import warnings
 
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from binlearn.methods import EqualFrequencyBinning
 from binlearn.utils import ConfigurationError, FittingError, ValidationError
-
-try:
-    import polars as pl
-
-    POLARS_AVAILABLE = True
-except ImportError:
-    POLARS_AVAILABLE = False
+from binlearn import POLARS_AVAILABLE, pd, pl
 
 # Skip polars tests if not available
 polars_skip = pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
@@ -105,7 +98,7 @@ class TestEqualFrequencyBinning:
             EqualFrequencyBinning(n_bins=-1)
 
         with pytest.raises((ValueError, ConfigurationError)):
-            EqualFrequencyBinning(n_bins=1.5)
+            EqualFrequencyBinning(n_bins=1.5)  # type: ignore
 
         # Valid string n_bins
         binner = EqualFrequencyBinning(n_bins="log2")
@@ -115,10 +108,10 @@ class TestEqualFrequencyBinning:
         """Test quantile_range parameter validation."""
         # Invalid quantile_range formats
         with pytest.raises(ConfigurationError, match="quantile_range must be a tuple"):
-            EqualFrequencyBinning(quantile_range=(0.1, 0.5, 0.9))  # wrong length
+            EqualFrequencyBinning(quantile_range=(0.1, 0.5, 0.9))  # type: ignore # wrong length
 
         with pytest.raises(ConfigurationError, match="quantile_range must be a tuple"):
-            EqualFrequencyBinning(quantile_range=[0.1, 0.9])  # not tuple
+            EqualFrequencyBinning(quantile_range=[0.1, 0.9])  # type: ignore   # not tuple
 
         # Invalid quantile values
         with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
@@ -182,6 +175,7 @@ class TestEqualFrequencyBinning:
         binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=False)
 
         # Create polars DataFrame
+        assert pl is not None
         df = pl.DataFrame({"feature": sample_data["simple"].flatten()})
         binner.fit(df)
         df_transformed = binner.transform(df)
@@ -226,6 +220,7 @@ class TestEqualFrequencyBinning:
         binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=True)
 
         # Create polars DataFrame
+        assert pl is not None
         df = pl.DataFrame(
             {"feature1": sample_data["multi_col"][:, 0], "feature2": sample_data["multi_col"][:, 1]}
         )
