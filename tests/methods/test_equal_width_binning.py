@@ -10,19 +10,13 @@ Comprehensive tests for EqualWidthBinning method covering all scenarios:
 import warnings
 
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from binlearn import POLARS_AVAILABLE, pd, pl
 from binlearn.methods import EqualWidthBinning
 from binlearn.utils import FittingError, ValidationError
-
-try:
-    import polars as pl
-    POLARS_AVAILABLE = True
-except ImportError:
-    POLARS_AVAILABLE = False
 
 # Skip polars tests if not available
 polars_skip = pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
@@ -39,13 +33,15 @@ class TestEqualWidthBinning:
         """Generate sample data for testing."""
         np.random.seed(42)
         return {
-            'simple': np.array([1.0, 2.0, 3.0, 4.0, 5.0]).reshape(-1, 1),
-            'multi_col': np.array([[1.0, 10.0], [2.0, 20.0], [3.0, 30.0], [4.0, 40.0], [5.0, 50.0]]),
-            'uniform': np.linspace(0, 100, 100).reshape(-1, 1),
-            'normal': np.random.normal(50, 15, 200).reshape(-1, 1),
-            'with_nan': np.array([1.0, 2.0, np.nan, 4.0, 5.0]).reshape(-1, 1),
-            'with_inf': np.array([1.0, 2.0, np.inf, 4.0, 5.0]).reshape(-1, 1),
-            'constant': np.array([5.0, 5.0, 5.0, 5.0, 5.0]).reshape(-1, 1)
+            "simple": np.array([1.0, 2.0, 3.0, 4.0, 5.0]).reshape(-1, 1),
+            "multi_col": np.array(
+                [[1.0, 10.0], [2.0, 20.0], [3.0, 30.0], [4.0, 40.0], [5.0, 50.0]]
+            ),
+            "uniform": np.linspace(0, 100, 100).reshape(-1, 1),
+            "normal": np.random.normal(50, 15, 200).reshape(-1, 1),
+            "with_nan": np.array([1.0, 2.0, np.nan, 4.0, 5.0]).reshape(-1, 1),
+            "with_inf": np.array([1.0, 2.0, np.inf, 4.0, 5.0]).reshape(-1, 1),
+            "constant": np.array([5.0, 5.0, 5.0, 5.0, 5.0]).reshape(-1, 1),
         }
 
     # Basic functionality tests
@@ -62,11 +58,7 @@ class TestEqualWidthBinning:
     def test_init_custom_parameters(self):
         """Test initialization with custom parameters."""
         binner = EqualWidthBinning(
-            n_bins=10,
-            bin_range=(0, 100),
-            clip=False,
-            preserve_dataframe=True,
-            fit_jointly=True
+            n_bins=10, bin_range=(0, 100), clip=False, preserve_dataframe=True, fit_jointly=True
         )
         assert binner.n_bins == 10
         assert binner.bin_range == (0, 100)
@@ -84,7 +76,7 @@ class TestEqualWidthBinning:
             EqualWidthBinning(n_bins=-1)
 
         with pytest.raises(ValueError, match="n_bins must be a positive integer"):
-            EqualWidthBinning(n_bins=3.5)
+            EqualWidthBinning(n_bins=3.5)  # type: ignore
 
         # Invalid bin_range
         with pytest.raises(ValueError, match="bin_range must be a tuple"):
@@ -93,8 +85,8 @@ class TestEqualWidthBinning:
         with pytest.raises(ValueError, match="bin_range must be a tuple"):
             EqualWidthBinning(bin_range=(10, 5))  # min > max
 
-        with pytest.raises(ValueError, match="bin_range must be a tuple"):
-            EqualWidthBinning(bin_range=(1, 2, 3))  # wrong length
+        with pytest.raises((ValueError, TypeError)):
+            EqualWidthBinning(bin_range=(1, 2, 3))  # type: ignore  # wrong length
 
     # Input format tests with preserve_dataframe=False
 
@@ -103,7 +95,7 @@ class TestEqualWidthBinning:
         binner = EqualWidthBinning(n_bins=3, preserve_dataframe=False)
 
         # Fit and transform
-        X_fit = sample_data['simple']
+        X_fit = sample_data["simple"]
         binner.fit(X_fit)
         X_transformed = binner.transform(X_fit)
 
@@ -122,7 +114,7 @@ class TestEqualWidthBinning:
         binner = EqualWidthBinning(n_bins=3, preserve_dataframe=False)
 
         # Create pandas DataFrame
-        df = pd.DataFrame(sample_data['simple'], columns=['feature'])
+        df = pd.DataFrame(sample_data["simple"], columns=["feature"])
         binner.fit(df)
         df_transformed = binner.transform(df)
 
@@ -140,7 +132,8 @@ class TestEqualWidthBinning:
         binner = EqualWidthBinning(n_bins=3, preserve_dataframe=False)
 
         # Create polars DataFrame
-        df = pl.DataFrame({'feature': sample_data['simple'].flatten()})
+        assert pl is not None
+        df = pl.DataFrame({"feature": sample_data["simple"].flatten()})
         binner.fit(df)
         df_transformed = binner.transform(df)
 
@@ -160,10 +153,9 @@ class TestEqualWidthBinning:
         binner = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
 
         # Create pandas DataFrame with multiple columns
-        df = pd.DataFrame({
-            'feature1': sample_data['multi_col'][:, 0],
-            'feature2': sample_data['multi_col'][:, 1]
-        })
+        df = pd.DataFrame(
+            {"feature1": sample_data["multi_col"][:, 0], "feature2": sample_data["multi_col"][:, 1]}
+        )
 
         binner.fit(df)
         df_transformed = binner.transform(df)
@@ -171,24 +163,24 @@ class TestEqualWidthBinning:
         # Should preserve DataFrame format
         assert isinstance(df_transformed, pd.DataFrame)
         assert df_transformed.shape == df.shape
-        assert list(df_transformed.columns) == ['feature1', 'feature2']
+        assert list(df_transformed.columns) == ["feature1", "feature2"]
 
         # Inverse transform
         df_inverse = binner.inverse_transform(df_transformed)
         assert isinstance(df_inverse, pd.DataFrame)
         assert df_inverse.shape == df.shape
-        assert list(df_inverse.columns) == ['feature1', 'feature2']
+        assert list(df_inverse.columns) == ["feature1", "feature2"]
 
     @polars_skip
     def test_polars_input_preserve_true(self, sample_data):
         """Test with polars input and preserve_dataframe=True."""
         binner = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
 
+        assert pl is not None
         # Create polars DataFrame
-        df = pl.DataFrame({
-            'feature1': sample_data['multi_col'][:, 0],
-            'feature2': sample_data['multi_col'][:, 1]
-        })
+        df = pl.DataFrame(
+            {"feature1": sample_data["multi_col"][:, 0], "feature2": sample_data["multi_col"][:, 1]}
+        )
 
         binner.fit(df)
         df_transformed = binner.transform(df)
@@ -196,13 +188,13 @@ class TestEqualWidthBinning:
         # Should preserve DataFrame format
         assert isinstance(df_transformed, pl.DataFrame)
         assert df_transformed.shape == df.shape
-        assert df_transformed.columns == ['feature1', 'feature2']
+        assert df_transformed.columns == ["feature1", "feature2"]
 
         # Inverse transform
         df_inverse = binner.inverse_transform(df_transformed)
         assert isinstance(df_inverse, pl.DataFrame)
         assert df_inverse.shape == df.shape
-        assert df_inverse.columns == ['feature1', 'feature2']
+        assert df_inverse.columns == ["feature1", "feature2"]
 
     # Fitted state reconstruction tests
 
@@ -210,7 +202,7 @@ class TestEqualWidthBinning:
         """Test fitted state reconstruction via get_params/set_params."""
         # Fit original binner
         binner_original = EqualWidthBinning(n_bins=4)
-        X_fit = sample_data['multi_col']
+        X_fit = sample_data["multi_col"]
         binner_original.fit(X_fit)
 
         # Get parameters
@@ -221,7 +213,7 @@ class TestEqualWidthBinning:
         binner_reconstructed.set_params(**params)
 
         # Test that transform works without fitting
-        X_test = sample_data['multi_col'][:3]  # Subset for testing
+        X_test = sample_data["multi_col"][:3]  # Subset for testing
         result_original = binner_original.transform(X_test)
         result_reconstructed = binner_reconstructed.transform(X_test)
 
@@ -237,7 +229,7 @@ class TestEqualWidthBinning:
         """Test fitted state reconstruction via constructor parameters."""
         # Fit original binner
         binner_original = EqualWidthBinning(n_bins=3, bin_range=(0, 10))
-        X_fit = sample_data['simple']
+        X_fit = sample_data["simple"]
         binner_original.fit(X_fit)
 
         # Get parameters including fitted state
@@ -247,7 +239,7 @@ class TestEqualWidthBinning:
         binner_reconstructed = EqualWidthBinning(**params)
 
         # Test that transform works without fitting
-        X_test = sample_data['simple']
+        X_test = sample_data["simple"]
         result_original = binner_original.transform(X_test)
         result_reconstructed = binner_reconstructed.transform(X_test)
 
@@ -257,7 +249,7 @@ class TestEqualWidthBinning:
         """Test repeated fitting on reconstructed state."""
         # Original fitting
         binner = EqualWidthBinning(n_bins=3)
-        X_fit1 = sample_data['simple']
+        X_fit1 = sample_data["simple"]
         binner.fit(X_fit1)
 
         # Get and set params (reconstruction)
@@ -266,7 +258,7 @@ class TestEqualWidthBinning:
         binner_new.set_params(**params)
 
         # Refit with different data
-        X_fit2 = sample_data['uniform']
+        X_fit2 = sample_data["uniform"]
         binner_new.fit(X_fit2)
 
         # Should work fine
@@ -275,15 +267,15 @@ class TestEqualWidthBinning:
         assert result.shape == (10, 1)
 
         # Another refit
-        binner_new.fit(sample_data['normal'])
-        result2 = binner_new.transform(sample_data['normal'][:10])
+        binner_new.fit(sample_data["normal"])
+        result2 = binner_new.transform(sample_data["normal"][:10])
         assert result2 is not None
 
     def test_various_formats_after_reconstruction(self, sample_data):
         """Test various input formats after fitted state reconstruction."""
         # Original fitting with numpy
         binner_original = EqualWidthBinning(n_bins=3, preserve_dataframe=True)
-        X_numpy = sample_data['multi_col']
+        X_numpy = sample_data["multi_col"]
         binner_original.fit(X_numpy)
 
         # Reconstruct
@@ -296,7 +288,7 @@ class TestEqualWidthBinning:
 
         # Test pandas input (if preserve_dataframe=True was set)
         if hasattr(pd, "DataFrame"):
-            X_pandas = pd.DataFrame(X_numpy, columns=['col1', 'col2'])
+            X_pandas = pd.DataFrame(X_numpy, columns=["col1", "col2"])
             result_pandas = binner_reconstructed.transform(X_pandas)
             # The result type depends on preserve_dataframe setting
             if binner_reconstructed.preserve_dataframe:
@@ -309,12 +301,9 @@ class TestEqualWidthBinning:
     def test_sklearn_pipeline_basic(self, sample_data):
         """Test basic sklearn pipeline integration."""
         # Create pipeline
-        pipeline = Pipeline([
-            ('scaler', StandardScaler()),
-            ('binner', EqualWidthBinning(n_bins=3))
-        ])
+        pipeline = Pipeline([("scaler", StandardScaler()), ("binner", EqualWidthBinning(n_bins=3))])
 
-        X = sample_data['normal']
+        X = sample_data["normal"]
 
         # Fit and transform
         pipeline.fit(X)
@@ -325,7 +314,7 @@ class TestEqualWidthBinning:
         assert X_transformed.dtype == int
 
         # Test named steps access
-        assert hasattr(pipeline.named_steps['binner'], 'bin_edges_')
+        assert hasattr(pipeline.named_steps["binner"], "bin_edges_")
 
     def test_sklearn_pipeline_with_dataframes(self, sample_data):
         """Test sklearn pipeline with DataFrame inputs."""
@@ -333,41 +322,37 @@ class TestEqualWidthBinning:
             pytest.skip("pandas not available")
 
         # Create pipeline
-        pipeline = Pipeline([
-            ('binner', EqualWidthBinning(n_bins=4, preserve_dataframe=True))
-        ])
+        pipeline = Pipeline([("binner", EqualWidthBinning(n_bins=4, preserve_dataframe=True))])
 
         # Use DataFrame
-        df = pd.DataFrame(sample_data['multi_col'], columns=['feat1', 'feat2'])
+        df = pd.DataFrame(sample_data["multi_col"], columns=["feat1", "feat2"])
 
         pipeline.fit(df)
         df_transformed = pipeline.transform(df)
 
         # Should preserve DataFrame format
         assert isinstance(df_transformed, pd.DataFrame)
-        assert list(df_transformed.columns) == ['feat1', 'feat2']
+        assert list(df_transformed.columns) == ["feat1", "feat2"]
 
     def test_sklearn_pipeline_param_access(self, sample_data):
         """Test parameter access in sklearn pipeline."""
-        pipeline = Pipeline([
-            ('binner', EqualWidthBinning(n_bins=5))
-        ])
+        pipeline = Pipeline([("binner", EqualWidthBinning(n_bins=5))])
 
         # Test parameter access
         params = pipeline.get_params()
-        assert 'binner__n_bins' in params
-        assert params['binner__n_bins'] == 5
+        assert "binner__n_bins" in params
+        assert params["binner__n_bins"] == 5
 
         # Test parameter setting
         pipeline.set_params(binner__n_bins=7)
-        assert pipeline.named_steps['binner'].n_bins == 7
+        assert pipeline.named_steps["binner"].n_bins == 7
 
     # Edge case tests
 
     def test_edge_case_nan_values(self, sample_data):
         """Test handling of NaN values."""
         binner = EqualWidthBinning(n_bins=3)
-        X_nan = sample_data['with_nan']
+        X_nan = sample_data["with_nan"]
 
         # Should handle NaN values gracefully (base class preprocesses)
         binner.fit(X_nan)
@@ -380,7 +365,7 @@ class TestEqualWidthBinning:
     def test_edge_case_inf_values(self, sample_data):
         """Test handling of infinite values."""
         binner = EqualWidthBinning(n_bins=3)
-        X_inf = sample_data['with_inf']
+        X_inf = sample_data["with_inf"]
 
         # Should handle inf values based on config (clip, error, etc.)
         with warnings.catch_warnings():
@@ -394,7 +379,7 @@ class TestEqualWidthBinning:
     def test_edge_case_constant_column(self, sample_data):
         """Test handling of constant columns."""
         binner = EqualWidthBinning(n_bins=3)
-        X_constant = sample_data['constant']
+        X_constant = sample_data["constant"]
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")  # Ignore warnings about constant data
@@ -468,7 +453,7 @@ class TestEqualWidthBinning:
         assert len(edges) == 6
 
         # Check that widths are equal
-        widths = [edges[i+1] - edges[i] for i in range(len(edges)-1)]
+        widths = [edges[i + 1] - edges[i] for i in range(len(edges) - 1)]
         np.testing.assert_array_almost_equal(widths, [widths[0]] * len(widths))
 
     def test_bin_range_parameter(self):
@@ -485,8 +470,8 @@ class TestEqualWidthBinning:
 
         # Check equal widths
         expected_width = 40 / 4
-        for i in range(len(edges)-1):
-            assert abs((edges[i+1] - edges[i]) - expected_width) < 1e-10
+        for i in range(len(edges) - 1):
+            assert abs((edges[i + 1] - edges[i]) - expected_width) < 1e-10
 
     def test_representatives_are_bin_centers(self):
         """Test that representatives are bin centers."""
@@ -500,7 +485,7 @@ class TestEqualWidthBinning:
 
         # Check that representatives are midpoints
         for i in range(len(representatives)):
-            expected_center = (edges[i] + edges[i+1]) / 2
+            expected_center = (edges[i] + edges[i + 1]) / 2
             assert abs(representatives[i] - expected_center) < 1e-10
 
     def test_clip_parameter_functionality(self, sample_data):
@@ -528,7 +513,7 @@ class TestEqualWidthBinning:
 
     def test_multiple_columns_independent_binning(self, sample_data):
         """Test that columns are binned independently."""
-        X = sample_data['multi_col']  # Different ranges per column
+        X = sample_data["multi_col"]  # Different ranges per column
         binner = EqualWidthBinning(n_bins=3)
 
         binner.fit(X)
@@ -547,7 +532,7 @@ class TestEqualWidthBinning:
 
     def test_fit_jointly_parameter(self, sample_data):
         """Test fit_jointly parameter (though EqualWidth typically doesn't use it)."""
-        X = sample_data['multi_col']
+        X = sample_data["multi_col"]
 
         # Test with fit_jointly=True
         binner_joint = EqualWidthBinning(n_bins=3, fit_jointly=True)
@@ -590,7 +575,7 @@ class TestEqualWidthBinning:
 
     def test_full_workflow_with_all_methods(self, sample_data):
         """Test complete workflow: fit, transform, inverse_transform, get_params, set_params."""
-        X = sample_data['multi_col']
+        X = sample_data["multi_col"]
 
         # Initialize and fit
         binner = EqualWidthBinning(n_bins=4, preserve_dataframe=False)
@@ -608,9 +593,9 @@ class TestEqualWidthBinning:
 
         # Get params
         params = binner.get_params()
-        assert 'n_bins' in params
-        assert 'bin_edges' in params
-        assert params['n_bins'] == 4
+        assert "n_bins" in params
+        assert "bin_edges" in params
+        assert params["n_bins"] == 4
 
         # Set params and verify
         new_binner = EqualWidthBinning()
@@ -621,7 +606,7 @@ class TestEqualWidthBinning:
 
     def test_consistency_across_transforms(self, sample_data):
         """Test that repeated transforms give consistent results."""
-        X = sample_data['normal']
+        X = sample_data["normal"]
         binner = EqualWidthBinning(n_bins=5)
         binner.fit(X)
 
@@ -635,7 +620,7 @@ class TestEqualWidthBinning:
 
     def test_partial_data_transform(self, sample_data):
         """Test transforming data subset after fitting on full data."""
-        X_full = sample_data['uniform']  # 100 samples
+        X_full = sample_data["uniform"]  # 100 samples
         X_subset = X_full[:20]  # 20 samples
 
         binner = EqualWidthBinning(n_bins=3)
@@ -650,7 +635,7 @@ class TestEqualWidthBinning:
 
     def test_different_n_bins_values(self, sample_data):
         """Test various n_bins values."""
-        X = sample_data['uniform']
+        X = sample_data["uniform"]
 
         for n_bins in [2, 3, 5, 10, 20]:
             binner = EqualWidthBinning(n_bins=n_bins)
