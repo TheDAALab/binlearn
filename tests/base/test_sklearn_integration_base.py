@@ -544,8 +544,8 @@ class TestSklearnIntegrationBase:
         # Set a truthy value that's not a dict but will fail isinstance(attr_value, list)
         # This tests the branch 46->39 where the elif isinstance(attr_value, list) condition is False
         # but we still have a truthy value that's not a dict
-        estimator.test_attr_ = (
-            "string_value"  # String is not dict, not list, but truthy  # type: ignore
+        estimator.test_attr_ = (  # type: ignore
+            "string_value"  # String is not dict, not list, but truthy
         )
         assert estimator._fitted
 
@@ -568,8 +568,8 @@ class TestSklearnIntegrationBase:
         # Set first attribute to a non-list truthy value, second to None
         # This should test the branch where isinstance(attr_value, list) is False
         # and we continue to check the next attribute in the loop
-        estimator.attr1_ = (
-            "not_a_list"  # Truthy, not dict, not list -> should return True  # type: ignore
+        estimator.attr1_ = (  # type: ignore
+            "not_a_list"  # Truthy, not dict, not list -> should return True
         )
         estimator.attr2_ = None  # type: ignore
 
@@ -628,8 +628,8 @@ class TestSklearnIntegrationBase:
 
         # Set first to falsy (fails initial if check, continues loop)
         # Set second to truthy non-dict/non-list
-        estimator.falsy_attr_ = (
-            None  # Falsy: if attr_value fails, continues to next iteration  # type: ignore
+        estimator.falsy_attr_ = (  # type: ignore
+            None  # Falsy: if attr_value fails, continues to next iteration
         )
         estimator.truthy_attr_ = "string_value"  # Should make it fitted  # type: ignore
 
