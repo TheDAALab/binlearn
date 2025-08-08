@@ -88,6 +88,16 @@ class GeneralBinningBase(
             # Step 4: Column separation for guidance handling
             X_binning, X_guidance, binning_cols, _ = self._separate_binning_and_guidance_columns(X)
 
+            # Step 4.5: Validate that we have columns to bin
+            if not binning_cols:
+                if self.guidance_columns is not None:
+                    raise ValueError(
+                        "All columns are specified as guidance_columns. "
+                        "At least one column must be available for binning."
+                    )
+                else:
+                    raise ValueError("No columns available for binning.")
+
             # Step 5: Route to appropriate fitting strategy
             if self.fit_jointly:
                 self._fit_jointly_across_columns(X_binning, binning_cols, **fit_params)
@@ -263,9 +273,8 @@ class GeneralBinningBase(
         ):
             return None
 
-        if self.feature_names_in_ is None:
-            return None
-        all_features = list(self.feature_names_in_)
+        # At this point we know feature_names_in_ exists and is not None
+        all_features = list(self.feature_names_in_)  # type: ignore[arg-type]
 
         if self.guidance_columns is None:
             return all_features
