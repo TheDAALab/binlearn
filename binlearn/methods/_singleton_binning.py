@@ -96,32 +96,8 @@ class SingletonBinning(FlexibleBinningBase):
             unique_values = [0.0]  # Default fallback
         else:
             unique_values = np.unique(valid_data).tolist()
-            # Ensure we have at least one bin
-            if len(unique_values) == 0:
-                unique_values = [0.0]
 
         # For singleton binning, representatives are the same as the unique values
         representatives = unique_values.copy()
 
         return unique_values, representatives
-
-    def _match_values_to_bin(
-        self, column_data: np.ndarray[Any, Any], bin_value: Any, bin_idx: int, col_id: Any
-    ) -> np.ndarray[Any, Any]:
-        """Match values exactly to their singleton bins.
-
-        Args:
-            column_data: The column data to match
-            bin_value: The exact value that defines this bin
-            bin_idx: The index of this bin
-            col_id: Column identifier (unused)
-
-        Returns:
-            Boolean mask of exact matches
-        """
-        # Handle NaN values specially
-        if np.isnan(bin_value) if isinstance(bin_value, int | float) else False:
-            return np.isnan(column_data)  # type: ignore[no-any-return]
-
-        # Exact match for singleton binning
-        return column_data == bin_value  # type: ignore[no-any-return]
