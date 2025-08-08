@@ -7,7 +7,7 @@ This module provides the core binning orchestration logic with guidance support.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 from sklearn.base import TransformerMixin
