@@ -124,9 +124,6 @@ from .utils.parameter_conversion import (
     validate_numeric_parameter,
 )
 
-# Sklearn utilities
-from .utils.sklearn_integration import SklearnCompatibilityMixin
-
 # Optional pandas/polars configurations (if available)
 try:
     from ._pandas_config import PANDAS_AVAILABLE, pd

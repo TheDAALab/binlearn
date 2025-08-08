@@ -12,8 +12,6 @@ from typing import Any
 import numpy as np
 from sklearn.base import BaseEstimator
 
-from ..utils.inspection import safe_get_class_parameters, safe_get_constructor_info
-
 
 def convert_to_python_types(value: Any) -> Any:
     """Convert numpy types to pure Python types recursively for serialization."""

@@ -42,13 +42,6 @@ from .flexible_bin_operations import (
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
 )
-from .inspection import (
-    get_class_parameters,
-    get_constructor_info,
-    safe_get_class_parameters,
-    safe_get_constructor_info,
-)
-
 # Parameter conversion utilities
 from .parameter_conversion import (
     resolve_n_bins_parameter,
@@ -57,9 +50,6 @@ from .parameter_conversion import (
     validate_bin_number_parameter,
     validate_numeric_parameter,
 )
-
-# Import sklearn integration utilities
-from .sklearn_integration import SklearnCompatibilityMixin
 
 # Import type aliases for re-export
 from .types import (
@@ -93,19 +83,6 @@ from .types import (
     OptionalBinRepsDict,
     OptionalColumnList,
     OptionalFlexibleBinSpec,
-)
-from .validation import (
-    validate_int,
-    validate_float,
-    validate_bool,
-    validate_string,
-    validate_tuple,
-    validate_array_like,
-    validate_callable,
-    validate_random_state,
-    validate_n_bins,
-    validate_binning_columns,
-    ParameterValidator,
 )
 
 __all__ = [
@@ -146,8 +123,6 @@ __all__ = [
     "ValidationError",
     "ValidationMixin",
     "DataQualityWarning",
-    # Sklearn integration
-    "SklearnCompatibilityMixin",
     # Interval binning utilities
     "validate_bin_edges_format",
     "validate_bin_representatives_format",
@@ -167,25 +142,8 @@ __all__ = [
     "prepare_array",
     "return_like_input",
     "prepare_input_with_columns",
-    # Inspection utilities
-    "get_class_parameters",
-    "get_constructor_info",
-    "safe_get_class_parameters",
-    "safe_get_constructor_info",
     # Parameter conversion utilities
     "resolve_n_bins_parameter",
     "resolve_string_parameter",
     "validate_numeric_parameter",
-    # Parameter validation
-    "validate_int",
-    "validate_float",
-    "validate_bool",
-    "validate_string",
-    "validate_tuple",
-    "validate_array_like",
-    "validate_callable",
-    "validate_random_state",
-    "validate_n_bins",
-    "validate_binning_columns",
-    "ParameterValidator",
 ]
