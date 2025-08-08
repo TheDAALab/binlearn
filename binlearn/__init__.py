@@ -91,36 +91,26 @@ from .methods import (
     TreeBinning,
 )
 
-# Tools and integrations
-from .tools import (
-    BinningFeatureSelector,
-    BinningPipeline,
-    make_binning_scorer,
-)
-
 # Error handling
+# Parameter conversion utilities
 from .utils import (
+    ABOVE_RANGE,
+    BELOW_RANGE,
+    # Constants
+    MISSING_VALUE,
     BinningError,
     ConfigurationError,
     FittingError,
     InvalidDataError,
     TransformationError,
     ValidationError,
-    ABOVE_RANGE,
-    BELOW_RANGE,
-    # Constants
-    MISSING_VALUE,
     create_bin_masks,
     default_representatives,
+    resolve_n_bins_parameter,
+    resolve_string_parameter,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
-)
-
-# Parameter conversion utilities
-from .utils import (
-    resolve_n_bins_parameter,
-    resolve_string_parameter,
     validate_numeric_parameter,
 )
 
@@ -152,9 +142,6 @@ __all__ = [
     "FittingError",
     "TransformationError",
     "ValidationError",
-    # Sklearn utilities
-    "BinningFeatureSelector",
-    "BinningPipeline",
     # Constants
     "MISSING_VALUE",
     "ABOVE_RANGE",

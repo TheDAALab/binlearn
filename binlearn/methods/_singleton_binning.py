@@ -7,15 +7,14 @@ Each unique value gets its own bin.
 
 from __future__ import annotations
 
-from typing import Any
 import warnings
+from typing import Any
 
 import numpy as np
 
-from ..config import get_config, apply_config_defaults
-from ..utils import BinEdgesDict
-from ..utils import DataQualityWarning
 from ..base import FlexibleBinningBase
+from ..config import apply_config_defaults
+from ..utils import DataQualityWarning
 
 
 class SingletonBinning(FlexibleBinningBase):
@@ -92,6 +91,7 @@ class SingletonBinning(FlexibleBinningBase):
             warnings.warn(
                 f"Column {col_id} contains only NaN/inf values. Creating default bin.",
                 DataQualityWarning,
+                stacklevel=2,
             )
             unique_values = [0.0]  # Default fallback
         else:
@@ -120,8 +120,8 @@ class SingletonBinning(FlexibleBinningBase):
             Boolean mask of exact matches
         """
         # Handle NaN values specially
-        if np.isnan(bin_value) if isinstance(bin_value, (int, float)) else False:
-            return np.isnan(column_data)
+        if np.isnan(bin_value) if isinstance(bin_value, int | float) else False:
+            return np.isnan(column_data)  # type: ignore[no-any-return]
 
         # Exact match for singleton binning
-        return column_data == bin_value
+        return column_data == bin_value  # type: ignore[no-any-return]

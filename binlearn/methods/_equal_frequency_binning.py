@@ -11,15 +11,15 @@ from typing import Any
 
 import numpy as np
 
-from ..config import get_config, apply_config_defaults
-from ..utils import ConfigurationError
+from ..base import IntervalBinningBase
+from ..config import apply_config_defaults
 from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils import BinEdgesDict
-from ..base import IntervalBinningBase
 
 
 class EqualFrequencyBinning(IntervalBinningBase):
@@ -94,8 +94,8 @@ class EqualFrequencyBinning(IntervalBinningBase):
 
             min_q, max_q = self.quantile_range
             if (
-                not isinstance(min_q, (int, float))
-                or not isinstance(max_q, (int, float))
+                not isinstance(min_q, int | float)
+                or not isinstance(max_q, int | float)
                 or min_q < 0
                 or max_q > 1
                 or min_q >= max_q

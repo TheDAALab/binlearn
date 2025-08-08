@@ -14,7 +14,6 @@ import numpy as np
 
 from ._errors import ConfigurationError
 
-
 # =============================================================================
 # PARAMETER CONVERSION UTILITIES
 # =============================================================================

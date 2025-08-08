@@ -12,15 +12,17 @@ from typing import Any
 
 import numpy as np
 
+from ..base import SupervisedBinningBase
 from ..config import apply_config_defaults
-from ..utils import ConfigurationError, DataQualityWarning, FittingError
 from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
+    DataQualityWarning,
+    FittingError,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils import BinEdgesDict
-from ..base import SupervisedBinningBase
 
 
 class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
@@ -87,7 +89,7 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
         validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
         # Validate minimum_weight parameter
-        if not isinstance(self.minimum_weight, (int, float)) or self.minimum_weight <= 0:
+        if not isinstance(self.minimum_weight, int | float) or self.minimum_weight <= 0:
             raise ConfigurationError(
                 "minimum_weight must be a positive number",
                 suggestions=["Example: minimum_weight=1.0"],
@@ -95,14 +97,14 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
 
         # Validate bin_range parameter
         if self.bin_range is not None:
-            if not isinstance(self.bin_range, (list, tuple)) or len(self.bin_range) != 2:
+            if not isinstance(self.bin_range, list | tuple) or len(self.bin_range) != 2:
                 raise ConfigurationError(
                     "bin_range must be a tuple/list of two numbers (min, max)",
                     suggestions=["Example: bin_range=(0, 100)"],
                 )
 
             min_val, max_val = self.bin_range
-            if not isinstance(min_val, (int, float)) or not isinstance(max_val, (int, float)):
+            if not isinstance(min_val, int | float) or not isinstance(max_val, int | float):
                 raise ConfigurationError(
                     "bin_range values must be numbers",
                     suggestions=["Example: bin_range=(0.0, 100.0)"],
@@ -290,6 +292,7 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
                 f"({self.minimum_weight}). Creating single bin with total weight "
                 f"{sum(bin_weights)}.",
                 DataQualityWarning,
+                stacklevel=2,
             )
             # Return single bin with all data
             return [edges[0], edges[-1]], [sum(bin_weights)]

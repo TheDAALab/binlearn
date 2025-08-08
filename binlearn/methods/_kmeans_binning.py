@@ -9,18 +9,18 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
 import kmeans1d
+import numpy as np
 
+from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
-from ..utils import ConfigurationError
 from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils import BinEdgesDict
-from ..base import IntervalBinningBase
 
 
 class KMeansBinning(IntervalBinningBase):

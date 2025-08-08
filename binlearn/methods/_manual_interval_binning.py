@@ -11,10 +11,9 @@ from typing import Any
 
 import numpy as np
 
-from ..config import apply_config_defaults
-from ..utils import BinningError, ConfigurationError
-from ..utils import BinEdgesDict, ArrayLike
 from ..base._interval_binning_base import IntervalBinningBase
+from ..config import apply_config_defaults
+from ..utils import ArrayLike, BinEdgesDict, BinningError, ConfigurationError
 
 
 class ManualIntervalBinning(IntervalBinningBase):
@@ -73,7 +72,7 @@ class ManualIntervalBinning(IntervalBinningBase):
 
     def fit(
         self, X: ArrayLike, y: ArrayLike | None = None, **fit_params: Any
-    ) -> "ManualIntervalBinning":
+    ) -> ManualIntervalBinning:
         """Fit the Manual Interval binning (no-op since bins are pre-defined).
 
         For manual binning, no fitting is required since bin edges are provided

@@ -36,9 +36,9 @@ from ._errors import (
     DataQualityWarning,
     FittingError,
     InvalidDataError,
-    suggest_alternatives,
     TransformationError,
     ValidationError,
+    suggest_alternatives,
 )
 
 # Import type aliases and constants

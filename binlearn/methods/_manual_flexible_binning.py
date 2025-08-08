@@ -11,10 +11,17 @@ from typing import Any
 
 import numpy as np
 
-from ..config import apply_config_defaults
-from ..utils import BinningError, ConfigurationError
-from ..utils import FlexibleBinDefs, BinReps, FlexibleBinSpec, BinEdgesDict, ArrayLike
 from ..base import FlexibleBinningBase
+from ..config import apply_config_defaults
+from ..utils import (
+    ArrayLike,
+    BinEdgesDict,
+    BinningError,
+    BinReps,
+    ConfigurationError,
+    FlexibleBinDefs,
+    FlexibleBinSpec,
+)
 
 
 class ManualFlexibleBinning(FlexibleBinningBase):
@@ -69,7 +76,7 @@ class ManualFlexibleBinning(FlexibleBinningBase):
 
     def fit(
         self, X: ArrayLike, y: ArrayLike | None = None, **fit_params: Any
-    ) -> "ManualFlexibleBinning":
+    ) -> ManualFlexibleBinning:
         """Fit the Manual Flexible binning (no-op since bin specs are pre-defined).
 
         For manual flexible binning, no fitting is required since bin specifications

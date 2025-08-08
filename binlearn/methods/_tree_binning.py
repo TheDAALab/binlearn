@@ -13,10 +13,9 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-from ..config import apply_config_defaults, get_config
-from ..utils import ConfigurationError, FittingError
-from ..utils import BinEdgesDict
 from ..base import SupervisedBinningBase
+from ..config import apply_config_defaults, get_config
+from ..utils import BinEdgesDict, ConfigurationError, FittingError
 
 
 class TreeBinning(SupervisedBinningBase):

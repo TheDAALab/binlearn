@@ -12,13 +12,14 @@ from typing import Any
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
 
+from ..base import SupervisedBinningBase
 from ..config import apply_config_defaults
-from ..utils import ConfigurationError, FittingError
 from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
+    FittingError,
     validate_bin_number_parameter,
 )
-from ..utils import BinEdgesDict
-from ..base import SupervisedBinningBase
 
 
 class IsotonicBinning(SupervisedBinningBase):
@@ -111,13 +112,13 @@ class IsotonicBinning(SupervisedBinningBase):
             )
 
         # Validate y_min and y_max parameters
-        if self.y_min is not None and not isinstance(self.y_min, (int, float)):
+        if self.y_min is not None and not isinstance(self.y_min, int | float):
             raise ConfigurationError(
                 "y_min must be a number or None",
                 suggestions=["Example: y_min=0.0"],
             )
 
-        if self.y_max is not None and not isinstance(self.y_max, (int, float)):
+        if self.y_max is not None and not isinstance(self.y_max, int | float):
             raise ConfigurationError(
                 "y_max must be a number or None",
                 suggestions=["Example: y_max=1.0"],
@@ -131,7 +132,7 @@ class IsotonicBinning(SupervisedBinningBase):
 
         # Validate min_change_threshold parameter
         if (
-            not isinstance(self.min_change_threshold, (int, float))
+            not isinstance(self.min_change_threshold, int | float)
             or self.min_change_threshold <= 0
         ):
             raise ConfigurationError(

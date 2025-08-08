@@ -12,9 +12,9 @@ from typing import Any
 import numpy as np
 
 from ._types import (
-    MISSING_VALUE,
     ABOVE_RANGE,
     BELOW_RANGE,
+    MISSING_VALUE,
     BinCountDict,
     BinEdges,
     BinEdgesDict,

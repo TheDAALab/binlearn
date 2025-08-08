@@ -12,10 +12,9 @@ from typing import Any
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from ..config import apply_config_defaults
-from ..utils import ConfigurationError
-from ..utils import BinEdgesDict
 from ..base import IntervalBinningBase
+from ..config import apply_config_defaults
+from ..utils import BinEdgesDict, ConfigurationError
 
 
 class DBSCANBinning(IntervalBinningBase):
@@ -81,7 +80,7 @@ class DBSCANBinning(IntervalBinningBase):
         IntervalBinningBase._validate_params(self)
 
         # Validate eps parameter
-        if not isinstance(self.eps, (int, float)) or self.eps <= 0:
+        if not isinstance(self.eps, int | float) or self.eps <= 0:
             raise ConfigurationError(
                 "eps must be a positive number",
                 suggestions=["Example: eps=0.1"],
@@ -165,7 +164,6 @@ class DBSCANBinning(IntervalBinningBase):
 
         # Calculate cluster centers and boundaries
         cluster_centers = []
-        cluster_boundaries = []
 
         for cluster_id in unique_clusters:
             cluster_mask = cluster_labels == cluster_id

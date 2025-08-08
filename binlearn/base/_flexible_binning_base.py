@@ -9,14 +9,14 @@ from typing import Any
 
 import numpy as np
 
-from ..config import get_config
-from ..utils import MISSING_VALUE
-from ..utils import ConfigurationError
-from ..utils import ArrayLike, FlexibleBinSpec, FlexibleBinDefs, BinEdgesDict, ColumnList
 from ..utils import (
-    validate_bin_representatives_format,
-    validate_flexible_bin_spec_format,
+    MISSING_VALUE,
+    BinEdgesDict,
+    ColumnList,
+    ConfigurationError,
+    FlexibleBinSpec,
     transform_value_to_flexible_bin,
+    validate_bin_representatives_format,
 )
 from ._general_binning_base import GeneralBinningBase
 
@@ -214,8 +214,6 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         # No match found
         raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
-
-        return result
 
     def _inverse_transform_bins_to_values(
         self, X: np.ndarray[Any, Any], columns: ColumnList

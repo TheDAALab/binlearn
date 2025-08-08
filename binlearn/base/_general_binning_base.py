@@ -13,8 +13,7 @@ import numpy as np
 from sklearn.base import TransformerMixin
 
 from ..config import get_config
-from ..utils import BinningError
-from ..utils import ArrayLike, ColumnList, GuidanceColumns, OptionalColumnList
+from ..utils import ArrayLike, BinningError, ColumnList, GuidanceColumns
 from ._data_handling_base import DataHandlingBase
 
 
@@ -67,7 +66,7 @@ class GeneralBinningBase(
         # Note: binning and guidance columns are computed dynamically
         # from feature_names_in_ and guidance_columns when needed
 
-    def fit(self, X: Any, y: Any = None, **fit_params: Any) -> "GeneralBinningBase":
+    def fit(self, X: Any, y: Any = None, **fit_params: Any) -> GeneralBinningBase:
         """Fit the binning transformer with comprehensive orchestration."""
         try:
             # Step 1: Parameter validation
@@ -189,7 +188,7 @@ class GeneralBinningBase(
             y_array = np.asarray(y)
             if y_array.ndim == 1:
                 y_array = y_array.reshape(-1, 1)
-            return y_array
+            return y_array  # type: ignore[no-any-return]
 
         return None
 
@@ -263,7 +262,9 @@ class GeneralBinningBase(
         ):
             return None
 
-        all_features = list(getattr(self, "feature_names_in_"))
+        if self.feature_names_in_ is None:
+            return None
+        all_features = list(self.feature_names_in_)
 
         if self.guidance_columns is None:
             return all_features

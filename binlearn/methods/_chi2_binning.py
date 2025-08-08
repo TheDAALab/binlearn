@@ -8,15 +8,13 @@ Uses chi-square statistic to find optimal bin boundaries for classification task
 from __future__ import annotations
 
 from typing import Any
-import warnings
 
 import numpy as np
 from scipy.stats import chi2_contingency
 
-from ..config import get_config, apply_config_defaults
-from ..utils import BinEdgesDict
-from ..utils import ConfigurationError, FittingError, DataQualityWarning
 from ..base import SupervisedBinningBase
+from ..config import apply_config_defaults
+from ..utils import BinEdgesDict, FittingError
 
 
 class Chi2Binning(SupervisedBinningBase):
@@ -99,7 +97,7 @@ class Chi2Binning(SupervisedBinningBase):
             raise ValueError("min_bins must be <= max_bins")
 
         # Validate alpha
-        if not isinstance(self.alpha, (int, float)) or not (0.0 < self.alpha < 1.0):
+        if not isinstance(self.alpha, int | float) or not (0.0 < self.alpha < 1.0):
             raise ValueError("alpha must be a float between 0 and 1")
 
         # Validate initial_bins
@@ -235,7 +233,10 @@ class Chi2Binning(SupervisedBinningBase):
                 "total_count": int(np.sum(mask)),
             }
 
-            if interval["total_count"] > 0:  # Only add non-empty intervals
+            total_count = interval["total_count"]
+            if (
+                isinstance(total_count, int | float) and total_count > 0
+            ):  # Only add non-empty intervals
                 intervals.append(interval)
 
         return intervals
@@ -292,13 +293,13 @@ class Chi2Binning(SupervisedBinningBase):
         """Calculate chi-square statistic for merging two intervals."""
         try:
             # Build contingency table for the two intervals
-            contingency_table = []
+            contingency_rows = []
 
             for cls in unique_classes:
                 row = [interval1["class_counts"].get(cls, 0), interval2["class_counts"].get(cls, 0)]
-                contingency_table.append(row)
+                contingency_rows.append(row)
 
-            contingency_table = np.array(contingency_table)
+            contingency_table = np.array(contingency_rows)
 
             # Remove empty rows/columns
             row_sums = contingency_table.sum(axis=1)
@@ -322,7 +323,7 @@ class Chi2Binning(SupervisedBinningBase):
             # Calculate chi-square statistic
             try:
                 chi2_stat, _, _, _ = chi2_contingency(contingency_table)
-                return float(chi2_stat) if isinstance(chi2_stat, (int, float, np.number)) else 0.0
+                return float(chi2_stat) if isinstance(chi2_stat, int | float | np.number) else 0.0
             except Exception:
                 return 0.0
 

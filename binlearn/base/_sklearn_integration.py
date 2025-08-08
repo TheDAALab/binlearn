@@ -40,7 +40,7 @@ class SklearnIntegration(BaseEstimator):  # type: ignore[misc,unused-ignore]
     Subclasses configure which attributes indicate fitted state.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize sklearn integration mixin."""
         BaseEstimator.__init__(self)
         # Fitted attributes to check - subclasses configure this
@@ -60,7 +60,7 @@ class SklearnIntegration(BaseEstimator):  # type: ignore[misc,unused-ignore]
                     return True
                 elif isinstance(attr_value, list) and attr_value:
                     return True
-                elif attr_value and not isinstance(attr_value, (dict, list)):
+                elif attr_value and not isinstance(attr_value, dict | list):
                     return True
         return False
 
@@ -115,7 +115,7 @@ class SklearnIntegration(BaseEstimator):  # type: ignore[misc,unused-ignore]
         params["class_"] = self.__class__.__name__
         params["module_"] = self.__class__.__module__
 
-        return params  # type: ignore[no-any-return]
+        return params
 
     def _extract_fitted_params(self) -> dict[str, Any]:
         """Extract fitted parameters for object reconstruction."""
@@ -138,7 +138,7 @@ class SklearnIntegration(BaseEstimator):  # type: ignore[misc,unused-ignore]
 
         return fitted_params
 
-    def set_params(self, **params: Any) -> "SklearnIntegration":
+    def set_params(self, **params: Any) -> SklearnIntegration:
         """Set the parameters of this estimator.
 
         This method supports reconstruction workflows by handling fitted parameters

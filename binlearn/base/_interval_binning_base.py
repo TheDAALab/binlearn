@@ -12,9 +12,11 @@ from typing import Any
 import numpy as np
 
 from ..config import get_config
-from ..utils import ConfigurationError, FittingError
-from ..utils import ArrayLike, BinEdgesDict, ColumnList
 from ..utils import (
+    BinEdgesDict,
+    ColumnList,
+    ConfigurationError,
+    FittingError,
     default_representatives,
     validate_bin_edges_format,
     validate_bin_representatives_format,

@@ -3,28 +3,25 @@ The module brings together the foundations.
 """
 
 # Core types and constants
-from ..utils import (
-    create_bin_masks,
-    default_representatives,
-    validate_bin_edges_format,
-    validate_bin_representatives_format,
-    validate_bins,
-)
-from ..utils import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
-
 # Utility functions
 from ..utils import (
-    prepare_array,
-    prepare_input_with_columns,
-    return_like_input,
-)
-from ..utils import (
+    ABOVE_RANGE,
+    BELOW_RANGE,
+    MISSING_VALUE,
     calculate_flexible_bin_width,
+    create_bin_masks,
+    default_representatives,
     find_flexible_bin_for_value,
     generate_default_flexible_representatives,
     get_flexible_bin_count,
     is_missing_value,
+    prepare_array,
+    prepare_input_with_columns,
+    return_like_input,
     transform_value_to_flexible_bin,
+    validate_bin_edges_format,
+    validate_bin_representatives_format,
+    validate_bins,
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
 )
@@ -62,15 +59,15 @@ from ..utils._types import (
     OptionalColumnList,
     OptionalFlexibleBinSpec,
 )
+from ._data_handling_base import DataHandlingBase
+from ._flexible_binning_base import FlexibleBinningBase
+from ._general_binning_base import GeneralBinningBase
+from ._interval_binning_base import IntervalBinningBase
 
 # New classes
 from ._sklearn_integration import SklearnIntegration
-from ._validation_mixin import ValidationMixin
-from ._data_handling_base import DataHandlingBase
-from ._general_binning_base import GeneralBinningBase
-from ._interval_binning_base import IntervalBinningBase
-from ._flexible_binning_base import FlexibleBinningBase
 from ._supervised_binning_base import SupervisedBinningBase
+from ._validation_mixin import ValidationMixin
 
 __all__ = [
     # Constants

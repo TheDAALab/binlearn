@@ -2,12 +2,8 @@
 Enhanced error handling for the binning framework.
 """
 
-import warnings
-from typing import Any, cast
 
-import numpy as np
 
-from binlearn.config import get_config
 
 
 class BinningError(Exception):

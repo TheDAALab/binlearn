@@ -7,19 +7,17 @@ For binning methods that use target/label information to optimize bin boundaries
 
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Any
 import warnings
+from typing import Any
 
 import numpy as np
 
-from ..config import get_config
-from ..utils import ConfigurationError, ValidationError, DataQualityWarning
-from ..utils import BinEdgesDict, ColumnList
 from ..utils import (
-    validate_bin_edges_format,
-    validate_bin_representatives_format,
-    validate_bins,
+    ArrayLike,
+    BinEdgesDict,
+    ColumnList,
+    DataQualityWarning,
+    ValidationError,
 )
 from ._interval_binning_base import IntervalBinningBase
 
@@ -69,10 +67,11 @@ class SupervisedBinningBase(IntervalBinningBase):
                     "Supervised binning typically works best with a single target column. "
                     "Multiple guidance columns may lead to unexpected behavior.",
                     DataQualityWarning,
+                    stacklevel=2,
                 )
 
     def validate_guidance_data(
-        self, guidance_data: np.ndarray[Any, Any], name: str = "guidance_data"
+        self, guidance_data: ArrayLike, name: str = "guidance_data"
     ) -> np.ndarray[Any, Any]:
         """Validate and preprocess guidance data for supervised binning.
 
@@ -120,15 +119,17 @@ class SupervisedBinningBase(IntervalBinningBase):
             warnings.warn(
                 "Target has only one unique value. Supervised binning may not be effective.",
                 DataQualityWarning,
+                stacklevel=2,
             )
         elif len(unique_values) < 3:
             warnings.warn(
                 f"Target has only {len(unique_values)} unique values. "
                 "Supervised binning works best with more target diversity.",
                 DataQualityWarning,
+                stacklevel=2,
             )
 
-        return guidance_data
+        return guidance_data  # type: ignore[no-any-return]
 
     def _validate_feature_target_pair(
         self,
@@ -170,6 +171,7 @@ class SupervisedBinningBase(IntervalBinningBase):
                 f"Column {col_id} has insufficient valid data points ({len(cleaned_feature)}) "
                 "after removing missing values. Results may be unreliable.",
                 DataQualityWarning,
+                stacklevel=2,
             )
 
         return cleaned_feature, cleaned_target

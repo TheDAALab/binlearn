@@ -10,10 +10,15 @@ from typing import Any
 
 import numpy as np
 
+from ..utils import (
+    ArrayLike,
+    ColumnList,
+    OptionalColumnList,
+    prepare_input_with_columns,
+    return_like_input,
+)
 from ._sklearn_integration import SklearnIntegration
 from ._validation_mixin import ValidationMixin
-from ..utils import prepare_input_with_columns, return_like_input
-from ..utils import ArrayLike, ColumnList, OptionalColumnList
 
 
 class DataHandlingBase(SklearnIntegration, ValidationMixin):
@@ -23,12 +28,13 @@ class DataHandlingBase(SklearnIntegration, ValidationMixin):
     assumptions about binning, guidance, or fitted state.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize data handling mixin."""
         SklearnIntegration.__init__(self)
         ValidationMixin.__init__(self)
         # Column management for input/output format preservation
         self._original_columns: OptionalColumnList = None
+        self._feature_names_in: list[str] | None = None
 
     def _prepare_input(self, X: ArrayLike) -> tuple[np.ndarray[Any, Any], ColumnList]:
         """Prepare input data and extract column information."""
@@ -38,13 +44,15 @@ class DataHandlingBase(SklearnIntegration, ValidationMixin):
         original_columns = None
         if fitted and hasattr(self, "_get_binning_columns"):
             # Use dynamic binning columns computation
-            original_columns = getattr(self, "_get_binning_columns")()
+            original_columns = self._get_binning_columns()
 
         return prepare_input_with_columns(X, fitted=fitted, original_columns=original_columns)
 
-    def _validate_and_prepare_input(self, X: ArrayLike, name: str = "X") -> np.ndarray[Any, Any]:
+    def _validate_and_prepare_input(
+        self, X: ArrayLike, name: str = "X"
+    ) -> np.ndarray[Any, Any] | None:
         """Validate input data and convert to array format."""
-        return self.validate_array_like(X, name)  # type: ignore[no-any-return]
+        return self.validate_array_like(X, name)
 
     def _format_output_like_input(
         self,

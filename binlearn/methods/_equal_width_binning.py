@@ -10,9 +10,9 @@ from typing import Any
 
 import numpy as np
 
-from ..config import get_config, apply_config_defaults
-from ..utils import BinEdgesDict
 from ..base import IntervalBinningBase
+from ..config import apply_config_defaults
+from ..utils import BinEdgesDict
 
 
 class EqualWidthBinning(IntervalBinningBase):

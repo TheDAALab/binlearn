@@ -12,15 +12,15 @@ from typing import Any
 import numpy as np
 from sklearn.mixture import GaussianMixture
 
+from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
-from ..utils import ConfigurationError
 from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils import BinEdgesDict
-from ..base import IntervalBinningBase
 
 
 class GaussianMixtureBinning(IntervalBinningBase):
@@ -201,12 +201,14 @@ class GaussianMixtureBinning(IntervalBinningBase):
             Tuple of (bin_edges, bin_representatives)
         """
         import warnings
+
         from ..utils._errors import DataQualityWarning
 
         warnings.warn(
             f"Column {col_id}: GMM clustering failed ({original_error}). "
             f"Falling back to equal-width binning.",
             DataQualityWarning,
+            stacklevel=2,
         )
 
         min_val, max_val = float(np.min(x_col)), float(np.max(x_col))
