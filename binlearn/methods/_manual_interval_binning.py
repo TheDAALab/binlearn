@@ -140,30 +140,8 @@ class ManualIntervalBinning(IntervalBinningBase):
         Raises:
             BinningError: If no bin edges are defined for the specified column
         """
-        # Handle column name mapping for numpy arrays
-        # The  architecture uses feature_N names internally, but users provide 0, 1, etc.
-        actual_col_key = col_id
-
-        # If col_id is like 'feature_N' and not found, try mapping to integer N
-        if (self.bin_edges is None or col_id not in self.bin_edges) and isinstance(col_id, str):
-            if col_id.startswith("feature_") and self.bin_edges is not None:
-                try:
-                    # Extract the number from 'feature_N'
-                    col_idx = int(col_id.replace("feature_", ""))
-                    if col_idx in self.bin_edges:
-                        actual_col_key = col_idx
-                except ValueError:
-                    pass
-
-        # If original integer key and not found, try mapping to feature_N
-        elif (self.bin_edges is None or col_id not in self.bin_edges) and isinstance(col_id, int):
-            if self.bin_edges is not None:
-                feature_name = f"feature_{col_id}"
-                if feature_name in self.bin_edges:
-                    actual_col_key = feature_name
-
         # Get pre-defined edges for this column
-        if self.bin_edges is None or actual_col_key not in self.bin_edges:
+        if self.bin_edges is None or col_id not in self.bin_edges:
             raise BinningError(
                 f"No bin edges defined for column {col_id}",
                 suggestions=[
@@ -174,11 +152,11 @@ class ManualIntervalBinning(IntervalBinningBase):
                 ],
             )
 
-        edges = list(self.bin_edges[actual_col_key])
+        edges = list(self.bin_edges[col_id])
 
         # Get or generate representatives
-        if self.bin_representatives is not None and actual_col_key in self.bin_representatives:
-            representatives = list(self.bin_representatives[actual_col_key])
+        if self.bin_representatives is not None and col_id in self.bin_representatives:
+            representatives = list(self.bin_representatives[col_id])
         else:
             # Auto-generate representatives as bin centers
             representatives = [(edges[i] + edges[i + 1]) / 2 for i in range(len(edges) - 1)]
