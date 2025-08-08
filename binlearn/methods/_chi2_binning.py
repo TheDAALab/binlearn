@@ -14,9 +14,9 @@ import numpy as np
 from scipy.stats import chi2_contingency
 
 from ..config import get_config, apply_config_defaults
-from ..utils._types import BinEdgesDict
-from ..utils._errors import ConfigurationError, FittingError, DataQualityWarning
-from ..base._supervised_binning_base import SupervisedBinningBase
+from ..utils import BinEdgesDict
+from ..utils import ConfigurationError, FittingError, DataQualityWarning
+from ..base import SupervisedBinningBase
 
 
 class Chi2Binning(SupervisedBinningBase):

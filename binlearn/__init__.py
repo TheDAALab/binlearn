@@ -39,10 +39,6 @@ except ImportError:
 # Configuration management
 # Base classes and utilities
 from .base import (
-    ABOVE_RANGE,
-    BELOW_RANGE,
-    # Constants
-    MISSING_VALUE,
     Array1D,
     Array2D,
     ArrayLike,
@@ -72,15 +68,10 @@ from .base import (
     OptionalColumnList,
     OptionalFlexibleBinSpec,
     SupervisedBinningBase,
-    create_bin_masks,
-    default_representatives,
     # Utility functions
     prepare_array,
     prepare_input_with_columns,
     return_like_input,
-    validate_bin_edges_format,
-    validate_bin_representatives_format,
-    validate_bins,
 )
 from .config import get_config, load_config, reset_config, set_config
 
@@ -108,17 +99,26 @@ from .tools import (
 )
 
 # Error handling
-from .utils._errors import (
+from .utils import (
     BinningError,
     ConfigurationError,
     FittingError,
     InvalidDataError,
     TransformationError,
     ValidationError,
+    ABOVE_RANGE,
+    BELOW_RANGE,
+    # Constants
+    MISSING_VALUE,
+    create_bin_masks,
+    default_representatives,
+    validate_bin_edges_format,
+    validate_bin_representatives_format,
+    validate_bins,
 )
 
 # Parameter conversion utilities
-from .utils._parameter_conversion import (
+from .utils import (
     resolve_n_bins_parameter,
     resolve_string_parameter,
     validate_numeric_parameter,

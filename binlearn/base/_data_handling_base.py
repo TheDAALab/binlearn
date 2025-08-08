@@ -12,8 +12,8 @@ import numpy as np
 
 from ._sklearn_integration import SklearnIntegration
 from ._validation_mixin import ValidationMixin
-from ..utils._data_handling import prepare_input_with_columns, return_like_input
-from ..utils._types import ArrayLike, ColumnList, OptionalColumnList
+from ..utils import prepare_input_with_columns, return_like_input
+from ..utils import ArrayLike, ColumnList, OptionalColumnList
 
 
 class DataHandlingBase(SklearnIntegration, ValidationMixin):

@@ -13,9 +13,9 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 
 from ..config import apply_config_defaults
-from ..utils._errors import ConfigurationError
-from ..utils._types import BinEdgesDict
-from ..base._interval_binning_base import IntervalBinningBase
+from ..utils import ConfigurationError
+from ..utils import BinEdgesDict
+from ..base import IntervalBinningBase
 
 
 class DBSCANBinning(IntervalBinningBase):

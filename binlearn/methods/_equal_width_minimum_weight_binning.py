@@ -13,14 +13,14 @@ from typing import Any
 import numpy as np
 
 from ..config import apply_config_defaults
-from ..utils._errors import ConfigurationError, DataQualityWarning, FittingError
-from ..utils._parameter_conversion import (
+from ..utils import ConfigurationError, DataQualityWarning, FittingError
+from ..utils import (
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils._types import BinEdgesDict
-from ..base._supervised_binning_base import SupervisedBinningBase
+from ..utils import BinEdgesDict
+from ..base import SupervisedBinningBase
 
 
 class EqualWidthMinimumWeightBinning(SupervisedBinningBase):

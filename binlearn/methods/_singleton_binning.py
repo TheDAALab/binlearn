@@ -13,9 +13,9 @@ import warnings
 import numpy as np
 
 from ..config import get_config, apply_config_defaults
-from ..utils._types import BinEdgesDict
-from ..utils._errors import DataQualityWarning
-from ..base._flexible_binning_base import FlexibleBinningBase
+from ..utils import BinEdgesDict
+from ..utils import DataQualityWarning
+from ..base import FlexibleBinningBase
 
 
 class SingletonBinning(FlexibleBinningBase):

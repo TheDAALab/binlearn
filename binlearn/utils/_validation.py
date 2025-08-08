@@ -1,11 +1,9 @@
-"""Parameter conversion utilities for binning methods.
+"""
+Parameter validation and conversion utilities for binning methods.
 
-This module provides utilities for converting string parameters to numeric values,
-particularly for parameters like n_bins that can accept both integer values and
-string specifications like "sqrt", "log", etc.
-
-The module follows a consistent pattern for parameter conversion and validation,
-providing clear error messages and suggestions when conversions fail.
+This module provides utilities for validating and converting parameters,
+including string-to-numeric conversions, tree parameter validation,
+and general parameter validation with clear error messages and suggestions.
 """
 
 from __future__ import annotations
@@ -17,7 +15,11 @@ import numpy as np
 from ._errors import ConfigurationError
 
 
-# pylint: disable=too-many-branches
+# =============================================================================
+# PARAMETER CONVERSION UTILITIES
+# =============================================================================
+
+
 def resolve_n_bins_parameter(
     n_bins: int | str,
     data_shape: tuple[int, ...] | None = None,
@@ -163,7 +165,80 @@ def resolve_n_bins_parameter(
     return resolved
 
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+def resolve_string_parameter(
+    value: str | Any,
+    valid_options: dict[str, Any],
+    param_name: str,
+    allow_passthrough: bool = True,
+) -> Any:
+    """Resolve a string parameter to its corresponding value.
+
+    Maps string specifications to their corresponding values using a lookup
+    dictionary. Useful for parameters that accept both direct values and
+    string shortcuts (e.g., random_state="auto" -> None).
+
+    Args:
+        value (Union[str, Any]): Parameter value to resolve. If not a string
+            and allow_passthrough=True, returns the value unchanged.
+        valid_options (Dict[str, Any]): Mapping from string specifications
+            to their resolved values.
+        param_name (str): Name of the parameter for error messages.
+        allow_passthrough (bool, optional): Whether to allow non-string values
+            to pass through unchanged. If False, only strings from valid_options
+            are accepted. Defaults to True.
+
+    Returns:
+        Any: Resolved parameter value.
+
+    Raises:
+        ConfigurationError: If string value is not in valid_options or if
+            allow_passthrough=False and value is not a string.
+
+    Example:
+        >>> # Define string mappings
+        >>> options = {"auto": None, "sqrt": "sqrt", "log2": "log2"}
+        >>> resolve_string_parameter("auto", options, "max_features")
+        None
+
+        >>> # Allow passthrough for direct values
+        >>> resolve_string_parameter(10, options, "max_features")
+        10
+
+        >>> # Restrict to strings only
+        >>> resolve_string_parameter(10, options, "max_features", allow_passthrough=False)
+        ConfigurationError: ...
+
+    Note:
+        - String matching is case-sensitive
+        - When allow_passthrough=True, validates other types appropriately
+        - Provides helpful suggestions in error messages
+    """
+    if isinstance(value, str):
+        if value in valid_options:
+            return valid_options[value]
+
+        raise ConfigurationError(
+            f'Invalid {param_name} specification: "{value}"',
+            suggestions=[
+                f"Valid string options: {list(valid_options.keys())}",
+                f"Or provide a direct value if {param_name} supports it",
+            ],
+        )
+
+    if allow_passthrough:
+        return value
+
+    raise ConfigurationError(
+        f"{param_name} must be one of {list(valid_options.keys())}, got {type(value).__name__}",
+        suggestions=[f"Use one of the valid string options: {list(valid_options.keys())}"],
+    )
+
+
+# =============================================================================
+# NUMERIC PARAMETER VALIDATION
+# =============================================================================
+
+
 def validate_numeric_parameter(
     value: Any,
     param_name: str,
@@ -257,75 +332,6 @@ def validate_numeric_parameter(
         )
 
     return value
-
-
-def resolve_string_parameter(
-    value: str | Any,
-    valid_options: dict[str, Any],
-    param_name: str,
-    allow_passthrough: bool = True,
-) -> Any:
-    """Resolve a string parameter to its corresponding value.
-
-    Maps string specifications to their corresponding values using a lookup
-    dictionary. Useful for parameters that accept both direct values and
-    string shortcuts (e.g., random_state="auto" -> None).
-
-    Args:
-        value (Union[str, Any]): Parameter value to resolve. If not a string
-            and allow_passthrough=True, returns the value unchanged.
-        valid_options (Dict[str, Any]): Mapping from string specifications
-            to their resolved values.
-        param_name (str): Name of the parameter for error messages.
-        allow_passthrough (bool, optional): Whether to allow non-string values
-            to pass through unchanged. If False, only strings from valid_options
-            are accepted. Defaults to True.
-
-    Returns:
-        Any: Resolved parameter value.
-
-    Raises:
-        ConfigurationError: If string value is not in valid_options or if
-            allow_passthrough=False and value is not a string.
-
-    Example:
-        >>> # Define string mappings
-        >>> options = {"auto": None, "sqrt": "sqrt", "log2": "log2"}
-        >>> resolve_string_parameter("auto", options, "max_features")
-        None
-
-        >>> # Allow passthrough for direct values
-        >>> resolve_string_parameter(10, options, "max_features")
-        10
-
-        >>> # Restrict to strings only
-        >>> resolve_string_parameter(10, options, "max_features", allow_passthrough=False)
-        ConfigurationError: ...
-
-    Note:
-        - String matching is case-sensitive
-        - When allow_passthrough=True, validates other types appropriately
-        - Provides helpful suggestions in error messages
-    """
-    if isinstance(value, str):
-        if value in valid_options:
-            return valid_options[value]
-
-        raise ConfigurationError(
-            f'Invalid {param_name} specification: "{value}"',
-            suggestions=[
-                f"Valid string options: {list(valid_options.keys())}",
-                f"Or provide a direct value if {param_name} supports it",
-            ],
-        )
-
-    if allow_passthrough:
-        return value
-
-    raise ConfigurationError(
-        f"{param_name} must be one of {list(valid_options.keys())}, got {type(value).__name__}",
-        suggestions=[f"Use one of the valid string options: {list(valid_options.keys())}"],
-    )
 
 
 def validate_bin_number_parameter(
@@ -440,3 +446,66 @@ def validate_bin_number_for_calculation(
     """
     if isinstance(value, int) and value < 1:
         raise ValueError(f"{param_name} must be >= 1, got {value}")
+
+
+# =============================================================================
+# TREE PARAMETER VALIDATION
+# =============================================================================
+
+
+def validate_tree_params(task_type: str, tree_params: dict[str, Any]) -> dict[str, Any]:
+    """Validate tree parameters for SupervisedBinning."""
+    _ = task_type
+
+    if not tree_params:
+        return {}
+
+    valid_params = {
+        "max_depth",
+        "min_samples_split",
+        "min_samples_leaf",
+        "max_features",
+        "random_state",
+        "max_leaf_nodes",
+        "min_impurity_decrease",
+        "class_weight",
+        "ccp_alpha",
+        "criterion",
+    }
+
+    invalid_params = set(tree_params.keys()) - valid_params
+    if invalid_params:
+        raise ConfigurationError(
+            f"Invalid tree parameters: {invalid_params}",
+            suggestions=[
+                f"Valid parameters are: {sorted(valid_params)}",
+                "Check scikit-learn documentation for DecisionTree parameters",
+            ],
+        )
+
+    # Validate specific parameter values
+    if "max_depth" in tree_params:
+        max_depth = tree_params["max_depth"]
+        if max_depth is not None and (not isinstance(max_depth, int) or max_depth < 1):
+            raise ConfigurationError(
+                f"max_depth must be a positive integer or None, got {max_depth}",
+                suggestions=["Use positive integers like 3, 5, 10, or None for unlimited depth"],
+            )
+
+    if "min_samples_split" in tree_params:
+        min_split = tree_params["min_samples_split"]
+        if not isinstance(min_split, int) or min_split < 2:
+            raise ConfigurationError(
+                f"min_samples_split must be an integer >= 2, got {min_split}",
+                suggestions=["Use values like 2, 5, 10 depending on your dataset size"],
+            )
+
+    if "min_samples_leaf" in tree_params:
+        min_leaf = tree_params["min_samples_leaf"]
+        if not isinstance(min_leaf, int) or min_leaf < 1:
+            raise ConfigurationError(
+                f"min_samples_leaf must be a positive integer, got {min_leaf}",
+                suggestions=["Use values like 1, 3, 5 depending on your dataset size"],
+            )
+
+    return tree_params

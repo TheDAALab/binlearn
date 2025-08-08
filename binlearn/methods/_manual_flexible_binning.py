@@ -12,9 +12,9 @@ from typing import Any
 import numpy as np
 
 from ..config import apply_config_defaults
-from ..utils._errors import BinningError, ConfigurationError
-from ..utils._types import FlexibleBinDefs, BinReps, FlexibleBinSpec, BinEdgesDict, ArrayLike
-from ..base._flexible_binning_base import FlexibleBinningBase
+from ..utils import BinningError, ConfigurationError
+from ..utils import FlexibleBinDefs, BinReps, FlexibleBinSpec, BinEdgesDict, ArrayLike
+from ..base import FlexibleBinningBase
 
 
 class ManualFlexibleBinning(FlexibleBinningBase):

@@ -14,8 +14,8 @@ import warnings
 import numpy as np
 
 from ..config import get_config
-from ..utils._errors import ConfigurationError, ValidationError, DataQualityWarning
-from ..utils._types import BinEdgesDict, ColumnList
+from ..utils import ConfigurationError, ValidationError, DataQualityWarning
+from ..utils import BinEdgesDict, ColumnList
 from ..utils import (
     validate_bin_edges_format,
     validate_bin_representatives_format,

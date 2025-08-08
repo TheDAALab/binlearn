@@ -13,14 +13,14 @@ import numpy as np
 from sklearn.mixture import GaussianMixture
 
 from ..config import apply_config_defaults
-from ..utils._errors import ConfigurationError
-from ..utils._parameter_conversion import (
+from ..utils import ConfigurationError
+from ..utils import (
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
-from ..utils._types import BinEdgesDict
-from ..base._interval_binning_base import IntervalBinningBase
+from ..utils import BinEdgesDict
+from ..base import IntervalBinningBase
 
 
 class GaussianMixtureBinning(IntervalBinningBase):

@@ -2,19 +2,27 @@
 Utility functions for the binning framework.
 
 This module consolidates all utility functions used throughout the binlearn library,
-organized into logical submodules for better maintainability and discoverability.
+organized into logical modules for better maintainability and discoverability.
 """
 
-# Import constants
-# Import utility functions
-from ._bin_operations import (
+# Import from binning operations (interval + flexible binning)
+from ._binning_operations import (
+    calculate_flexible_bin_width,
     create_bin_masks,
     default_representatives,
+    find_flexible_bin_for_value,
+    generate_default_flexible_representatives,
+    get_flexible_bin_count,
+    is_missing_value,
+    transform_value_to_flexible_bin,
     validate_bin_edges_format,
     validate_bin_representatives_format,
     validate_bins,
+    validate_flexible_bin_spec_format,
+    validate_flexible_bins,
 )
-from ._constants import ABOVE_RANGE, BELOW_RANGE, MISSING_VALUE
+
+# Import data handling utilities
 from ._data_handling import (
     prepare_array,
     prepare_input_with_columns,
@@ -28,31 +36,17 @@ from ._errors import (
     DataQualityWarning,
     FittingError,
     InvalidDataError,
+    suggest_alternatives,
     TransformationError,
     ValidationError,
 )
-from ._flexible_bin_operations import (
-    calculate_flexible_bin_width,
-    find_flexible_bin_for_value,
-    generate_default_flexible_representatives,
-    get_flexible_bin_count,
-    is_missing_value,
-    transform_value_to_flexible_bin,
-    validate_flexible_bin_spec_format,
-    validate_flexible_bins,
-)
 
-# Parameter conversion utilities
-from ._parameter_conversion import (
-    resolve_n_bins_parameter,
-    resolve_string_parameter,
-    validate_bin_number_for_calculation,
-    validate_bin_number_parameter,
-    validate_numeric_parameter,
-)
-
-# Import type aliases for re-export
+# Import type aliases and constants
 from ._types import (
+    # Constants
+    ABOVE_RANGE,
+    BELOW_RANGE,
+    MISSING_VALUE,
     # Numpy array types
     Array1D,
     Array2D,
@@ -83,6 +77,16 @@ from ._types import (
     OptionalBinRepsDict,
     OptionalColumnList,
     OptionalFlexibleBinSpec,
+)
+
+# Import validation utilities
+from ._validation import (
+    resolve_n_bins_parameter,
+    resolve_string_parameter,
+    validate_bin_number_for_calculation,
+    validate_bin_number_parameter,
+    validate_numeric_parameter,
+    validate_tree_params,
 )
 
 __all__ = [
@@ -122,6 +126,7 @@ __all__ = [
     "TransformationError",
     "ValidationError",
     "DataQualityWarning",
+    "suggest_alternatives",
     # Interval binning utilities
     "validate_bin_edges_format",
     "validate_bin_representatives_format",
@@ -141,8 +146,11 @@ __all__ = [
     "prepare_array",
     "return_like_input",
     "prepare_input_with_columns",
-    # Parameter conversion utilities
+    # Parameter validation and conversion utilities
     "resolve_n_bins_parameter",
     "resolve_string_parameter",
     "validate_numeric_parameter",
+    "validate_bin_number_parameter",
+    "validate_bin_number_for_calculation",
+    "validate_tree_params",
 ]

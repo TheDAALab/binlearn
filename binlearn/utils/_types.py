@@ -1,8 +1,8 @@
 """
-Type aliases for the binning framework.
+Type aliases and constants for the binning framework.
 
-This module provides standardized type aliases used throughout the binlearn library
-to improve code readability and maintainability.
+This module provides standardized type aliases and constants used throughout
+the binlearn library to improve code readability and maintainability.
 """
 
 from __future__ import annotations
@@ -10,6 +10,15 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+# Special bin index values for out-of-range data
+MISSING_VALUE = -1
+ABOVE_RANGE = -2
+BELOW_RANGE = -3
 
 # =============================================================================
 # COLUMN AND DATA TYPES
