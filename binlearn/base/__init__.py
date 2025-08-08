@@ -65,6 +65,7 @@ from ..utils.types import (
 
 # New classes
 from ._sklearn_integration import SklearnIntegration
+from ._validation_mixin import ValidationMixin
 from ._data_handling import DataHandling
 from ._general_binning_base import GeneralBinningBase
 from ._interval_binning_base import IntervalBinningBase
@@ -126,5 +127,6 @@ __all__ = [
     "SupervisedBinningBase",
     # New classes
     "SklearnIntegration",
+    "ValidationMixin",
     "DataHandling",
 ]

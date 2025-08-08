@@ -30,7 +30,6 @@ from .errors import (
     InvalidDataError,
     TransformationError,
     ValidationError,
-    ValidationMixin,
 )
 from .flexible_bin_operations import (
     calculate_flexible_bin_width,
@@ -122,7 +121,6 @@ __all__ = [
     "FittingError",
     "TransformationError",
     "ValidationError",
-    "ValidationMixin",
     "DataQualityWarning",
     # Interval binning utilities
     "validate_bin_edges_format",
