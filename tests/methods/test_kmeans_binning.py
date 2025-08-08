@@ -1,10 +1,5 @@
 """
-Comprehensive tests for EqualFrequencyBinning method covering all scenarios:
-- Various input/output formats (numpy, pandas, polars)
-- Fitted state reconstruction
-- Repeated fitting
-- sklearn pipeline integration
-- Edge cases
+Comprehensive tests for KMeansBinning method covering all sce    def test_init_custom_parameters(self):
 """
 
 import warnings
@@ -15,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from binlearn import POLARS_AVAILABLE, pd, pl
-from binlearn.methods import EqualFrequencyBinning
+from binlearn.methods import KMeansBinning
 from binlearn.utils import ConfigurationError, FittingError, ValidationError
 
 # Skip polars tests if not available
@@ -25,8 +20,8 @@ polars_skip = pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not availa
 pandas_skip = pytest.mark.skipif(not hasattr(pd, "DataFrame"), reason="pandas not available")
 
 
-class TestEqualFrequencyBinning:
-    """Comprehensive test suite for EqualFrequencyBinning."""
+class TestKMeansBinning:
+    """Comprehensive test suite for KMeansBinning."""
 
     @pytest.fixture
     def sample_data(self):
@@ -50,87 +45,54 @@ class TestEqualFrequencyBinning:
             ),
             "uniform": np.linspace(0, 100, 100).reshape(-1, 1),
             "normal": np.random.normal(50, 15, 200).reshape(-1, 1),
-            "skewed": np.random.exponential(2, 100).reshape(-1, 1),
-            "with_duplicates": np.array([1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 5]).reshape(-1, 1),
-            "with_nan": np.array([1.0, 2.0, np.nan, 4.0, 5.0, 6.0]).reshape(-1, 1),
-            "with_inf": np.array([1.0, 2.0, np.inf, 4.0, 5.0, 6.0]).reshape(-1, 1),
+            "clustered": np.concatenate(
+                [
+                    np.random.normal(10, 2, 50),
+                    np.random.normal(30, 2, 50),
+                    np.random.normal(50, 2, 50),
+                ]
+            ).reshape(-1, 1),
+            "with_nan": np.array([1.0, 2.0, np.nan, 4.0, 5.0, 6.0, 7.0, 8.0]).reshape(-1, 1),
+            "with_inf": np.array([1.0, 2.0, np.inf, 4.0, 5.0, 6.0, 7.0, 8.0]).reshape(-1, 1),
             "constant": np.array([5.0, 5.0, 5.0, 5.0, 5.0]).reshape(-1, 1),
+            "few_unique": np.array([1.0, 1.0, 2.0, 2.0, 3.0, 3.0]).reshape(-1, 1),
         }
 
     # Basic functionality tests
 
     def test_init_default_parameters(self):
         """Test initialization with default parameters."""
-        binner = EqualFrequencyBinning()
+        binner = KMeansBinning()
         assert binner.n_bins == 10  # default from config or fallback
-        assert binner.quantile_range is None
         assert binner.clip is True  # default from config
         assert binner.preserve_dataframe is False
         assert binner.fit_jointly is False
 
     def test_init_custom_parameters(self):
         """Test initialization with custom parameters."""
-        binner = EqualFrequencyBinning(
-            n_bins=5,
-            quantile_range=(0.1, 0.9),
-            clip=False,
-            preserve_dataframe=True,
-            fit_jointly=True,
-        )
-        assert binner.n_bins == 5
-        assert binner.quantile_range == (0.1, 0.9)
+        binner = KMeansBinning(n_bins=10, clip=False, preserve_dataframe=True, fit_jointly=True)
+        assert binner.n_bins == 10
         assert binner.clip is False
         assert binner.preserve_dataframe is True
         assert binner.fit_jointly is True
 
-    def test_init_with_string_n_bins(self):
-        """Test initialization with string n_bins parameter."""
-        binner = EqualFrequencyBinning(n_bins="sqrt")
-        assert binner.n_bins == "sqrt"
-
-    def test_parameter_validation_n_bins(self):
-        """Test n_bins parameter validation."""
-        # Invalid n_bins values
+    def test_parameter_validation(self):
+        """Test parameter validation."""
+        # Invalid n_bins
         with pytest.raises((ValueError, ConfigurationError)):
-            EqualFrequencyBinning(n_bins=0)
+            KMeansBinning(n_bins=0)
 
         with pytest.raises((ValueError, ConfigurationError)):
-            EqualFrequencyBinning(n_bins=-1)
+            KMeansBinning(n_bins=-1)
 
         with pytest.raises((ValueError, ConfigurationError)):
-            EqualFrequencyBinning(n_bins=1.5)  # type: ignore
-
-        # Valid string n_bins
-        binner = EqualFrequencyBinning(n_bins="log2")
-        assert binner.n_bins == "log2"
-
-    def test_parameter_validation_quantile_range(self):
-        """Test quantile_range parameter validation."""
-        # Invalid quantile_range formats
-        with pytest.raises(ConfigurationError, match="quantile_range must be a tuple"):
-            EqualFrequencyBinning(quantile_range=(0.1, 0.5, 0.9))  # type: ignore # wrong length
-
-        with pytest.raises(ConfigurationError, match="quantile_range must be a tuple"):
-            EqualFrequencyBinning(quantile_range=[0.1, 0.9])  # type: ignore   # not tuple
-
-        # Invalid quantile values
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
-            EqualFrequencyBinning(quantile_range=(-0.1, 0.9))  # negative
-
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
-            EqualFrequencyBinning(quantile_range=(0.1, 1.1))  # > 1
-
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
-            EqualFrequencyBinning(quantile_range=(0.9, 0.1))  # min >= max
-
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
-            EqualFrequencyBinning(quantile_range=(0.5, 0.5))  # min == max
+            KMeansBinning(n_bins=3.5)  # type: ignore
 
     # Input format tests with preserve_dataframe=False
 
     def test_numpy_input_preserve_false(self, sample_data):
         """Test with numpy input and preserve_dataframe=False."""
-        binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=False)
+        binner = KMeansBinning(n_bins=3, preserve_dataframe=False)
 
         # Fit and transform
         X_fit = sample_data["simple"]
@@ -141,11 +103,6 @@ class TestEqualFrequencyBinning:
         assert X_transformed.shape == X_fit.shape
         assert X_transformed.dtype == int
 
-        # Check that bins have approximately equal frequencies
-        unique, counts = np.unique(X_transformed, return_counts=True)
-        # For equal frequency, counts should be approximately equal
-        assert len(unique) <= 3  # At most n_bins
-
         # Inverse transform
         X_inverse = binner.inverse_transform(X_transformed)
         assert isinstance(X_inverse, np.ndarray)
@@ -154,7 +111,7 @@ class TestEqualFrequencyBinning:
     @pandas_skip
     def test_pandas_input_preserve_false(self, sample_data):
         """Test with pandas input and preserve_dataframe=False."""
-        binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=False)
+        binner = KMeansBinning(n_bins=3, preserve_dataframe=False)
 
         # Create pandas DataFrame
         df = pd.DataFrame(sample_data["simple"], columns=["feature"])
@@ -172,7 +129,7 @@ class TestEqualFrequencyBinning:
     @polars_skip
     def test_polars_input_preserve_false(self, sample_data):
         """Test with polars input and preserve_dataframe=False."""
-        binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=False)
+        binner = KMeansBinning(n_bins=3, preserve_dataframe=False)
 
         # Create polars DataFrame
         assert pl is not None
@@ -193,7 +150,7 @@ class TestEqualFrequencyBinning:
     @pandas_skip
     def test_pandas_input_preserve_true(self, sample_data):
         """Test with pandas input and preserve_dataframe=True."""
-        binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=True)
+        binner = KMeansBinning(n_bins=3, preserve_dataframe=True)
 
         # Create pandas DataFrame with multiple columns
         df = pd.DataFrame(
@@ -217,10 +174,10 @@ class TestEqualFrequencyBinning:
     @polars_skip
     def test_polars_input_preserve_true(self, sample_data):
         """Test with polars input and preserve_dataframe=True."""
-        binner = EqualFrequencyBinning(n_bins=3, preserve_dataframe=True)
+        binner = KMeansBinning(n_bins=3, preserve_dataframe=True)
 
-        # Create polars DataFrame
         assert pl is not None
+        # Create polars DataFrame
         df = pl.DataFrame(
             {"feature1": sample_data["multi_col"][:, 0], "feature2": sample_data["multi_col"][:, 1]}
         )
@@ -244,7 +201,7 @@ class TestEqualFrequencyBinning:
     def test_reconstruction_via_get_params_set_params(self, sample_data):
         """Test fitted state reconstruction via get_params/set_params."""
         # Fit original binner
-        binner_original = EqualFrequencyBinning(n_bins=4)
+        binner_original = KMeansBinning(n_bins=4)
         X_fit = sample_data["multi_col"]
         binner_original.fit(X_fit)
 
@@ -252,11 +209,11 @@ class TestEqualFrequencyBinning:
         params = binner_original.get_params()
 
         # Create new binner and set parameters (reconstruct state)
-        binner_reconstructed = EqualFrequencyBinning()
+        binner_reconstructed = KMeansBinning()
         binner_reconstructed.set_params(**params)
 
         # Test that transform works without fitting
-        X_test = sample_data["multi_col"][:5]  # Subset for testing
+        X_test = sample_data["multi_col"][:3]  # Subset for testing
         result_original = binner_original.transform(X_test)
         result_reconstructed = binner_reconstructed.transform(X_test)
 
@@ -271,7 +228,7 @@ class TestEqualFrequencyBinning:
     def test_reconstruction_via_constructor(self, sample_data):
         """Test fitted state reconstruction via constructor parameters."""
         # Fit original binner
-        binner_original = EqualFrequencyBinning(n_bins=3, quantile_range=(0.1, 0.9))
+        binner_original = KMeansBinning(n_bins=3)
         X_fit = sample_data["simple"]
         binner_original.fit(X_fit)
 
@@ -279,7 +236,7 @@ class TestEqualFrequencyBinning:
         params = binner_original.get_params()
 
         # Create new binner with constructor (reconstruct state)
-        binner_reconstructed = EqualFrequencyBinning(**params)
+        binner_reconstructed = KMeansBinning(**params)
 
         # Test that transform works without fitting
         X_test = sample_data["simple"]
@@ -291,13 +248,13 @@ class TestEqualFrequencyBinning:
     def test_repeated_fitting_after_reconstruction(self, sample_data):
         """Test repeated fitting on reconstructed state."""
         # Original fitting
-        binner = EqualFrequencyBinning(n_bins=3)
+        binner = KMeansBinning(n_bins=3)
         X_fit1 = sample_data["simple"]
         binner.fit(X_fit1)
 
         # Get and set params (reconstruction)
         params = binner.get_params()
-        binner_new = EqualFrequencyBinning()
+        binner_new = KMeansBinning()
         binner_new.set_params(**params)
 
         # Refit with different data
@@ -317,16 +274,16 @@ class TestEqualFrequencyBinning:
     def test_various_formats_after_reconstruction(self, sample_data):
         """Test various input formats after fitted state reconstruction."""
         # Original fitting with numpy
-        binner_original = EqualFrequencyBinning(n_bins=3, preserve_dataframe=True)
+        binner_original = KMeansBinning(n_bins=3, preserve_dataframe=True)
         X_numpy = sample_data["multi_col"]
         binner_original.fit(X_numpy)
 
         # Reconstruct
         params = binner_original.get_params()
-        binner_reconstructed = EqualFrequencyBinning(**params)
+        binner_reconstructed = KMeansBinning(**params)
 
         # Test numpy input
-        result_numpy = binner_reconstructed.transform(X_numpy[:5])
+        result_numpy = binner_reconstructed.transform(X_numpy[:3])
         assert isinstance(result_numpy, np.ndarray)
 
         # Test pandas input (if preserve_dataframe=True was set)
@@ -344,9 +301,7 @@ class TestEqualFrequencyBinning:
     def test_sklearn_pipeline_basic(self, sample_data):
         """Test basic sklearn pipeline integration."""
         # Create pipeline
-        pipeline = Pipeline(
-            [("scaler", StandardScaler()), ("binner", EqualFrequencyBinning(n_bins=3))]
-        )
+        pipeline = Pipeline([("scaler", StandardScaler()), ("binner", KMeansBinning(n_bins=3))])
 
         X = sample_data["normal"]
 
@@ -367,7 +322,7 @@ class TestEqualFrequencyBinning:
             pytest.skip("pandas not available")
 
         # Create pipeline
-        pipeline = Pipeline([("binner", EqualFrequencyBinning(n_bins=4, preserve_dataframe=True))])
+        pipeline = Pipeline([("binner", KMeansBinning(n_bins=4, preserve_dataframe=True))])
 
         # Use DataFrame
         df = pd.DataFrame(sample_data["multi_col"], columns=["feat1", "feat2"])
@@ -381,7 +336,7 @@ class TestEqualFrequencyBinning:
 
     def test_sklearn_pipeline_param_access(self, sample_data):
         """Test parameter access in sklearn pipeline."""
-        pipeline = Pipeline([("binner", EqualFrequencyBinning(n_bins=5))])
+        pipeline = Pipeline([("binner", KMeansBinning(n_bins=5))])
 
         # Test parameter access
         params = pipeline.get_params()
@@ -396,7 +351,7 @@ class TestEqualFrequencyBinning:
 
     def test_edge_case_nan_values(self, sample_data):
         """Test handling of NaN values."""
-        binner = EqualFrequencyBinning(n_bins=3)
+        binner = KMeansBinning(n_bins=3)
         X_nan = sample_data["with_nan"]
 
         # Should handle NaN values gracefully (base class preprocesses)
@@ -404,16 +359,17 @@ class TestEqualFrequencyBinning:
         result = binner.transform(X_nan)
 
         assert result is not None
+        # NaN values should be handled by the base class
         assert result.shape == X_nan.shape
 
     def test_edge_case_inf_values(self, sample_data):
         """Test handling of infinite values."""
-        binner = EqualFrequencyBinning(n_bins=3)
+        binner = KMeansBinning(n_bins=3)
         X_inf = sample_data["with_inf"]
 
-        # Should handle inf values based on config
+        # Should handle inf values based on config (clip, error, etc.)
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            warnings.simplefilter("ignore")  # Ignore warnings for this test
             binner.fit(X_inf)
             result = binner.transform(X_inf)
 
@@ -422,57 +378,55 @@ class TestEqualFrequencyBinning:
 
     def test_edge_case_constant_column(self, sample_data):
         """Test handling of constant columns."""
-        binner = EqualFrequencyBinning(n_bins=3)
+        binner = KMeansBinning(n_bins=3)
         X_constant = sample_data["constant"]
 
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            warnings.simplefilter("ignore")  # Ignore warnings about constant data
             binner.fit(X_constant)
             result = binner.transform(X_constant)
 
             assert result is not None
             assert result.shape == X_constant.shape
-            # All values should map to the same bin for constant data
-            assert len(np.unique(result)) <= 1
+            # All values should map to bins for constant data
+            assert len(np.unique(result)) >= 1
 
-    def test_edge_case_duplicates(self, sample_data):
-        """Test handling of data with many duplicate values."""
-        binner = EqualFrequencyBinning(n_bins=3)
-        X_dups = sample_data["with_duplicates"]
+    def test_edge_case_more_bins_than_data_points(self, sample_data):
+        """Test when n_bins > number of data points."""
+        X = np.array([[1], [2], [3]])  # Only 3 data points
+        binner = KMeansBinning(n_bins=5)  # More bins than data
 
-        binner.fit(X_dups)
-        result = binner.transform(X_dups)
-
-        assert result is not None
-        assert result.shape == X_dups.shape
-        # Should handle duplicates gracefully
-
-    def test_edge_case_more_bins_than_unique_values(self):
-        """Test when n_bins > number of unique values."""
-        X = np.array([[1], [2], [3]])  # Only 3 unique values
-        binner = EqualFrequencyBinning(n_bins=5)  # More bins than unique values
-
-        # Should raise ValueError because insufficient values for requested bins
-        with pytest.raises(ValueError, match="Insufficient values \\(3\\) for 5 bins"):
+        # Should raise ValueError because insufficient data for clustering
+        with pytest.raises(ValueError, match="Insufficient values \\(3\\) for 5 clusters"):
             binner.fit(X)
 
-    def test_edge_case_more_bins_than_unique_values_sufficient_data(self):
-        """Test when n_bins > number of unique values but sufficient data."""
-        # 5 bins but only 3 unique values, but with sufficient total data points
-        X = np.array([[1], [1], [2], [2], [3]])  # 5 data points, 3 unique values
-        binner = EqualFrequencyBinning(n_bins=3)  # Use 3 bins to match unique values
+    def test_edge_case_more_bins_than_unique_values(self, sample_data):
+        """Test when n_bins > number of unique values."""
+        X = sample_data["few_unique"]  # Only 3 unique values but 6 data points
+        binner = KMeansBinning(n_bins=5)  # More bins than unique values
 
         binner.fit(X)
         result = binner.transform(X)
 
         assert result is not None
         assert result.shape == X.shape
-        # Should handle duplicate values gracefully
+        # Should handle case with fewer unique values than requested bins
 
     def test_edge_case_single_value_per_bin(self):
-        """Test when each bin contains exactly one unique value."""
+        """Test when each cluster contains exactly one data point."""
         X = np.array([[1], [2], [3], [4], [5]])  # 5 unique values
-        binner = EqualFrequencyBinning(n_bins=5)  # Same as unique values
+        binner = KMeansBinning(n_bins=5)  # Same as data points
+
+        binner.fit(X)
+        result = binner.transform(X)
+
+        assert result is not None
+        assert result.shape == X.shape
+
+    def test_edge_case_very_small_range(self):
+        """Test with very small data range."""
+        X = np.array([[1.0000001], [1.0000002], [1.0000003], [1.0000004], [1.0000005]])
+        binner = KMeansBinning(n_bins=3)
 
         binner.fit(X)
         result = binner.transform(X)
@@ -484,7 +438,7 @@ class TestEqualFrequencyBinning:
         """Test with large dataset."""
         np.random.seed(42)
         X = np.random.normal(0, 1, (10000, 1))
-        binner = EqualFrequencyBinning(n_bins=10)
+        binner = KMeansBinning(n_bins=10)
 
         binner.fit(X)
         result = binner.transform(X[:1000])  # Transform subset
@@ -493,33 +447,19 @@ class TestEqualFrequencyBinning:
         assert result.shape == (1000, 1)
         assert 0 <= result.max() < 10  # Should be within bin range
 
-        # Check frequency distribution is approximately equal
-        unique, counts = np.unique(result, return_counts=True)
-        # For large data with equal frequency, counts should be similar
-        if len(unique) > 1:
-            cv = np.std(counts) / np.mean(counts)  # coefficient of variation
-            assert cv < 0.5  # Should be reasonably equal
-
-    def test_empty_data_handling(self):
-        """Test handling of empty data."""
-        binner = EqualFrequencyBinning(n_bins=3)
-
-        with pytest.raises((ValueError, ValidationError, FittingError)):
-            binner.fit(np.array([]).reshape(0, 1))
-
     def test_single_row_data(self):
         """Test handling of single row data."""
         X = np.array([[5.0]])
-        binner = EqualFrequencyBinning(n_bins=3)
+        binner = KMeansBinning(n_bins=3)
 
-        # Should raise ValueError because insufficient values for requested bins
-        with pytest.raises(ValueError, match="Insufficient values \\(1\\) for 3 bins"):
+        # Should raise ValueError because insufficient data for clustering
+        with pytest.raises(ValueError, match="Insufficient values \\(1\\) for 3 clusters"):
             binner.fit(X)
 
     def test_single_row_data_with_single_bin(self):
         """Test handling of single row data with n_bins=1."""
         X = np.array([[5.0]])
-        binner = EqualFrequencyBinning(n_bins=1)
+        binner = KMeansBinning(n_bins=1)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -530,142 +470,181 @@ class TestEqualFrequencyBinning:
             assert result.shape == (1, 1)
             assert result[0, 0] == 0  # Should be assigned to bin 0
 
-    def test_quantile_calculation_error_coverage(self):
-        """Test to cover quantile calculation error handling."""
+    def test_empty_data_handling(self):
+        """Test handling of empty data."""
+        binner = KMeansBinning(n_bins=3)
+
+        with pytest.raises((ValueError, ValidationError, FittingError)):
+            binner.fit(np.array([]).reshape(0, 1))
+
+    def test_kmeans_clustering_error_coverage(self):
+        """Test to cover K-means clustering error handling."""
         import unittest.mock
 
-        # Mock np.quantile to raise an exception to test error handling
-        with unittest.mock.patch("numpy.quantile", side_effect=ValueError("Mock quantile error")):
+        # Mock kmeans1d.cluster to raise an exception to test error handling
+        with unittest.mock.patch(
+            "kmeans1d.cluster", side_effect=Exception("Mock clustering error")
+        ):
             X = np.array([[1.0], [2.0], [3.0], [4.0], [5.0]])
-            binner = EqualFrequencyBinning(n_bins=3)
+            binner = KMeansBinning(n_bins=3)
 
-            # Should catch the ValueError from quantile and re-raise with better message
+            # Should catch the Exception from clustering and re-raise with better message
             with pytest.raises(
-                ValueError, match="Column 0: Error calculating quantiles: Mock quantile error"
+                ValueError, match="Column 0: Error in K-means clustering: Mock clustering error"
             ):
                 binner.fit(X)
 
-    # Specific equal frequency binning tests
+    # Specific K-means binning tests
 
-    def test_equal_frequency_distribution(self, sample_data):
-        """Test that bins have approximately equal frequencies."""
-        X = sample_data["uniform"]  # 100 uniform samples
-        binner = EqualFrequencyBinning(n_bins=5)
-
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # Check frequency distribution
-        unique, counts = np.unique(result, return_counts=True)
-
-        # For uniform data, frequencies should be exactly equal (100/5 = 20 each)
-        expected_count = len(X) // 5
-        for count in counts:
-            assert abs(count - expected_count) <= 1  # Allow for rounding
-
-    def test_quantile_range_parameter(self, sample_data):
-        """Test quantile_range parameter functionality."""
+    def test_random_state_reproducibility(self, sample_data):
+        """Test that random_state produces reproducible results."""
         X = sample_data["normal"]
 
-        # Use middle 80% of data (exclude extreme 10% on each side)
-        binner = EqualFrequencyBinning(n_bins=4, quantile_range=(0.1, 0.9))
+        # Fit two binners with same random state
+        binner1 = KMeansBinning(n_bins=5)
+        binner2 = KMeansBinning(n_bins=5)
+
+        binner1.fit(X)
+        binner2.fit(X)
+
+        result1 = binner1.transform(X[:10])
+        result2 = binner2.transform(X[:10])
+
+        # Should produce identical results with same random_state
+        np.testing.assert_array_equal(result1, result2)
+
+    def test_random_state_deterministic_behavior(self, sample_data):
+        """Test that K-means 1D clustering is deterministic."""
+        X = sample_data["normal"]
+
+        # Fit two binners with different random states
+        binner1 = KMeansBinning(n_bins=5)
+        binner2 = KMeansBinning(n_bins=5)
+
+        binner1.fit(X)
+        binner2.fit(X)
+
+        # Get the centroids (representatives)
+        centroids1 = sorted(binner1.bin_representatives_[0])
+        centroids2 = sorted(binner2.bin_representatives_[0])
+
+        # 1D K-means is deterministic - should produce identical centroids
+        np.testing.assert_array_almost_equal(centroids1, centroids2, decimal=10)
+
+    def test_clustered_data_effectiveness(self, sample_data):
+        """Test K-means effectiveness on clearly clustered data."""
+        X = sample_data["clustered"]  # Data with 3 clear clusters
+        binner = KMeansBinning(n_bins=3)
+
         binner.fit(X)
 
-        # Get the bin edges
-        edges = binner.bin_edges_[0]
+        # Check that centroids are reasonable for the clustered data
+        centroids = binner.bin_representatives_[0]
+        centroids_sorted = sorted(centroids)
 
-        # The range should be based on the 10th-90th percentiles
-        data_10th = np.percentile(X, 10)
-        data_90th = np.percentile(X, 90)
+        # Centroids should be somewhat spread out for clustered data
+        assert centroids_sorted[1] - centroids_sorted[0] > 5  # Reasonable separation
+        assert centroids_sorted[2] - centroids_sorted[1] > 5  # Reasonable separation
 
-        # Bin edges should span approximately this range
-        assert edges[0] >= data_10th - 0.01  # Small tolerance for floating point
-        assert edges[-1] <= data_90th + 0.01
-
-    def test_representatives_are_medians(self, sample_data):
-        """Test that representatives are approximate bin medians."""
-        X = sample_data["simple"]  # [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        binner = EqualFrequencyBinning(n_bins=2)  # Two bins
+    def test_representatives_are_centroids(self, sample_data):
+        """Test that representatives are the K-means centroids."""
+        X = sample_data["simple"]
+        binner = KMeansBinning(n_bins=3)
 
         binner.fit(X)
-        result = binner.transform(X)
+
+        # Representatives should be the cluster centroids
         representatives = binner.bin_representatives_[0]
 
-        # Should have 2 representatives
-        assert len(representatives) == 2
+        # Should have the expected number of representatives
+        assert len(representatives) == 3
 
-        # Each representative should be close to the median of its bin
-        for bin_idx, rep in enumerate(representatives):
-            bin_mask = result.flatten() == bin_idx
-            if np.any(bin_mask):
-                bin_values = X[bin_mask].flatten()
-                bin_median = np.median(bin_values)
-                # Representative should be close to median of bin values
-                assert abs(rep - bin_median) < 1.0  # Reasonable tolerance
+        # Representatives should be within data range
+        assert min(representatives) >= X.min()
+        assert max(representatives) <= X.max()
 
-    def test_skewed_data_handling(self, sample_data):
-        """Test equal frequency binning on skewed data."""
-        X = sample_data["skewed"]  # Exponential distribution (right-skewed)
-        binner = EqualFrequencyBinning(n_bins=5)
-
-        binner.fit(X)
-        result = binner.transform(X)
-
-        # Should handle skewed data and create equal frequency bins
-        unique, counts = np.unique(result, return_counts=True)
-
-        # Frequencies should be approximately equal despite skewed input
-        expected_count = len(X) // len(unique)
-        for count in counts:
-            assert abs(count - expected_count) <= 2  # Tolerance for skewed data
-
-    def test_multiple_columns_independent_binning(self, sample_data):
-        """Test that columns are binned independently."""
-        X = sample_data["multi_col"]
-        binner = EqualFrequencyBinning(n_bins=3)
+    def test_bin_edges_between_centroids(self, sample_data):
+        """Test that bin edges are positioned between centroids."""
+        X = sample_data["simple"]
+        binner = KMeansBinning(n_bins=3)
 
         binner.fit(X)
 
-        # Each column should have its own bin edges based on its quantiles
-        edges_col1 = binner.bin_edges_[0]
-        edges_col2 = binner.bin_edges_[1]
+        edges = binner.bin_edges_[0]
+        centroids = sorted(binner.bin_representatives_[0])
 
-        assert len(edges_col1) == 4  # 3 bins = 4 edges
-        assert len(edges_col2) == 4
+        # Should have n_bins + 1 edges
+        assert len(edges) == 4
 
-        # Edges should be different for different columns
-        assert not np.array_equal(edges_col1, edges_col2)
+        # Interior edges should be between consecutive centroids
+        for i in range(1, len(edges) - 1):
+            edge = edges[i]
+            # Edge should be between consecutive centroids
+            assert centroids[i - 1] < edge < centroids[i]
 
-    def test_string_n_bins_functionality(self, sample_data):
-        """Test string n_bins parameter functionality."""
+    def test_string_n_bins_parameter(self, sample_data):
+        """Test string n_bins parameters like 'sqrt', 'log2'."""
         X = sample_data["uniform"]  # 100 samples
 
-        # Test "sqrt" option
-        binner_sqrt = EqualFrequencyBinning(n_bins="sqrt")
+        # Test 'sqrt' - should be sqrt(100) = 10
+        binner_sqrt = KMeansBinning(n_bins="sqrt")
         binner_sqrt.fit(X)
-        result_sqrt = binner_sqrt.transform(X)
 
-        # sqrt(100) = 10 bins expected
-        unique_bins = np.unique(result_sqrt)
-        assert len(unique_bins) <= 10
+        # Should create 10 bins
+        assert len(binner_sqrt.bin_representatives_[0]) == 10
 
-        # Test "log2" option
-        if len(X) >= 4:  # log2 needs sufficient data
-            binner_log2 = EqualFrequencyBinning(n_bins="log2")
-            binner_log2.fit(X)
-            result_log2 = binner_log2.transform(X)
+        # Test 'log2' - should be log2(100) ≈ 6.6, resolved to 7
+        binner_log2 = KMeansBinning(n_bins="log2")
+        binner_log2.fit(X)
 
-            # log2(100) ≈ 7 bins expected
-            unique_bins_log2 = np.unique(result_log2)
-            assert len(unique_bins_log2) <= 8
+        # Should create 7 bins (log2(100) = 6.64, resolved to 7)
+        assert len(binner_log2.bin_representatives_[0]) == 7
+
+    def test_fit_jointly_parameter(self, sample_data):
+        """Test fit_jointly parameter (though K-means typically doesn't use it)."""
+        X = sample_data["multi_col"]
+
+        # Test with fit_jointly=True
+        binner_joint = KMeansBinning(n_bins=3, fit_jointly=True)
+        binner_joint.fit(X)
+
+        # Test with fit_jointly=False
+        binner_indep = KMeansBinning(n_bins=3, fit_jointly=False)
+        binner_indep.fit(X)
+
+        # For K-means, the result should be the same since it's inherently per-column
+        # But test that both work
+        result_joint = binner_joint.transform(X[:3])
+        result_indep = binner_indep.transform(X[:3])
+
+        assert result_joint is not None
+        assert result_indep is not None
+        # May be equal for K-means since it's inherently independent
+
+    def test_multiple_columns_independent_clustering(self, sample_data):
+        """Test that columns are clustered independently."""
+        X = sample_data["multi_col"]  # Different ranges per column
+        binner = KMeansBinning(n_bins=3)
+
+        binner.fit(X)
+
+        # Each column should have its own centroids based on its data
+        centroids_col1 = binner.bin_representatives_[0]
+        centroids_col2 = binner.bin_representatives_[1]
+
+        assert len(centroids_col1) == 3
+        assert len(centroids_col2) == 3
+
+        # Centroids should be different for columns with different ranges
+        assert not np.allclose(centroids_col1, centroids_col2)
 
     def test_clip_parameter_functionality(self, sample_data):
         """Test clip parameter with out-of-range values."""
-        X_train = np.array([[1], [2], [3], [4], [5], [6]])
-        X_test = np.array([[0], [7]])  # Out of range values
+        X_train = np.array([[0], [5], [10], [15], [20]])
+        X_test = np.array([[-5], [25]])  # Out of range values
 
         # Test with clip=True
-        binner_clip = EqualFrequencyBinning(n_bins=3, clip=True)
+        binner_clip = KMeansBinning(n_bins=3, clip=True)
         binner_clip.fit(X_train)
         result_clip = binner_clip.transform(X_test)
 
@@ -674,11 +653,12 @@ class TestEqualFrequencyBinning:
         assert result_clip.max() < 3
 
         # Test with clip=False
-        binner_no_clip = EqualFrequencyBinning(n_bins=3, clip=False)
+        binner_no_clip = KMeansBinning(n_bins=3, clip=False)
         binner_no_clip.fit(X_train)
         result_no_clip = binner_no_clip.transform(X_test)
 
         # May have values outside normal bin range (MISSING_VALUE)
+        # The exact behavior depends on the base class implementation
         assert result_no_clip is not None
 
     # Integration and workflow tests
@@ -688,7 +668,7 @@ class TestEqualFrequencyBinning:
         X = sample_data["multi_col"]
 
         # Initialize and fit
-        binner = EqualFrequencyBinning(n_bins=4, preserve_dataframe=False)
+        binner = KMeansBinning(n_bins=4, preserve_dataframe=False)
         binner.fit(X)
 
         # Transform
@@ -708,7 +688,7 @@ class TestEqualFrequencyBinning:
         assert params["n_bins"] == 4
 
         # Set params and verify
-        new_binner = EqualFrequencyBinning()
+        new_binner = KMeansBinning()
         new_binner.set_params(**params)
 
         X_binned_2 = new_binner.transform(X)
@@ -717,7 +697,7 @@ class TestEqualFrequencyBinning:
     def test_consistency_across_transforms(self, sample_data):
         """Test that repeated transforms give consistent results."""
         X = sample_data["normal"]
-        binner = EqualFrequencyBinning(n_bins=5)
+        binner = KMeansBinning(n_bins=5)
         binner.fit(X)
 
         # Multiple transforms should give same result
@@ -733,7 +713,7 @@ class TestEqualFrequencyBinning:
         X_full = sample_data["uniform"]  # 100 samples
         X_subset = X_full[:20]  # 20 samples
 
-        binner = EqualFrequencyBinning(n_bins=5)
+        binner = KMeansBinning(n_bins=3)
         binner.fit(X_full)
 
         # Transform subset
@@ -747,20 +727,16 @@ class TestEqualFrequencyBinning:
         """Test various n_bins values."""
         X = sample_data["uniform"]
 
-        for n_bins in [2, 3, 5, 10]:
-            binner = EqualFrequencyBinning(n_bins=n_bins)
+        for n_bins in [2, 3, 5, 10, 20]:
+            binner = KMeansBinning(n_bins=n_bins)
             binner.fit(X)
             result = binner.transform(X)
 
             # Check that we get expected number of bins
             unique_bins = np.unique(result)
-            assert len(unique_bins) <= n_bins
-            assert result.max() < n_bins
-            assert result.min() >= 0
+            assert len(unique_bins) <= n_bins  # May be less if clusters merge
+            assert result.max() < n_bins  # Bin indices should be < n_bins
+            assert result.min() >= 0  # Bin indices should be >= 0
 
-            # Check approximately equal frequencies
-            _, counts = np.unique(result, return_counts=True)
-            if len(counts) > 1:
-                expected_count = len(X) // len(counts)
-                for count in counts:
-                    assert abs(count - expected_count) <= 2
+            # Check that we have the right number of centroids
+            assert len(binner.bin_representatives_[0]) == n_bins

@@ -16,7 +16,6 @@ from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
-    ConfigurationError,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
@@ -37,7 +36,6 @@ class KMeansBinning(IntervalBinningBase):
     def __init__(
         self,
         n_bins: int | str | None = None,
-        random_state: int | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
@@ -50,7 +48,6 @@ class KMeansBinning(IntervalBinningBase):
         # Prepare user parameters for config integration (exclude never-configurable params)
         user_params = {
             "n_bins": n_bins,
-            "random_state": random_state,
             "clip": clip,
             "preserve_dataframe": preserve_dataframe,
             "fit_jointly": fit_jointly,
@@ -63,7 +60,6 @@ class KMeansBinning(IntervalBinningBase):
 
         # Store method-specific parameters
         self.n_bins = resolved_params.get("n_bins", 10)
-        self.random_state = resolved_params.get("random_state", None)
 
         # Initialize parent with resolved parameters (never-configurable params passed as-is)
         IntervalBinningBase.__init__(
@@ -83,14 +79,6 @@ class KMeansBinning(IntervalBinningBase):
 
         # Validate n_bins using centralized utility
         validate_bin_number_parameter(self.n_bins, param_name="n_bins")
-
-        # Validate random_state parameter
-        if self.random_state is not None:
-            if not isinstance(self.random_state, int) or self.random_state < 0:
-                raise ConfigurationError(
-                    "random_state must be a non-negative integer or None",
-                    suggestions=["Example: random_state=42"],
-                )
 
     def _calculate_bins(
         self,
@@ -184,10 +172,6 @@ class KMeansBinning(IntervalBinningBase):
 
         # Perform K-means clustering
         try:
-            # Set random seed if specified
-            if self.random_state is not None:
-                np.random.seed(self.random_state)
-
             # Convert numpy array to list for kmeans1d compatibility
             data_list = x_col.tolist()
             _, centroids = kmeans1d.cluster(data_list, n_bins)
