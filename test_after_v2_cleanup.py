@@ -23,6 +23,7 @@ try:
         SingletonBinning,
         TreeBinning,
     )
+
     print("✅ All imports successful!")
 except ImportError as e:
     print(f"❌ Import error: {e}")
@@ -33,33 +34,37 @@ np.random.seed(42)
 X = np.random.randn(100, 3)
 y = np.random.randint(0, 2, 100)
 
+
 def test_method(method_class, method_name, skip_inverse=False, **kwargs):
     """Test a single binning method."""
     try:
         # Create instance
         binning = method_class(**kwargs)
-        
+
         # Fit the method
         binning.fit(X, y)
-        
+
         # Transform data
         X_transformed = binning.transform(X)
-        
+
         # Check basic properties
         assert X_transformed.shape[0] == X.shape[0], f"Row count mismatch in {method_name}"
-        
+
         # Inverse transform (skip for some methods with known issues)
         if not skip_inverse:
             X_inverse = binning.inverse_transform(X_transformed)
-            assert X_inverse.shape == X.shape, f"Shape mismatch after inverse transform in {method_name}"
-        
+            assert (
+                X_inverse.shape == X.shape
+            ), f"Shape mismatch after inverse transform in {method_name}"
+
         print(f"✅ {method_name}: PASSED")
         return True
-        
+
     except Exception as e:
         print(f"❌ {method_name}: FAILED - {str(e)}")
         traceback.print_exc()
         return False
+
 
 # Test all methods
 methods_to_test = [
@@ -71,12 +76,18 @@ methods_to_test = [
     (GaussianMixtureBinning, "GaussianMixtureBinning", False, {}),
     (IsotonicBinning, "IsotonicBinning", False, {}),
     (KMeansBinning, "KMeansBinning", False, {}),
-    (ManualFlexibleBinning, "ManualFlexibleBinning", True, {
-        "bin_spec": {0: [(-2, 0), (0, 2)], 1: [(-1.5, 1.5)], 2: [(-3, 3)]}
-    }),
-    (ManualIntervalBinning, "ManualIntervalBinning", False, {
-        "bin_edges": {0: [-2, 0, 2], 1: [-1.5, 1.5], 2: [-3, 3]}
-    }),
+    (
+        ManualFlexibleBinning,
+        "ManualFlexibleBinning",
+        True,
+        {"bin_spec": {0: [(-2, 0), (0, 2)], 1: [(-1.5, 1.5)], 2: [(-3, 3)]}},
+    ),
+    (
+        ManualIntervalBinning,
+        "ManualIntervalBinning",
+        False,
+        {"bin_edges": {0: [-2, 0, 2], 1: [-1.5, 1.5], 2: [-3, 3]}},
+    ),
     (SingletonBinning, "SingletonBinning", False, {}),
     (TreeBinning, "TreeBinning", False, {}),
 ]
