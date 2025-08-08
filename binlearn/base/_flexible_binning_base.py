@@ -172,49 +172,6 @@ class FlexibleBinningBase(GeneralBinningBase):
 
         return result
 
-    def _get_column_key(self, target_col: Any, available_keys: ColumnList, col_index: int) -> Any:
-        """Get the appropriate key for looking up bin specifications.
-
-        Handles column key resolution with fallback strategies for
-        different column identifier formats (names vs indices).
-
-        Args:
-            target_col: The target column identifier to find.
-            available_keys: List of available keys in bin specifications.
-            col_index: Index position of the column.
-
-        Returns:
-            The key to use for bin specification lookup.
-
-        Raises:
-            ValueError: If no matching key can be found.
-        """
-        # First try exact match
-        if target_col in available_keys:
-            return target_col
-
-        # Handle feature_N -> N mapping for numpy array inputs
-        if isinstance(target_col, str) and target_col.startswith("feature_"):
-            try:
-                feature_index = int(target_col.split("_")[1])
-                if feature_index in available_keys:
-                    return feature_index
-            except (ValueError, IndexError):
-                pass
-
-        # Handle N -> feature_N mapping
-        if isinstance(target_col, int):
-            feature_name = f"feature_{target_col}"
-            if feature_name in available_keys:
-                return feature_name
-
-        # Try index-based fallback
-        if col_index < len(available_keys):
-            return available_keys[col_index]
-
-        # No match found
-        raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
-
     def _inverse_transform_bins_to_values(
         self, X: np.ndarray[Any, Any], columns: ColumnList
     ) -> np.ndarray[Any, Any]:

@@ -799,6 +799,7 @@ class TestGeneralBinningBase:
         ):
             transformer._validate_params()
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_transform_with_empty_binning_columns_coverage(self):
         """Test that all columns as guidance columns is properly rejected."""
         # Create a transformer with guidance columns that include ALL columns
@@ -814,6 +815,7 @@ class TestGeneralBinningBase:
         with pytest.raises(ValueError, match="All columns are specified as guidance_columns"):
             transformer.fit(X)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_transform_empty_binning_array_line_142(self):
         """Test line 142 - empty binning result when X_binning.shape[1] == 0."""
         # Fit a transformer with some binning columns and some guidance
@@ -876,6 +878,7 @@ class TestGeneralBinningBase:
         finally:
             transformer._inverse_transform_bins_to_values = original_inverse
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_no_columns_available_for_binning_no_guidance(self):
         """Test line 99 - no columns available and no guidance_columns."""
         transformer = MockBinningTransformer(n_bins=5)
@@ -887,6 +890,7 @@ class TestGeneralBinningBase:
         with pytest.raises(ValueError, match="No columns available for binning"):
             transformer.fit(X)
 
+    @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_inverse_transform_column_validation_error_coverage(self):
         """Test lines 163-166 - ValueError from column count validation in inverse_transform."""
         # Create transformer with guidance columns
@@ -990,3 +994,107 @@ class TestGeneralBinningBase:
         result = transformer._resolve_guidance_data_priority(None, None, y_1d)
         assert result is not None
         assert result.shape == (3, 1)  # Should be reshaped
+
+    def test_get_column_key_exact_match(self):
+        """Test _get_column_key with exact match scenarios."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test exact string match
+        available_keys = ["col1", "col2", "col3"]
+        result = transformer._get_column_key("col2", available_keys, 1)
+        assert result == "col2"
+
+        # Test exact integer match
+        available_keys = [0, 1, 2]
+        result = transformer._get_column_key(1, available_keys, 1)
+        assert result == 1
+
+    def test_get_column_key_feature_n_to_n_mapping(self):
+        """Test _get_column_key with feature_N -> N mapping."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test feature_1 -> 1 mapping
+        available_keys = [0, 1, 2]
+        result = transformer._get_column_key("feature_1", available_keys, 1)
+        assert result == 1
+
+        # Test feature_0 -> 0 mapping
+        available_keys = [0, 1, 2]
+        result = transformer._get_column_key("feature_0", available_keys, 0)
+        assert result == 0
+
+    def test_get_column_key_n_to_feature_n_mapping(self):
+        """Test _get_column_key with N -> feature_N mapping."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test 1 -> feature_1 mapping
+        available_keys = ["feature_0", "feature_1", "feature_2"]
+        result = transformer._get_column_key(1, available_keys, 1)
+        assert result == "feature_1"
+
+        # Test 0 -> feature_0 mapping
+        available_keys = ["feature_0", "feature_1", "feature_2"]
+        result = transformer._get_column_key(0, available_keys, 0)
+        assert result == "feature_0"
+
+    def test_get_column_key_n_to_feature_n_fallback(self):
+        """Test _get_column_key with N -> feature_N mapping that falls back to index."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test integer target_col where feature_N format is not in available_keys
+        # This should test the branch where feature_name is NOT in available_keys
+        # and it falls through to index-based fallback
+        available_keys = ["col_a", "col_b", "col_c"]  # No feature_N format
+        result = transformer._get_column_key(1, available_keys, 1)
+        assert result == "col_b"  # Should fallback to available_keys[1]
+
+        # Test with integer that would create feature_5 but only feature_0-2 exist
+        available_keys = ["feature_0", "feature_1", "feature_2"]
+        result = transformer._get_column_key(5, available_keys, 2)  # feature_5 not in keys
+        assert result == "feature_2"  # Should fallback to available_keys[2]
+
+    def test_get_column_key_index_fallback(self):
+        """Test _get_column_key with index-based fallback."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test fallback to available_keys by index
+        available_keys = ["alpha", "beta", "gamma"]
+        result = transformer._get_column_key("unknown_col", available_keys, 1)
+        assert result == "beta"  # available_keys[1]
+
+        # Test fallback at index 0
+        available_keys = ["first", "second", "third"]
+        result = transformer._get_column_key("missing", available_keys, 0)
+        assert result == "first"  # available_keys[0]
+
+    def test_get_column_key_invalid_feature_parsing(self):
+        """Test _get_column_key with invalid feature_N formats (should fallback)."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test invalid feature format (non-numeric after underscore)
+        available_keys = ["col1", "col2"]
+        result = transformer._get_column_key("feature_abc", available_keys, 1)
+        assert result == "col2"  # Should fallback to index
+
+        # Test malformed feature format (multiple underscores)
+        available_keys = ["col1", "col2"]
+        result = transformer._get_column_key("feature_1_extra", available_keys, 0)
+        assert result == "col1"  # Should fallback to index
+
+    def test_get_column_key_no_match_error(self):
+        """Test _get_column_key raises ValueError when no match found."""
+        transformer = MockBinningTransformer(n_bins=5)
+
+        # Test no match found with index out of range
+        available_keys = ["col1", "col2"]
+        with pytest.raises(
+            ValueError, match="No bin specification found for column unknown.*index 5"
+        ):
+            transformer._get_column_key("unknown", available_keys, 5)
+
+        # Test no match with empty available_keys
+        available_keys = []
+        with pytest.raises(
+            ValueError, match="No bin specification found for column missing.*index 0"
+        ):
+            transformer._get_column_key("missing", available_keys, 0)

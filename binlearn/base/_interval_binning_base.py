@@ -196,49 +196,6 @@ class IntervalBinningBase(GeneralBinningBase):
 
         return result
 
-    def _get_column_key(self, target_col: Any, available_keys: ColumnList, col_index: int) -> Any:
-        """Get the appropriate key for looking up bin specifications.
-
-        Handles column key resolution with fallback strategies for
-        different column identifier formats (names vs indices).
-
-        Args:
-            target_col: The target column identifier to find.
-            available_keys: List of available keys in bin specifications.
-            col_index: Index position of the column.
-
-        Returns:
-            The key to use for bin specification lookup.
-
-        Raises:
-            ValueError: If no matching key can be found.
-        """
-        # First try exact match
-        if target_col in available_keys:
-            return target_col
-
-        # Handle feature_N -> N mapping for numpy array inputs
-        if isinstance(target_col, str) and target_col.startswith("feature_"):
-            try:
-                feature_index = int(target_col.split("_")[1])
-                if feature_index in available_keys:
-                    return feature_index
-            except (ValueError, IndexError):
-                pass
-
-        # Handle N -> feature_N mapping
-        if isinstance(target_col, int):
-            feature_name = f"feature_{target_col}"
-            if feature_name in available_keys:
-                return feature_name
-
-        # Try index-based fallback
-        if col_index < len(available_keys):
-            return available_keys[col_index]
-
-        # No match found
-        raise ValueError(f"No bin specification found for column {target_col} (index {col_index})")
-
     def _inverse_transform_bins_to_values(
         self, X: np.ndarray[Any, Any], columns: ColumnList
     ) -> np.ndarray[Any, Any]:
@@ -265,20 +222,14 @@ class IntervalBinningBase(GeneralBinningBase):
     def _validate_and_preprocess_column(
         self, x_col: np.ndarray[Any, Any], col_id: Any
     ) -> np.ndarray[Any, Any]:
-        """Validate and preprocess column data for interval binning.
-
-        Handles common data quality issues:
-        - Throws error for all-NaN columns
-        - Converts inf/-inf to finite boundary values
-        - Handles constant columns by adding small epsilon
-        - Returns preprocessed column ready for binning
+        """Validate column data for interval binning.
 
         Args:
             x_col: Raw column data
             col_id: Column identifier for error messages
 
         Returns:
-            Preprocessed column data ready for binning
+            The original column data (unchanged)
 
         Raises:
             FittingError: If column contains only NaN values
@@ -287,54 +238,7 @@ class IntervalBinningBase(GeneralBinningBase):
         if np.all(np.isnan(x_col)):
             raise FittingError(f"Column {col_id} contains only NaN values. Cannot perform binning.")
 
-        # Work with a copy to avoid modifying input data
-        x_processed: np.ndarray[Any, Any] = x_col.copy()
-
-        # Handle inf/-inf values by replacing with finite boundary values
-        if np.any(np.isinf(x_processed)):
-            # Find finite values to determine reasonable replacement values
-            finite_mask = np.isfinite(x_processed)
-
-            if np.any(finite_mask):
-                # Use finite values to determine range
-                finite_values = x_processed[finite_mask]
-                finite_min = np.min(finite_values)
-                finite_max = np.max(finite_values)
-
-                # Calculate a reasonable extension beyond the finite range
-                if finite_min == finite_max:
-                    # All finite values are the same
-                    range_extension = max(abs(finite_min) * 0.1, 1.0)
-                else:
-                    range_extension = (finite_max - finite_min) * 0.1
-
-                # Replace inf/-inf with extended boundary values
-                x_processed[x_processed == np.inf] = finite_max + range_extension
-                x_processed[x_processed == -np.inf] = finite_min - range_extension
-            else:
-                # Only inf/-inf values exist, use default range
-                x_processed[x_processed == np.inf] = 1.0
-                x_processed[x_processed == -np.inf] = -1.0
-
-        # Handle constant columns (after inf handling)
-        finite_mask = np.isfinite(x_processed)
-        if np.any(finite_mask):
-            finite_values = x_processed[finite_mask]
-            if len(np.unique(finite_values)) == 1:
-                # Column is constant - add small epsilon
-                constant_value = finite_values[0]
-                epsilon = max(abs(constant_value) * 1e-8, 1e-8)
-
-                # Create small variation around the constant
-                # Half the values get -epsilon, half get +epsilon
-                n_values = len(finite_values)
-                variations = np.full(n_values, epsilon)
-                variations[: n_values // 2] = -epsilon
-
-                # Apply variations only to finite values
-                x_processed[finite_mask] = constant_value + variations
-
-        return x_processed
+        return x_col
 
     @abstractmethod
     def _calculate_bins(
