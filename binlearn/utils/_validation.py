@@ -75,7 +75,17 @@ def resolve_n_bins_parameter(
         - Freedman-Diaconis rule requires additional data analysis
         - For very small datasets, may return 1 regardless of specification
     """
-    # Handle direct integer specification
+    # Handle direct integer specification (but reject booleans explicitly)
+    if isinstance(n_bins, bool):
+        raise ConfigurationError(
+            f"{param_name} must be an integer or string, got {type(n_bins).__name__}",
+            suggestions=[
+                f"Use an integer: {param_name}=10",
+                f'Use a string specification: {param_name}="sqrt"',
+                'Valid strings: "sqrt", "log", "log2", "log10", "sturges"',
+            ],
+        )
+
     if isinstance(n_bins, int):
         if n_bins < 1:
             raise ConfigurationError(
@@ -148,7 +158,7 @@ def resolve_n_bins_parameter(
                 ],
             )
 
-    except (ValueError, OverflowError) as e:
+    except (ValueError, OverflowError, TypeError) as e:
         raise ConfigurationError(
             f'Failed to compute {param_name} from "{n_bins}" with {n_samples} samples: {str(e)}',
             suggestions=[
@@ -382,6 +392,16 @@ def validate_bin_number_parameter(
     """
     if valid_strings is None:
         valid_strings = {"sqrt", "log", "ln", "log2", "log10", "sturges"}
+
+    # Explicitly reject booleans (even though bool is subclass of int)
+    if isinstance(value, bool):
+        raise ConfigurationError(
+            f"{param_name} must be a positive integer",
+            suggestions=[
+                f"Use an integer: {param_name}=10",
+                f'Use a string specification: {param_name}="sqrt"',
+            ],
+        )
 
     if isinstance(value, int):
         if value < 1:
