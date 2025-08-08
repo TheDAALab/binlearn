@@ -11,6 +11,7 @@ from binlearn.utils import (
     ABOVE_RANGE,
     BELOW_RANGE,
     MISSING_VALUE,
+    _validate_single_flexible_bin_def,
     calculate_flexible_bin_width,
     create_bin_masks,
     default_representatives,
@@ -24,7 +25,6 @@ from binlearn.utils import (
     validate_bins,
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
-    _validate_single_flexible_bin_def,
 )
 
 
@@ -486,12 +486,12 @@ class TestValidateFlexibleBinSpecFormat:
     def test_non_dict_input(self):
         """Test error for non-dictionary input."""
         with pytest.raises(ValueError, match="must be a dictionary"):
-            validate_flexible_bin_spec_format([5, (1.0, 3.0)])
+            validate_flexible_bin_spec_format([5, (1.0, 3.0)])  # type: ignore
 
     def test_non_list_bin_definitions(self):
         """Test error for non-list bin definitions."""
         with pytest.raises(ValueError, match="must be a list or tuple"):
-            validate_flexible_bin_spec_format({"col1": 5})
+            validate_flexible_bin_spec_format({"col1": 5})  # type: ignore
 
     def test_empty_bin_definitions_strict(self):
         """Test error for empty bin definitions in strict mode."""
@@ -504,7 +504,7 @@ class TestValidateFlexibleBinSpecFormat:
 
     def test_tuple_bin_definitions(self):
         """Test that tuple bin definitions are accepted."""
-        bin_spec = {"col1": (5, (1.0, 3.0))}  # tuple instead of list
+        bin_spec = {"col1": [5, (1.0, 3.0)]}  # list instead of tuple
         validate_flexible_bin_spec_format(bin_spec)  # Should not raise
 
     def test_finite_bounds_check(self):

@@ -4,23 +4,20 @@ This module tests all functions in the data handling utility module
 to achieve 100% test coverage, including edge cases and error conditions.
 """
 
-import numpy as np
-import pytest
 from unittest.mock import patch
 
+import numpy as np
+import pytest
+
 # Import binlearn level config variables
-from binlearn import PANDAS_AVAILABLE
-from binlearn import POLARS_AVAILABLE
-
-from binlearn import pd, pl
-
+from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.utils._data_handling import (
-    prepare_array,
-    return_like_input,
-    prepare_input_with_columns,
+    _determine_columns,
     _is_pandas_df,
     _is_polars_df,
-    _determine_columns,
+    prepare_array,
+    prepare_input_with_columns,
+    return_like_input,
 )
 
 

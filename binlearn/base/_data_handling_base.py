@@ -48,7 +48,7 @@ class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
             and callable(getattr(self, "_get_binning_columns", None))
         ):
             # Use dynamic binning columns computation
-            original_columns = getattr(self, "_get_binning_columns")()
+            original_columns = self._get_binning_columns()
 
         return prepare_input_with_columns(X, fitted=fitted, original_columns=original_columns)
 
