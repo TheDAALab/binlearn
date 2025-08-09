@@ -229,6 +229,19 @@ class GeneralBinningBase(
             else self.guidance_columns
         )
 
+        # Convert integer indices to column names if needed
+        normalized_guidance_cols = []
+        for col in guidance_cols:
+            if isinstance(col, int):
+                if 0 <= col < len(columns):
+                    normalized_guidance_cols.append(columns[col])
+                else:
+                    raise ValueError(
+                        f"Column index {col} is out of range for {len(columns)} columns"
+                    )
+            else:
+                normalized_guidance_cols.append(col)
+
         # Separate columns
         binning_indices = []
         guidance_indices = []
@@ -236,7 +249,7 @@ class GeneralBinningBase(
         guidance_column_names = []
 
         for i, col in enumerate(columns):
-            if col in guidance_cols:
+            if col in normalized_guidance_cols:
                 guidance_indices.append(i)
                 guidance_column_names.append(col)
             else:

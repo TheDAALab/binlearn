@@ -254,9 +254,11 @@ class TestSupervisedBinningBase:
         feature = np.array([1.0, 2.0, 3.0, 4.0])
         target = np.array([[0], [np.nan], [1], [np.inf]])  # Missing values in target
 
-        cleaned_feature, cleaned_target = binner._validate_feature_target_pair(
-            feature, target, "col1"
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # Ignore warnings for this basic functionality test
+            cleaned_feature, cleaned_target = binner._validate_feature_target_pair(
+                feature, target, "col1"
+            )
 
         # Should remove rows with invalid target values
         assert np.array_equal(cleaned_feature, [1.0, 3.0])

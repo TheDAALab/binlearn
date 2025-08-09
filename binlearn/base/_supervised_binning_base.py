@@ -149,6 +149,19 @@ class SupervisedBinningBase(IntervalBinningBase):
         cleaned_feature = feature_data[target_valid]
         cleaned_target = target_data[target_valid]
 
+        # Warn if missing values were removed, but only if some valid data remains
+        # and if a significant portion was removed (more than 5% OR more than 5 rows)
+        removed_count = len(feature_data) - len(cleaned_feature)
+        if removed_count > 0 and len(cleaned_feature) >= 2:
+            removal_ratio = removed_count / len(feature_data)
+            if removal_ratio > 0.05 or removed_count > 5:
+                warnings.warn(
+                    f"Column {col_id}: Removed {removed_count} rows with missing values in target data. "
+                    f"Using {len(cleaned_feature)} valid samples for binning.",
+                    DataQualityWarning,
+                    stacklevel=2,
+                )
+
         # Check if we have sufficient data after cleaning
         if len(cleaned_feature) < 2:
             warnings.warn(

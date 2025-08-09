@@ -52,8 +52,8 @@ class TreeBinning(SupervisedBinningBase):
         # Remove None values to allow config defaults to take effect
         user_params = {k: v for k, v in user_params.items() if v is not None}
 
-        # Apply configuration defaults for tree method
-        resolved_params = apply_config_defaults("tree", user_params)
+        # Apply configuration defaults for supervised method
+        resolved_params = apply_config_defaults("supervised", user_params)
 
         # Store method-specific parameters
         self.task_type = resolved_params.get("task_type", "classification")
@@ -87,12 +87,6 @@ class TreeBinning(SupervisedBinningBase):
         """Validate Tree binning parameters."""
         # Call parent validation
         SupervisedBinningBase._validate_params(self)
-
-        # Validate task_type parameter
-        if self.task_type not in ["classification", "regression"]:
-            raise ConfigurationError(
-                f"task_type must be 'classification' or 'regression', got '{self.task_type}'"
-            )
 
         # Validate tree_params if provided
         if self.tree_params is not None:
@@ -159,12 +153,17 @@ class TreeBinning(SupervisedBinningBase):
         if guidance_data is None:
             raise FittingError(f"Column {col_id}: guidance_data is required for tree binning")
 
-        # Check for insufficient data
+        # Validate and clean feature-target pairs (removes NaN/inf from target)
+        x_col_clean, guidance_clean = self._validate_feature_target_pair(
+            x_col, guidance_data, col_id
+        )
+
+        # Check for insufficient data after cleaning
         min_samples_split = (self.tree_params or {}).get("min_samples_split", 2)
-        if len(x_col) < min_samples_split:
+        if len(x_col_clean) < min_samples_split:
             raise FittingError(
-                f"Column {col_id}: Insufficient data points ({len(x_col)}) "
-                f"for tree binning. Need at least {min_samples_split}."
+                f"Column {col_id}: Insufficient data points ({len(x_col_clean)}) "
+                f"for tree binning after cleaning. Need at least {min_samples_split}."
             )
 
         # Fit decision tree
@@ -172,9 +171,9 @@ class TreeBinning(SupervisedBinningBase):
             if self._tree_template is None:
                 raise FittingError("Tree template not initialized")
             tree = clone(self._tree_template)
-            # Reshape x_col to 2D for sklearn compatibility
-            x_col_2d = x_col.reshape(-1, 1)
-            tree.fit(x_col_2d, guidance_data)
+            # Reshape x_col_clean to 2D for sklearn compatibility
+            x_col_2d = x_col_clean.reshape(-1, 1)
+            tree.fit(x_col_2d, guidance_clean)
         except Exception as e:
             raise FittingError(
                 f"Column {col_id}: Failed to fit decision tree: {str(e)}",
@@ -186,24 +185,27 @@ class TreeBinning(SupervisedBinningBase):
             ) from e
 
         # Extract split points from the tree
-        split_points = self._extract_split_points(tree, x_col)
+        split_points = self._extract_split_points(tree, x_col_clean)
 
         # Store tree information for later access
         self._store_tree_info(tree, col_id)
 
         # Create bin edges
-        data_min: float = float(np.min(x_col))
-        data_max: float = float(np.max(x_col))
+        data_min: float = float(np.min(x_col_clean))
+        data_max: float = float(np.max(x_col_clean))
 
-        # Combine data bounds with split points
-        all_edges = [data_min] + sorted(split_points) + [data_max]
-
-        # Remove duplicates while preserving order
+        # Handle constant column case: create bins with eps margins
         config = get_config()
-        bin_edges: list[float] = []
-        for edge in all_edges:
-            if not bin_edges or abs(edge - bin_edges[-1]) > config.float_tolerance:
-                bin_edges.append(edge)
+        if abs(data_max - data_min) <= config.float_tolerance:
+            # Constant column: create edges at constant_value ± eps
+            constant_value = data_min  # Same as data_max
+            eps = config.float_tolerance * 10  # Use larger margin than tolerance
+            bin_edges = [constant_value - eps, constant_value + eps]
+        else:
+            # Combine data bounds with split points
+            all_edges = [data_min] + sorted(split_points) + [data_max]
+            # Remove duplicates while preserving order
+            bin_edges = self._filter_duplicate_edges(all_edges)
 
         # Calculate representatives (midpoints of bins)
         representatives = []
@@ -212,6 +214,22 @@ class TreeBinning(SupervisedBinningBase):
             representatives.append(rep)
 
         return bin_edges, representatives
+
+    def _filter_duplicate_edges(self, all_edges: list[float]) -> list[float]:
+        """Filter out duplicate edges based on float tolerance.
+
+        Args:
+            all_edges: List of edge values to filter
+
+        Returns:
+            Filtered list with duplicates removed based on float_tolerance
+        """
+        config = get_config()
+        bin_edges: list[float] = []
+        for edge in all_edges:
+            if not bin_edges or abs(edge - bin_edges[-1]) > config.float_tolerance:
+                bin_edges.append(edge)
+        return bin_edges
 
     def _extract_split_points(self, tree: Any, x_data: np.ndarray[Any, Any]) -> list[float]:
         """Extract split points from a fitted decision tree.
