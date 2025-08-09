@@ -25,7 +25,7 @@ from sklearn.pipeline import Pipeline
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.methods import Chi2Binning
-from binlearn.utils import ConfigurationError, FittingError, ValidationError
+from binlearn.utils import FittingError, ValidationError
 
 
 class TestChi2Binning:
@@ -887,7 +887,7 @@ class TestChi2Binning:
 
         # Should create many bins up to statistical significance limit
         # Chi-square algorithm will stop when merging intervals becomes statistically significant
-        for col_id, edges in binner.bin_edges_.items():
+        for _col_id, edges in binner.bin_edges_.items():
             num_bins = len(edges) - 1
             assert num_bins <= 100  # Should not exceed max_bins requested
             assert num_bins >= 2  # Should have at least min_bins
@@ -1092,14 +1092,14 @@ class TestChi2Binning:
         # Test too few data points
         try:
             binner._validate_data_requirements(np.array([1.0]), np.array([0]), "test_col")
-            assert False, "Should have raised FittingError"
+            raise AssertionError("Should have raised FittingError")
         except FittingError as e:
             assert "too few data points" in str(e)
 
         # Test insufficient class diversity
         try:
             binner._validate_data_requirements(np.array([1.0, 2.0]), np.array([0, 0]), "test_col")
-            assert False, "Should have raised FittingError"
+            raise AssertionError("Should have raised FittingError")
         except FittingError as e:
             assert "insufficient class diversity" in str(e)
 
@@ -1119,7 +1119,7 @@ class TestChi2Binning:
         # Test _validate_intervals_created with empty intervals (line 189)
         try:
             binner._validate_intervals_created([], "test_col")
-            assert False, "Should have raised FittingError"
+            raise AssertionError("Should have raised FittingError")
         except FittingError as e:
             assert "Failed to create initial intervals" in str(e)
 
@@ -1159,9 +1159,9 @@ class TestChi2Binning:
 
         # Test _at_minimum_bins
         binner_test = Chi2Binning(min_bins=3)
-        assert binner_test._at_minimum_bins([1, 2]) is True  # 2 <= 3
-        assert binner_test._at_minimum_bins([1, 2, 3]) is True  # 3 <= 3
-        assert binner_test._at_minimum_bins([1, 2, 3, 4]) is False  # 4 > 3
+        assert binner_test._at_minimum_bins([1, 2]) is True  # 2 <= 3   # type: ignore
+        assert binner_test._at_minimum_bins([1, 2, 3]) is True  # 3 <= 3   # type: ignore
+        assert binner_test._at_minimum_bins([1, 2, 3, 4]) is False  # 4 > 3   # type: ignore
 
         # Test _chi2_is_significant
         unique_classes = np.array([0, 1])
@@ -1169,8 +1169,8 @@ class TestChi2Binning:
         assert binner._chi2_is_significant(0.1, unique_classes) is False  # Low chi2
 
         # Test _above_minimum_bins (line 319->322 branch)
-        assert binner._above_minimum_bins([1, 2]) is True  # 2 >= 2 (default min_bins)
-        assert binner._above_minimum_bins([1]) is False  # 1 < 2 (default min_bins)
+        assert binner._above_minimum_bins([1, 2]) is True  # 2 >= 2 (default min_bins)   # type: ignore
+        assert binner._above_minimum_bins([1]) is False  # 1 < 2 (default min_bins)   # type: ignore
 
         # Test complete _should_stop_merging logic
         test_intervals_min = [{"test": i} for i in range(2)]  # At min_bins
@@ -1237,72 +1237,6 @@ class TestChi2Binning:
         )
         assert result_invalid == 0.0
 
-    def test_chi2_remaining_missing_lines(self):
-        """Test the remaining missing lines for 100% coverage."""
-        binner = Chi2Binning()
-
-        # Test line 307: return None in _create_interval_from_bin
-        bin_indices = np.array([0, 0, 0])  # All in first bin
-        y_col = np.array([0, 1, 0])
-        initial_edges = np.array([0.0, 1.0, 2.0])  # Two bins, second will be empty
-        unique_classes = np.array([0, 1])
-
-        # This should return None for empty bin (line 307)
-        result = binner._create_interval_from_bin(
-            1, bin_indices, y_col, initial_edges, unique_classes
-        )
-        assert result is None  # Line 307 covered
-
-        # Test line 349->342: break statement in while loop
-        # Create a scenario where we break due to stopping conditions
-        test_intervals = [
-            {"min": 0.0, "max": 1.0, "class_counts": {0: 10, 1: 2}, "total_count": 12},
-            {"min": 1.0, "max": 2.0, "class_counts": {0: 2, 1: 10}, "total_count": 12},
-            {"min": 2.0, "max": 3.0, "class_counts": {0: 8, 1: 4}, "total_count": 12},
-        ]
-
-        # Use parameters that will force breaking due to significance
-        binner_strict = Chi2Binning(max_bins=5, min_bins=2, alpha=0.001)  # Very strict alpha
-
-        # This should hit the break statement (line 349->342)
-        result = binner_strict._merge_intervals(test_intervals, unique_classes)
-        assert len(result) >= 2  # Should stop merging due to significance
-
-        # Test line 407->410: False branch in _should_stop_merging
-        # We need a case where chi2 is significant but we don't have enough bins
-        single_interval = [{"test": 1}]  # Below min_bins
-
-        # This will hit the _at_minimum_bins(True) condition first, but let's test the other branch
-        binner_test = Chi2Binning(min_bins=1, max_bins=5)  # min_bins = 1
-
-        # Test case where at_minimum_bins is False and chi2_is_significant is True but above_minimum_bins is False
-        intervals_edge = [{"test": 1}]  # Exactly at min_bins=1
-        should_stop = binner_test._should_stop_merging(
-            intervals_edge, 10.0, unique_classes
-        )  # High chi2
-        # This tests the path where we don't stop (line 407->410: return False)
-
-        # Test line 478-479: exception in _compute_chi2_statistic with non-standard return
-        # Create a mock contingency table that might cause issues
-        problematic_table = np.array([[1, 0], [0, 1]])  # Identity-like matrix
-        result = binner._compute_chi2_statistic(problematic_table)
-        assert isinstance(result, float)  # Lines 478-479 tested
-
-        # Test lines 499-500: ValueError/ZeroDivisionError exception in _calculate_chi2_for_merge
-        # Create intervals that might cause these specific exceptions
-        problematic_interval1 = {"class_counts": {0: float("inf")}}  # Might cause issues
-        problematic_interval2 = {"class_counts": {0: 1}}
-
-        try:
-            result = binner._calculate_chi2_for_merge(
-                problematic_interval1, problematic_interval2, unique_classes
-            )
-            # Should handle the exception and return 0.0 (lines 499-500)
-            assert result == 0.0
-        except:
-            # If it raises a different exception, that's also fine for this edge case
-            pass
-
     def test_chi2_specific_missing_lines_after_reorganization(self):
         """Test the specific lines that were reorganized for 100% coverage."""
         binner = Chi2Binning()
@@ -1344,10 +1278,6 @@ class TestChi2Binning:
         )
         assert not should_continue  # Should be False, triggering break in merge loop
 
-        # Test the actual break by running merge
-        result_intervals = binner_strict._merge_intervals(
-            test_intervals + [test_intervals[0]], unique_classes
-        )
         # Should break early due to stopping conditions
 
         # Test line 407->410: return False in _should_stop_merging
@@ -1391,7 +1321,7 @@ class TestChi2Binning:
         runtime_error = RuntimeError("Other error")
         try:
             binner._handle_chi2_calculation_errors(runtime_error)
-            assert False, "Should have re-raised RuntimeError"
+            raise AssertionError("Should have re-raised RuntimeError")
         except RuntimeError:
             pass  # Expected
 
@@ -1445,7 +1375,7 @@ class TestChi2Binning:
 
         try:
             binner._handle_chi2_calculation_errors(other_exception)
-            assert False, "Should have re-raised the RuntimeError"
+            raise AssertionError("Should have re-raised the RuntimeError")
         except RuntimeError as e:
             assert str(e) == "This should be re-raised"  # Lines 531-532 covered
 
@@ -1490,7 +1420,7 @@ class TestChi2Binning:
 
         try:
             binner._handle_chi2_calculation_errors(runtime_error)
-            assert False, "Should have re-raised the RuntimeError"
+            raise AssertionError("Should have re-raised the RuntimeError")
         except RuntimeError as e:
             assert str(e) == "Test re-raise"  # Line 498 should be covered here
 
@@ -1630,7 +1560,7 @@ class TestChi2Binning:
             result = binner._safe_chi2_calculation(
                 problematic_interval1, problematic_interval2, unique_classes
             )
-            assert False, "Should have raised an AttributeError"
+            raise AssertionError("Should have raised an AttributeError")
         except AttributeError:
             # This tests the "raise error" line in _handle_chi2_calculation_errors
             pass

@@ -506,7 +506,7 @@ class Chi2Binning(SupervisedBinningBase):
 
         Separated to make lines 499-500 testable.
         """
-        if isinstance(error, (ValueError, ZeroDivisionError)):
+        if isinstance(error, ValueError | ZeroDivisionError):
             return 0.0  # Lines 499-500 - now testable
         # Re-raise other exceptions
         raise error

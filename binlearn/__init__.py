@@ -38,6 +38,8 @@ except ImportError:
 
 # Configuration management
 # Base classes and utilities
+# Integration tools
+from . import tools
 from .base import (
     Array1D,
     Array2D,
@@ -201,6 +203,8 @@ __all__ = [
     "ManualIntervalBinning",
     "SingletonBinning",
     "TreeBinning",
+    # Integration tools
+    "tools",
     # Optional dependencies
     "PANDAS_AVAILABLE",
     "pd",

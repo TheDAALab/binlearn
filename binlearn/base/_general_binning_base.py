@@ -203,6 +203,38 @@ class GeneralBinningBase(
 
         return None
 
+    def _normalize_guidance_columns(
+        self, guidance_cols: list[Any], columns: ColumnList
+    ) -> list[Any]:
+        """Normalize guidance columns from various formats to column names.
+
+        This method handles the conversion of integer indices to column names,
+        making the logic testable and reusable.
+
+        Args:
+            guidance_cols: List of guidance column identifiers (integers or strings)
+            columns: Available column names
+
+        Returns:
+            List of normalized guidance column names
+
+        Raises:
+            ValueError: If column index is out of range
+        """
+        normalized_guidance_cols = []
+        for col in guidance_cols:
+            if isinstance(col, int):
+                if 0 <= col < len(columns):
+                    normalized_guidance_cols.append(columns[col])
+                else:
+                    raise ValueError(
+                        f"Column index {col} is out of range for {len(columns)} columns"
+                    )
+            else:
+                normalized_guidance_cols.append(col)  # This is line 239 equivalent
+
+        return normalized_guidance_cols
+
     def _separate_binning_and_guidance_columns(
         self, X: ArrayLike
     ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None, ColumnList, ColumnList | None]:
@@ -229,18 +261,8 @@ class GeneralBinningBase(
             else self.guidance_columns
         )
 
-        # Convert integer indices to column names if needed
-        normalized_guidance_cols = []
-        for col in guidance_cols:
-            if isinstance(col, int):
-                if 0 <= col < len(columns):
-                    normalized_guidance_cols.append(columns[col])
-                else:
-                    raise ValueError(
-                        f"Column index {col} is out of range for {len(columns)} columns"
-                    )
-            else:
-                normalized_guidance_cols.append(col)
+        # Convert integer indices to column names if needed - now in separate method
+        normalized_guidance_cols = self._normalize_guidance_columns(guidance_cols, columns)
 
         # Separate columns
         binning_indices = []

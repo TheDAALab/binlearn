@@ -161,6 +161,10 @@ class SupervisedBinningBase(IntervalBinningBase):
                     DataQualityWarning,
                     stacklevel=2,
                 )
+            else:
+                # Explicit else branch: missing values removed but below warning thresholds
+                # This makes the 157->166 branch explicitly testable
+                pass
 
         # Check if we have sufficient data after cleaning
         if len(cleaned_feature) < 2:

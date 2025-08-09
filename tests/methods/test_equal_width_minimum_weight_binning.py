@@ -84,7 +84,7 @@ class TestEqualWidthMinimumWeightBinningOriginal:
         )
 
         # This should trigger the warning and create single bin (lines 272-278)
-        with warnings.catch_warnings(record=True) as w:
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
             binner_extreme.fit(X_extreme, y=weights_extreme)
 
@@ -230,20 +230,20 @@ class TestEqualWidthMinimumWeightBinning:
         with pytest.raises(
             ConfigurationError, match="bin_range must be a tuple/list of two numbers"
         ):
-            EqualWidthMinimumWeightBinning(bin_range=[1, 2, 3])
+            EqualWidthMinimumWeightBinning(bin_range=[1, 2, 3])  # type: ignore
 
     def test_invalid_bin_range_non_numeric(self):
         """Test validation of bin_range with non-numeric values."""
         with pytest.raises(ConfigurationError, match="bin_range values must be numbers"):
-            EqualWidthMinimumWeightBinning(bin_range=["a", "b"])
+            EqualWidthMinimumWeightBinning(bin_range=["a", "b"])  # type: ignore
 
     def test_invalid_bin_range_order(self):
         """Test validation of bin_range with min >= max."""
         with pytest.raises(ConfigurationError, match="bin_range minimum must be less than maximum"):
-            EqualWidthMinimumWeightBinning(bin_range=[5, 3])
+            EqualWidthMinimumWeightBinning(bin_range=[5, 3])  # type: ignore
 
         with pytest.raises(ConfigurationError, match="bin_range minimum must be less than maximum"):
-            EqualWidthMinimumWeightBinning(bin_range=[3, 3])
+            EqualWidthMinimumWeightBinning(bin_range=[3, 3])  # type: ignore
 
     # ======================
     # Guidance Data Provision Tests (Core supervised functionality)

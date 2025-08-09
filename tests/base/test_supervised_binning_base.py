@@ -451,3 +451,33 @@ class TestSupervisedBinningBase:
                 warning for warning in w if issubclass(warning.category, DataQualityWarning)
             ]
             assert len(quality_warnings) == 0  # Should not warn with 2+ points
+
+    def test_missing_values_warning_threshold_not_met(self):
+        """Test case where missing values are below warning threshold (covers branch 157->166)."""
+        binner = MockSupervisedBinner()
+
+        # Create data where we have missing values but below the warning threshold
+        # Create 100 samples, remove only 3 (3% < 5% threshold and < 5 count threshold)
+        X = np.random.rand(100, 2)
+        target = np.random.randint(0, 2, 100)
+
+        # Set 3 target values to NaN to trigger removal but below thresholds
+        target_with_nan = target.astype(float)
+        target_with_nan[[10, 20, 30]] = np.nan  # Only 3 missing values = 3% < 5%
+
+        # This should NOT trigger the warning (branch 157->166 should be covered)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            binner.fit(X, guidance_data=target_with_nan.reshape(-1, 1))
+
+            # Should not have the "Removed X rows with missing values" warning
+            missing_warnings = [
+                warning
+                for warning in w
+                if "Removed" in str(warning.message) and "missing values" in str(warning.message)
+            ]
+            assert len(missing_warnings) == 0  # No warning should be issued
+
+        # Should still fit successfully
+        assert hasattr(binner, "bin_edges_")
+        assert len(binner.bin_edges_) == 2

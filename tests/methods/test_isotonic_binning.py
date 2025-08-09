@@ -362,7 +362,9 @@ class TestIsotonicBinning:
 
         # Check that isotonic models were fitted with decreasing=False
         for model in binner._isotonic_models.values():
-            assert model.increasing is False
+            # Check the model parameters instead of the attribute
+            params = model.get_params()
+            assert params["increasing"] is False
 
     def test_y_bounds_constraint(self, monotonic_increasing_data):
         """Test isotonic regression with y_min and y_max bounds."""
@@ -387,8 +389,9 @@ class TestIsotonicBinning:
 
         # Check that bounds were applied to models
         for model in binner._isotonic_models.values():
-            assert model.y_min == bounded_y_min
-            assert model.y_max == bounded_y_max
+            params = model.get_params()
+            assert params["y_min"] == bounded_y_min
+            assert params["y_max"] == bounded_y_max
 
     def test_min_change_threshold_effect(self, monotonic_increasing_data):
         """Test effect of different min_change_threshold values."""
@@ -432,7 +435,7 @@ class TestIsotonicBinning:
         assert result.shape == (200, 2)
 
         # Should create fewer bins due to sample size constraint
-        for col_id, edges in binner.bin_edges_.items():
+        for _col_id, edges in binner.bin_edges_.items():
             num_bins = len(edges) - 1
             assert num_bins <= 4  # With 200 samples and min 50 per bin, max ~4 bins
 
@@ -927,7 +930,7 @@ class TestIsotonicBinning:
         assert result.shape == (200, 2)
 
         # Should create fewer bins due to large threshold
-        for col_id, edges in binner.bin_edges_.items():
+        for _col_id, edges in binner.bin_edges_.items():
             num_bins = len(edges) - 1
             assert num_bins <= 3  # Very few bins due to insensitive threshold
 
@@ -997,7 +1000,6 @@ class TestIsotonicBinning:
 
     def test_additional_isotonic_edge_cases_for_full_coverage(self):
         """Test additional edge cases to achieve 100% line coverage."""
-        import warnings
 
         binner = IsotonicBinning()
 

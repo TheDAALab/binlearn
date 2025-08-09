@@ -297,6 +297,112 @@ class TestGeneralBinningBase:
         ):
             MockBinningTransformer(fit_jointly=True, guidance_columns="col1")
 
+    def test_normalize_guidance_columns_direct(self):
+        """Test _normalize_guidance_columns method directly to cover line 239 equivalent."""
+        transformer = MockBinningTransformer()
+
+        # Test with string column names (should hit the else branch - equivalent to original line 239)
+        columns = ["col1", "col2", "col3"]
+        guidance_cols = ["col2", "target_col"]  # String names (not integers)
+
+        # This should trigger the else branch: normalized_guidance_cols.append(col)
+        result = transformer._normalize_guidance_columns(guidance_cols, columns)
+
+        # Should return the same string names
+        assert result == ["col2", "target_col"]
+
+        # Test with integer indices (should hit the if branch)
+        guidance_cols_int = [0, 2]  # Integer indices
+        result_int = transformer._normalize_guidance_columns(guidance_cols_int, columns)
+
+        # Should convert indices to column names
+        assert result_int == ["col1", "col3"]
+
+        # Test with mixed types
+        guidance_cols_mixed = [1, "custom_col"]  # Mixed integer and string
+        result_mixed = transformer._normalize_guidance_columns(guidance_cols_mixed, columns)
+
+        # Should handle both correctly
+        assert result_mixed == ["col2", "custom_col"]
+
+    def test_normalize_guidance_columns_out_of_range(self):
+        """Test _normalize_guidance_columns with out of range index."""
+        transformer = MockBinningTransformer()
+        columns = ["col1", "col2"]
+        guidance_cols = [5]  # Out of range index
+
+        with pytest.raises(ValueError, match="Column index 5 is out of range"):
+            transformer._normalize_guidance_columns(guidance_cols, columns)
+
+    def test_guidance_columns_with_string_column_names_line_239(self):
+        """Test guidance columns with string column names to specifically cover line 239."""
+        # This test specifically targets line 239: normalized_guidance_cols.append(col)
+        # when col is not an integer (the else branch)
+
+        # We need to use a binning method that actually uses guidance columns
+        # Let's use a supervised binning method that requires guidance
+        from binlearn.methods import Chi2Binning
+
+        if PANDAS_AVAILABLE:
+            # Create DataFrame with named columns
+            data_df = pd.DataFrame(
+                {
+                    "feature1": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+                    "feature2": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0],
+                    "target_col": [0, 1, 0, 1, 0, 1],  # Binary target for Chi2
+                }
+            )
+
+            # Use string column name for guidance - this should trigger line 239
+            binner = Chi2Binning(guidance_columns="target_col")
+
+            # This fit call should invoke _separate_binning_and_guidance_columns with string guidance columns
+            # which should hit the else branch on line 239: normalized_guidance_cols.append(col)
+            binner.fit(data_df)
+
+            # Should bin only feature1 and feature2 (target_col is guidance)
+            assert len(binner.bin_edges_) == 2
+            assert "feature1" in binner.bin_edges_
+            assert "feature2" in binner.bin_edges_
+            assert "target_col" not in binner.bin_edges_  # Guidance column not binned
+        else:
+            # For non-pandas environments, skip
+            pytest.skip("Pandas not available, cannot test string column names")
+
+    def test_guidance_columns_with_string_column_names(self):
+        """Test guidance columns with actual string column names to cover line 239."""
+        # Test case to cover the else branch in line 239 (normalized_guidance_cols.append(col))
+        # This tests the scenario where guidance_columns contains non-integer values (string names)
+
+        # Test with integer indices for guidance_columns (should NOT hit line 239)
+        transformer_int = MockBinningTransformer(guidance_columns=[1])  # Uses integer index
+        data_array = np.array([[1, 10, 100], [2, 20, 200], [3, 30, 300]])
+        transformer_int.fit(data_array)  # This hits the if isinstance(col, int) branch
+
+        # Test with string column names for guidance_columns (should hit line 239)
+        transformer_str = MockBinningTransformer(guidance_columns=["guidance_col"])  # String name
+
+        if PANDAS_AVAILABLE:
+            # Create DataFrame with named columns
+            data_df = pd.DataFrame(
+                {
+                    "col1": [1, 2, 3, 4, 5],
+                    "col2": [10, 20, 30, 40, 50],
+                    "guidance_col": [0, 1, 0, 1, 0],
+                }
+            )
+
+            # This should trigger line 239 where col is not an integer but a string name
+            transformer_str.fit(data_df)
+
+            # Should bin only col1 and col2 (guidance_col is guidance)
+            assert len(transformer_str.bin_edges_) == 2
+            assert len(transformer_str.bin_representatives_) == 2
+        else:
+            # For non-pandas environments, we can't easily test string column names
+            # since numpy arrays don't have column names
+            pytest.skip("Pandas not available, cannot test string column names")
+
     def test_fit_guidance_data_jointly_error(self):
         """Test error when both fit_jointly=True and guidance_data provided."""
         transformer = MockBinningTransformer(fit_jointly=True)
