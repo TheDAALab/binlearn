@@ -23,15 +23,51 @@ from ._interval_binning_base import IntervalBinningBase
 
 
 class SupervisedBinningBase(IntervalBinningBase):
-    """Supervised binning functionality inheriting from IntervalBinningBase.
+    """Base class for supervised binning methods that use target information.
 
-    For binning methods that use target/label information (y) to optimize bin boundaries.
+    This class extends IntervalBinningBase to provide specialized functionality for
+    supervised binning methods. These methods use target variable information (y)
+    to optimize bin boundaries, typically aiming to create bins with homogeneous
+    target distributions or maximize predictive power.
 
-    Provides:
-    - Target data validation and preprocessing
-    - Feature-target pair validation
-    - Single guidance column requirement for supervised learning
-    - Data quality warnings for insufficient data scenarios
+    Supervised binning is particularly effective for:
+    - Binary classification with continuous predictors
+    - Regression tasks where binning should preserve target relationships
+    - Feature selection and engineering based on target correlation
+    - Creating interpretable bins aligned with target behavior
+
+    Key Features:
+    - Target-aware bin boundary optimization
+    - Built-in target data validation and preprocessing
+    - Feature-target pair validation for data quality
+    - Automatic handling of supervised learning constraints
+    - Integration with guidance column requirements for targets
+
+    Constraints:
+    - Does not support joint fitting across multiple features (fit_jointly=False)
+    - Requires exactly one guidance column to serve as the target variable
+    - Target data must be provided during fit() call
+    - Feature and target data must have compatible shapes and no missing values
+
+    Attributes:
+        All attributes from IntervalBinningBase plus:
+        - Target-specific validation and preprocessing capabilities
+        - Enhanced error handling for supervised learning scenarios
+
+    Example:
+        >>> # Supervised binning for binary classification
+        >>> X = np.array([[1.2, 2.3], [3.4, 4.5], [5.6, 6.7]])
+        >>> y = np.array([0, 1, 0])  # Binary target
+        >>>
+        >>> binner = ConcreteSupervisedBinner()
+        >>> binner.fit(X, guidance_data=y)
+        >>> X_binned = binner.transform(X)
+
+    Note:
+        - This is an abstract base class - use concrete implementations like Chi2Binning
+        - Inherits all interval binning functionality (bin edges, representatives, etc.)
+        - Target data is passed via guidance_data parameter in fit() method
+        - Subclasses must implement _calculate_bin_edges with target-aware logic
     """
 
     def __init__(
@@ -42,7 +78,38 @@ class SupervisedBinningBase(IntervalBinningBase):
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
     ):
-        """Initialize supervised binning base."""
+        """Initialize supervised binning base class.
+
+        Args:
+            clip: Whether to clip out-of-range values during transformation to the
+                nearest bin boundary. If True, values below the minimum edge are
+                assigned to the first bin, and values above the maximum edge are
+                assigned to the last bin. If False, out-of-range values get special
+                indices (BELOW_RANGE, ABOVE_RANGE). If None, uses global default.
+            preserve_dataframe: Whether to preserve the original DataFrame format
+                during transformation. If True, returns DataFrame when input is DataFrame.
+                If False, returns numpy array. If None, uses global configuration default.
+            guidance_columns: Column identifier for the target variable. For supervised
+                binning, this should specify exactly one column that contains the target
+                values. Can be column name/index or None (target passed via guidance_data).
+            bin_edges: Pre-defined bin edges as a dictionary mapping column identifiers
+                to lists of edge values. If provided, no fitting is performed and these
+                edges are used directly. Must be compatible with supervised binning
+                constraints if provided.
+            bin_representatives: Pre-defined representative values for each bin as a
+                dictionary mapping column identifiers to lists of values. Must match
+                the structure of bin_edges if provided.
+
+        Raises:
+            ValidationError: If parameters are incompatible with supervised binning
+                requirements (e.g., multiple guidance columns specified).
+
+        Note:
+            - Supervised binning does not support fit_jointly=True (always fits independently)
+            - Target data should be provided via guidance_data parameter in fit() method
+            - Only one guidance column is supported (the target variable)
+            - Pre-defined bin edges should be optimized for the target if provided
+        """
         # Initialize parent (supervised binning doesn't support fit_jointly)
         IntervalBinningBase.__init__(
             self,
@@ -55,7 +122,23 @@ class SupervisedBinningBase(IntervalBinningBase):
         )
 
     def _validate_params(self) -> None:
-        """Validate supervised binning parameters."""
+        """Validate supervised binning parameters with additional constraints.
+
+        Extends the parent class validation to add supervised learning specific
+        constraints and warnings. This method ensures that the parameter configuration
+        is appropriate for supervised binning methods.
+
+        Warns:
+            DataQualityWarning: If multiple guidance columns are specified, which
+                may lead to unexpected behavior in supervised binning methods that
+                typically expect a single target variable.
+
+        Note:
+            - Calls parent class parameter validation first
+            - Supervised binning typically works best with exactly one target column
+            - Multiple guidance columns are allowed but discouraged with a warning
+            - This method is called during initialization to catch configuration issues early
+        """
         # Call parent validation
         IntervalBinningBase._validate_params(self)
 
@@ -121,21 +204,49 @@ class SupervisedBinningBase(IntervalBinningBase):
         target_data: np.ndarray[Any, Any],
         col_id: Any,
     ) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]:
-        """Validate and preprocess feature-target pairs for supervised binning.
+        """Validate and clean feature-target data pairs for supervised binning.
 
-        The feature data has already been preprocessed by the base class,
-        but we still need to handle NaN/inf values in the target data.
+        This method ensures that feature and target data are compatible for supervised
+        binning by checking shapes and removing rows with invalid target values. The
+        feature data should already be preprocessed by the parent class, but target
+        data may still contain missing or invalid values that need handling.
 
         Args:
-            feature_data: Preprocessed feature column data (from base class)
-            target_data: Target/guidance data (may contain NaN/inf)
-            col_id: Column identifier for error messages
+            feature_data: Preprocessed feature column data that has been validated
+                and cleaned by the parent class. Should contain only finite values.
+            target_data: Raw target/guidance data that may contain NaN or infinite
+                values. Must have the same number of rows as feature_data.
+            col_id: Column identifier used for generating informative error and
+                warning messages.
 
         Returns:
-            Tuple of (cleaned_feature_data, cleaned_target_data) with invalid target rows removed
+            Tuple containing:
+            - cleaned_feature_data: Feature data with rows removed where target had invalid values
+            - cleaned_target_data: Target data with invalid values (NaN, inf) removed
+            Both arrays have the same length and correspond row-wise.
 
         Raises:
-            ValidationError: If data shapes don't match or insufficient data remains
+            ValidationError: If feature and target data have mismatched lengths.
+
+        Warns:
+            DataQualityWarning: If a significant number of rows are removed due to
+                invalid target values (>5% of data OR >5 rows), or if insufficient
+                valid data remains after cleaning.
+
+        Example:
+            >>> feature = np.array([1.0, 2.0, 3.0, 4.0])
+            >>> target = np.array([0.0, np.nan, 1.0, 0.0])
+            >>> clean_feat, clean_targ = binner._validate_feature_target_pair(
+            ...     feature, target, 'col1'
+            ... )
+            >>> # Result: clean_feat = [1.0, 3.0, 4.0], clean_targ = [0.0, 1.0, 0.0]
+
+        Note:
+            - Feature data is assumed to be already cleaned by parent class validation
+            - Only removes rows based on target data validity
+            - Maintains row correspondence between feature and target data
+            - Warns if data quality may be compromised by excessive missing values
+            - Requires at least 2 valid samples to proceed with binning
         """
         if len(feature_data) != len(target_data):
             raise ValidationError(
@@ -184,7 +295,34 @@ class SupervisedBinningBase(IntervalBinningBase):
         guidance_data: np.ndarray[Any, Any] | None = None,
         **fit_params: Any,
     ) -> None:
-        """Fit supervised binning parameters independently for each column."""
+        """Fit supervised binning parameters independently for each column.
+
+        This method implements the fitting logic for supervised binning by validating
+        the guidance data (target) and delegating to the parent class implementation.
+        It ensures that target information is properly formatted before bin computation.
+
+        Args:
+            X: Input feature data array with shape (n_samples, n_features) where
+                each column will be binned using target information.
+            columns: List of column identifiers corresponding to the columns in X.
+                Used for bin specification keys and error messages.
+            guidance_data: Target/label data that guides the binning process. Must
+                be provided for supervised binning and should have shape (n_samples,)
+                or (n_samples, 1). Cannot be None.
+            **fit_params: Additional parameters passed to the underlying bin
+                calculation methods.
+
+        Raises:
+            ValidationError: If guidance_data is None or has invalid format for
+                supervised binning (wrong shape, multiple columns, etc.).
+
+        Note:
+            - Validates that guidance_data is provided (required for supervised binning)
+            - Ensures guidance_data has exactly one column (the target variable)
+            - Delegates actual fitting to parent class after target validation
+            - Each feature column is fitted independently using the same target data
+            - The target data is validated once and used for all feature columns
+        """
         if guidance_data is None:
             raise ValidationError("Supervised binning requires guidance data (target labels)")
 

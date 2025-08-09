@@ -18,6 +18,7 @@ from ..config import apply_config_defaults, get_config
 from ..utils import BinEdgesDict, ConfigurationError, FittingError
 
 
+# pylint: disable=too-many-ancestors
 class TreeBinning(SupervisedBinningBase):
     """Tree-based supervised binning implementation using  architecture.
 
@@ -29,6 +30,7 @@ class TreeBinning(SupervisedBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         task_type: str | None = None,
@@ -36,6 +38,7 @@ class TreeBinning(SupervisedBinningBase):
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
         class_: str | None = None,  # For reconstruction compatibility

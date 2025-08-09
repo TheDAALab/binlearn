@@ -17,6 +17,7 @@ from ..config import apply_config_defaults
 from ..utils import BinEdgesDict, ConfigurationError
 
 
+# pylint: disable=too-many-ancestors
 class DBSCANBinning(IntervalBinningBase):
     """DBSCAN clustering-based binning implementation using  architecture.
 
@@ -29,6 +30,7 @@ class DBSCANBinning(IntervalBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         eps: float | None = None,
@@ -37,6 +39,7 @@ class DBSCANBinning(IntervalBinningBase):
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
         class_: str | None = None,  # For reconstruction compatibility

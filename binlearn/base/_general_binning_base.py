@@ -24,11 +24,60 @@ class GeneralBinningBase(
 ):
     """Clean binning base class focusing on orchestration and guidance logic.
 
-    Handles:
-    - Joint vs per-column fitting strategies
-    - Guidance column separation and management
-    - Binning transformation pipeline orchestration
-    - Abstract interface for binning methods
+    This abstract base class provides the core infrastructure for all binning
+    transformers in the binlearn library. It orchestrates the binning process,
+    handles guidance column separation, and manages the interaction between
+    fitting and transformation phases.
+
+    The class supports two main fitting strategies:
+    - Per-column independent fitting: Each column is binned independently
+    - Joint fitting: All columns are considered together for binning decisions
+
+    Key Features:
+    - Guidance column support for supervised and semi-supervised binning
+    - Flexible fitting strategies (independent vs joint)
+    - DataFrame format preservation
+    - Comprehensive error handling and validation
+    - sklearn-compatible transformer interface
+
+    Parameters:
+    -----------
+    preserve_dataframe : bool, optional
+        Whether to preserve the original DataFrame format in output. If None,
+        uses the global configuration default. When True, pandas/polars
+        DataFrames are returned as DataFrames; otherwise numpy arrays.
+
+    fit_jointly : bool, optional
+        Whether to fit all columns jointly rather than independently. If None,
+        uses the global configuration default. When True, all binning columns
+        are considered together; when False, each column is binned independently.
+
+    guidance_columns : GuidanceColumns, optional
+        Specification of columns to use for guidance (supervision). Can be:
+        - None: No guidance columns (unsupervised binning)
+        - Column identifier: Single guidance column
+        - List of identifiers: Multiple guidance columns
+        Incompatible with fit_jointly=True.
+
+    Attributes:
+    -----------
+    preserve_dataframe : bool
+        Whether to preserve DataFrame format in output.
+
+    fit_jointly : bool
+        Whether to fit columns jointly or independently.
+
+    guidance_columns : GuidanceColumns
+        Specification of guidance columns for supervision.
+
+    Note:
+    -----
+    This is an abstract base class and cannot be instantiated directly.
+    Concrete implementations must provide the abstract methods for specific
+    binning algorithms.
+
+    The class enforces mutual exclusivity between fit_jointly=True and
+    guidance_columns to prevent conflicting binning strategies.
     """
 
     def __init__(
@@ -37,7 +86,28 @@ class GeneralBinningBase(
         fit_jointly: bool | None = None,
         guidance_columns: GuidanceColumns = None,
     ):
-        """Initialize the binning transformer."""
+        """Initialize the binning transformer.
+
+        Sets up the binning transformer with the specified configuration options,
+        applying global configuration defaults where parameters are not provided.
+        Validates parameter compatibility to prevent conflicting configurations.
+
+        Args:
+            preserve_dataframe: Whether to preserve DataFrame format in output.
+                If None, uses global configuration default.
+            fit_jointly: Whether to fit all columns together. If None, uses
+                global configuration default.
+            guidance_columns: Guidance column specification for supervised binning.
+                Must be None if fit_jointly=True.
+
+        Raises:
+            ValueError: If guidance_columns is specified when fit_jointly=True,
+                as these options are mutually exclusive.
+
+        Note:
+            The binning and guidance column lists are computed dynamically during
+            fitting based on the actual input data and the guidance_columns parameter.
+        """
         DataHandlingBase.__init__(self)
         TransformerMixin.__init__(self)
 
@@ -67,7 +137,48 @@ class GeneralBinningBase(
         # from feature_names_in_ and guidance_columns when needed
 
     def fit(self, X: Any, y: Any = None, **fit_params: Any) -> GeneralBinningBase:
-        """Fit the binning transformer with comprehensive orchestration."""
+        """Fit the binning transformer with comprehensive orchestration.
+
+        This method orchestrates the complete fitting process, handling parameter
+        validation, input preprocessing, column separation, and routing to the
+        appropriate fitting strategy (joint vs independent).
+
+        Args:
+            X: Input data to fit the binning transformer on. Can be:
+                - pandas.DataFrame: Column names are preserved
+                - polars.DataFrame: Column names are preserved
+                - numpy.ndarray: Numeric column indices are used
+                - array-like: Converted to numpy array
+            y: Target values for supervised binning methods. Ignored by
+                unsupervised methods. Can be array-like or None.
+            **fit_params: Additional fitting parameters passed to the specific
+                binning algorithm implementation. Common parameters include:
+                - guidance_data: Alternative guidance data (conflicts with fit_jointly=True)
+
+        Returns:
+            self: The fitted binning transformer instance.
+
+        Raises:
+            ValueError: If parameter validation fails, inputs are invalid, or
+                conflicting parameters are provided (e.g., fit_jointly=True with
+                guidance_data).
+            BinningError: If the binning algorithm fails to fit the data.
+            RuntimeError: If an unexpected error occurs during fitting.
+
+        Example:
+            >>> from binlearn import EqualWidthBinning
+            >>> import pandas as pd
+            >>> X = pd.DataFrame({'feature1': [1, 2, 3, 4, 5], 'feature2': [10, 20, 30, 40, 50]})
+            >>> binner = EqualWidthBinning(n_bins=3)
+            >>> binner.fit(X)
+            EqualWidthBinning(...)
+
+        Note:
+            The method automatically handles column separation when guidance_columns
+            is specified, routing guidance columns separately from binning columns.
+            The fitting strategy (joint vs independent) is determined by the
+            fit_jointly parameter.
+        """
         try:
             # Step 1: Parameter validation
             self._validate_params()
@@ -119,7 +230,44 @@ class GeneralBinningBase(
             raise ValueError(f"Failed to fit binning model: {str(e)}") from e
 
     def transform(self, X: Any) -> Any:
-        """Transform input data using fitted binning parameters."""
+        """Transform input data using fitted binning parameters.
+
+        Applies the fitted binning transformation to new data, converting
+        continuous values to discrete bin indices or representatives.
+        Handles column separation when guidance columns are present.
+
+        Args:
+            X: Input data to transform. Must have the same structure as the
+                data used during fitting (same number of columns). Can be:
+                - pandas.DataFrame: Column names should match training data
+                - polars.DataFrame: Column names should match training data
+                - numpy.ndarray: Must have same number of columns as training
+                - array-like: Converted to numpy array
+
+        Returns:
+            Transformed data where continuous values are replaced with bin
+            indices or representative values. The output format depends on:
+            - preserve_dataframe setting: DataFrame vs array format
+            - binning method: indices vs representatives
+            - guidance_columns: only binning columns are transformed
+
+        Raises:
+            RuntimeError: If the transformer has not been fitted yet.
+            ValueError: If the input data has incompatible structure or format.
+            BinningError: If transformation fails due to data issues.
+
+        Example:
+            >>> # After fitting
+            >>> X_new = pd.DataFrame({'feature1': [1.5, 2.5], 'feature2': [15, 25]})
+            >>> X_binned = binner.transform(X_new)
+            >>> print(X_binned)
+            [[0, 0], [1, 1]]  # Bin indices
+
+        Note:
+            When guidance_columns is specified, only the binning columns are
+            transformed. Guidance columns are filtered out from the output.
+            The method preserves the original data format when preserve_dataframe=True.
+        """
         try:
             # Step 1: Validation checks
             self._check_fitted()
@@ -149,7 +297,42 @@ class GeneralBinningBase(
             raise ValueError(f"Failed to transform data: {str(e)}") from e
 
     def inverse_transform(self, X: Any) -> Any:
-        """Inverse transform from bin indices back to representative values."""
+        """Inverse transform from bin indices back to representative values.
+
+        Converts discrete bin indices back to their representative values,
+        effectively reversing the binning transformation. This is useful for
+        interpreting results or reconstructing approximate original values.
+
+        Args:
+            X: Input data containing bin indices to inverse transform. Should
+                contain only binning columns (no guidance columns). Can be:
+                - pandas.DataFrame: Column names should match binning columns
+                - polars.DataFrame: Column names should match binning columns
+                - numpy.ndarray: Must have same number of binning columns
+                - array-like: Converted to numpy array
+
+        Returns:
+            Inverse transformed data where bin indices are replaced with their
+            representative values (typically bin centers). Output format matches
+            the preserve_dataframe setting.
+
+        Raises:
+            RuntimeError: If the transformer has not been fitted yet.
+            ValueError: If input data has wrong number of columns or invalid format.
+            BinningError: If inverse transformation fails.
+
+        Example:
+            >>> # After fitting and transforming
+            >>> X_binned = [[0, 1], [1, 0], [2, 2]]  # Bin indices
+            >>> X_reconstructed = binner.inverse_transform(X_binned)
+            >>> print(X_reconstructed)
+            [[0.5, 1.5], [1.5, 0.5], [2.5, 2.5]]  # Representative values
+
+        Note:
+            For guided binning (when guidance_columns is specified), the input
+            should only contain the binning columns, not the guidance columns.
+            The number of input columns must match the number of binning columns.
+        """
         try:
             self._check_fitted()
             self._validate_and_prepare_input(X, "X")
@@ -410,11 +593,29 @@ class GeneralBinningBase(
     ) -> None:
         """Fit binning parameters independently for each column.
 
+        This abstract method must be implemented by concrete binning classes to
+        define how each column is binned independently. This is the default
+        fitting strategy when fit_jointly=False.
+
         Args:
-            X: Input data for binning columns.
-            columns: Column identifiers for binning columns.
-            guidance_data: Optional guidance data for supervised binning.
-            **fit_params: Additional fitting parameters.
+            X: Input data array containing only the columns to be binned.
+                Shape: (n_samples, n_binning_columns).
+            columns: List of column identifiers corresponding to the columns in X.
+                Used for error messages and result storage.
+            guidance_data: Optional guidance data for supervised binning methods.
+                Can be target values (y) or additional guidance information.
+                Shape should be compatible with X for supervised methods.
+            **fit_params: Additional algorithm-specific fitting parameters passed
+                from the fit() method.
+
+        Raises:
+            NotImplementedError: This is an abstract method that must be implemented
+                by concrete subclasses.
+
+        Note:
+            Implementations should store the fitted binning parameters (bin edges,
+            representatives, etc.) in instance attributes for later use during
+            transformation.
         """
         raise NotImplementedError("Subclasses must implement _fit_per_column_independently")
 
@@ -424,10 +625,27 @@ class GeneralBinningBase(
     ) -> None:
         """Fit binning parameters jointly across all columns.
 
+        This abstract method must be implemented by concrete binning classes to
+        define how all columns are considered together for binning decisions.
+        This enables more sophisticated binning strategies that consider
+        inter-column relationships.
+
         Args:
-            X: Input data for all binning columns.
-            columns: Column identifiers for all columns.
-            **fit_params: Additional fitting parameters.
+            X: Input data array containing all columns to be binned together.
+                Shape: (n_samples, n_binning_columns).
+            columns: List of column identifiers corresponding to the columns in X.
+                Used for error messages and result storage.
+            **fit_params: Additional algorithm-specific fitting parameters passed
+                from the fit() method.
+
+        Raises:
+            NotImplementedError: This is an abstract method that must be implemented
+                by concrete subclasses.
+
+        Note:
+            Joint fitting is incompatible with guidance_columns and guidance_data
+            parameters. Implementations should consider relationships between
+            columns when determining binning parameters.
         """
         raise NotImplementedError("Subclasses must implement _fit_jointly_across_columns")
 
@@ -435,14 +653,34 @@ class GeneralBinningBase(
     def _transform_columns_to_bins(
         self, X: np.ndarray[Any, Any], columns: ColumnList
     ) -> np.ndarray[Any, Any]:
-        """Transform columns to bin indices.
+        """Transform columns to bin indices using fitted parameters.
+
+        This abstract method must be implemented by concrete binning classes to
+        define how continuous values are converted to discrete bin indices
+        during the transformation phase.
 
         Args:
-            X: Input data to transform.
-            columns: Column identifiers.
+            X: Input data array to transform. Contains continuous values that
+                need to be converted to bin indices. Shape: (n_samples, n_columns).
+            columns: List of column identifiers corresponding to the columns in X.
+                Used for accessing the appropriate fitted binning parameters.
 
         Returns:
-            Transformed data with bin indices.
+            Transformed data array where continuous values are replaced with
+            discrete bin indices. Shape: (n_samples, n_columns).
+            Bin indices should be integers where:
+            - 0 to n_bins-1: Valid bin indices
+            - MISSING_VALUE (-1): Missing/NaN values
+            - BELOW_RANGE (-3): Values below binning range
+            - ABOVE_RANGE (-2): Values above binning range
+
+        Raises:
+            NotImplementedError: This is an abstract method that must be implemented
+                by concrete subclasses.
+
+        Note:
+            Implementations should handle missing values and out-of-range values
+            appropriately using the framework's special index constants.
         """
         raise NotImplementedError("Subclasses must implement _transform_columns_to_bins")
 

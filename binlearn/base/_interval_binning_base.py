@@ -28,10 +28,73 @@ from ._general_binning_base import GeneralBinningBase
 class IntervalBinningBase(GeneralBinningBase):
     """Interval-based binning functionality inheriting from GeneralBinningBase.
 
-    Provides:
-    - Interval-based transformation logic
-    - Bin edge and representative management
-    - Clipping and special value handling
+    This abstract base class provides specialized functionality for binning methods
+    that create discrete intervals from continuous data. It extends GeneralBinningBase
+    with interval-specific features like bin edge management, representative value
+    calculation, and out-of-range value handling.
+
+    Key Features:
+    - Interval boundary (bin edges) management and validation
+    - Representative value calculation and storage
+    - Clipping behavior for out-of-range values
+    - sklearn-compatible fitted attributes
+    - Comprehensive parameter validation
+
+    The class manages two core concepts:
+    - Bin edges: Define interval boundaries [a, b, c] creating bins [a,b) and [b,c]
+    - Representatives: Values that represent each bin (typically centers or means)
+
+    Parameters:
+    -----------
+    clip : bool, optional
+        Whether to clip out-of-range values to the nearest bin boundaries.
+        If None, uses the global configuration default. When True:
+        - Values below minimum edge are assigned to first bin
+        - Values above maximum edge are assigned to last bin
+        When False, out-of-range values get special indices (BELOW_RANGE, ABOVE_RANGE).
+
+    preserve_dataframe : bool, optional
+        Inherited from GeneralBinningBase. Whether to preserve DataFrame format.
+
+    fit_jointly : bool, optional
+        Inherited from GeneralBinningBase. Whether to fit columns jointly.
+
+    guidance_columns : GuidanceColumns, optional
+        Inherited from GeneralBinningBase. Guidance column specification.
+
+    bin_edges : BinEdgesDict, optional
+        Pre-specified bin edges as a dictionary mapping column identifiers to
+        edge lists. If provided, the fitting process will validate and use these
+        edges instead of computing them from data.
+
+    bin_representatives : BinEdgesDict, optional
+        Pre-specified bin representatives as a dictionary mapping column identifiers
+        to representative value lists. If provided, validates consistency with bin_edges.
+
+    Attributes:
+    -----------
+    clip : bool
+        Whether to clip out-of-range values to bin boundaries.
+
+    bin_edges : BinEdgesDict | None
+        Pre-specified bin edges (input parameter).
+
+    bin_representatives : BinEdgesDict | None
+        Pre-specified bin representatives (input parameter).
+
+    bin_edges_ : BinEdgesDict
+        Fitted bin edges after calling fit(). Dictionary mapping each column
+        to its list of bin boundary values.
+
+    bin_representatives_ : BinEdgesDict
+        Fitted bin representatives after calling fit(). Dictionary mapping each
+        column to its list of representative values.
+
+    Note:
+    -----
+    This is an abstract base class. Concrete implementations must provide the
+    abstract method _calculate_bins() to define how bin edges are computed
+    from input data for their specific binning algorithm.
     """
 
     def __init__(
@@ -43,7 +106,37 @@ class IntervalBinningBase(GeneralBinningBase):
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
     ):
-        """Initialize interval binning base."""
+        """Initialize interval binning base with configuration and validation.
+
+        Sets up the interval binning transformer with the specified parameters,
+        applying configuration defaults and performing early parameter validation
+        to catch configuration errors before fitting.
+
+        Args:
+            clip: Whether to clip out-of-range values to bin boundaries.
+                If None, uses global configuration default.
+            preserve_dataframe: Whether to preserve DataFrame format in output.
+                Passed to GeneralBinningBase. If None, uses global configuration default.
+            fit_jointly: Whether to fit all columns jointly rather than independently.
+                Passed to GeneralBinningBase. If None, uses global configuration default.
+            guidance_columns: Specification of guidance columns for supervised binning.
+                Passed to GeneralBinningBase.
+            bin_edges: Pre-specified bin edges for manual binning. If provided,
+                the fitting process validates and uses these instead of computing
+                from data.
+            bin_representatives: Pre-specified bin representatives. If provided,
+                must be consistent with bin_edges.
+
+        Raises:
+            ValueError: If clip parameter is invalid or pre-specified bins are
+                inconsistent.
+            ConfigurationError: If parameter validation fails.
+
+        Note:
+            Early parameter validation helps catch configuration issues before
+            expensive fitting operations. The bin_edges_ and bin_representatives_
+            attributes are initialized as empty dictionaries and populated during fitting.
+        """
         # Initialize parent
         GeneralBinningBase.__init__(
             self,

@@ -22,6 +22,7 @@ from ..utils import (
 )
 
 
+# pylint: disable=too-many-ancestors
 class EqualFrequencyBinning(IntervalBinningBase):
     """Equal frequency binning implementation using  architecture.
 
@@ -34,6 +35,7 @@ class EqualFrequencyBinning(IntervalBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         n_bins: int | str | None = None,
@@ -41,6 +43,7 @@ class EqualFrequencyBinning(IntervalBinningBase):
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
         class_: str | None = None,  # For reconstruction compatibility

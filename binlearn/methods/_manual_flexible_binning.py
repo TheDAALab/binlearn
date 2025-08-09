@@ -23,6 +23,7 @@ from ..utils import (
 )
 
 
+# pylint: disable=too-many-ancestors
 class ManualFlexibleBinning(FlexibleBinningBase):
     """Manual flexible binning implementation using  architecture.
 
@@ -34,11 +35,13 @@ class ManualFlexibleBinning(FlexibleBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         bin_spec: FlexibleBinSpec,
         bin_representatives: BinEdgesDict | None = None,
         preserve_dataframe: bool | None = None,
+        *,
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):

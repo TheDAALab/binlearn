@@ -16,13 +16,80 @@ from ..utils import DataQualityWarning, InvalidDataError
 
 
 class ValidationMixin:
-    """Mixin class providing enhanced validation capabilities."""
+    """Mixin class providing enhanced validation capabilities for binning operations.
+
+    This mixin provides common validation functionality that can be inherited by
+    binning classes to ensure data quality, parameter validity, and proper input
+    handling. It encapsulates validation logic to promote code reuse and
+    consistent error handling across the binlearn library.
+
+    Key Features:
+    - Array-like input validation and conversion
+    - Column specification validation
+    - Guidance column validation for supervised binning
+    - Data quality checks with warnings
+    - Consistent error messaging and suggestions
+
+    Note:
+    -----
+    This is a mixin class designed to be inherited alongside other base classes.
+    It provides static and instance methods that can be called by binning classes
+    to validate inputs and parameters.
+    """
 
     @staticmethod
     def validate_array_like(
         data: Any, name: str = "data", allow_none: bool = False
     ) -> np.ndarray[Any, Any] | None:
-        """Validate and convert array-like input."""
+        """Validate and convert array-like input to numpy array.
+
+        This method provides robust validation and conversion of various input
+        formats to numpy arrays, with comprehensive error handling and helpful
+        suggestions for common issues.
+
+        Args:
+            data: Input data to validate and convert. Can be:
+                - numpy.ndarray: Used directly
+                - pandas.DataFrame/Series: Converted to numpy array
+                - polars.DataFrame: Converted to numpy array
+                - list, tuple: Converted to numpy array
+                - None: Allowed only if allow_none=True
+            name: Name of the data parameter for error messages. Used to provide
+                context in error messages (e.g., "X", "y", "guidance_data").
+            allow_none: Whether to allow None as a valid input. If True, None
+                is returned unchanged; if False, None raises InvalidDataError.
+
+        Returns:
+            Validated numpy array, or None if data is None and allow_none=True.
+            The returned array maintains the same data content but is guaranteed
+            to be a numpy array.
+
+        Raises:
+            InvalidDataError: If validation fails:
+                - data is None when allow_none=False
+                - data cannot be converted to numpy array
+                - Conversion process encounters errors
+
+        Example:
+            >>> # Valid inputs
+            >>> arr = ValidationMixin.validate_array_like([1, 2, 3], "X")
+            >>> print(type(arr))
+            <class 'numpy.ndarray'>
+            >>>
+            >>> # Allow None
+            >>> result = ValidationMixin.validate_array_like(None, "y", allow_none=True)
+            >>> print(result)
+            None
+            >>>
+            >>> # Invalid input
+            >>> ValidationMixin.validate_array_like(None, "X", allow_none=False)
+            InvalidDataError: X cannot be None
+
+        Note:
+            This method focuses on format validation and conversion. Content
+            validation (like checking for NaN values) should be done separately
+            using other validation methods.
+        """
         if data is None and allow_none:
             return None
 

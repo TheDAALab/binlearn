@@ -182,45 +182,46 @@ def resolve_string_parameter(
 ) -> Any:
     """Resolve a string parameter to its corresponding value.
 
-    Maps string specifications to their corresponding values using a lookup
-    dictionary. Useful for parameters that accept both direct values and
-    string shortcuts (e.g., random_state="auto" -> None).
+    This function maps string specifications to their corresponding values using
+    a lookup dictionary. It's particularly useful for parameters that accept
+    both direct values and string shortcuts, providing a clean interface for
+    user-friendly parameter specification.
 
     Args:
-        value (Union[str, Any]): Parameter value to resolve. If not a string
-            and allow_passthrough=True, returns the value unchanged.
-        valid_options (Dict[str, Any]): Mapping from string specifications
-            to their resolved values.
-        param_name (str): Name of the parameter for error messages.
-        allow_passthrough (bool, optional): Whether to allow non-string values
-            to pass through unchanged. If False, only strings from valid_options
-            are accepted. Defaults to True.
+        value: Parameter value to resolve. Can be:
+            - str: String specification to look up in valid_options
+            - Any other type: Passed through unchanged if allow_passthrough=True
+        valid_options: Dictionary mapping string specifications to their resolved
+            values. Keys should be lowercase for case-insensitive matching.
+        param_name: Name of the parameter being resolved, used in error messages
+            to provide context to users.
+        allow_passthrough: Whether to allow non-string values to pass through
+            unchanged. If False, only strings from valid_options are accepted.
 
     Returns:
-        Any: Resolved parameter value.
+        The resolved parameter value:
+        - If value is a string found in valid_options: returns mapped value
+        - If value is not a string and allow_passthrough=True: returns value unchanged
+        - Otherwise raises ConfigurationError
 
     Raises:
-        ConfigurationError: If string value is not in valid_options or if
-            allow_passthrough=False and value is not a string.
+        ConfigurationError: If the string value is not found in valid_options,
+            or if a non-string value is provided when allow_passthrough=False.
 
     Example:
-        >>> # Define string mappings
-        >>> options = {"auto": None, "sqrt": "sqrt", "log2": "log2"}
-        >>> resolve_string_parameter("auto", options, "max_features")
+        >>> valid_opts = {"auto": None, "random": 42, "fixed": 123}
+        >>> resolve_string_parameter("auto", valid_opts, "random_state")
         None
-
-        >>> # Allow passthrough for direct values
-        >>> resolve_string_parameter(10, options, "max_features")
-        10
-
-        >>> # Restrict to strings only
-        >>> resolve_string_parameter(10, options, "max_features", allow_passthrough=False)
-        ConfigurationError: ...
+        >>> resolve_string_parameter("RANDOM", valid_opts, "random_state")  # case-insensitive
+        42
+        >>> resolve_string_parameter(99, valid_opts, "random_state")  # passthrough
+        99
+        >>> resolve_string_parameter("invalid", valid_opts, "random_state")
+        ConfigurationError: Invalid random_state: "invalid"...
 
     Note:
-        - String matching is case-sensitive
-        - When allow_passthrough=True, validates other types appropriately
-        - Provides helpful suggestions in error messages
+        String matching is case-insensitive - both "auto" and "AUTO" will match
+        a key "auto" in the valid_options dictionary.
     """
     if isinstance(value, str):
         if value in valid_options:
@@ -258,49 +259,58 @@ def validate_numeric_parameter(
 ) -> Any:
     """Validate a numeric parameter with optional constraints.
 
-    Validates that a parameter is numeric and optionally within specified bounds.
-    Provides clear error messages with suggestions for common parameter validation
-    scenarios in binning methods.
+    This function provides comprehensive validation for numeric parameters commonly
+    used in binning methods. It checks type, range constraints, and provides
+    helpful error messages with suggestions for fixing validation failures.
 
     Args:
-        value (Any): Parameter value to validate.
-        param_name (str): Name of the parameter for error messages.
-        min_value (Optional[float], optional): Minimum allowed value (inclusive).
-            If None, no minimum constraint. Defaults to None.
-        max_value (Optional[float], optional): Maximum allowed value (inclusive).
-            If None, no maximum constraint. Defaults to None.
-        allow_none (bool, optional): Whether None is allowed as a valid value.
-            Defaults to False.
-        integer_only (bool, optional): Whether to require integer values only.
-            Defaults to False.
+        value: Parameter value to validate. Expected to be numeric (int, float)
+            unless allow_none=True and value is None.
+        param_name: Name of the parameter being validated, used in error messages
+            to provide clear context to users.
+        min_value: Minimum allowed value (inclusive). If None, no lower bound
+            is enforced. Used for parameters that must be positive or above
+            a certain threshold.
+        max_value: Maximum allowed value (inclusive). If None, no upper bound
+            is enforced. Used for parameters with natural upper limits.
+        allow_none: Whether None is accepted as a valid value. Useful for
+            optional parameters where None indicates automatic behavior.
+        integer_only: Whether to enforce integer values only. Useful for
+            discrete parameters like number of bins, iterations, etc.
 
     Returns:
-        Any: The validated value, unchanged if valid.
+        The input value unchanged if it passes all validation checks.
 
     Raises:
-        ConfigurationError: If validation fails:
-            - Value is None when not allowed
-            - Value is not numeric
-            - Value is not integer when required
-            - Value is outside specified bounds
+        ConfigurationError: If validation fails with detailed explanation:
+            - Value is None when allow_none=False
+            - Value is not numeric (int or float)
+            - Value is not integer when integer_only=True
+            - Value is below min_value or above max_value
+            - Value is boolean (special case - booleans are rejected explicitly)
 
     Example:
-        >>> # Basic numeric validation
+        >>> # Validate positive integer (common for n_bins)
         >>> validate_numeric_parameter(10, "n_bins", min_value=1, integer_only=True)
         10
 
-        >>> # Float validation with bounds
-        >>> validate_numeric_parameter(0.5, "alpha", min_value=0.0, max_value=1.0)
-        0.5
+        >>> # Validate probability parameter
+        >>> validate_numeric_parameter(0.25, "test_size", min_value=0.0, max_value=1.0)
+        0.25
 
-        >>> # Allow None
-        >>> validate_numeric_parameter(None, "max_depth", allow_none=True)
+        >>> # Optional parameter allowing None
+        >>> validate_numeric_parameter(None, "random_state", allow_none=True)
         None
 
+        >>> # Integer-only validation
+        >>> validate_numeric_parameter(5.7, "max_depth", integer_only=True)
+        ConfigurationError: max_depth must be an integer...
+
     Note:
-        - Integer validation uses isinstance(value, int) and excludes booleans
-        - Float validation accepts both int and float types
-        - Error messages include helpful suggestions for common cases
+        - Boolean values are explicitly rejected even though they're technically numeric
+        - NaN and infinite values are rejected as invalid
+        - The function preserves the original numeric type (int vs float) when valid
+        - Error messages include suggestions for fixing common validation issues
     """
     # Handle None values
     if value is None:
@@ -350,45 +360,47 @@ def validate_bin_number_parameter(
 ) -> None:
     """Validate a bin number parameter (n_bins, n_components, etc.).
 
-    Provides centralized validation for parameters that accept either positive integers
-    or specific string specifications. This function ensures consistent validation
-    behavior and error messages across all binning methods.
+    This function provides centralized validation for parameters that specify
+    the number of bins or components in binning methods. It handles both
+    direct integer specifications and string-based automatic calculations.
 
     Args:
-        value (Union[int, str]): The parameter value to validate. Can be:
+        value: The parameter value to validate. Can be:
             - int: Must be a positive integer (>= 1)
-            - str: Must be one of the valid string specifications
-        param_name (str, optional): Name of the parameter being validated, used
-            in error messages. Defaults to "n_bins".
-        valid_strings (Optional[Set[str]], optional): Set of valid string specifications.
-            If None, defaults to standard specifications:
-            {"sqrt", "log", "ln", "log2", "log10", "sturges"}. Defaults to None.
+            - str: Must be one of the valid string specifications for automatic calculation
+        param_name: Name of the parameter being validated, used in error messages
+            to provide clear context.
+        valid_strings: Set of valid string specifications that are accepted.
+            If None, uses default set: {"sqrt", "log", "ln", "log2", "log10", "sturges"}.
+            These strings typically correspond to automatic bin count calculations.
 
     Raises:
-        ConfigurationError: If validation fails with the message
-            "{param_name} must be a positive integer" for consistency with
-            existing test expectations. Includes helpful suggestions for:
-            - Invalid integer values (negative, zero, non-integer types)
-            - Invalid string specifications
-            - Non-string, non-integer types
+        ConfigurationError: If validation fails with detailed explanation and suggestions:
+            - Value is not an integer or string
+            - Integer value is not positive (< 1)
+            - String value is not in the valid_strings set
+            - Boolean values are provided (explicitly rejected)
 
     Example:
-        >>> # Valid cases
-        >>> validate_bin_number_parameter(10)  # Valid integer
-        >>> validate_bin_number_parameter("sqrt")  # Valid string
-        >>> validate_bin_number_parameter("log2", "n_components")  # Valid with custom param name
-
-        >>> # Invalid cases (will raise ConfigurationError)
-        >>> validate_bin_number_parameter(0)  # Zero not allowed
-        >>> validate_bin_number_parameter(-5)  # Negative not allowed
-        >>> validate_bin_number_parameter("invalid")  # Invalid string
-        >>> validate_bin_number_parameter(3.14)  # Float not allowed
+        >>> # Valid integer specification
+        >>> validate_bin_number_parameter(10, "n_bins")  # No exception
+        >>>
+        >>> # Valid string specification
+        >>> validate_bin_number_parameter("sqrt", "n_bins")  # No exception
+        >>>
+        >>> # Invalid cases
+        >>> validate_bin_number_parameter(0, "n_bins")
+        ConfigurationError: n_bins must be a positive integer...
+        >>>
+        >>> validate_bin_number_parameter("invalid", "n_bins")
+        ConfigurationError: n_bins must be a positive integer...
 
     Note:
-        - Consistent error message format ensures backward compatibility with tests
-        - Provides helpful suggestions for common mistakes
-        - Centralizes validation logic to reduce code duplication
-        - String specifications are case-insensitive ("sqrt" == "SQRT")
+        - This function only validates the parameter format and value range
+        - Actual resolution of string specifications to integer values should be
+          done using resolve_n_bins_parameter() which requires data shape information
+        - Boolean values are explicitly rejected even though bool is a subclass of int
+        - Error messages are designed to be consistent with existing test expectations
     """
     if valid_strings is None:
         valid_strings = {"sqrt", "log", "ln", "log2", "log10", "sturges"}
@@ -435,33 +447,43 @@ def validate_bin_number_for_calculation(
 ) -> None:
     """Validate bin number parameter specifically for _calculate_bins methods.
 
-    This function provides early validation for integer values in _calculate_bins
-    methods to maintain backward compatibility with existing tests. It only validates
-    integer values and lets string values pass through to be resolved later.
+    This specialized validation function is designed for use in _calculate_bins
+    methods where early integer validation is needed while allowing string
+    specifications to pass through for later resolution. It maintains strict
+    compatibility with existing test expectations.
 
     Args:
-        value (Union[int, str]): The parameter value to validate.
-        param_name (str, optional): Name of the parameter being validated.
-            Defaults to "n_bins".
+        value: The parameter value to validate. Expected types:
+            - int: Must be >= 1 (positive integer validation)
+            - str: Passes through without validation (resolved later)
+        param_name: Name of the parameter being validated, used in error
+            messages for clear context.
 
     Raises:
-        ValueError: If the value is an integer less than 1, with the exact
+        ValueError: If the value is an integer less than 1. Uses the exact
             error message format expected by existing tests:
             "{param_name} must be >= 1, got {value}"
 
     Example:
-        >>> # Valid cases
-        >>> validate_bin_number_for_calculation(10)  # Valid integer - no error
-        >>> validate_bin_number_for_calculation("sqrt")  # String - no validation, passes through
-
-        >>> # Invalid case (will raise ValueError)
-        >>> validate_bin_number_for_calculation(-1)  # ValueError: n_bins must be >= 1, got -1
+        >>> # Valid integer - passes validation
+        >>> validate_bin_number_for_calculation(5, "n_bins")  # No error
+        >>>
+        >>> # String specification - passes through
+        >>> validate_bin_number_for_calculation("sqrt", "n_bins")  # No error
+        >>>
+        >>> # Invalid integer - raises ValueError
+        >>> validate_bin_number_for_calculation(0, "n_bins")
+        ValueError: n_bins must be >= 1, got 0
+        >>>
+        >>> validate_bin_number_for_calculation(-2, "max_clusters")
+        ValueError: max_clusters must be >= 1, got -2
 
     Note:
-        - Used specifically in _calculate_bins methods for backward compatibility
-        - Only validates integers, strings pass through for later resolution
-        - Maintains exact error message format expected by existing tests
-        - Should be called before resolve_n_bins_parameter()
+        - This function is specifically designed for _calculate_bins methods
+        - Only validates integer values; strings are intentionally not validated here
+        - String specifications should be resolved using resolve_n_bins_parameter()
+        - Maintains backward compatibility with existing test suites
+        - Uses ValueError (not ConfigurationError) to match test expectations
     """
     if isinstance(value, int) and value < 1:
         raise ValueError(f"{param_name} must be >= 1, got {value}")
@@ -473,7 +495,53 @@ def validate_bin_number_for_calculation(
 
 
 def validate_tree_params(task_type: str, tree_params: dict[str, Any]) -> dict[str, Any]:
-    """Validate tree parameters for SupervisedBinning."""
+    """Validate tree parameters for SupervisedBinning methods.
+
+    This function validates parameters that will be passed to scikit-learn's
+    DecisionTreeClassifier or DecisionTreeRegressor, ensuring they are valid
+    and providing helpful error messages for common configuration mistakes.
+
+    Args:
+        task_type: Type of supervised learning task ("classification" or "regression").
+            Currently not used in validation but reserved for future task-specific
+            parameter validation.
+        tree_params: Dictionary of parameters to pass to the underlying scikit-learn
+            DecisionTree estimator. Keys should be valid DecisionTree parameter names.
+
+    Returns:
+        The input tree_params dictionary unchanged if validation passes. This allows
+        the function to be used in a pass-through manner while performing validation.
+
+    Raises:
+        ConfigurationError: If validation fails with detailed explanation:
+            - Invalid parameter names that are not recognized by DecisionTree
+            - Parameter values that are outside valid ranges
+            - Parameter types that don't match expected types
+
+    Example:
+        >>> # Valid parameters
+        >>> params = {"max_depth": 5, "min_samples_split": 10, "random_state": 42}
+        >>> validated = validate_tree_params("classification", params)
+        >>> print(validated == params)
+        True
+        >>>
+        >>> # Invalid parameter name
+        >>> bad_params = {"invalid_param": 123}
+        >>> validate_tree_params("classification", bad_params)
+        ConfigurationError: Invalid tree parameters: {'invalid_param'}...
+        >>>
+        >>> # Invalid parameter value
+        >>> bad_params = {"max_depth": -1}
+        >>> validate_tree_params("classification", bad_params)
+        ConfigurationError: max_depth must be a positive integer or None...
+
+    Note:
+        - Validates against standard scikit-learn DecisionTree parameters
+        - Empty tree_params dictionary is valid and returns empty dict
+        - Parameter validation focuses on the most commonly misconfigured parameters
+        - More comprehensive validation may be added for task-specific parameters
+        - The task_type parameter is currently unused but reserved for future enhancements
+    """
     _ = task_type
 
     if not tree_params:

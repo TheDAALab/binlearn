@@ -23,6 +23,7 @@ from ..utils import (
 )
 
 
+# pylint: disable=too-many-ancestors
 class IsotonicBinning(SupervisedBinningBase):
     """Isotonic regression-based monotonic binning implementation using  architecture.
 
@@ -35,6 +36,7 @@ class IsotonicBinning(SupervisedBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         max_bins: int | str | None = None,
@@ -46,6 +48,7 @@ class IsotonicBinning(SupervisedBinningBase):
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
         class_: str | None = None,  # For reconstruction compatibility

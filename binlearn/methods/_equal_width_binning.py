@@ -15,6 +15,7 @@ from ..config import apply_config_defaults
 from ..utils import BinEdgesDict
 
 
+# pylint: disable=too-many-ancestors
 class EqualWidthBinning(IntervalBinningBase):
     """Equal width binning implementation using  architecture.
 
@@ -25,6 +26,7 @@ class EqualWidthBinning(IntervalBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         n_bins: int | None = None,
@@ -33,6 +35,7 @@ class EqualWidthBinning(IntervalBinningBase):
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
         class_: str | None = None,  # For reconstruction compatibility

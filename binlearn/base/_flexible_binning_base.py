@@ -21,14 +21,48 @@ from ._general_binning_base import GeneralBinningBase
 
 
 class FlexibleBinningBase(GeneralBinningBase):
-    """Flexible binning functionality inheriting from GeneralBinningBase.
+    """Base class for flexible binning methods that support mixed bin types.
 
-    For binning methods that use flexible, non-interval-based binning strategies.
+    This class extends GeneralBinningBase to provide specialized functionality for
+    flexible binning methods. Unlike traditional interval-based binning, flexible
+    binning supports mixed bin types within the same feature, including singleton
+    bins (exact value matching) and interval bins (range matching) in any combination.
 
-    Provides:
-    - Flexible bin specification and management
-    - Custom transformation logic for non-interval methods
-    - Bin mapping and lookup functionality
+    Flexible binning is particularly useful for:
+    - Categorical features with numeric representations
+    - Mixed data types requiring different binning strategies per value
+    - Custom binning schemes that don't fit traditional interval patterns
+    - Data with important singleton values that should be preserved exactly
+
+    Key Features:
+    - Mixed bin types: Combine singleton and interval bins in the same feature
+    - Custom bin specifications: Define bins as either exact values or ranges
+    - Automatic representative generation: Creates numeric representatives for mixed bins
+    - Flexible transformation: Handles both numeric and non-numeric data appropriately
+
+    Attributes:
+        bin_spec: Dictionary mapping column identifiers to lists of flexible bin
+            definitions. Each bin can be either a scalar (singleton) or tuple (interval).
+        bin_representatives: Dictionary mapping column identifiers to lists of
+            numeric representative values for each bin. Auto-generated if not provided.
+
+    Example:
+        >>> # Example of flexible bin specification
+        >>> bin_spec = {
+        ...     'mixed_feature': [
+        ...         42,           # Singleton bin: exactly value 42
+        ...         (10, 20),     # Interval bin: range [10, 20]
+        ...         'special',    # Categorical singleton
+        ...         (100, 200)    # Another interval
+        ...     ]
+        ... }
+
+    Note:
+        - This is an abstract base class - use concrete implementations like ManualFlexibleBinning
+        - Bin representatives are automatically generated as midpoints for intervals and
+          preserved values for singletons (with numeric conversion where possible)
+        - Inherits all functionality from GeneralBinningBase including fit/transform interface
+        - Subclasses must implement the abstract _do_fit_single_column method
     """
 
     def __init__(
@@ -39,7 +73,48 @@ class FlexibleBinningBase(GeneralBinningBase):
         bin_spec: FlexibleBinSpec | None = None,
         bin_representatives: BinEdgesDict | None = None,
     ):
-        """Initialize flexible binning base."""
+        """Initialize flexible binning base class.
+
+        Args:
+            preserve_dataframe: Whether to preserve the original DataFrame format
+                during transformation. If True, returns DataFrame when input is DataFrame.
+                If False, returns numpy array. If None, uses the global configuration
+                default from binlearn.config.preserve_dataframe.
+            fit_jointly: Whether to fit all columns together using shared information.
+                If True, performs joint fitting across columns. If False, fits each
+                column independently. If None, uses method-specific default behavior.
+            guidance_columns: Additional columns to use as guidance for binning decisions.
+                These columns are not binned themselves but can influence the binning
+                of other columns. Can be column names/indices or None for no guidance.
+            bin_spec: Pre-defined flexible bin specification as a dictionary mapping
+                column identifiers to lists of bin definitions. Each bin definition
+                can be either a scalar value (singleton bin) or a tuple (interval bin).
+                If provided, no fitting is performed and this specification is used directly.
+            bin_representatives: Pre-defined representative values for each bin as a
+                dictionary mapping column identifiers to lists of numeric values.
+                Must match the structure of bin_spec if provided. If None, representatives
+                are automatically generated from bin_spec.
+
+        Raises:
+            ConfigurationError: If bin specifications are invalid or incompatible.
+
+        Example:
+            >>> # Initialize with custom bin specification
+            >>> bin_spec = {
+            ...     'feature1': [10, (20, 30), 40],
+            ...     'feature2': ['A', 'B', (1, 5)]
+            ... }
+            >>> binner = ConcreteFlexibleBinner(bin_spec=bin_spec)
+            >>>
+            >>> # Initialize for automatic fitting
+            >>> binner = ConcreteFlexibleBinner(fit_jointly=True)
+
+        Note:
+            - When bin_spec is provided, the binning is pre-configured and fit() becomes a no-op
+            - bin_representatives will be auto-generated if not provided with bin_spec
+            - guidance_columns feature may not be supported by all flexible binning methods
+            - All parameters are passed to the parent GeneralBinningBase constructor
+        """
         # Initialize parent
         GeneralBinningBase.__init__(
             self,
@@ -63,7 +138,25 @@ class FlexibleBinningBase(GeneralBinningBase):
         self._validate_params()
 
     def _validate_params(self) -> None:
-        """Validate flexible binning parameters."""
+        """Validate flexible binning parameters and initialize fitted attributes.
+
+        This method performs comprehensive validation of the flexible binning parameters
+        and pre-processes any provided bin specifications. It handles auto-generation
+        of bin representatives and sets up the fitted state when complete specifications
+        are provided.
+
+        Raises:
+            ConfigurationError: If bin specifications are invalid, bin_spec is not a
+                dictionary, or bin_representatives format is invalid.
+
+        Note:
+            - Calls parent class parameter validation first
+            - Auto-generates numeric representatives for bin specifications when not provided
+            - For singleton bins, uses the value itself (converted to float if possible)
+            - For interval bins, uses the midpoint as the representative
+            - Non-numeric singleton values get a placeholder representative (0.0)
+            - Sets sklearn attributes automatically when complete specifications are provided
+        """
         # Call parent validation
         GeneralBinningBase._validate_params(self)
 
@@ -110,7 +203,21 @@ class FlexibleBinningBase(GeneralBinningBase):
             raise ConfigurationError(str(e)) from e
 
     def _set_sklearn_attributes_from_specs(self) -> None:
-        """Set sklearn attributes from bin specifications."""
+        """Set sklearn-compatible attributes from flexible bin specifications.
+
+        This method configures the sklearn-compatible attributes (_feature_names_in
+        and _n_features_in) based on the provided bin specifications and guidance
+        columns. It ensures compatibility with sklearn's metadata routing and
+        feature inspection APIs.
+
+        Note:
+            - Extracts column identifiers from bin_spec_ as primary features
+            - Adds guidance_columns to the feature list if provided
+            - Handles both single guidance column and list of guidance columns
+            - Avoids duplicate columns when guidance columns overlap with binning columns
+            - Sets _feature_names_in to the complete list of input columns
+            - Sets _n_features_in to the total number of expected input features
+        """
         if self.bin_spec_ is not None:
             # Get column names/indices from bin_spec
             binning_columns = list(self.bin_spec_.keys())
@@ -139,7 +246,31 @@ class FlexibleBinningBase(GeneralBinningBase):
         guidance_data: np.ndarray[Any, Any] | None = None,
         **fit_params: Any,
     ) -> None:
-        """Fit binning parameters independently for each column."""
+        """Fit flexible binning parameters independently for each column.
+
+        This method implements independent column fitting for flexible binning,
+        where each column is analyzed separately to determine its optimal bin
+        structure. This is the default fitting strategy for most flexible
+        binning methods.
+
+        Args:
+            X: Input data array with shape (n_samples, n_features) where each
+                column will be fitted independently.
+            columns: List of column identifiers corresponding to the columns in X.
+                Used for bin specification keys and error messages.
+            guidance_data: Optional guidance data array that can influence binning
+                decisions but is not binned itself. Same guidance data is provided
+                to all columns during fitting.
+            **fit_params: Additional parameters passed to the underlying bin
+                calculation method (_calculate_flexible_bins).
+
+        Note:
+            - Creates separate bin specifications for each column in self.bin_spec_
+            - Creates separate representatives for each column in self.bin_representatives_
+            - Validates that each column contains numeric data before processing
+            - Delegates actual bin calculation to the abstract _calculate_flexible_bins method
+            - Each column is processed independently without sharing information
+        """
         self.bin_spec_ = {}
         self.bin_representatives_ = {}
 
@@ -157,7 +288,26 @@ class FlexibleBinningBase(GeneralBinningBase):
     def _fit_jointly_across_columns(
         self, X: np.ndarray[Any, Any], columns: ColumnList, **fit_params: Any
     ) -> None:
-        """Fit binning parameters jointly across all columns."""
+        """Fit flexible binning parameters jointly across all columns.
+
+        This method implements joint fitting for flexible binning, where information
+        from all columns is considered together during bin determination. For most
+        flexible binning methods, this defaults to independent fitting unless
+        overridden by specific implementations.
+
+        Args:
+            X: Input data array with shape (n_samples, n_features) where all
+                columns will be considered together during fitting.
+            columns: List of column identifiers corresponding to the columns in X.
+                Used for bin specification keys and error messages.
+            **fit_params: Additional parameters passed to the underlying fitting logic.
+
+        Note:
+            - Default implementation delegates to _fit_per_column_independently
+            - Subclasses can override this method to implement true joint fitting
+            - Joint fitting might consider correlations or dependencies between columns
+            - The choice between joint and independent fitting is controlled by fit_jointly parameter
+        """
         # For flexible binning, joint fitting is typically the same as per-column fitting
         # unless overridden by specific implementations
         self._fit_per_column_independently(X, columns, None, **fit_params)
@@ -165,7 +315,34 @@ class FlexibleBinningBase(GeneralBinningBase):
     def _transform_columns_to_bins(
         self, X: np.ndarray[Any, Any], columns: ColumnList
     ) -> np.ndarray[Any, Any]:
-        """Transform columns to bin indices using flexible mapping."""
+        """Transform data columns to bin indices using flexible bin mapping.
+
+        This method performs the core transformation operation for flexible binning,
+        mapping each value in the input data to its corresponding bin index. It
+        handles both singleton and interval bins within the same column.
+
+        Args:
+            X: Input data array with shape (n_samples, n_features) to transform.
+                Each column should correspond to a column that was fitted.
+            columns: List of column identifiers corresponding to the columns in X.
+                Used to match with the fitted bin specifications.
+
+        Returns:
+            Transformed array with same shape as input, containing integer bin indices.
+            Values that don't match any bin are assigned MISSING_VALUE (-1).
+
+        Raises:
+            ValueError: If the number of input columns doesn't match the number of
+                fitted bin specifications.
+
+        Note:
+            - Uses transform_value_to_flexible_bin utility for individual value transformation
+            - Handles missing values and out-of-range values by assigning MISSING_VALUE (-1)
+            - Each value is compared against all bin definitions for its column
+            - For singleton bins, uses exact equality comparison
+            - For interval bins, uses inclusive range comparison [start, end]
+            - Returns the first matching bin index if multiple bins could match
+        """
         if X.size == 0:
             return np.empty((X.shape[0], 0))
 
@@ -196,7 +373,31 @@ class FlexibleBinningBase(GeneralBinningBase):
     def _inverse_transform_bins_to_values(
         self, X: np.ndarray[Any, Any], columns: ColumnList
     ) -> np.ndarray[Any, Any]:
-        """Transform bin indices to representative values."""
+        """Transform bin indices back to representative values.
+
+        This method performs the inverse transformation for flexible binning,
+        mapping bin indices back to their corresponding representative values.
+        It's used to reconstruct approximate original values from bin indices.
+
+        Args:
+            X: Input array with shape (n_samples, n_features) containing integer
+                bin indices to be transformed back to representative values.
+            columns: List of column identifiers corresponding to the columns in X.
+                Used to match with the fitted bin representatives.
+
+        Returns:
+            Array with same shape as input, containing float representative values
+            for each bin index. Invalid indices are clipped to valid range.
+
+        Note:
+            - Uses the bin_representatives_ fitted during training
+            - Invalid bin indices (< 0 or >= n_bins) are clipped to valid range
+            - For flexible binning, representatives are typically:
+              - The original singleton value for singleton bins
+              - The interval midpoint for interval bins
+            - Output is always float type for consistency, even if original values were integers
+            - Missing values (MISSING_VALUE indices) are clipped to first bin representative
+        """
         if X.size == 0:
             return np.empty((X.shape[0], 0))
 

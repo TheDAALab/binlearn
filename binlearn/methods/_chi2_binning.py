@@ -17,6 +17,7 @@ from ..config import apply_config_defaults
 from ..utils import BinEdgesDict, FittingError
 
 
+# pylint: disable=too-many-ancestors
 class Chi2Binning(SupervisedBinningBase):
     """Chi-square binning implementation.
 
@@ -30,6 +31,7 @@ class Chi2Binning(SupervisedBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         max_bins: int | None = None,
@@ -39,6 +41,7 @@ class Chi2Binning(SupervisedBinningBase):
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
         class_: str | None = None,  # For reconstruction compatibility

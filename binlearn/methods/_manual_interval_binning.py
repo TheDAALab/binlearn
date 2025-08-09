@@ -16,6 +16,7 @@ from ..config import apply_config_defaults
 from ..utils import ArrayLike, BinEdgesDict, ConfigurationError
 
 
+# pylint: disable=too-many-ancestors
 class ManualIntervalBinning(IntervalBinningBase):
     """Manual interval binning implementation using  architecture.
 
@@ -27,12 +28,14 @@ class ManualIntervalBinning(IntervalBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         bin_edges: BinEdgesDict,
         bin_representatives: BinEdgesDict | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
+        *,
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):

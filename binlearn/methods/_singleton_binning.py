@@ -17,6 +17,7 @@ from ..config import apply_config_defaults
 from ..utils import DataQualityWarning
 
 
+# pylint: disable=too-many-ancestors
 class SingletonBinning(FlexibleBinningBase):
     """Singleton binning implementation using  architecture.
 
@@ -28,10 +29,12 @@ class SingletonBinning(FlexibleBinningBase):
     dynamic column resolution, and parameter reconstruction capabilities.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
+        *,
         bin_spec: Any | None = None,  # FlexibleBinSpec
         bin_representatives: Any | None = None,  # BinEdgesDict
         class_: str | None = None,  # For reconstruction compatibility

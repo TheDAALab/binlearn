@@ -24,8 +24,34 @@ from ._validation_mixin import ValidationMixin
 class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
     """Pure data handling for multi-format inputs and outputs.
 
-    Handles data format conversion, validation, and preservation without
-    assumptions about binning, guidance, or fitted state.
+    This base class provides comprehensive data format handling capabilities
+    without making assumptions about binning algorithms or specific use cases.
+    It manages input/output format conversions, column preservation, and
+    validation in a clean, reusable way.
+
+    Key Features:
+    - Multi-format input support (pandas, polars, numpy)
+    - Format preservation for outputs
+    - Column name and metadata management
+    - sklearn-compatible feature tracking
+    - Validation integration
+
+    The class handles the complexity of working with different data formats
+    while providing a consistent interface for derived binning classes.
+
+    Attributes:
+    -----------
+    _original_columns : OptionalColumnList
+        Stores original column information for format preservation.
+
+    _feature_names_in : list[str] | None
+        Stores feature names from fitted data for sklearn compatibility.
+
+    Note:
+    -----
+    This is a base class designed to be inherited by binning classes.
+    It provides the data handling infrastructure without imposing
+    binning-specific constraints or assumptions.
     """
 
     def __init__(self) -> None:
