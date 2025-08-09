@@ -18,6 +18,7 @@ from ..utils import (
     BinEdgesDict,
     ConfigurationError,
     FittingError,
+    resolve_n_bins_parameter,
     validate_bin_number_parameter,
 )
 
@@ -131,10 +132,7 @@ class IsotonicBinning(SupervisedBinningBase):
             )
 
         # Validate min_change_threshold parameter
-        if (
-            not isinstance(self.min_change_threshold, int | float)
-            or self.min_change_threshold <= 0
-        ):
+        if not isinstance(self.min_change_threshold, int | float) or self.min_change_threshold <= 0:
             raise ConfigurationError(
                 "min_change_threshold must be a positive number",
                 suggestions=["Example: min_change_threshold=0.01"],
@@ -167,8 +165,15 @@ class IsotonicBinning(SupervisedBinningBase):
         if guidance_data is None:
             raise FittingError(f"Column {col_id}: guidance_data is required for isotonic binning")
 
-        # Convert categorical guidance data to numeric before processing
+        # Prepare guidance data for processing
         guidance_data_numeric = self._prepare_target_values(guidance_data)
+
+        # Validate guidance data shape matches feature data
+        if len(guidance_data_numeric) != len(x_col):
+            raise ValueError(
+                f"Column {col_id}: Guidance data length ({len(guidance_data_numeric)}) "
+                f"does not match feature data length ({len(x_col)})"
+            )
 
         # Check if we have sufficient data
         if len(x_col) < self.min_samples_per_bin:
@@ -200,6 +205,26 @@ class IsotonicBinning(SupervisedBinningBase):
             The data is already preprocessed by the base class, so we don't need
             to handle NaN/inf values or constant data here.
         """
+        # Resolve max_bins parameter for this dataset
+        resolved_max_bins = resolve_n_bins_parameter(
+            self.max_bins, data_shape=(len(x_col), 1), param_name="max_bins"
+        )
+
+        # Handle infinity values in feature data first (before constant feature check)
+        if np.any(np.isinf(x_col)):
+            x_finite_mask = np.isfinite(x_col)
+            if not np.any(x_finite_mask):
+                raise ValueError(f"Column {col_id}: All feature values are infinite")
+
+            # Replace inf values with finite extremes
+            x_min_finite = np.min(x_col[x_finite_mask])
+            x_max_finite = np.max(x_col[x_finite_mask])
+            x_range = x_max_finite - x_min_finite
+
+            # Replace -inf with minimum - 10% of range, +inf with maximum + 10% of range
+            x_col = np.where(x_col == -np.inf, x_min_finite - max(abs(x_range) * 0.1, 1.0), x_col)
+            x_col = np.where(x_col == np.inf, x_max_finite + max(abs(x_range) * 0.1, 1.0), x_col)
+
         # Handle constant feature data
         if len(np.unique(x_col)) == 1:
             x_val = float(x_col[0])
@@ -213,13 +238,6 @@ class IsotonicBinning(SupervisedBinningBase):
         # Ensure both arrays are 1D for sklearn's IsotonicRegression
         x_sorted = x_sorted.flatten()
         y_sorted = y_sorted.flatten()
-
-        # Verify shapes match
-        if len(x_sorted) != len(y_sorted):
-            raise ValueError(
-                f"Column {col_id}: Feature and target arrays have mismatched lengths: "
-                f"{len(x_sorted)} vs {len(y_sorted)}"
-            )
 
         # Fit isotonic regression
         try:
@@ -237,7 +255,7 @@ class IsotonicBinning(SupervisedBinningBase):
         self._isotonic_models[col_id] = isotonic_model
 
         # Find cut points based on fitted function changes
-        cut_points = self._find_cut_points(x_sorted, y_fitted)
+        cut_points = self._find_cut_points(x_sorted, y_fitted, resolved_max_bins)
 
         # Create bin edges and representatives
         return self._create_bins_from_cuts(x_sorted, y_fitted, cut_points, col_id)
@@ -245,27 +263,25 @@ class IsotonicBinning(SupervisedBinningBase):
     def _prepare_target_values(self, y_values: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """Prepare target values for isotonic regression.
 
-        Converts categorical targets to numeric values and applies bounds if specified.
-
         Args:
-            y_values: Raw target values
+            y_values: Raw target values (may be 2D with shape (n_samples, 1))
 
         Returns:
-            Processed target values suitable for isotonic regression
+            Processed target values suitable for isotonic regression (1D array)
         """
-        # Handle object/categorical data
-        if y_values.dtype == object or not np.issubdtype(y_values.dtype, np.number):
-            # Convert categorical to numeric (for classification)
-            unique_values = np.unique(y_values)
-            value_mapping = {val: i for i, val in enumerate(unique_values)}
-            y_processed = np.array([value_mapping[val] for val in y_values], dtype=float)
+        # Flatten if 2D with single column (guidance_data format)
+        if y_values.ndim == 2 and y_values.shape[1] == 1:
+            y_values_flat = y_values.flatten()
         else:
-            y_processed = y_values.astype(float)
+            y_values_flat = y_values
+
+        # Convert to float for isotonic regression
+        y_processed = y_values_flat.astype(float)
 
         return y_processed
 
     def _find_cut_points(
-        self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any]
+        self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any], max_bins: int
     ) -> list[int]:
         """Find cut points based on changes in fitted isotonic function.
 
@@ -275,6 +291,7 @@ class IsotonicBinning(SupervisedBinningBase):
         Args:
             x_sorted: Sorted feature values
             y_fitted: Fitted isotonic regression values
+            max_bins: Maximum number of bins allowed (resolved from string)
 
         Returns:
             Indices of cut points in the sorted arrays
@@ -302,7 +319,7 @@ class IsotonicBinning(SupervisedBinningBase):
             if (
                 relative_change >= self.min_change_threshold
                 and samples_since_cut >= self.min_samples_per_bin
-                and len(cut_indices) < self.max_bins
+                and len(cut_indices) < max_bins - 1  # Ensure we don't exceed max_bins
             ):
                 cut_indices.append(i)
 

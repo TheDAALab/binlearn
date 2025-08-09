@@ -663,7 +663,9 @@ class TestTreeBinning:
 
         binner = TreeBinning(task_type="classification")
 
-        with pytest.raises((ValueError, FittingError, ValidationError)):  # Should fail during input validation
+        with pytest.raises(
+            (ValueError, FittingError, ValidationError)
+        ):  # Should fail during input validation
             binner.fit(X, y=y)
 
     def test_mismatched_feature_target_length(self):
@@ -682,7 +684,9 @@ class TestTreeBinning:
 
         binner = TreeBinning()
 
-        with pytest.raises((AttributeError, ValidationError, RuntimeError)):  # Should fail - not fitted
+        with pytest.raises(
+            (AttributeError, ValidationError, RuntimeError)
+        ):  # Should fail - not fitted
             binner.transform(X)
 
     def test_very_deep_tree_params(self):

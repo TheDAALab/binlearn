@@ -153,30 +153,10 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
             self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
         )
 
-        # Handle guidance_data dimensionality - extract single column if 2D
-        if guidance_data.ndim == 2:
-            if guidance_data.shape[1] != 1:
-                raise ValueError(
-                    f"Column {col_id}: EqualWidthMinimumWeightBinning requires "
-                    f"exactly 1 guidance column, "
-                    f"but received {guidance_data.shape[1]} columns. "
-                    f"Please specify a single guidance column."
-                )
-            # Extract the first (and only) column
-            guidance_data = guidance_data[:, 0]
-        elif guidance_data.ndim != 1:
-            raise ValueError(
-                f"Column {col_id}: guidance_data must be 1D or 2D with single column, "
-                f"but has {guidance_data.ndim} dimensions."
-            )
+        # Extract the single weight column (guaranteed to have shape (n_samples, 1) by SupervisedBinningBase)
+        weights = guidance_data[:, 0]
 
-        # Check if we have sufficient data
-        if len(x_col) == 0 or len(guidance_data) == 0:
-            raise FittingError(f"Column {col_id}: Insufficient data points for binning")
-
-        return self._create_equal_width_minimum_weight_bins(
-            x_col, guidance_data, col_id, resolved_n_bins
-        )
+        return self._create_equal_width_minimum_weight_bins(x_col, weights, col_id, resolved_n_bins)
 
     def _create_equal_width_minimum_weight_bins(
         self,
