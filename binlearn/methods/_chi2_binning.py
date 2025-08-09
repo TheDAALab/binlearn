@@ -156,7 +156,7 @@ class Chi2Binning(SupervisedBinningBase):
                 "Chi2 binning requires at least 2 target classes."
             )
 
-        return unique_classes
+        return np.asarray(unique_classes)
 
     def _create_initial_bins(
         self, x_col: np.ndarray[Any, Any]
