@@ -25,14 +25,97 @@ from ..utils import (
 
 # pylint: disable=too-many-ancestors
 class ManualFlexibleBinning(FlexibleBinningBase):
-    """Manual flexible binning implementation using  architecture.
+    """Manual flexible binning implementation for user-defined mixed bin types.
 
-    Creates bins using explicitly provided bin specifications that can include both:
-    - Singleton bins: exact numeric value matches (e.g., specific values or outliers)
-    - Interval bins: numeric range matches (e.g., [min, max) intervals)
+    This class provides complete control over flexible binning by allowing users
+    to specify bin definitions that can include both singleton bins (exact value
+    matching) and interval bins (range matching) within the same feature. This
+    flexibility makes it ideal for domain-specific binning requirements, handling
+    special values, and creating custom discretization schemes.
 
-    This implementation follows the clean  architecture with straight inheritance,
-    dynamic column resolution, and parameter reconstruction capabilities.
+    Manual flexible binning is particularly useful for:
+    - Mixed data types requiring both exact and range-based binning
+    - Handling special values (outliers, missing indicators) as singleton bins
+    - Domain-specific requirements with irregular bin boundaries
+    - Creating bins that combine categorical-like values with continuous ranges
+
+    Key Features:
+    - Support for mixed bin types within the same feature
+    - Singleton bins for exact value matching
+    - Interval bins for range-based matching
+    - No data-dependent bin calculation - uses provided specifications exactly
+    - Automatic generation of representatives if not provided
+    - Integration with binlearn's format preservation features
+
+    Algorithm:
+    1. Validate and store user-provided flexible bin specifications
+    2. Generate default representatives if not provided:
+       - For singleton bins: use the singleton value itself
+       - For interval bins: use the interval midpoint
+    3. During transformation, match values against bin definitions:
+       - Check singleton bins for exact matches
+       - Check interval bins for range membership
+       - Return index of first matching bin
+
+    Parameters:
+        bin_spec: Required dictionary mapping column identifiers to lists of
+            flexible bin definitions. Each bin definition can be either:
+            - Scalar value: singleton bin matching exactly that value
+            - Tuple (start, end): interval bin matching values in [start, end]
+            For example: {0: [42, (10, 20), 'special'], 'age': [(0, 18), (18, 65), (65, 100)]}
+        bin_representatives: Optional dictionary mapping column identifiers to
+            lists of representative values for each bin. If not provided,
+            representatives are automatically generated.
+
+    Attributes:
+        bin_spec_: Dictionary containing the provided flexible bin specifications
+        bin_representatives_: Dictionary containing bin representatives (provided
+            or auto-generated)
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import ManualFlexibleBinning
+        >>>
+        >>> # Define mixed bin types for different features
+        >>> bin_spec = {
+        ...     'numeric_feature': [
+        ...         0,              # Singleton: exactly zero
+        ...         (1, 10),        # Interval: 1 to 10
+        ...         (10, 100),      # Interval: 10 to 100
+        ...         999             # Singleton: exactly 999 (outlier)
+        ...     ],
+        ...     'mixed_feature': [
+        ...         'special',      # Singleton: exactly 'special'
+        ...         (0, 50),        # Interval: 0 to 50
+        ...         (50, 100)       # Interval: 50 to 100
+        ...     ]
+        ... }
+        >>>
+        >>> # Create binner with flexible specifications
+        >>> binner = ManualFlexibleBinning(bin_spec=bin_spec)
+        >>>
+        >>> # Sample data with mixed types
+        >>> X = np.array([[0, 25], [5, 75], [999, 'special']], dtype=object)
+        >>> X_binned = binner.fit_transform(X)
+        >>> # Results: [[0, 1], [1, 2], [3, 0]]
+        >>>
+        >>> # With custom representatives
+        >>> bin_reps = {
+        ...     'numeric_feature': [0, 5.5, 55, 999],    # Custom representatives
+        ...     'mixed_feature': ['special', 25, 75]      # Mixed type representatives
+        ... }
+        >>> binner_custom = ManualFlexibleBinning(
+        ...     bin_spec=bin_spec,
+        ...     bin_representatives=bin_reps
+        ... )
+
+    Note:
+        - bin_spec is required and cannot be None
+        - fit() method is essentially a no-op since specifications are predefined
+        - Values are matched against bins in order - first match wins
+        - Singleton bins support any hashable type (numeric, string, etc.)
+        - Interval bins only work with numeric values
+        - Unmatched values receive MISSING_VALUE (-1) bin index
     """
 
     # pylint: disable=too-many-arguments
@@ -45,7 +128,68 @@ class ManualFlexibleBinning(FlexibleBinningBase):
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):
-        """Initialize Manual Flexible binning."""
+        """Initialize manual flexible binning with user-defined bin specifications.
+
+        Sets up manual flexible binning with explicitly provided bin definitions
+        that can include both singleton and interval bins. This method requires
+        complete bin specification upfront and integrates with binlearn's
+        configuration system for other parameters.
+
+        Args:
+            bin_spec: Required dictionary mapping column identifiers to lists of
+                flexible bin definitions. Each bin definition can be either:
+                - Scalar value (any type): singleton bin matching exactly that value
+                - Tuple (start, end): interval bin matching numeric values in [start, end]
+                Mixed types are allowed within the same feature. For example:
+                {0: [42, (10, 20), 'special'], 'col': [(0, 50), (50, 100)]}
+            bin_representatives: Optional dictionary mapping column identifiers to
+                lists of representative values for each bin. If provided, must have
+                the same column keys as bin_spec and appropriate counts (one
+                representative per bin). If None, representatives are automatically
+                generated:
+                - For singleton bins: the singleton value itself
+                - For interval bins: the interval midpoint (start + end) / 2
+            preserve_dataframe: Whether to preserve DataFrame format in outputs when
+                input is a DataFrame. If None, uses global configuration default.
+            class_: Class name for reconstruction compatibility (ignored during
+                normal initialization).
+            module_: Module name for reconstruction compatibility (ignored during
+                normal initialization).
+
+        Raises:
+            ConfigurationError: If bin_spec is None or not provided, with helpful
+                suggestions for proper usage including example formats.
+
+        Example:
+            >>> # Basic flexible binning with auto-generated representatives
+            >>> bin_spec = {
+            ...     'feature1': [0, (1, 10), (10, 100), 999],     # Mixed types
+            ...     'feature2': [(0, 25), 'special', (50, 100)]   # Mixed types
+            ... }
+            >>> binner = ManualFlexibleBinning(bin_spec=bin_spec)
+            >>>
+            >>> # With custom representatives
+            >>> bin_reps = {
+            ...     'feature1': [0, 5.5, 55, 999],      # Custom values
+            ...     'feature2': [12.5, 'special', 75]   # Mixed representatives
+            ... }
+            >>> binner_custom = ManualFlexibleBinning(
+            ...     bin_spec=bin_spec,
+            ...     bin_representatives=bin_reps
+            ... )
+            >>>
+            >>> # Single feature with intervals only
+            >>> simple_spec = {'price': [(0, 100), (100, 500), (500, float('inf'))]}
+            >>> binner_simple = ManualFlexibleBinning(bin_spec=simple_spec)
+
+        Note:
+            - bin_spec is the only required parameter and cannot be None
+            - Validation of bin_spec format occurs during initialization
+            - The fit() method will be essentially a no-op since specs are predefined
+            - Each column can have different numbers and types of bins
+            - Singleton bins can be any hashable type (numbers, strings, etc.)
+            - Interval bins must have numeric start and end values
+        """
         # For manual flexible binning, bin_spec is required and passed directly
         if bin_spec is None:
             raise ConfigurationError(

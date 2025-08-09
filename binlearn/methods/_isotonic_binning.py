@@ -25,15 +25,113 @@ from ..utils import (
 
 # pylint: disable=too-many-ancestors
 class IsotonicBinning(SupervisedBinningBase):
-    """Isotonic regression-based monotonic binning implementation using  architecture.
+    """Isotonic regression-based monotonic binning implementation using clean architecture.
 
     Creates bins using isotonic regression to find optimal cut points that preserve
     monotonic relationships between features and targets. The transformer fits an
-    isotonic (non-decreasing) function to the data and identifies significant changes
-    in this function to determine bin boundaries.
+    isotonic (monotonic, non-decreasing or non-increasing) function to the data and
+    identifies significant changes in this function to determine bin boundaries.
 
-    This implementation follows the clean  architecture with straight inheritance,
+    This method is particularly valuable for cases where domain knowledge suggests
+    a monotonic relationship between features and targets, such as risk modeling,
+    credit scoring, or any application where preserving order relationships is critical.
+    The isotonic regression ensures that the average target values within bins
+    maintain the specified monotonic relationship.
+
+    The algorithm works by:
+    1. Sorting data by feature values
+    2. Fitting an isotonic regression model to preserve monotonicity
+    3. Identifying cut points where significant changes occur in the fitted function
+    4. Creating bins that respect both the monotonic constraint and the minimum samples requirement
+
+    When insufficient variability is found in the fitted isotonic function, the algorithm
+    creates a single bin or falls back to simple boundary definitions.
+
+    This implementation follows the clean binlearn architecture with straight inheritance,
     dynamic column resolution, and parameter reconstruction capabilities.
+
+    Args:
+        max_bins: Maximum number of bins to create. Controls the granularity of binning.
+            Can be an integer or a string expression like 'sqrt', 'log2', etc. for
+            dynamic calculation based on data size. If None, uses configuration default.
+        min_samples_per_bin: Minimum number of samples required per bin. Ensures
+            statistical significance of bins. Must be positive integer. If None,
+            uses configuration default.
+        increasing: Whether to enforce increasing monotonicity (True) or decreasing
+            monotonicity (False). True means higher feature values correspond to
+            higher target values. If None, uses configuration default.
+        y_min: Minimum value for the fitted isotonic function output. Clips the
+            fitted values to be at least this value. If None, no minimum constraint.
+        y_max: Maximum value for the fitted isotonic function output. Clips the
+            fitted values to be at most this value. If None, no maximum constraint.
+        min_change_threshold: Minimum relative change in fitted values required to
+            create a new bin boundary. Controls sensitivity to function changes.
+            Must be positive. If None, uses configuration default.
+        clip: Whether to clip values outside the fitted range to the nearest bin edge.
+            If None, uses configuration default.
+        preserve_dataframe: Whether to preserve pandas DataFrame structure in transform
+            operations. If None, uses configuration default.
+        guidance_columns: Column specification for target/guidance data used in
+            supervised binning. Can be column names, indices, or callable selector.
+        bin_edges: Pre-computed bin edges for reconstruction. Should not be provided
+            during normal usage.
+        bin_representatives: Pre-computed bin representatives for reconstruction.
+            Should not be provided during normal usage.
+        class_: Class name for reconstruction compatibility. Internal use only.
+        module_: Module name for reconstruction compatibility. Internal use only.
+
+    Attributes:
+        max_bins: Maximum number of bins to create
+        min_samples_per_bin: Minimum samples required per bin
+        increasing: Whether monotonicity is increasing or decreasing
+        y_min: Minimum constraint for fitted values
+        y_max: Maximum constraint for fitted values
+        min_change_threshold: Threshold for significant changes in fitted function
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import IsotonicBinning
+        >>>
+        >>> # Create data with monotonic relationship
+        >>> np.random.seed(42)
+        >>> X = np.random.uniform(0, 10, 1000).reshape(-1, 1)
+        >>> # Target increases monotonically with some noise
+        >>> y = 2 * X.flatten() + np.random.normal(0, 1, 1000)
+        >>>
+        >>> # Initialize isotonic binning
+        >>> binner = IsotonicBinning(
+        ...     max_bins=5,
+        ...     min_samples_per_bin=50,
+        ...     increasing=True,
+        ...     min_change_threshold=0.05
+        ... )
+        >>>
+        >>> # Fit with target data
+        >>> binner.fit(X, y)
+        >>> X_binned = binner.transform(X)
+        >>>
+        >>> # Check monotonic preservation
+        >>> bin_means = []
+        >>> for bin_idx in range(len(binner.bin_edges_[0]) - 1):
+        ...     bin_mask = X_binned[:, 0] == bin_idx
+        ...     bin_means.append(np.mean(y[bin_mask]))
+        >>> print("Bin target means:", bin_means)  # Should be monotonically increasing
+
+    Note:
+        - Requires target/guidance data for supervised learning of monotonic relationships
+        - Preserves monotonic relationship between features and average target values within bins
+        - Particularly useful for risk modeling, scoring, and ranking applications
+        - Handles constant features and insufficient variability gracefully
+        - Each column is processed independently with its corresponding target data
+        - The fitted isotonic models are stored and can be used for analysis
+
+    See Also:
+        Chi2Binning: Statistical significance-based supervised binning
+        TreeBinning: Decision tree-based supervised binning
+        SupervisedBinningBase: Base class for supervised binning methods
+
+    References:
+        Robertson, T., Wright, F. T., & Dykstra, R. L. (1988). Order Restricted Statistical Inference.
     """
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -54,7 +152,77 @@ class IsotonicBinning(SupervisedBinningBase):
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):
-        """Initialize Isotonic binning."""
+        """Initialize Isotonic binning with monotonicity and quality parameters.
+
+        Sets up isotonic regression-based binning with specified parameters for
+        monotonicity preservation and bin quality control. Applies configuration
+        defaults for any unspecified parameters and validates the resulting configuration.
+
+        Args:
+            max_bins: Maximum number of bins to create per column. Controls granularity
+                of the binning. Can be:
+                - Integer: Exact maximum number of bins
+                - String: Dynamic calculation expression ('sqrt', 'log2', etc.)
+                Must be positive. If None, uses configuration default.
+            min_samples_per_bin: Minimum number of samples required per bin. Ensures
+                statistical reliability of each bin. Must be positive integer.
+                If None, uses configuration default.
+            increasing: Whether to enforce increasing monotonicity (True) or decreasing
+                monotonicity (False). True means higher feature values should correspond
+                to higher average target values. If None, uses configuration default.
+            y_min: Minimum value constraint for the fitted isotonic function output.
+                Clips fitted values to be at least this value. Must be numeric.
+                If None, no minimum constraint is applied.
+            y_max: Maximum value constraint for the fitted isotonic function output.
+                Clips fitted values to be at most this value. Must be numeric and
+                greater than y_min if both are specified. If None, no maximum constraint.
+            min_change_threshold: Minimum relative change in fitted values required
+                to create a new bin boundary. Controls sensitivity to changes in the
+                isotonic function. Must be positive float. If None, uses configuration default.
+            clip: Whether to clip transformed values outside the fitted range to the
+                nearest bin edge. If None, uses configuration default.
+            preserve_dataframe: Whether to preserve pandas DataFrame structure in
+                transform operations. If None, uses configuration default.
+            guidance_columns: Column specification for target/guidance data. Can be
+                column names, indices, or callable selector. Required for supervised
+                binning during fit operations.
+            bin_edges: Pre-computed bin edges dictionary for reconstruction. Internal
+                use only - should not be provided during normal initialization.
+            bin_representatives: Pre-computed representatives dictionary for
+                reconstruction. Internal use only.
+            class_: Class name string for reconstruction compatibility. Internal use only.
+            module_: Module name string for reconstruction compatibility. Internal use only.
+
+        Example:
+            >>> # Standard initialization for increasing monotonic relationship
+            >>> binner = IsotonicBinning(
+            ...     max_bins=8,
+            ...     min_samples_per_bin=30,
+            ...     increasing=True,
+            ...     min_change_threshold=0.02
+            ... )
+            >>>
+            >>> # Decreasing monotonic relationship with value constraints
+            >>> binner = IsotonicBinning(
+            ...     max_bins=6,
+            ...     min_samples_per_bin=50,
+            ...     increasing=False,
+            ...     y_min=0.0,
+            ...     y_max=1.0,
+            ...     guidance_columns=['risk_score']
+            ... )
+            >>>
+            >>> # Use configuration defaults
+            >>> binner = IsotonicBinning(guidance_columns='target')
+
+        Note:
+            - Parameter validation occurs during initialization
+            - Configuration defaults are applied for None parameters
+            - The increasing parameter is crucial for defining the expected relationship direction
+            - y_min and y_max constraints help with numerical stability and domain knowledge enforcement
+            - Reconstruction parameters should not be provided during normal usage
+            - Guidance columns must be specified for supervised binning to work properly
+        """
         # Prepare user parameters for config integration (exclude never-configurable params)
         user_params = {
             "max_bins": max_bins,

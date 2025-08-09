@@ -19,16 +19,85 @@ from ..utils import BinEdgesDict, FittingError
 
 # pylint: disable=too-many-ancestors
 class Chi2Binning(SupervisedBinningBase):
-    """Chi-square binning implementation.
+    """Chi-square binning implementation for supervised discretization.
 
-    Creates bins using the chi-square statistic to find optimal split points that
-    maximize the association between numeric features and target variables. Only supports numeric data.
-    The method starts with an initial discretization and then iteratively merges adjacent
-    intervals that have the smallest chi-square statistic until a stopping criterion is met.
+    This class implements chi-square binning (χ² binning), a supervised discretization
+    method that uses the chi-square statistic to find optimal bin boundaries for
+    classification tasks. The method creates bins that maximize the association
+    between numeric features and categorical target variables, making it particularly
+    effective for improving classification performance.
 
-    This approach creates bins that are optimized for classification tasks.
-    This implementation follows the clean  architecture with straight inheritance,
-    dynamic column resolution, and parameter reconstruction capabilities.
+    Chi-square binning is particularly effective for:
+    - Binary and multi-class classification preprocessing
+    - Creating bins that preserve class-discriminative information
+    - Reducing feature dimensionality while maintaining predictive power
+    - Handling continuous features with complex relationships to target classes
+
+    Key Features:
+    - Uses chi-square test of independence to guide bin boundary selection
+    - Iterative merging process starting from fine initial discretization
+    - Configurable stopping criteria (significance level, bin count limits)
+    - Handles both binary and multi-class classification targets
+    - Automatic handling of insufficient data and edge cases
+
+    Algorithm:
+    1. Create initial fine-grained discretization (equal frequency or equal width)
+    2. For each pair of adjacent bins, calculate chi-square statistic
+    3. Merge the pair with the smallest (least significant) chi-square value
+    4. Repeat merging until stopping criterion is met:
+       - Minimum number of bins reached, OR
+       - All remaining chi-square values exceed significance threshold (alpha)
+    5. Create final bin boundaries and representatives
+
+    Parameters:
+        max_bins: Maximum number of bins to create. The algorithm will not exceed
+            this limit regardless of statistical significance. Useful for controlling
+            model complexity and computational costs.
+        min_bins: Minimum number of bins to maintain. The algorithm will not merge
+            below this threshold even if chi-square values are not significant.
+            Ensures some level of discretization is preserved.
+        alpha: Significance level for the chi-square test. Adjacent bins are merged
+            if their chi-square p-value exceeds this threshold (indicating lack of
+            significant association). Lower values result in more bins.
+        initial_bins: Number of bins to create in the initial discretization step
+            before beginning the merging process. Higher values provide finer
+            granularity for the merging algorithm to work with.
+
+    Attributes:
+        bin_edges_: Dictionary mapping column identifiers to lists of optimized
+            bin edges after fitting. These edges maximize class separation.
+        bin_representatives_: Dictionary mapping column identifiers to lists
+            of bin representatives (typically bin centers).
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import Chi2Binning
+        >>>
+        >>> # Binary classification example
+        >>> X = np.random.normal(0, 1, (1000, 2))
+        >>> # Create target correlated with first feature
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>>
+        >>> binner = Chi2Binning(max_bins=5, alpha=0.05)
+        >>> binner.fit(X, guidance_data=y.reshape(-1, 1))
+        >>> X_binned = binner.transform(X)
+        >>>
+        >>> # Multi-class example with custom parameters
+        >>> y_multi = np.random.choice([0, 1, 2], size=1000)
+        >>> binner_multi = Chi2Binning(
+        ...     max_bins=10,
+        ...     min_bins=3,
+        ...     alpha=0.01,
+        ...     initial_bins=20
+        ... )
+        >>> binner_multi.fit(X, guidance_data=y_multi.reshape(-1, 1))
+
+    Note:
+        - Requires target data (guidance_data) during fitting for supervised learning
+        - Works only with numeric input features and categorical targets
+        - Performance depends on the relationship between features and target
+        - May create fewer bins than max_bins if early stopping criteria are met
+        - Inherits clipping behavior and format preservation from SupervisedBinningBase
     """
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments

@@ -25,14 +25,91 @@ from ..utils import (
 
 # pylint: disable=too-many-ancestors
 class GaussianMixtureBinning(IntervalBinningBase):
-    """Gaussian Mixture Model clustering-based binning implementation using  architecture.
+    """Gaussian Mixture Model clustering-based binning implementation using clean architecture.
 
-    Creates bins based on Gaussian Mixture Model (GMM) clustering of each feature.
-    The bin edges are determined by the decision boundaries between mixture components,
-    creating bins that represent natural probabilistic groupings in the data.
+    Creates bins based on Gaussian Mixture Model (GMM) clustering of each feature. The bin
+    edges are determined by the decision boundaries between mixture components, creating bins
+    that represent natural probabilistic groupings in the data based on underlying Gaussian
+    distributions.
 
-    This implementation follows the clean  architecture with straight inheritance,
+    The GMM algorithm assumes the data can be modeled as a mixture of Gaussian distributions
+    and finds the optimal parameters (means, covariances, weights) for each component. Bin
+    boundaries are placed at the midpoints between adjacent component means, creating intervals
+    that correspond to regions where different Gaussian components are most likely.
+
+    This approach is particularly effective for data with multiple modes or natural clustering,
+    as it can identify and separate these distributions automatically. Unlike k-means clustering,
+    GMM provides probabilistic cluster assignments and can handle clusters of different shapes
+    and densities.
+
+    When GMM fitting fails (e.g., due to numerical issues or insufficient data), the algorithm
+    automatically falls back to equal-width binning to ensure robust operation.
+
+    This implementation follows the clean binlearn architecture with straight inheritance,
     dynamic column resolution, and parameter reconstruction capabilities.
+
+    Args:
+        n_components: Number of Gaussian components (mixture components) to fit. Controls
+            the number of bins created. Can be an integer or a string expression like
+            'sqrt', 'log2', etc. for dynamic calculation based on data size. If None,
+            uses configuration default.
+        random_state: Random seed for reproducible GMM fitting. Controls the random
+            initialization of component parameters. If None, results may vary between
+            runs due to random initialization.
+        clip: Whether to clip values outside the fitted range to the nearest bin edge.
+            If None, uses configuration default.
+        preserve_dataframe: Whether to preserve pandas DataFrame structure in transform
+            operations. If None, uses configuration default.
+        fit_jointly: Whether to fit all columns together (False for GMM - always fits
+            columns independently). If None, uses configuration default.
+        bin_edges: Pre-computed bin edges for reconstruction. Should not be provided
+            during normal usage.
+        bin_representatives: Pre-computed bin representatives for reconstruction.
+            Should not be provided during normal usage.
+        class_: Class name for reconstruction compatibility. Internal use only.
+        module_: Module name for reconstruction compatibility. Internal use only.
+
+    Attributes:
+        n_components: Number of mixture components to fit
+        random_state: Random seed for reproducible results
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import GaussianMixtureBinning
+        >>>
+        >>> # Create sample data with multiple modes
+        >>> np.random.seed(42)
+        >>> data = np.concatenate([
+        ...     np.random.normal(-2, 0.5, 200),   # First mode
+        ...     np.random.normal(1, 0.8, 300),    # Second mode
+        ...     np.random.normal(4, 0.3, 150)     # Third mode
+        ... ])
+        >>>
+        >>> # Initialize GMM binning with 3 components
+        >>> binner = GaussianMixtureBinning(n_components=3, random_state=42)
+        >>>
+        >>> # Fit and transform
+        >>> X = data.reshape(-1, 1)
+        >>> binner.fit(X)
+        >>> X_binned = binner.transform(X)
+        >>>
+        >>> # Check identified components
+        >>> print(f"Number of bins: {len(binner.bin_edges_[0]) - 1}")
+        >>> print(f"Bin representatives: {binner.bin_representatives_[0]}")
+
+    Note:
+        - GMM is particularly effective for data with natural multimodal distributions
+        - Component means become the bin representatives (centers of identified modes)
+        - Bin boundaries are placed at midpoints between adjacent component means
+        - Requires sufficient data points (at least n_components) per column
+        - Falls back to equal-width binning if GMM fitting fails
+        - Each column is processed independently (unsupervised approach)
+        - Uses full covariance type for maximum flexibility in component shapes
+
+    See Also:
+        KMeansBinning: Alternative clustering-based binning with hard cluster assignments
+        DBSCANBinning: Density-based clustering for irregularly shaped clusters
+        EqualWidthBinning: Simple equal-width interval binning
     """
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -49,7 +126,58 @@ class GaussianMixtureBinning(IntervalBinningBase):
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):
-        """Initialize Gaussian Mixture binning."""
+        """Initialize Gaussian Mixture binning with clustering parameters.
+
+        Sets up GMM-based binning with specified parameters. Applies configuration
+        defaults for any unspecified parameters and validates the resulting configuration.
+
+        Args:
+            n_components: Number of Gaussian components (mixture components) to fit.
+                Controls the number of bins created. Can be:
+                - Integer: Exact number of components
+                - String: Dynamic calculation expression ('sqrt', 'log2', etc.)
+                Must be positive. If None, uses configuration default.
+            random_state: Random seed for reproducible GMM fitting. Controls the
+                random initialization of component parameters. Should be a non-negative
+                integer. If None, results may vary between runs.
+            clip: Whether to clip transformed values outside the fitted range to the
+                nearest bin edge. If None, uses configuration default.
+            preserve_dataframe: Whether to preserve pandas DataFrame structure in
+                transform operations. If None, uses configuration default.
+            fit_jointly: Whether to fit all columns together. Always False for GMM
+                as it processes columns independently. If None, uses configuration default.
+            bin_edges: Pre-computed bin edges dictionary for reconstruction. Internal
+                use only - should not be provided during normal initialization.
+            bin_representatives: Pre-computed representatives dictionary for
+                reconstruction. Internal use only.
+            class_: Class name string for reconstruction compatibility. Internal use only.
+            module_: Module name string for reconstruction compatibility. Internal use only.
+
+        Example:
+            >>> # Standard initialization with 5 components
+            >>> binner = GaussianMixtureBinning(n_components=5, random_state=42)
+            >>>
+            >>> # Dynamic component count based on data size
+            >>> binner = GaussianMixtureBinning(n_components='sqrt', random_state=123)
+            >>>
+            >>> # Use configuration defaults
+            >>> binner = GaussianMixtureBinning()
+            >>>
+            >>> # Custom configuration with clipping
+            >>> binner = GaussianMixtureBinning(
+            ...     n_components=8,
+            ...     random_state=42,
+            ...     clip=True,
+            ...     preserve_dataframe=True
+            ... )
+
+        Note:
+            - Parameter validation occurs during initialization
+            - Configuration defaults are applied for None parameters
+            - The random_state parameter ensures reproducible results across runs
+            - n_components can use dynamic expressions for adaptive bin counts
+            - Reconstruction parameters should not be provided during normal usage
+        """
         # Prepare user parameters for config integration (exclude never-configurable params)
         user_params = {
             "n_components": n_components,

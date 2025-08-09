@@ -24,14 +24,82 @@ from ..utils import (
 
 # pylint: disable=too-many-ancestors
 class KMeansBinning(IntervalBinningBase):
-    """K-means clustering-based binning implementation using  architecture.
+    """K-means clustering-based binning implementation for natural data groupings.
 
-    Creates bins based on K-means clustering of each feature. The bin edges are
-    determined by finding the midpoints between adjacent cluster centroids, which
-    naturally groups similar values together.
+    This class implements K-means binning, which uses K-means clustering to identify
+    natural groupings in the data and creates bin boundaries at the midpoints between
+    adjacent cluster centroids. This approach is data-adaptive and creates bins that
+    reflect the underlying distribution of values, making it particularly effective
+    for non-uniformly distributed data.
 
-    This implementation follows the clean  architecture with straight inheritance,
-    dynamic column resolution, and parameter reconstruction capabilities.
+    K-means binning is particularly effective for:
+    - Non-uniformly distributed data with natural clusters
+    - Creating bins that preserve data density patterns
+    - Multimodal distributions where clusters represent different modes
+    - Cases where traditional equal-width or equal-frequency binning is inadequate
+
+    Key Features:
+    - Data-driven bin boundary selection based on clustering
+    - Automatically adapts to the underlying data distribution
+    - Creates bins with meaningful separation based on value similarity
+    - Handles irregular data distributions better than fixed-interval methods
+    - Support for flexible bin count specification (integer or string rules)
+
+    Algorithm:
+    1. Apply K-means clustering to each column independently to find n_bins centroids
+    2. Sort the centroids in ascending order
+    3. Create bin edges at the midpoints between consecutive centroids
+    4. Add data range boundaries (min, max) as outer edges
+    5. Use centroids as bin representatives
+
+    Parameters:
+        n_bins: Number of bins to create, or string specification for automatic
+            calculation. Can be:
+            - Integer: exact number of bins (and clusters) to create
+            - 'sqrt': number of bins = sqrt(n_samples)
+            - 'log2': number of bins = log2(n_samples)
+            - 'sturges': Sturges' rule for histogram bins
+            Default value can be configured globally via binlearn.config.
+
+    Attributes:
+        bin_edges_: Dictionary mapping column identifiers to lists of bin edges
+            after fitting. Edges are positioned at midpoints between cluster centroids.
+        bin_representatives_: Dictionary mapping column identifiers to lists
+            of bin representatives (the cluster centroids).
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import KMeansBinning
+        >>>
+        >>> # Multimodal data - mixture of two normal distributions
+        >>> X1 = np.random.normal(2, 0.5, 500)    # First mode
+        >>> X2 = np.random.normal(8, 0.5, 500)    # Second mode
+        >>> X = np.concatenate([X1, X2]).reshape(-1, 1)
+        >>>
+        >>> binner = KMeansBinning(n_bins=4)
+        >>> binner.fit(X)
+        >>> X_binned = binner.transform(X)
+        >>> # Bins naturally separate the two modes
+        >>>
+        >>> # Automatic bin count based on data size
+        >>> binner_auto = KMeansBinning(n_bins='sqrt')
+        >>> binner_auto.fit(X)  # Uses sqrt(1000) ≈ 32 bins
+        >>>
+        >>> # Irregular distribution
+        >>> X_irregular = np.concatenate([
+        ...     np.random.uniform(0, 2, 100),     # Uniform region
+        ...     np.random.normal(5, 0.2, 800),   # Tight cluster
+        ...     np.random.uniform(8, 10, 100)    # Another uniform region
+        ... ]).reshape(-1, 1)
+        >>> binner_adaptive = KMeansBinning(n_bins=6)
+        >>> binner_adaptive.fit(X_irregular)  # Adapts to density variations
+
+    Note:
+        - Only works with numeric data - non-numeric columns will raise errors
+        - Performance depends on the clustering quality and data separability
+        - May create fewer effective bins if clusters are very close together
+        - Requires the kmeans1d package for efficient 1D K-means clustering
+        - Inherits clipping behavior and format preservation from IntervalBinningBase
     """
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments

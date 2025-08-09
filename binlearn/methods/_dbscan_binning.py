@@ -19,15 +19,88 @@ from ..utils import BinEdgesDict, ConfigurationError
 
 # pylint: disable=too-many-ancestors
 class DBSCANBinning(IntervalBinningBase):
-    """DBSCAN clustering-based binning implementation using  architecture.
+    """DBSCAN clustering-based binning implementation using clean architecture.
 
     Creates bins based on DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
     clustering of each feature. The bin edges are determined by the natural cluster boundaries
     identified by DBSCAN, which naturally groups densely connected values together while
     treating isolated points as noise.
 
-    This implementation follows the clean  architecture with straight inheritance,
+    The DBSCAN algorithm finds dense regions in the data and creates natural groupings that
+    respect the underlying data distribution. Unlike k-means or equal-width binning, DBSCAN
+    does not assume any particular shape for clusters and can identify clusters of varying
+    densities. The resulting bins correspond to naturally occurring dense regions in the data.
+
+    When DBSCAN produces fewer clusters than the minimum required bins, the algorithm falls
+    back to equal-width binning to ensure the minimum bin count is satisfied.
+
+    This implementation follows the clean binlearn architecture with straight inheritance,
     dynamic column resolution, and parameter reconstruction capabilities.
+
+    Args:
+        eps: The maximum distance between two samples for them to be considered as in the
+            same neighborhood. This is the key parameter that controls cluster density.
+            Smaller values create more, smaller clusters. Larger values merge clusters
+            together. If None, uses configuration default.
+        min_samples: The minimum number of samples in a neighborhood for a point to be
+            considered as a core point (including the point itself). Controls the minimum
+            cluster size. If None, uses configuration default.
+        min_bins: Minimum number of bins to create. If DBSCAN produces fewer clusters,
+            falls back to equal-width binning. Must be at least 1. If None, uses
+            configuration default.
+        clip: Whether to clip values outside the fitted range to the nearest bin edge.
+            If None, uses configuration default.
+        preserve_dataframe: Whether to preserve pandas DataFrame structure in transform
+            operations. If None, uses configuration default.
+        fit_jointly: Whether to fit all columns together (False for DBSCAN - always
+            fits columns independently). If None, uses configuration default.
+        bin_edges: Pre-computed bin edges for reconstruction. Should not be provided
+            during normal usage.
+        bin_representatives: Pre-computed bin representatives for reconstruction.
+            Should not be provided during normal usage.
+        class_: Class name for reconstruction compatibility. Internal use only.
+        module_: Module name for reconstruction compatibility. Internal use only.
+
+    Attributes:
+        eps: Maximum distance for neighborhood definition
+        min_samples: Minimum samples for core point definition
+        min_bins: Minimum number of bins to ensure
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import DBSCANBinning
+        >>>
+        >>> # Create sample data with natural clusters
+        >>> data = np.concatenate([
+        ...     np.random.normal(0, 0.5, 100),    # First cluster
+        ...     np.random.normal(5, 0.8, 150),    # Second cluster
+        ...     np.random.normal(10, 0.3, 80)     # Third cluster
+        ... ])
+        >>>
+        >>> # Initialize DBSCAN binning
+        >>> binner = DBSCANBinning(eps=0.8, min_samples=10, min_bins=3)
+        >>>
+        >>> # Fit and transform
+        >>> X = data.reshape(-1, 1)
+        >>> binner.fit(X)
+        >>> X_binned = binner.transform(X)
+        >>>
+        >>> # Check identified bins
+        >>> print(f"Number of bins: {len(binner.bin_edges_[0]) - 1}")
+        >>> print(f"Bin edges: {binner.bin_edges_[0]}")
+
+    Note:
+        - DBSCAN is particularly effective for data with natural density-based clusters
+        - The eps parameter requires careful tuning based on data scale and density
+        - Noise points (outliers) identified by DBSCAN are included in boundary bins
+        - Falls back to equal-width binning if insufficient clusters are found
+        - Each column is processed independently (unsupervised approach)
+        - Requires at least min_samples finite values per column for clustering
+
+    See Also:
+        KMeansBinning: Alternative clustering-based binning with fixed cluster count
+        EqualWidthBinning: Simple equal-width interval binning
+        GaussianMixtureBinning: Probabilistic clustering-based binning
     """
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -45,7 +118,60 @@ class DBSCANBinning(IntervalBinningBase):
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):
-        """Initialize DBSCAN binning."""
+        """Initialize DBSCAN binning with clustering parameters.
+
+        Sets up DBSCAN clustering-based binning with specified parameters. Applies
+        configuration defaults for any unspecified parameters and validates the
+        resulting configuration.
+
+        Args:
+            eps: Maximum distance between two samples for neighborhood definition.
+                Controls cluster density - smaller values create tighter, more numerous
+                clusters. Must be positive. If None, uses configuration default.
+            min_samples: Minimum number of samples in a neighborhood for a core point.
+                Controls minimum cluster size and noise tolerance. Must be positive
+                integer. If None, uses configuration default.
+            min_bins: Minimum number of bins to ensure. If DBSCAN produces fewer
+                clusters, falls back to equal-width binning. Must be at least 1.
+                If None, uses configuration default.
+            clip: Whether to clip transformed values outside the fitted range to the
+                nearest bin edge. If None, uses configuration default.
+            preserve_dataframe: Whether to preserve pandas DataFrame structure in
+                transform operations. If None, uses configuration default.
+            fit_jointly: Whether to fit all columns together. Always False for DBSCAN
+                as it processes columns independently. If None, uses configuration default.
+            bin_edges: Pre-computed bin edges dictionary for reconstruction. Internal
+                use only - should not be provided during normal initialization.
+            bin_representatives: Pre-computed representatives dictionary for
+                reconstruction. Internal use only.
+            class_: Class name string for reconstruction compatibility. Internal use only.
+            module_: Module name string for reconstruction compatibility. Internal use only.
+
+        Example:
+            >>> # Standard initialization with custom parameters
+            >>> binner = DBSCANBinning(eps=0.5, min_samples=8, min_bins=3)
+            >>>
+            >>> # Use configuration defaults
+            >>> binner = DBSCANBinning()
+            >>>
+            >>> # Custom clustering with clipping enabled
+            >>> binner = DBSCANBinning(
+            ...     eps=1.2,
+            ...     min_samples=15,
+            ...     min_bins=4,
+            ...     clip=True,
+            ...     preserve_dataframe=True
+            ... )
+
+        Note:
+            - Parameter validation occurs during initialization
+            - Configuration defaults are applied for None parameters
+            - Reconstruction parameters (bin_edges, bin_representatives, class_, module_)
+              are used internally for object reconstruction and should not be provided
+              during normal usage
+            - The eps parameter is critical for DBSCAN performance and may require
+              experimentation based on data characteristics
+        """
         # Prepare user parameters for config integration (exclude never-configurable params)
         user_params = {
             "eps": eps,

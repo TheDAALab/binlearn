@@ -27,15 +27,105 @@ from ..utils import (
 
 # pylint: disable=too-many-ancestors
 class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
-    """Equal-width binning with minimum weight constraint implementation using  architecture.
+    """Equal-width binning with minimum weight constraint implementation using clean architecture.
 
     Creates bins of equal width across the range of each feature, but adjusts the
     number of bins to ensure each bin contains at least the specified minimum total
     weight from the guidance column. This method combines the interpretability of
     equal-width binning with weight-based constraints for more balanced bins.
 
-    This implementation follows the clean  architecture with straight inheritance,
+    This approach is particularly valuable when working with weighted data where
+    statistical significance or minimum sample requirements must be maintained within
+    each bin. The algorithm starts with equal-width bins and then merges adjacent
+    underweight bins until all remaining bins meet the minimum weight requirement.
+
+    The weight constraint helps ensure that:
+    - Each bin has sufficient statistical power for analysis
+    - Bins are meaningful for weighted modeling or evaluation
+    - Sparse regions in the data don't create unreliable bins
+    - The resulting binning respects both spatial (equal-width) and statistical (weight) considerations
+
+    When no bins can meet the minimum weight requirement individually, the algorithm
+    creates a single bin containing all data to maintain functionality.
+
+    This implementation follows the clean binlearn architecture with straight inheritance,
     dynamic column resolution, and parameter reconstruction capabilities.
+
+    Args:
+        n_bins: Initial number of equal-width bins to create before weight-based merging.
+            Controls the granularity of the initial binning. Can be an integer or a
+            string expression like 'sqrt', 'log2', etc. for dynamic calculation.
+            Final number of bins may be smaller due to merging. If None, uses
+            configuration default.
+        minimum_weight: Minimum total weight required per bin. Bins with lower total
+            weight will be merged with adjacent bins until this requirement is met.
+            Must be positive. If None, uses configuration default.
+        bin_range: Optional tuple specifying (min, max) range for binning. If provided,
+            bins are created within this range rather than the data's natural range.
+            Useful for ensuring consistent binning across datasets. If None, uses
+            data's min/max values.
+        clip: Whether to clip values outside the fitted range to the nearest bin edge.
+            If None, uses configuration default.
+        preserve_dataframe: Whether to preserve pandas DataFrame structure in transform
+            operations. If None, uses configuration default.
+        guidance_columns: Column specification for weight/guidance data used in
+            supervised binning. Should point to weight values for each sample.
+        bin_edges: Pre-computed bin edges for reconstruction. Should not be provided
+            during normal usage.
+        bin_representatives: Pre-computed bin representatives for reconstruction.
+            Should not be provided during normal usage.
+        class_: Class name for reconstruction compatibility. Internal use only.
+        module_: Module name for reconstruction compatibility. Internal use only.
+
+    Attributes:
+        n_bins: Initial number of bins before merging
+        minimum_weight: Minimum weight requirement per bin
+        bin_range: Optional fixed range for binning
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import EqualWidthMinimumWeightBinning
+        >>>
+        >>> # Create sample data with weights
+        >>> np.random.seed(42)
+        >>> X = np.random.uniform(0, 100, 1000).reshape(-1, 1)
+        >>> weights = np.random.exponential(2.0, 1000)  # Exponentially distributed weights
+        >>>
+        >>> # Initialize with minimum weight constraint
+        >>> binner = EqualWidthMinimumWeightBinning(
+        ...     n_bins=10,
+        ...     minimum_weight=50.0,
+        ...     guidance_columns='weight'
+        ... )
+        >>>
+        >>> # Fit with weight data
+        >>> binner.fit(X, weights.reshape(-1, 1))
+        >>> X_binned = binner.transform(X)
+        >>>
+        >>> # Check bin weights
+        >>> for i, edges in enumerate(zip(binner.bin_edges_[0][:-1], binner.bin_edges_[0][1:])):
+        ...     left, right = edges
+        ...     mask = (X >= left) & (X < right) if i < len(binner.bin_edges_[0]) - 2 else (X >= left) & (X <= right)
+        ...     bin_weight = np.sum(weights[mask.flatten()])
+        ...     print(f"Bin {i}: [{left:.1f}, {right:.1f}] weight: {bin_weight:.1f}")
+
+    Note:
+        - Requires guidance data containing weight values for each sample
+        - Final number of bins may be less than n_bins due to merging underweight bins
+        - All weights must be non-negative (negative weights raise ValueError)
+        - Bins are merged by combining adjacent underweight bins
+        - Creates a single bin if no individual bins can meet the weight requirement
+        - Each column is processed independently with its corresponding weight data
+        - Weight-based merging preserves the equal-width property where possible
+
+    See Also:
+        EqualWidthBinning: Standard equal-width binning without weight constraints
+        EqualFrequencyBinning: Equal-frequency binning for balanced sample counts
+        SupervisedBinningBase: Base class for supervised binning methods
+
+    References:
+        This method extends standard equal-width binning with statistical adequacy constraints
+        commonly used in risk modeling and weighted analysis scenarios.
     """
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -53,7 +143,73 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):
-        """Initialize Equal Width Minimum Weight binning."""
+        """Initialize Equal Width Minimum Weight binning with weight constraints.
+
+        Sets up equal-width binning with minimum weight constraints, combining spatial
+        and statistical adequacy requirements. Applies configuration defaults for any
+        unspecified parameters and validates the resulting configuration.
+
+        Args:
+            n_bins: Initial number of equal-width bins to create before weight-based
+                merging. Controls the granularity of the initial binning. Can be:
+                - Integer: Exact initial number of bins
+                - String: Dynamic calculation expression ('sqrt', 'log2', etc.)
+                Final number of bins may be smaller due to merging. Must be positive.
+                If None, uses configuration default.
+            minimum_weight: Minimum total weight required per bin. Bins with total
+                weight below this threshold will be merged with adjacent bins until
+                the requirement is met. Must be positive. If None, uses configuration
+                default.
+            bin_range: Optional tuple specifying (min_value, max_value) range for
+                binning. If provided, equal-width bins are created within this range
+                regardless of the actual data range. Useful for:
+                - Consistent binning across multiple datasets
+                - Excluding outliers from bin range calculation
+                - Domain-specific range constraints
+                Must be (min, max) where min < max. If None, uses data's actual range.
+            clip: Whether to clip transformed values outside the fitted range to the
+                nearest bin edge. If None, uses configuration default.
+            preserve_dataframe: Whether to preserve pandas DataFrame structure in
+                transform operations. If None, uses configuration default.
+            guidance_columns: Column specification for weight/guidance data. Should
+                point to columns containing weight values for each sample. Required
+                for supervised binning during fit operations.
+            bin_edges: Pre-computed bin edges dictionary for reconstruction. Internal
+                use only - should not be provided during normal initialization.
+            bin_representatives: Pre-computed representatives dictionary for
+                reconstruction. Internal use only.
+            class_: Class name string for reconstruction compatibility. Internal use only.
+            module_: Module name string for reconstruction compatibility. Internal use only.
+
+        Example:
+            >>> # Standard initialization with weight constraints
+            >>> binner = EqualWidthMinimumWeightBinning(
+            ...     n_bins=8,
+            ...     minimum_weight=100.0,
+            ...     guidance_columns='sample_weight'
+            ... )
+            >>>
+            >>> # Custom range with tighter weight requirements
+            >>> binner = EqualWidthMinimumWeightBinning(
+            ...     n_bins=12,
+            ...     minimum_weight=50.0,
+            ...     bin_range=(0, 1000),
+            ...     guidance_columns=['weight_column']
+            ... )
+            >>>
+            >>> # Use configuration defaults
+            >>> binner = EqualWidthMinimumWeightBinning(
+            ...     guidance_columns='weights'
+            ... )
+
+        Note:
+            - Parameter validation occurs during initialization
+            - Configuration defaults are applied for None parameters
+            - The minimum_weight parameter is crucial for determining bin merging behavior
+            - bin_range allows for consistent binning across datasets with different ranges
+            - Guidance columns must point to weight data for the minimum weight constraint to work
+            - Reconstruction parameters should not be provided during normal usage
+        """
         # Prepare user parameters for config integration (exclude never-configurable params)
         user_params = {
             "n_bins": n_bins,

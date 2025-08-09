@@ -18,14 +18,79 @@ from ..utils import ArrayLike, BinEdgesDict, ConfigurationError
 
 # pylint: disable=too-many-ancestors
 class ManualIntervalBinning(IntervalBinningBase):
-    """Manual interval binning implementation using  architecture.
+    """Manual interval binning implementation for user-defined bin boundaries.
 
-    Creates bins using explicitly provided bin edges, giving users complete control
-    over binning boundaries. Unlike automatic binning methods, this transformer
-    never infers bin edges from data - they must always be provided by the user.
+    This class provides complete control over binning boundaries by allowing users
+    to specify exact bin edges for each column. Unlike automatic binning methods
+    that infer boundaries from data, manual interval binning uses pre-defined
+    edges, making it ideal for standardized binning schemes, domain-specific
+    requirements, or ensuring consistent binning across different datasets.
 
-    This implementation follows the clean  architecture with straight inheritance,
-    dynamic column resolution, and parameter reconstruction capabilities.
+    Manual interval binning is particularly useful for:
+    - Implementing domain-specific binning rules (e.g., age groups, income brackets)
+    - Ensuring consistent binning across training and test sets
+    - Regulatory or business requirements with fixed bin boundaries
+    - Comparative analysis requiring standardized bins across datasets
+
+    Key Features:
+    - Complete user control over bin boundaries for each column
+    - No data-dependent bin edge calculation - uses provided edges exactly
+    - Support for different binning schemes per column
+    - Automatic generation of bin representatives if not provided
+    - Integration with binlearn's clipping and format preservation features
+
+    Algorithm:
+    1. Validate and store user-provided bin edges
+    2. Generate default representatives (bin centers) if not provided
+    3. During transformation, assign values to bins based on interval membership
+    4. Handle out-of-range values according to clipping configuration
+
+    Parameters:
+        bin_edges: Required dictionary mapping column identifiers to lists of bin
+            edge values. Each edge list must contain at least 2 values and be
+            sorted in ascending order. For example: {0: [0, 10, 20], 'age': [0, 18, 65, 100]}
+        bin_representatives: Optional dictionary mapping column identifiers to
+            lists of representative values for each bin. If not provided,
+            representatives are automatically calculated as bin midpoints.
+
+    Attributes:
+        bin_edges_: Dictionary containing the provided bin edges (same as input)
+        bin_representatives_: Dictionary containing bin representatives (provided
+            or auto-generated)
+
+    Example:
+        >>> import numpy as np
+        >>> from binlearn.methods import ManualIntervalBinning
+        >>>
+        >>> # Define custom bin edges for different features
+        >>> bin_edges = {
+        ...     'age': [0, 18, 35, 50, 65, 100],          # Age groups
+        ...     'income': [0, 30000, 60000, 100000, float('inf')]  # Income brackets
+        ... }
+        >>>
+        >>> # Create binner with custom edges
+        >>> binner = ManualIntervalBinning(bin_edges=bin_edges)
+        >>>
+        >>> # Sample data
+        >>> X = np.array([[25, 45000], [60, 80000], [30, 25000]])
+        >>> X_binned = binner.fit_transform(X)  # fit() is no-op, transform() uses edges
+        >>>
+        >>> # With custom representatives
+        >>> bin_reps = {
+        ...     'age': [9, 26.5, 42.5, 57.5, 82.5],      # Custom age representatives
+        ...     'income': [15000, 45000, 80000, 150000]    # Custom income representatives
+        ... }
+        >>> binner_custom = ManualIntervalBinning(
+        ...     bin_edges=bin_edges,
+        ...     bin_representatives=bin_reps
+        ... )
+
+    Note:
+        - bin_edges is required and cannot be None
+        - fit() method is essentially a no-op since edges are predefined
+        - Each column can have different numbers of bins and edge values
+        - Out-of-range values are handled according to the clip parameter
+        - Inherits all interval binning capabilities from IntervalBinningBase
     """
 
     # pylint: disable=too-many-arguments
@@ -39,7 +104,71 @@ class ManualIntervalBinning(IntervalBinningBase):
         class_: str | None = None,  # For reconstruction compatibility
         module_: str | None = None,  # For reconstruction compatibility
     ):
-        """Initialize Manual Interval binning."""
+        """Initialize manual interval binning with user-defined bin edges.
+
+        Sets up manual interval binning with explicitly provided bin boundaries
+        and optional representatives. This method requires complete bin edge
+        specification upfront and integrates with binlearn's configuration system
+        for other parameters.
+
+        Args:
+            bin_edges: Required dictionary mapping column identifiers to lists of
+                bin edge values. Each edge list must:
+                - Contain at least 2 values (to define at least 1 bin)
+                - Be sorted in ascending order
+                - Contain only finite numeric values
+                For example: {0: [0, 10, 20, 30], 'feature1': [0.0, 0.5, 1.0]}
+            bin_representatives: Optional dictionary mapping column identifiers to
+                lists of representative values for each bin. If provided, must have
+                the same column keys as bin_edges and appropriate counts (one
+                representative per bin). If None, representatives are automatically
+                generated as bin midpoints.
+            clip: Whether to clip out-of-range values to the nearest bin boundary
+                during transformation. If True, values outside the defined range
+                are assigned to the nearest edge bin. If False, they receive
+                special out-of-range indices. If None, uses global configuration default.
+            preserve_dataframe: Whether to preserve DataFrame format in outputs when
+                input is a DataFrame. If None, uses global configuration default.
+            class_: Class name for reconstruction compatibility (ignored during
+                normal initialization).
+            module_: Module name for reconstruction compatibility (ignored during
+                normal initialization).
+
+        Raises:
+            ConfigurationError: If bin_edges is None or not provided, with helpful
+                suggestions for proper usage.
+
+        Example:
+            >>> # Basic manual binning with auto-generated representatives
+            >>> bin_edges = {
+            ...     'feature1': [0, 10, 20, 30, 40],
+            ...     'feature2': [-1.0, 0.0, 1.0, 2.0]
+            ... }
+            >>> binner = ManualIntervalBinning(bin_edges=bin_edges)
+            >>>
+            >>> # With custom representatives
+            >>> bin_reps = {
+            ...     'feature1': [5, 15, 25, 35],           # Custom values
+            ...     'feature2': [-0.5, 0.5, 1.5]          # Custom values
+            ... }
+            >>> binner_custom = ManualIntervalBinning(
+            ...     bin_edges=bin_edges,
+            ...     bin_representatives=bin_reps
+            ... )
+            >>>
+            >>> # With clipping enabled
+            >>> binner_clip = ManualIntervalBinning(
+            ...     bin_edges=bin_edges,
+            ...     clip=True
+            ... )
+
+        Note:
+            - bin_edges is the only required parameter and cannot be None
+            - Validation of bin_edges format occurs during initialization
+            - The fit() method will be essentially a no-op since edges are predefined
+            - Each column can have different numbers of bins
+            - Integration with global configuration for clip and preserve_dataframe
+        """
         # For manual binning, bin_edges is required and passed directly
         if bin_edges is None:
             raise ConfigurationError(
