@@ -121,8 +121,6 @@ def _is_polars_df(obj: Any) -> bool:
     """
     polars_module = _polars_config.pl
     return polars_module is not None and isinstance(obj, polars_module.DataFrame)
-    polars_module = _polars_config.pl
-    return polars_module is not None and isinstance(obj, polars_module.DataFrame)
 
 
 def prepare_array(X: ArrayLike) -> tuple[np.ndarray[Any, Any], OptionalColumnList, Any]:
