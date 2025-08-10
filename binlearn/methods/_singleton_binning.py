@@ -106,8 +106,12 @@ class SingletonBinning(FlexibleBinningBase):
         *,
         bin_spec: Any | None = None,  # FlexibleBinSpec
         bin_representatives: Any | None = None,  # BinEdgesDict
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize singleton binning with basic configuration options.
 
@@ -159,7 +163,8 @@ class SingletonBinning(FlexibleBinningBase):
         # Apply configuration defaults for singleton method
         params = apply_config_defaults("singleton", user_params)
 
-        # Initialize parent with resolved config parameters (no guidance_columns for singleton binning)
+        # Initialize parent with resolved config parameters
+        # (no guidance_columns for singleton binning)
         # Note: bin_spec and bin_representatives are never set from config
         FlexibleBinningBase.__init__(
             self,

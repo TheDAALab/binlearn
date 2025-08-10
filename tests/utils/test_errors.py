@@ -4,6 +4,7 @@ Comprehensive tests for binlearn.utils._errors module.
 Tests all error classes, warning classes, and utility functions with 100% coverage.
 """
 
+import pickle
 import warnings
 
 import pytest
@@ -319,8 +320,6 @@ class TestErrorIntegration:
 
     def test_error_picklability(self) -> None:
         """Test that errors can be pickled/unpickled (for multiprocessing)."""
-        import pickle
-
         error = BinningError("Pickle test", ["Try again"])
         pickled = pickle.dumps(error)
         unpickled = pickle.loads(pickled)

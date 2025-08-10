@@ -126,8 +126,12 @@ class ManualFlexibleBinning(FlexibleBinningBase):
         bin_representatives: BinEdgesDict | None = None,
         preserve_dataframe: bool | None = None,
         *,
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize manual flexible binning with user-defined bin specifications.
 

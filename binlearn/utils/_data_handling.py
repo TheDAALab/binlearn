@@ -247,7 +247,7 @@ def return_like_input(
         assert pandas_module is not None  # This should always be true
         cols = columns if columns is not None else list(original_input.columns)
         return pandas_module.DataFrame(arr, columns=cols, index=original_input.index)
-    elif _is_polars_df(original_input):
+    if _is_polars_df(original_input):
         # polars_module is guaranteed to be not None if _is_polars_df returns True
         polars_module = _polars_config.pl
         assert polars_module is not None  # This should always be true

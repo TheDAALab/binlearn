@@ -136,8 +136,12 @@ class TreeBinning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize Tree binning with decision tree parameters and task configuration.
 
@@ -335,7 +339,12 @@ class TreeBinning(SupervisedBinningBase):
             # Reshape x_col_clean to 2D for sklearn compatibility
             x_col_2d = x_col_clean.reshape(-1, 1)
             safe_sklearn_call(tree.fit, x_col_2d, guidance_clean)
-        except Exception as e:
+        except (
+            ValueError,
+            RuntimeError,
+            ImportError,
+            Exception,
+        ) as e:  # pylint: disable=broad-exception-caught
             raise FittingError(
                 f"Column {col_id}: Failed to fit decision tree: {str(e)}",
                 suggestions=[
@@ -392,7 +401,9 @@ class TreeBinning(SupervisedBinningBase):
                 bin_edges.append(edge)
         return bin_edges
 
-    def _extract_split_points(self, tree: Any, x_data: np.ndarray[Any, Any]) -> list[float]:
+    def _extract_split_points(
+        self, tree: Any, x_data: np.ndarray[Any, Any]
+    ) -> list[float]:  # pylint: disable=unused-argument
         """Extract split points from a fitted decision tree.
 
         Args:

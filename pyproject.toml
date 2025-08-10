@@ -175,7 +175,7 @@ per-file-ignores = [
 ]
 
 [tool.pylint.format]
-good-names = ["X", "y", "df", "pl", "pd", "i", "j", "k", "n", "m", "ax", "fig"]
+good-names = ["X", "y", "df", "pl", "pd", "i", "j", "k", "n", "m", "ax", "fig", "X_reshaped"]
 max-line-length = 100
 
 [tool.pylint.messages_control]

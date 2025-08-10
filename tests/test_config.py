@@ -1,3 +1,4 @@
+# pylint: disable=protected-access
 """
 Comprehensive test suite for binlearn configuration system.
 
@@ -129,7 +130,7 @@ class TestBinningConfig:
         }
 
         config_file = tmp_path / "test_config.json"
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             json.dump(config_data, f)
 
         config = BinningConfig.load_from_file(str(config_file))
@@ -150,7 +151,7 @@ class TestBinningConfig:
         config.save_to_file(str(config_file))
 
         assert config_file.exists()
-        with open(config_file) as f:
+        with open(config_file, encoding="utf-8") as f:
             saved_data = json.load(f)
 
         assert saved_data["float_tolerance"] == 1e-9
@@ -397,7 +398,7 @@ class TestConfigManager:
         config_data = {"float_tolerance": 1e-7}
         config_file = tmp_path / "manager_test.json"
 
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             json.dump(config_data, f)
 
         manager = ConfigManager()
@@ -481,7 +482,7 @@ class TestConfigManager:
             try:
                 manager._load_from_env()
                 # If we get here, the test passes - invalid values were ignored
-            except Exception as e:
+            except (ValueError, TypeError, KeyError) as e:  # pylint: disable=broad-exception-caught
                 pytest.fail(
                     f"_load_from_env should not raise when raise_on_config_errors=False, but got: {e}"
                 )
@@ -536,7 +537,7 @@ class TestGlobalConfigFunctions:
         config_data = {"equal_width_default_bins": 12}
         config_file = tmp_path / "global_test.json"
 
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             json.dump(config_data, f)
 
         load_config(str(config_file))
@@ -709,7 +710,7 @@ class TestEdgeCasesAndErrorHandling:
     def test_config_file_json_decode_error(self, tmp_path):
         """Test handling of invalid JSON in config file."""
         config_file = tmp_path / "invalid.json"
-        with open(config_file, "w") as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             f.write("invalid json content")
 
         with pytest.raises(json.JSONDecodeError):

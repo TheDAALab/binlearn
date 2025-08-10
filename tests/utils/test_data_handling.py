@@ -619,7 +619,7 @@ class TestIntegrationScenarios:
         )
 
         # Prepare array
-        array, columns, index = prepare_array(original)
+        array, columns, _ = prepare_array(original)
 
         # Simulate processing (e.g., binning)
         processed = array * 10
@@ -639,7 +639,7 @@ class TestIntegrationScenarios:
         original = np.array([[1, 2], [3, 4]])
 
         # Prepare array
-        array, columns, index = prepare_array(original)
+        array, columns, _ = prepare_array(original)
 
         # Simulate processing
         processed = array + 10
@@ -658,7 +658,7 @@ class TestIntegrationScenarios:
         original = pd.DataFrame([[1, 2, 3, 4], [5, 6, 7, 8]], columns=["A", "B", "C", "D"])
 
         # Prepare input with columns (simulating unfitted estimator)
-        array, columns = prepare_input_with_columns(original, fitted=False)
+        _, columns = prepare_input_with_columns(original, fitted=False)
 
         # Simulate fitting and storing columns
         fitted_columns = columns.copy()
@@ -683,7 +683,7 @@ class TestIntegrationScenarios:
         ]
 
         for input_data in inputs:
-            array, columns, index = prepare_array(input_data)
+            array, _, _ = prepare_array(input_data)
             # Should always return 2D array
             assert len(array.shape) == 2
             assert array.shape[0] >= 1  # At least one row
@@ -692,7 +692,7 @@ class TestIntegrationScenarios:
     def test_mixed_input_types_with_pandas_series(self):
         """Test handling of pandas Series input."""
         data = pd.Series([5, 6, 7])  # Series (gets reshaped)
-        array, columns, index = prepare_array(data)
+        array, _, _ = prepare_array(data)
         # Should always return 2D array
         assert len(array.shape) == 2
         assert array.shape[0] >= 1  # At least one row
@@ -712,7 +712,7 @@ class TestIntegrationScenarios:
         """Test that data types are preserved where possible."""
         # Integer data
         int_data = pd.DataFrame([[1, 2], [3, 4]], dtype=int)
-        array, columns, index = prepare_array(int_data)
+        array, columns, _ = prepare_array(int_data)
         result = return_like_input(array, int_data, columns, preserve_dataframe=True)
 
         assert isinstance(result, pd.DataFrame)
@@ -720,7 +720,7 @@ class TestIntegrationScenarios:
 
         # Float data
         float_data = pd.DataFrame([[1.1, 2.2], [3.3, 4.4]], dtype=float)
-        array, columns, index = prepare_array(float_data)
+        array, columns, _ = prepare_array(float_data)
         result = return_like_input(array, float_data, columns, preserve_dataframe=True)
 
         assert isinstance(result, pd.DataFrame)
@@ -734,7 +734,7 @@ class TestIntegrationScenarios:
         )
 
         # Should handle without issues
-        array, columns, index = prepare_array(large_data)
+        array, columns, _ = prepare_array(large_data)
         assert array.shape == (1000, 10)
         assert columns is not None and len(columns) == 10
 
@@ -748,7 +748,7 @@ class TestIntegrationScenarios:
         """Test handling of empty DataFrames."""
         empty_df = pd.DataFrame(columns=["A", "B", "C"])
 
-        array, columns, index = prepare_array(empty_df)
+        array, columns, _ = prepare_array(empty_df)
         assert array.shape == (0, 3)
         assert columns == ["A", "B", "C"]
 
@@ -762,7 +762,7 @@ class TestIntegrationScenarios:
         """Test handling of single-column DataFrames."""
         single_col_df = pd.DataFrame([1, 2, 3], columns=["single"])
 
-        array, columns, index = prepare_array(single_col_df)
+        array, columns, _ = prepare_array(single_col_df)
         assert array.shape == (3, 1)
         assert columns == ["single"]
 

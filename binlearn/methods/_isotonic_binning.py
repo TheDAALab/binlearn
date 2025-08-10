@@ -151,8 +151,12 @@ class IsotonicBinning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize Isotonic binning with monotonicity and quality parameters.
 
@@ -426,7 +430,12 @@ class IsotonicBinning(SupervisedBinningBase):
                 method_name="IsotonicRegression",
                 fallback_func=None,
             )
-        except Exception as e:
+        except (
+            ValueError,
+            RuntimeError,
+            ImportError,
+            Exception,
+        ) as e:  # pylint: disable=broad-exception-caught
             raise ValueError(f"Column {col_id}: Isotonic regression failed: {e}") from e
 
         # Store the fitted model
@@ -459,7 +468,10 @@ class IsotonicBinning(SupervisedBinningBase):
         return y_processed
 
     def _find_cut_points(
-        self, x_sorted: np.ndarray[Any, Any], y_fitted: np.ndarray[Any, Any], max_bins: int
+        self,
+        x_sorted: np.ndarray[Any, Any],
+        y_fitted: np.ndarray[Any, Any],
+        max_bins: int,  # pylint: disable=unused-argument
     ) -> list[int]:
         """Find cut points based on changes in fitted isotonic function.
 
@@ -506,9 +518,9 @@ class IsotonicBinning(SupervisedBinningBase):
     def _create_bins_from_cuts(
         self,
         x_sorted: np.ndarray[Any, Any],
-        y_fitted: np.ndarray[Any, Any],
+        y_fitted: np.ndarray[Any, Any],  # pylint: disable=unused-argument
         cut_indices: list[int],
-        col_id: Any,
+        col_id: Any,  # pylint: disable=unused-argument
     ) -> tuple[list[float], list[float]]:
         """Create bin edges and representatives from cut points.
 

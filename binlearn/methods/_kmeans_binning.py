@@ -124,8 +124,12 @@ class KMeansBinning(IntervalBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize K-means binning."""
         # Use standardized initialization pattern
@@ -197,7 +201,7 @@ class KMeansBinning(IntervalBinningBase):
     def _create_kmeans_bins(
         self,
         x_col: np.ndarray[Any, Any],
-        col_id: Any,
+        col_id: Any,  # pylint: disable=unused-argument
         n_bins: int,
     ) -> tuple[list[float], list[float]]:
         """Create K-means clustering-based bins.
@@ -277,7 +281,12 @@ class KMeansBinning(IntervalBinningBase):
                     method_name="KMeans",
                     fallback_func=None,
                 )
-        except Exception as e:
+        except (
+            ValueError,
+            RuntimeError,
+            ImportError,
+            Exception,
+        ) as e:  # pylint: disable=broad-exception-caught
             # Only reached when allow_fallback=False
             raise ConfigurationError(
                 f"K-means clustering failed: {str(e)}",

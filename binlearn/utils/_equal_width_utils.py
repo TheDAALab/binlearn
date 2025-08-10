@@ -7,6 +7,8 @@ fallback across multiple binning methods to reduce code duplication.
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
 
@@ -88,8 +90,6 @@ def apply_equal_width_fallback(
         # UserWarning: kmeans binning failed, falling back to equal-width binning
     """
     if warn_on_fallback:
-        import warnings
-
         warnings.warn(
             f"{method_name} binning failed, falling back to equal-width binning. "
             f"This may happen with insufficient data or inappropriate parameters.",
@@ -117,8 +117,6 @@ def validate_binning_input(data: np.ndarray, n_bins: int) -> None:
         raise ValueError(f"Number of bins must be positive, got {n_bins}")
 
     if n_bins >= data.size:
-        import warnings
-
         warnings.warn(
             f"Number of bins ({n_bins}) is greater than or equal to "
             f"data size ({data.size}). This may result in many empty bins.",

@@ -44,7 +44,7 @@ def validate_common_parameters(obj: Any, param_specs: dict[str, dict[str, Any]])
             if isinstance(value, int | float):
                 min_val = specs.get("min", float("-inf"))
                 max_val = specs.get("max", float("inf"))
-                if not (min_val <= value <= max_val):
+                if not min_val <= value <= max_val:
                     range_desc = f"[{min_val}, {max_val}]"
                     raise create_configuration_error(
                         param_name,

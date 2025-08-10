@@ -14,7 +14,9 @@ from typing import Any
 from ._errors import BinningError, ConfigurationError
 
 
-def handle_sklearn_import_error(import_error: ImportError, method_name: str) -> ConfigurationError:
+def handle_sklearn_import_error(
+    import_error: ImportError, method_name: str
+) -> ConfigurationError:  # pylint: disable=unused-argument
     """Handle sklearn import errors with standardized message.
 
     Args:
@@ -150,8 +152,7 @@ def safe_sklearn_call(
                 stacklevel=3,
             )
             return fallback_func(*args, **kwargs)
-        else:
-            raise handle_sklearn_import_error(e, method_name) from e
+        raise handle_sklearn_import_error(e, method_name) from e
     except Exception as e:
         if fallback_func is not None:
             warnings.warn(
@@ -160,11 +161,10 @@ def safe_sklearn_call(
                 stacklevel=3,
             )
             return fallback_func(*args, **kwargs)
-        else:
-            raise BinningError(
-                f"{method_name} failed: {str(e)}",
-                suggestions=["Check input data format and parameters"],
-            ) from e
+        raise BinningError(
+            f"{method_name} failed: {str(e)}",
+            suggestions=["Check input data format and parameters"],
+        ) from e
 
 
 def validate_fitted_state(obj: Any, method_name: str = "transform") -> None:

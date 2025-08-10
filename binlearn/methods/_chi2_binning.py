@@ -120,8 +120,12 @@ class Chi2Binning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize Chi-square binning."""
         # Use standardized initialization pattern
@@ -167,7 +171,7 @@ class Chi2Binning(SupervisedBinningBase):
         validate_positive_integer(self.initial_bins, "initial_bins")
 
         # Validate alpha (must be between 0 and 1)
-        if not isinstance(self.alpha, int | float) or not (0.0 < self.alpha < 1.0):
+        if not isinstance(self.alpha, int | float) or not 0.0 < self.alpha < 1.0:
             raise ConfigurationError(
                 f"alpha must be a number between 0 and 1 (exclusive), got {self.alpha}",
                 suggestions=["Example: alpha=0.05"],
@@ -580,7 +584,11 @@ class Chi2Binning(SupervisedBinningBase):
         try:
             chi2_stat, _, _, _ = chi2_contingency(contingency_table)
             return self._convert_chi2_result(chi2_stat)
-        except Exception:
+        except (
+            ValueError,
+            RuntimeWarning,
+            Exception,
+        ) as e:  # pylint: disable=broad-exception-caught
             return 0.0  # Exception handling
 
     def _handle_chi2_calculation_errors(self, error: Exception) -> float:
@@ -611,7 +619,12 @@ class Chi2Binning(SupervisedBinningBase):
         """Safely calculate chi2 with exception handling separated for testability."""
         try:
             return self._perform_chi2_calculation(interval1, interval2, unique_classes)
-        except Exception as e:
+        except (
+            ValueError,
+            RuntimeWarning,
+            KeyError,
+            Exception,
+        ) as e:  # pylint: disable=broad-exception-caught
             return self._handle_chi2_calculation_errors(e)
 
     def _perform_chi2_calculation(
@@ -659,7 +672,6 @@ class Chi2Binning(SupervisedBinningBase):
         # This could be made more precise with scipy.stats.chi2.ppf
         if self.alpha >= 0.1:
             return 2.706  # Very lenient
-        elif self.alpha >= 0.05:
+        if self.alpha >= 0.05:
             return 3.841 if dof == 1 else 5.991  # Standard
-        else:
-            return 6.635 if dof == 1 else 9.210  # Strict
+        return 6.635 if dof == 1 else 9.210  # Strict

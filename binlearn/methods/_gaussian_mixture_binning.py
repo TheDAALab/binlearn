@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.mixture import GaussianMixture
 
 from ..base import IntervalBinningBase
@@ -133,8 +134,12 @@ class GaussianMixtureBinning(IntervalBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: str | None = None,  # For reconstruction compatibility
-        module_: str | None = None,  # For reconstruction compatibility
+        class_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        module_: (
+            str | None
+        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
     ):
         """Initialize Gaussian Mixture binning with clustering parameters.
 
@@ -334,7 +339,12 @@ class GaussianMixtureBinning(IntervalBinningBase):
 
             return edges, reps
 
-        except Exception as e:
+        except (
+            ValueError,
+            RuntimeError,
+            ConvergenceWarning,
+            Exception,
+        ) as e:  # pylint: disable=broad-exception-caught
             # Check if fallback is allowed
             if not self.allow_fallback:
                 raise ConfigurationError(

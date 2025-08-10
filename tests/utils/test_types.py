@@ -4,7 +4,6 @@ Comprehensive tests for binlearn.utils._types module.
 Tests all type constants and type aliases with 100% coverage.
 """
 
-
 import numpy as np
 
 from binlearn.utils import (
@@ -460,7 +459,7 @@ class TestTypeHints:
         """Test that Any type allows flexibility where needed."""
 
         # FlexibleBinDef is Any, so should accept various types
-        def accepts_flexible_def(val: FlexibleBinDef) -> bool:
+        def accepts_flexible_def(val: FlexibleBinDef) -> bool:  # pylint: disable=unused-argument
             return True
 
         # Should accept various types without type errors

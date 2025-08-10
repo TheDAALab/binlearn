@@ -7,6 +7,7 @@ multiple binning implementations to reduce code duplication and ensure consisten
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 from typing import Any
 
@@ -84,13 +85,12 @@ def get_effective_n_bins(n_bins: int | str, data_size: int) -> int:
     # Handle string methods
     if n_bins == "auto":
         return min(50, max(2, int(data_size**0.5)))
-    elif n_bins == "sqrt":
+    if n_bins == "sqrt":
         return max(2, int(data_size**0.5))
-    elif n_bins == "log":
+    if n_bins == "log":
         return max(2, int(np.log2(data_size)))
-    else:
-        # Default fallback
-        return 10
+    # Default fallback
+    return 10
 
 
 def prepare_sklearn_estimator_params(
@@ -121,7 +121,6 @@ def handle_common_warnings(method_name: str, **conditions: Any) -> None:
         **conditions: Boolean conditions that trigger warnings
             e.g., small_data=True, few_bins=True
     """
-    import warnings
 
     if conditions.get("small_data"):
         warnings.warn(
