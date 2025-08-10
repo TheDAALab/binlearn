@@ -309,33 +309,6 @@ output = "coverage.xml"
 exclude_dirs = ["tests", "docs"]
 skips = ["B101", "B601"]
 
-# Flake8 configuration
-[tool.flake8]
-max-line-length = 100
-max-complexity = 15
-extend-ignore = [
-    "E203",  # Whitespace before ':'
-    "E501",  # Line too long (handled by black)
-    "W503",  # Line break before binary operator
-    "E731",  # Do not assign a lambda expression
-]
-exclude = [
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-    "*.egg-info",
-    ".venv",
-    "venv",
-    ".tox",
-    "notebooks",
-    "*.ipynb",
-]
-per-file-ignores = [
-    "__init__.py:F401",  # Allow unused imports in __init__.py
-    "tests/*:S101,S603,S607",  # Allow assert statements and subprocess in tests
-]
-
 [tool.ruff]
 line-length = 100
 target-version = "py310"
