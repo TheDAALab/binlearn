@@ -106,12 +106,12 @@ class SingletonBinning(FlexibleBinningBase):
         *,
         bin_spec: Any | None = None,  # FlexibleBinSpec
         bin_representatives: Any | None = None,  # BinEdgesDict
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize singleton binning with basic configuration options.
 

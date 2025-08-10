@@ -45,7 +45,8 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
     - Each bin has sufficient statistical power for analysis
     - Bins are meaningful for weighted modeling or evaluation
     - Sparse regions in the data don't create unreliable bins
-    - The resulting binning respects both spatial (equal-width) and statistical (weight) considerations
+    - The resulting binning respects both spatial (equal-width) and statistical (weight)
+        considerations
 
     When no bins can meet the minimum weight requirement individually, the algorithm
     creates a single bin containing all data to maintain functionality.
@@ -107,7 +108,8 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
         >>> # Check bin weights
         >>> for i, edges in enumerate(zip(binner.bin_edges_[0][:-1], binner.bin_edges_[0][1:])):
         ...     left, right = edges
-        ...     mask = (X >= left) & (X < right) if i < len(binner.bin_edges_[0]) - 2 else (X >= left) & (X <= right)
+        ...     mask = (X >= left) & (X < right) if i < len(binner.bin_edges_[0]) - 2
+        ...         else (X >= left) & (X <= right)
         ...     bin_weight = np.sum(weights[mask.flatten()])
         ...     print(f"Bin {i}: [{left:.1f}, {right:.1f}] weight: {bin_weight:.1f}")
 
@@ -142,12 +144,12 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize Equal Width Minimum Weight binning with weight constraints.
 
@@ -316,11 +318,13 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
             self.n_bins, data_shape=(len(x_col), 1), param_name="n_bins"
         )
 
-        # Extract the single weight column (guaranteed to have shape (n_samples, 1) by SupervisedBinningBase)
+        # Extract the single weight column (guaranteed to have shape (n_samples, 1)
+        # by SupervisedBinningBase)
         weights = guidance_data[:, 0]
 
         return self._create_equal_width_minimum_weight_bins(x_col, weights, col_id, resolved_n_bins)
 
+    # pylint: disable=too-many-locals
     def _create_equal_width_minimum_weight_bins(
         self,
         x_col: np.ndarray[Any, Any],

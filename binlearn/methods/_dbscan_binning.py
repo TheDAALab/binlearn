@@ -128,12 +128,12 @@ class DBSCANBinning(IntervalBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize DBSCAN binning with clustering parameters.
 
@@ -258,6 +258,7 @@ class DBSCANBinning(IntervalBinningBase):
         """
         return self._create_dbscan_bins(x_col, col_id)
 
+    # pylint: disable=too-many-locals
     def _create_dbscan_bins(
         self,
         x_col: np.ndarray[Any, Any],
@@ -296,7 +297,8 @@ class DBSCANBinning(IntervalBinningBase):
             # Check if fallback is allowed
             if not self.allow_fallback:
                 raise ConfigurationError(
-                    f"DBSCAN found only {len(unique_clusters)} clusters, but min_bins={self.min_bins}",
+                    f"DBSCAN found only {len(unique_clusters)} clusters, "
+                    f"but min_bins={self.min_bins}",
                     suggestions=[
                         f"Reduce min_bins to {len(unique_clusters)} or lower",
                         "Adjust eps parameter to find more clusters",

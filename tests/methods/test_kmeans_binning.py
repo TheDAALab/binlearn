@@ -799,7 +799,7 @@ class TestKMeansBinning:
         from unittest.mock import patch
 
         with patch("binlearn.methods._kmeans_binning.kmeans1d") as mock_kmeans:
-            mock_kmeans.cluster.side_effect = Exception("Clustering failed")
+            mock_kmeans.cluster.side_effect = ValueError("Clustering failed")
 
             # This should raise ConfigurationError (covers lines 260, 273 in _kmeans_binning.py)
             with pytest.raises(ConfigurationError, match="K-means clustering failed"):

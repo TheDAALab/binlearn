@@ -101,12 +101,12 @@ class ManualIntervalBinning(IntervalBinningBase):
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         *,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize manual interval binning with user-defined bin edges.
 

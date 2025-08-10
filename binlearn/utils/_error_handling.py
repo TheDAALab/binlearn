@@ -8,7 +8,6 @@ multiple binning implementations to ensure consistency.
 from __future__ import annotations
 
 import warnings
-from collections.abc import Callable
 from typing import Any
 
 from ._errors import BinningError, ConfigurationError

@@ -17,6 +17,7 @@ from ..utils import ArrayLike, BinningError, ColumnList, GuidanceColumns
 from ._data_handling_base import DataHandlingBase
 
 
+# pylint: disable=too-many-ancestors
 class GeneralBinningBase(
     ABC,
     DataHandlingBase,
@@ -206,8 +207,8 @@ class GeneralBinningBase(
                         "All columns are specified as guidance_columns. "
                         "At least one column must be available for binning."
                     )
-                else:
-                    raise ValueError("No columns available for binning.")
+
+                raise ValueError("No columns available for binning.")
 
             # Step 5: Route to appropriate fitting strategy
             if self.fit_jointly:

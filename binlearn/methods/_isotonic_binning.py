@@ -132,10 +132,11 @@ class IsotonicBinning(SupervisedBinningBase):
         SupervisedBinningBase: Base class for supervised binning methods
 
     References:
-        Robertson, T., Wright, F. T., & Dykstra, R. L. (1988). Order Restricted Statistical Inference.
+        Robertson, T., Wright, F. T., & Dykstra, R. L. (1988). Order Restricted Statistical
+            Inference.
     """
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     def __init__(
         self,
         max_bins: int | str | None = None,
@@ -150,12 +151,12 @@ class IsotonicBinning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize Isotonic binning with monotonicity and quality parameters.
 
@@ -224,7 +225,8 @@ class IsotonicBinning(SupervisedBinningBase):
             - Parameter validation occurs during initialization
             - Configuration defaults are applied for None parameters
             - The increasing parameter is crucial for defining the expected relationship direction
-            - y_min and y_max constraints help with numerical stability and domain knowledge enforcement
+            - y_min and y_max constraints help with numerical stability and domain knowledge
+                enforcement
             - Reconstruction parameters should not be provided during normal usage
             - Guidance columns must be specified for supervised binning to work properly
         """
@@ -360,6 +362,7 @@ class IsotonicBinning(SupervisedBinningBase):
         # Create isotonic binning
         return self._create_isotonic_bins(x_col, guidance_data_numeric, col_id)
 
+    # pylint: disable=too-many-locals
     def _create_isotonic_bins(
         self, x_col: np.ndarray[Any, Any], y_col: np.ndarray[Any, Any], col_id: Any
     ) -> tuple[list[float], list[float]]:
@@ -479,6 +482,8 @@ class IsotonicBinning(SupervisedBinningBase):
         Returns:
             Indices of cut points in the sorted arrays
         """
+        _ = x_sorted
+
         cut_indices = [0]  # Always start with first point
 
         if len(y_fitted) <= 1:

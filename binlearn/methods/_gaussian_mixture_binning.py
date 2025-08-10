@@ -7,7 +7,6 @@ Uses Gaussian Mixture Model clustering to find natural probabilistic bin boundar
 
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
 import numpy as np
@@ -134,12 +133,12 @@ class GaussianMixtureBinning(IntervalBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize Gaussian Mixture binning with clustering parameters.
 
@@ -268,6 +267,7 @@ class GaussianMixtureBinning(IntervalBinningBase):
 
         return self._create_gmm_bins(x_col, col_id, resolved_n_components)
 
+    # pylint: disable=too-many-locals
     def _create_gmm_bins(
         self,
         x_col: np.ndarray[Any, Any],
@@ -321,7 +321,8 @@ class GaussianMixtureBinning(IntervalBinningBase):
                 sorted_means > max_val + tolerance
             ):
                 raise ValueError(
-                    f"GMM produced means outside data range: {sorted_means} not in [{min_val}, {max_val}]"
+                    f"GMM produced means outside data range: {sorted_means} not "
+                    f"in [{min_val}, {max_val}]"
                 )
 
             # Calculate component boundaries
@@ -343,8 +344,7 @@ class GaussianMixtureBinning(IntervalBinningBase):
             ValueError,
             RuntimeError,
             ConvergenceWarning,
-            Exception,
-        ) as e:  # pylint: disable=broad-exception-caught
+        ) as e:
             # Check if fallback is allowed
             if not self.allow_fallback:
                 raise ConfigurationError(

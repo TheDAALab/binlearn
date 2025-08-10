@@ -15,14 +15,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from ..base import SupervisedBinningBase
 from ..config import apply_config_defaults, get_config
-from ..utils import (
-    BinEdgesDict,
-    ConfigurationError,
-    FittingError,
-    create_param_dict_for_config,
-    validate_bin_number_for_calculation,
-    validate_tree_params,
-)
+from ..utils import BinEdgesDict, ConfigurationError, FittingError, create_param_dict_for_config
 
 
 # pylint: disable=too-many-ancestors
@@ -137,12 +130,12 @@ class TreeBinning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize Tree binning with decision tree parameters and task configuration.
 
@@ -289,10 +282,12 @@ class TreeBinning(SupervisedBinningBase):
                 f"Invalid tree_params: {str(e)}",
                 suggestions=[
                     "Check that all tree_params are valid DecisionTree parameters",
-                    "Common parameters: max_depth, min_samples_split, min_samples_leaf, random_state",
+                    "Common parameters: max_depth, min_samples_split,"
+                    " min_samples_leaf, random_state",
                 ],
             ) from e
 
+    # pylint: disable=too-many-locals
     def _calculate_bins(
         self,
         x_col: np.ndarray[Any, Any],
@@ -402,9 +397,7 @@ class TreeBinning(SupervisedBinningBase):
                 bin_edges.append(edge)
         return bin_edges
 
-    def _extract_split_points(
-        self, tree: Any, x_data: np.ndarray[Any, Any]
-    ) -> list[float]:  # pylint: disable=unused-argument
+    def _extract_split_points(self, tree: Any, x_data: np.ndarray[Any, Any]) -> list[float]:
         """Extract split points from a fitted decision tree.
 
         Args:
@@ -414,6 +407,8 @@ class TreeBinning(SupervisedBinningBase):
         Returns:
             List of unique split threshold values extracted from the tree
         """
+        _ = x_data
+
         split_points = []
 
         # Access the tree structure

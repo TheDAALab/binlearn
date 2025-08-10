@@ -524,7 +524,7 @@ class TestGaussianMixtureBinning:
 
         # Mock GaussianMixture to raise an exception to test fallback to equal-width
         with unittest.mock.patch(
-            "sklearn.mixture.GaussianMixture.fit", side_effect=Exception("Mock GMM error")
+            "sklearn.mixture.GaussianMixture.fit", side_effect=ValueError("Mock GMM error")
         ):
             X = np.array([[1.0], [2.0], [3.0], [4.0], [5.0]])
             binner = GaussianMixtureBinning(n_components=3, random_state=42)
@@ -837,7 +837,7 @@ class TestGaussianMixtureBinning:
 
         with patch("binlearn.methods._gaussian_mixture_binning.GaussianMixture") as mock_gmm:
             mock_instance = Mock()
-            mock_instance.fit.side_effect = Exception("GMM fitting failed")
+            mock_instance.fit.side_effect = ValueError("GMM fitting failed")
             mock_gmm.return_value = mock_instance
 
             # This should raise ConfigurationError (covers line 342 in _gaussian_mixture_binning.py)

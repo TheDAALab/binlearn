@@ -124,12 +124,12 @@ class KMeansBinning(IntervalBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize K-means binning."""
         # Use standardized initialization pattern
@@ -267,7 +267,7 @@ class KMeansBinning(IntervalBinningBase):
                 # Try K-means with fallback to equal-width on failure
                 try:
                     centroids = kmeans_func(x_col, n_bins)
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
                     warnings.warn(
                         "KMeans failed with sklearn, using fallback: clustering error",
                         category=UserWarning,
@@ -277,12 +277,7 @@ class KMeansBinning(IntervalBinningBase):
             else:
                 # Don't use fallback - let exceptions propagate
                 centroids = kmeans_func(x_col, n_bins)
-        except (
-            ValueError,
-            RuntimeError,
-            ImportError,
-            Exception,
-        ) as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, RuntimeError, ImportError) as e:
             # Only reached when allow_fallback=False
             raise ConfigurationError(
                 f"K-means clustering failed: {str(e)}",

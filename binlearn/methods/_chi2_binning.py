@@ -120,12 +120,12 @@ class Chi2Binning(SupervisedBinningBase):
         *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
-        class_: (
+        class_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
-        module_: (
+        ) = None,  # For reconstruction compatibility
+        module_: (  # pylint: disable=unused-argument
             str | None
-        ) = None,  # For reconstruction compatibility  # pylint: disable=unused-argument
+        ) = None,  # For reconstruction compatibility
     ):
         """Initialize Chi-square binning."""
         # Use standardized initialization pattern
@@ -148,6 +148,9 @@ class Chi2Binning(SupervisedBinningBase):
         self.initial_bins = params.get(
             "initial_bins", initial_bins if initial_bins is not None else 20
         )
+
+        # Initialize instance attributes
+        self._filtered_contingency: np.ndarray[Any, Any] | None = None
 
         # Initialize parent with resolved config parameters (no fit_jointly for supervised)
         # Note: guidance_columns, bin_edges, bin_representatives are never set from config
@@ -217,7 +220,8 @@ class Chi2Binning(SupervisedBinningBase):
                 "Chi2 binning is a supervised method and requires guidance data (targets)"
             )
 
-        # Extract the single target column (guaranteed to have shape (n_samples, 1) by SupervisedBinningBase)
+        # Extract the single target column (guaranteed to have shape (n_samples, 1)
+        # by SupervisedBinningBase)
         y_col = guidance_data[:, 0]
 
         return self._calculate_chi2_bins(x_col, y_col, col_id)
@@ -239,7 +243,8 @@ class Chi2Binning(SupervisedBinningBase):
         unique_classes = np.unique(y_col)
         if len(unique_classes) < 2:
             raise FittingError(
-                f"Column {col_id} target has insufficient class diversity ({len(unique_classes)} classes). "
+                f"Column {col_id} target has insufficient class diversity "
+                f"({len(unique_classes)} classes). "
                 "Chi2 binning requires at least 2 target classes."
             )
 
@@ -584,11 +589,7 @@ class Chi2Binning(SupervisedBinningBase):
         try:
             chi2_stat, _, _, _ = chi2_contingency(contingency_table)
             return self._convert_chi2_result(chi2_stat)
-        except (
-            ValueError,
-            RuntimeWarning,
-            Exception,
-        ) as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, RuntimeWarning):
             return 0.0  # Exception handling
 
     def _handle_chi2_calculation_errors(self, error: Exception) -> float:
@@ -619,12 +620,7 @@ class Chi2Binning(SupervisedBinningBase):
         """Safely calculate chi2 with exception handling separated for testability."""
         try:
             return self._perform_chi2_calculation(interval1, interval2, unique_classes)
-        except (
-            ValueError,
-            RuntimeWarning,
-            KeyError,
-            Exception,
-        ) as e:  # pylint: disable=broad-exception-caught
+        except (ValueError, RuntimeWarning, KeyError) as e:
             return self._handle_chi2_calculation_errors(e)
 
     def _perform_chi2_calculation(
@@ -642,6 +638,8 @@ class Chi2Binning(SupervisedBinningBase):
             return 0.0
 
         # Calculate chi-square statistic with exception handling
+        if self._filtered_contingency is None:
+            return 0.0
         return self._compute_chi2_statistic(self._filtered_contingency)
 
     def _merge_two_intervals(

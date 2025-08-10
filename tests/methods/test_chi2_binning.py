@@ -1805,3 +1805,34 @@ class TestChi2Binning:
             initial_bins=20, max_bins=15, min_bins=2, alpha=0.99
         )  # High alpha
         binner_edge.fit(X_edge, y=y_edge)
+
+        # Test the specific case where _filtered_contingency is None (line 642)
+        # This covers the edge case in _perform_chi2_calculation
+        binner_none_test = Chi2Binning()
+
+        # Create test intervals
+        interval1 = {"indices": np.array([0, 1]), "class_counts": {0: 1, 1: 1}}
+        interval2 = {"indices": np.array([2, 3]), "class_counts": {0: 1, 1: 1}}
+        unique_classes = np.array([0, 1])
+
+        # Mock the _validate_contingency_table to return True but not set _filtered_contingency
+        # This simulates a race condition or bug where validation passes but contingency isn't set
+        def mock_validate(contingency_table):
+            # Return True to pass validation but don't set _filtered_contingency
+            # This forces the execution to reach line 641-642
+            return True
+
+        # Temporarily replace the method and ensure _filtered_contingency is None
+        original_validate = binner_none_test._validate_contingency_table
+        binner_none_test._validate_contingency_table = mock_validate
+        binner_none_test._filtered_contingency = None
+
+        try:
+            # Now call the method that checks for None _filtered_contingency (line 642)
+            result = binner_none_test._perform_chi2_calculation(
+                interval1, interval2, unique_classes
+            )
+            assert result == 0.0  # Should return 0.0 when _filtered_contingency is None
+        finally:
+            # Restore the original method
+            binner_none_test._validate_contingency_table = original_validate

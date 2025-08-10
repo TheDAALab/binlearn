@@ -320,7 +320,8 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
             fitted_attr_name = f"{param_name}_"
 
             # Special case: bin_edges, bin_representatives, and bin_spec are constructor params
-            # but when set via set_params during reconstruction, they should be treated as fitted params
+            # but when set via set_params during reconstruction, they should be treated as
+            # fitted params
             is_reconstruction_param = (
                 param_name in {"bin_edges", "bin_representatives", "bin_spec"}
                 and param_value is not None
@@ -337,7 +338,8 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
 
         # Set regular parameters through sklearn mechanism (excluding reconstruction params)
         if regular_params:
-            # Filter out bin_edges/bin_representatives/bin_spec if they're None (don't override constructor defaults)
+            # Filter out bin_edges/bin_representatives/bin_spec if they're None
+            # (don't override constructor defaults)
             filtered_regular_params = {
                 k: v
                 for k, v in regular_params.items()
@@ -371,7 +373,6 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
             - Subclasses should call super()._validate_params() if they override this
             - Used to catch configuration errors early in the initialization process
         """
-        pass
 
     def _more_tags(self) -> dict[str, Any]:
         """Provide sklearn compatibility tags for metadata and testing.

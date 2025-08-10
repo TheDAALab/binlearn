@@ -20,6 +20,7 @@ from ..utils import (
 from ._general_binning_base import GeneralBinningBase
 
 
+# pylint: disable=too-many-ancestors
 class FlexibleBinningBase(GeneralBinningBase):
     """Base class for flexible binning methods that support mixed bin types.
 
@@ -65,11 +66,13 @@ class FlexibleBinningBase(GeneralBinningBase):
         - Subclasses must implement the abstract _do_fit_single_column method
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_spec: FlexibleBinSpec | None = None,
         bin_representatives: BinEdgesDict | None = None,
     ):
@@ -137,6 +140,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         # Validate parameters early
         self._validate_params()
 
+    # pylint: disable=too-many-branches
     def _validate_params(self) -> None:
         """Validate flexible binning parameters and initialize fitted attributes.
 
@@ -161,6 +165,7 @@ class FlexibleBinningBase(GeneralBinningBase):
         GeneralBinningBase._validate_params(self)
 
         # Process provided bin specifications
+        # pylint: disable=too-many-nested-blocks
         try:
             if self.bin_spec is not None:
                 # For now, just check it's a dictionary
@@ -306,7 +311,8 @@ class FlexibleBinningBase(GeneralBinningBase):
             - Default implementation delegates to _fit_per_column_independently
             - Subclasses can override this method to implement true joint fitting
             - Joint fitting might consider correlations or dependencies between columns
-            - The choice between joint and independent fitting is controlled by fit_jointly parameter
+            - The choice between joint and independent fitting is controlled by fit_jointly
+                parameter
         """
         # For flexible binning, joint fitting is typically the same as per-column fitting
         # unless overridden by specific implementations
@@ -439,4 +445,3 @@ class FlexibleBinningBase(GeneralBinningBase):
             - bin_values: List of values that define the bins
             - representatives: List of representative values for each bin
         """
-        ...

@@ -25,6 +25,7 @@ from ..utils import (
 from ._general_binning_base import GeneralBinningBase
 
 
+# pylint: disable=too-many-ancestors,too-many-instance-attributes
 class IntervalBinningBase(GeneralBinningBase):
     """Interval-based binning functionality inheriting from GeneralBinningBase.
 
@@ -97,12 +98,14 @@ class IntervalBinningBase(GeneralBinningBase):
     from input data for their specific binning algorithm.
     """
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
     ):
@@ -351,4 +354,3 @@ class IntervalBinningBase(GeneralBinningBase):
 
         Subclasses must implement this method to define their binning strategy.
         """
-        ...
