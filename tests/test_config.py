@@ -718,9 +718,7 @@ class TestEdgeCasesAndErrorHandling:
         with pytest.raises(json.JSONDecodeError):
             BinningConfig.load_from_file(str(config_file))
 
-    @pytest.mark.skipif(
-        os.name == "nt", reason="Permission error testing not reliable on Windows"
-    )
+    @pytest.mark.skipif(os.name == "nt", reason="Permission error testing not reliable on Windows")
     def test_config_file_permission_error(self, tmp_path):
         """Test handling of permission errors in file operations."""
         config_file = tmp_path / "no_permission.json"
