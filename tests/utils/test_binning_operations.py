@@ -524,6 +524,7 @@ class TestValidateFlexibleBinSpecFormat:
             validate_flexible_bin_spec_format(bin_spec)
 
 
+# pylint: disable=too-many-public-methods
 class TestValidateSingleFlexibleBinDef:
     """Test suite for _validate_single_flexible_bin_def function."""
 

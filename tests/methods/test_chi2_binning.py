@@ -1180,8 +1180,8 @@ class TestChi2Binning:
 
         # Test _above_minimum_bins (line 319->322 branch)
         assert (
-            binner._above_minimum_bins([1, 2]) is True
-        )  # 2 >= 2 (default min_bins)   # type: ignore
+            binner._above_minimum_bins([1, 2]) is True  # type: ignore
+        )  # 2 >= 2 (default min_bins)
         assert binner._above_minimum_bins([1]) is False  # 1 < 2 (default min_bins)   # type: ignore
 
         # Test complete _should_stop_merging logic

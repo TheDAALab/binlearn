@@ -22,6 +22,7 @@ from ..utils import (
 from ._interval_binning_base import IntervalBinningBase
 
 
+# pylint: disable=too-many-ancestors
 class SupervisedBinningBase(IntervalBinningBase):
     """Base class for supervised binning methods that use target information.
 
@@ -70,11 +71,13 @@ class SupervisedBinningBase(IntervalBinningBase):
         - Subclasses must implement _calculate_bin_edges with target-aware logic
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         guidance_columns: Any = None,
+        *,
         bin_edges: BinEdgesDict | None = None,
         bin_representatives: BinEdgesDict | None = None,
     ):
@@ -193,7 +196,8 @@ class SupervisedBinningBase(IntervalBinningBase):
         # Supervised binning requires exactly one guidance column
         if guidance_data.shape[1] != 1:
             raise ValidationError(
-                f"Supervised binning requires exactly one target column, got {guidance_data.shape[1]} columns"
+                f"Supervised binning requires exactly one target column, "
+                f"got {guidance_data.shape[1]} columns"
             )
 
         return guidance_data  # type: ignore[no-any-return]
@@ -267,7 +271,8 @@ class SupervisedBinningBase(IntervalBinningBase):
             removal_ratio = removed_count / len(feature_data)
             if removal_ratio > 0.05 or removed_count > 5:
                 warnings.warn(
-                    f"Column {col_id}: Removed {removed_count} rows with missing values in target data. "
+                    f"Column {col_id}: Removed {removed_count} rows with missing values "
+                    "in target data. "
                     f"Using {len(cleaned_feature)} valid samples for binning.",
                     DataQualityWarning,
                     stacklevel=2,

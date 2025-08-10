@@ -35,6 +35,7 @@ from binlearn.config import (
 )
 
 
+# pylint: disable=too-many-public-methods
 class TestBinningConfig:
     """Test BinningConfig dataclass functionality."""
 
@@ -484,7 +485,8 @@ class TestConfigManager:
                 # If we get here, the test passes - invalid values were ignored
             except (ValueError, TypeError, KeyError) as e:  # pylint: disable=broad-exception-caught
                 pytest.fail(
-                    f"_load_from_env should not raise when raise_on_config_errors=False, but got: {e}"
+                    f"_load_from_env should not raise when raise_on_config_errors=False"
+                    f", but got: {e}"
                 )
 
         # Reset singleton

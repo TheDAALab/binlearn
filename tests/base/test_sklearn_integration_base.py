@@ -351,6 +351,18 @@ class TestSklearnIntegrationBase:
         estimator.set_params(bin_edges=[[0, 1, 2]])
         assert estimator.bin_edges_ == [[0, 1, 2]]
 
+    def test_set_params_sklearn_attribute_setter_not_callable(self):
+        """Test set_params when _set_sklearn_attributes_from_specs exists but is not callable."""
+        estimator = MockEstimator()
+
+        # Set the attribute to a non-callable value (e.g., a string)
+        # pylint: disable=attribute-defined-outside-init
+        estimator._set_sklearn_attributes_from_specs = "not_a_function"  # type: ignore
+
+        # Should not raise error and should not attempt to call the non-callable
+        estimator.set_params(bin_edges=[[0, 1, 2]])
+        assert estimator.bin_edges_ == [[0, 1, 2]]
+
     def test_set_params_fitted_parameter_detection(self):
         """Test set_params correctly detects fitted parameters."""
         estimator = MockEstimator()

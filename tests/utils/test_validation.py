@@ -543,7 +543,7 @@ class TestValidateTreeParams:
     def test_validate_empty_params(self) -> None:
         """Test validation of empty parameters."""
         # Empty dict
-        assert validate_tree_params("classification", {}) == {}
+        assert not validate_tree_params("classification", {})
 
         # None
         assert validate_tree_params("regression", None) == {}  # type: ignore[arg-type]

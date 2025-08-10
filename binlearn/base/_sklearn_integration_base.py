@@ -354,9 +354,10 @@ class SklearnIntegrationBase(BaseEstimator):  # type: ignore[misc,unused-ignore]
 
         # If we set fitted parameters, also set sklearn attributes if available
         if fitted_params_to_set:
-            sklearn_setter = getattr(self, "_set_sklearn_attributes_from_specs", None)
-            if sklearn_setter:
-                sklearn_setter()
+            if hasattr(self, "_set_sklearn_attributes_from_specs"):
+                sklearn_setter = self._set_sklearn_attributes_from_specs
+                if callable(sklearn_setter):
+                    sklearn_setter()
 
         return self
 

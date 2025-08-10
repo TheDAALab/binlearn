@@ -224,12 +224,12 @@ class TestSuggestAlternatives:
     def test_unknown_method(self) -> None:
         """Test suggestions for unknown method names."""
         alternatives = suggest_alternatives("unknown_method")
-        assert alternatives == []
+        assert not alternatives
 
     def test_empty_method_name(self) -> None:
         """Test suggestions for empty method name."""
         alternatives = suggest_alternatives("")
-        assert alternatives == []
+        assert not alternatives
 
     def test_none_method_name(self) -> None:
         """Test suggestions handle None gracefully."""
@@ -237,7 +237,7 @@ class TestSuggestAlternatives:
         try:
             alternatives = suggest_alternatives(None)  # type: ignore[arg-type]
             # If it doesn't crash, should return empty list
-            assert alternatives == []
+            assert not alternatives
         except AttributeError:
             # If it crashes due to None.lower(), that's also acceptable
             pass

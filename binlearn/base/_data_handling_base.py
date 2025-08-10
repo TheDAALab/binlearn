@@ -85,6 +85,7 @@ class DataHandlingBase(SklearnIntegrationBase, ValidationMixin):
             and hasattr(self, "_get_binning_columns")
             and callable(getattr(self, "_get_binning_columns", None))
         ):
+            # pylint: disable=assignment-from-none
             original_columns = self.get_input_columns()
 
         return prepare_input_with_columns(X, fitted=fitted, original_columns=original_columns)

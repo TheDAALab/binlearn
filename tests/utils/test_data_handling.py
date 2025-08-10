@@ -404,7 +404,8 @@ class TestReturnLikeInput:
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
     def test_return_polars_dataframe_module_none(self):
         """Test polars DataFrame handling when polars module is None."""
-        # Test the case where we have a polars DataFrame but the polars module is None in _polars_config
+        # Test the case where we have a polars DataFrame but the polars module
+        # is None in _polars_config
         assert pl is not None
 
         # Create a polars DataFrame
@@ -423,7 +424,8 @@ class TestReturnLikeInput:
     @pytest.mark.skipif(not PANDAS_AVAILABLE, reason="pandas not available")
     def test_return_pandas_dataframe_module_none(self):
         """Test pandas DataFrame handling when pandas module is None."""
-        # Test the case where we have a pandas DataFrame but the pandas module is None in _pandas_config
+        # Test the case where we have a pandas DataFrame but the pandas module
+        # is None in _pandas_config
         original = pd.DataFrame({"col1": [1, 2], "col2": [3, 4]})
         processed = np.array([[10, 20], [30, 40]])
 

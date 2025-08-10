@@ -103,7 +103,7 @@ class TestBasicTypes:
         assert check_column_list([0, 1, 2]) == [0, 1, 2]
         assert check_column_list(["a", "b", "c"]) == ["a", "b", "c"]
         assert check_column_list([0, "mixed", 2]) == [0, "mixed", 2]
-        assert check_column_list([]) == []
+        assert not check_column_list([])
 
     def test_optional_column_list_type(self) -> None:
         """Test OptionalColumnList type alias."""
@@ -398,9 +398,9 @@ class TestTypeConsistency:
         }
 
         # Check that they have consistent structure
-        for col in edges_dict:
+        for col, edges in edges_dict.items():
             assert col in reps_dict
-            n_bins = len(edges_dict[col]) - 1
+            n_bins = len(edges) - 1
             assert len(reps_dict[col]) == n_bins
 
     def test_flexible_spec_consistency(self) -> None:

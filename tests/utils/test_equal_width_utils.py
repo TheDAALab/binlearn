@@ -265,7 +265,7 @@ class TestEnsureMonotonicEdges:
         assert not np.array_equal(
             original_edges, edges_copy
         )  # Should have changed the equal values    def test_single_edge(self):
-        """Test with single edge."""
+
         edges = np.array([5.0])
         result = ensure_monotonic_edges(edges)
 

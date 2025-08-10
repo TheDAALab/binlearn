@@ -162,6 +162,10 @@ class IntervalBinningBase(GeneralBinningBase):
         self.bin_edges_: BinEdgesDict = {}
         self.bin_representatives_: BinEdgesDict = {}
 
+        # Initialize sklearn attributes to avoid W0201 warnings
+        self._feature_names_in: list[Any] | None = None
+        self._n_features_in: int = 0
+
         # Configure fitted attributes for the base class
         self._fitted_attributes = ["bin_edges_", "bin_representatives_"]
 

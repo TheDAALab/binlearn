@@ -42,8 +42,9 @@ class TestStandardizeInitPattern:
         """Test with custom validations."""
 
         # Create a real object instead of Mock to control attribute existence
+        # pylint: disable=too-few-public-methods
         class TestObject:
-            pass
+            """A mock test object"""
 
         mock_obj = TestObject()
         method_name = "test_method"
@@ -57,7 +58,8 @@ class TestStandardizeInitPattern:
         extra_validations = {
             "param1": validator1,
             "param2": validator2,
-            "nonexistent": validator_nonexistent,  # Should not be called since attribute doesn't exist
+            # Should not be called since attribute doesn't exist
+            "nonexistent": validator_nonexistent,
         }
 
         with patch("binlearn.utils._configuration_utils.apply_config_defaults") as mock_apply:
@@ -72,7 +74,8 @@ class TestStandardizeInitPattern:
             validator1.assert_called_once_with("value1")
             validator2.assert_called_once_with("value2")
 
-            # Check nonexistent param validator was not called (no such attribute exists on mock_obj)
+            # Check nonexistent param validator was not called
+            # (no such attribute exists on mock_obj)
             assert validator_nonexistent.call_count == 0
 
     def test_without_extra_validations(self):
@@ -180,7 +183,7 @@ class TestPrepareSklearnEstimatorParams:
         mapping = {}
 
         result = prepare_sklearn_estimator_params(user_params, mapping)
-        assert result == {}
+        assert not result
 
     def test_empty_user_params(self):
         """Test with empty user params."""
@@ -188,7 +191,7 @@ class TestPrepareSklearnEstimatorParams:
         mapping = {"n_bins": "n_clusters"}
 
         result = prepare_sklearn_estimator_params(user_params, mapping)
-        assert result == {}
+        assert not result
 
 
 class TestHandleCommonWarnings:
