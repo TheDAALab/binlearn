@@ -468,4 +468,4 @@ See Also
 * :class:`ManualIntervalBinning` - Manual binning with only interval bins
 * :class:`SingletonBinning` - Automatic binning with only singleton bins  
 * :class:`EqualWidthBinning` - Automatic equal-width interval binning
-* :class:`SupervisedBinning` - Automatic supervised binning with decision trees
+* :class:`TreeBinning` - Automatic supervised binning with decision trees

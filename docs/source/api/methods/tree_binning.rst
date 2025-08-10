@@ -1,9 +1,9 @@
-SupervisedBinning
-=================
+TreeBinning
+===========
 
 .. currentmodule:: binlearn.methods
 
-.. autoclass:: SupervisedBinning
+.. autoclass:: TreeBinning
    :members:
    :inherited-members:
    :show-inheritance:
@@ -11,7 +11,7 @@ SupervisedBinning
 Overview
 --------
 
-``SupervisedBinning`` creates bins using decision tree-based supervised discretization. The method uses 
+``TreeBinning`` creates bins using decision tree-based supervised discretization. The method uses 
 decision trees to find optimal split points that maximize predictive performance for classification or 
 regression tasks. This approach creates bins that are optimized for a specific target variable.
 
@@ -36,13 +36,13 @@ Basic Classification (sklearn-style)
 
    import numpy as np
    from sklearn.datasets import make_classification
-   from binlearn.methods import SupervisedBinning
+   from binlearn.methods import TreeBinning
    
    # Create classification dataset
    X, y = make_classification(n_samples=1000, n_features=4, n_classes=2, random_state=42)
    
    # Method 1: sklearn-style interface
-   sup_binner = SupervisedBinning(
+   sup_binner = TreeBinning(
        task_type='classification',
        tree_params={'max_depth': 3, 'min_samples_leaf': 20}
    )
@@ -64,7 +64,7 @@ Basic Classification (binlearn-style)
    # Combine features and target into single dataset
    X_with_target = np.column_stack([X, y])
    
-   sup_binner2 = SupervisedBinning(
+   sup_binner2 = TreeBinning(
        guidance_columns=[4],  # Use column 4 (target) as guidance
        task_type='classification',
        tree_params={'max_depth': 3, 'min_samples_leaf': 20}
@@ -87,7 +87,7 @@ DataFrame Example
    df['target'] = y
    
    # Sklearn-style: fit with separate X and y
-   binner1 = SupervisedBinning(
+   binner1 = TreeBinning(
        task_type='classification',
        preserve_dataframe=True
    )
@@ -95,7 +95,7 @@ DataFrame Example
    df_binned1 = binner1.transform(df[['feature1', 'feature2', 'feature3', 'feature4']])
    
    # Binlearn-style: use guidance_columns
-   binner2 = SupervisedBinning(
+   binner2 = TreeBinning(
        guidance_columns=['target'],
        task_type='classification',
        preserve_dataframe=True
@@ -116,7 +116,7 @@ Regression Task
    X_reg, y_reg = make_regression(n_samples=1000, n_features=3, noise=0.1, random_state=42)
    
    # Supervised binning for regression
-   reg_binner = SupervisedBinning(
+   reg_binner = TreeBinning(
        task_type='regression',
        tree_params={
            'max_depth': 4,
@@ -147,7 +147,7 @@ Multi-class Classification
        random_state=42
    )
    
-   multi_binner = SupervisedBinning(
+   multi_binner = TreeBinning(
        task_type='classification',
        tree_params={
            'max_depth': 5,

@@ -230,4 +230,4 @@ See Also
 * :class:`KMeansBinning` - K-means clustering-based binning
 * :class:`GaussianMixtureBinning` - Gaussian mixture model binning  
 * :class:`EqualFrequencyBinning` - Quantile-based binning
-* :class:`SupervisedBinning` - Decision tree-based supervised binning
+* :class:`TreeBinning` - Decision tree-based supervised binning

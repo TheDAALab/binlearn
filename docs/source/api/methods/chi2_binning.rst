@@ -143,7 +143,7 @@ Comparison with Other Methods
 
 .. code-block:: python
 
-   from binlearn.methods import EqualWidthBinning, SupervisedBinning
+   from binlearn.methods import EqualWidthBinning, TreeBinning
    from sklearn.metrics import accuracy_score
    from sklearn.ensemble import RandomForestClassifier
    from sklearn.model_selection import train_test_split

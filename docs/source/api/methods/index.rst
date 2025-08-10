@@ -29,7 +29,7 @@ These methods use target variable information to create optimal bins for predict
 .. toctree::
    :maxdepth: 1
 
-   supervised_binning
+   tree_binning
    chi2_binning
    isotonic_binning
 
@@ -58,7 +58,7 @@ Quick Reference
    DBSCANBinning
    EqualWidthMinimumWeightBinning
    ManualIntervalBinning
-   SupervisedBinning
+   TreeBinning
    Chi2Binning
    IsotonicBinning
    ManualFlexibleBinning

@@ -37,7 +37,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **GaussianMixtureBinning** - Gaussian mixture model clustering-based binning
   * **DBSCANBinning** - Density-based clustering for natural groupings
   * **EqualWidthMinimumWeightBinning** - Weight-constrained equal-width binning
-  * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
+  * **TreeBinning** - Decision tree-based supervised binning for classification and regression
   * **Chi2Binning** - Chi-square statistic-based supervised binning for optimal class separation
   * **IsotonicBinning** - Isotonic regression-based supervised binning for monotonic relationships
   * **ManualIntervalBinning** - Custom interval boundary specification
@@ -108,6 +108,12 @@ Documentation Contents
 
    user_guide/index
    examples/index
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Design Concepts
+
+   design_concepts/index
 
 .. toctree::
    :maxdepth: 2

@@ -236,7 +236,7 @@ Tips for Best Results
 See Also
 --------
 
-* :class:`SupervisedBinning` - Decision tree-based supervised binning
+* :class:`TreeBinning` - Decision tree-based supervised binning
 * :class:`Chi2Binning` - Chi-square statistic-based supervised binning
 * :class:`EqualFrequencyBinning` - Quantile-based unsupervised binning
 * :class:`KMeansBinning` - K-means clustering-based binning
@@ -524,7 +524,7 @@ Common Use Cases
 See Also
 --------
 
-* :class:`SupervisedBinning` - Decision tree-based supervised binning
+* :class:`TreeBinning` - Decision tree-based supervised binning
 * :class:`Chi2Binning` - Chi-square statistic-based supervised binning
 * :class:`EqualFrequencyBinning` - Quantile-based unsupervised binning
 * :class:`KMeansBinning` - K-means clustering-based binning

@@ -380,4 +380,4 @@ See Also
 * :class:`ManualFlexibleBinning` - Manual binning with mixed interval and singleton bins
 * :class:`EqualWidthBinning` - Automatic equal-width interval binning
 * :class:`EqualFrequencyBinning` - Automatic quantile-based binning
-* :class:`SupervisedBinning` - Automatic supervised binning with decision trees
+* :class:`TreeBinning` - Automatic supervised binning with decision trees

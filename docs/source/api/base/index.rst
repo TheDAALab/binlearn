@@ -51,7 +51,7 @@ The binlearn library uses a hierarchical inheritance structure:
    
    * Extends IntervalBinningBase with target-aware functionality
    * Handles guidance data and supervised learning integration
-   * Used by: SupervisedBinning, Chi2Binning, IsotonicBinning
+   * Used by: TreeBinning, Chi2Binning, IsotonicBinning
 
 Purpose and Usage
 -----------------

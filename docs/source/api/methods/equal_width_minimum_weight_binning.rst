@@ -329,5 +329,5 @@ See Also
 
 * :class:`EqualWidthBinning` - Standard equal-width binning without weight constraints
 * :class:`EqualFrequencyBinning` - Quantile-based binning for balanced sample counts
-* :class:`SupervisedBinning` - Decision tree-based supervised binning
+* :class:`TreeBinning` - Decision tree-based supervised binning
 * :class:`KMeansBinning` - K-means clustering-based binning

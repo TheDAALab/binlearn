@@ -54,7 +54,7 @@ A modern, type-safe Python library for data binning and discretization with comp
   * **GaussianMixtureBinning** - Gaussian mixture model clustering-based binning
   * **DBSCANBinning** - Density-based clustering for natural groupings
   * **EqualWidthMinimumWeightBinning** - Weight-constrained equal-width binning
-  * **SupervisedBinning** - Decision tree-based supervised binning for classification and regression
+  * **TreeBinning** - Decision tree-based supervised binning for classification and regression
   * **Chi2Binning** - Chi-square statistic-based supervised binning for optimal class separation
   * **IsotonicBinning** - Isotonic regression-based supervised binning for monotonic relationships
   * **ManualIntervalBinning** - Custom interval boundary specification
@@ -88,7 +88,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
    import numpy as np
    import pandas as pd
-   from binlearn import EqualWidthBinning, SupervisedBinning, SingletonBinning, Chi2Binning
+   from binlearn import EqualWidthBinning, TreeBinning, SingletonBinning, Chi2Binning
    
    # Create sample data
    data = pd.DataFrame({
@@ -120,7 +120,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
 .. code-block:: python
 
-   from binlearn import SupervisedBinning
+   from binlearn import TreeBinning
    import numpy as np
    from sklearn.datasets import make_classification
    
@@ -131,7 +131,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    # Combine features and target into single dataset
    X_with_target = np.column_stack([X, y])
    
-   sup_binner1 = SupervisedBinning(
+   sup_binner1 = TreeBinning(
        guidance_columns=[4],  # Use the target column to guide binning
        task_type='classification',
        tree_params={'max_depth': 3, 'min_samples_leaf': 20}
@@ -140,7 +140,7 @@ A modern, type-safe Python library for data binning and discretization with comp
    
    # Method 2: Using X and y parameters (sklearn style)
    # Pass features and target separately like sklearn
-   sup_binner2 = SupervisedBinning(
+   sup_binner2 = TreeBinning(
        task_type='classification',
        tree_params={'max_depth': 3, 'min_samples_leaf': 20}
    )
@@ -191,7 +191,7 @@ A modern, type-safe Python library for data binning and discretization with comp
 
 **Supervised Methods:**
 
-* ``SupervisedBinning`` - Decision tree-based binning optimized for target variables (classification and regression)
+* ``TreeBinning`` - Decision tree-based binning optimized for target variables (classification and regression)
 * ``Chi2Binning`` - Chi-square statistic-based binning for optimal feature-target association
 * ``IsotonicBinning`` - Isotonic regression-based binning for monotonic relationships
 
