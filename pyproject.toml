@@ -59,6 +59,7 @@ dev = [
     "black>=22.0",
     "isort>=5.10",
     "flake8>=4.0",
+    "pylint>=2.15.0",
     "mypy>=0.910",
     "pre-commit>=2.15",
     "build>=0.8",
@@ -308,6 +309,33 @@ output = "coverage.xml"
 exclude_dirs = ["tests", "docs"]
 skips = ["B101", "B601"]
 
+# Flake8 configuration
+[tool.flake8]
+max-line-length = 100
+max-complexity = 15
+extend-ignore = [
+    "E203",  # Whitespace before ':'
+    "E501",  # Line too long (handled by black)
+    "W503",  # Line break before binary operator
+    "E731",  # Do not assign a lambda expression
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    ".tox",
+    "notebooks",
+    "*.ipynb",
+]
+per-file-ignores = [
+    "__init__.py:F401",  # Allow unused imports in __init__.py
+    "tests/*:S101,S603,S607",  # Allow assert statements and subprocess in tests
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -351,6 +379,47 @@ make-summary-multi-line = true
 close-quotes-on-newline = true
 force-wrap = false
 tab-width = 4
+
+# Pylint configuration
+[tool.pylint.main]
+load-plugins = ["pylint.extensions.docparams"]
+jobs = 0  # Use all available processors
+suggestion-mode = true
+
+[tool.pylint.messages_control]
+disable = [
+    "too-many-instance-attributes",
+    "too-many-arguments", 
+    "too-many-locals",
+    "too-many-branches",
+    "too-many-statements",
+    "too-few-public-methods",
+    "duplicate-code",
+    "import-outside-toplevel",
+    "consider-using-f-string",  # We support older Python versions
+]
+
+[tool.pylint.format]
+max-line-length = 100
+max-module-lines = 1000
+
+[tool.pylint.design]
+max-args = 8
+max-locals = 20
+max-returns = 8
+max-branches = 15
+max-statements = 60
+max-parents = 7
+max-attributes = 10
+min-public-methods = 1
+max-public-methods = 25
+max-bool-expr = 6
+
+[tool.pylint.similarities]
+min-similarity-lines = 6
+ignore-comments = true
+ignore-docstrings = true
+ignore-imports = true
 
 # Build and packaging configuration
 [tool.check-manifest]

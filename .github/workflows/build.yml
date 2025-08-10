@@ -41,6 +41,17 @@ jobs:
         echo "🔍 Running ruff linting..."
         ruff check binlearn/
 
+    - name: Run flake8 linting
+      run: |
+        echo "🔍 Running flake8 linting..."
+        flake8 binlearn/ --max-line-length=100 --extend-ignore=E203,W503
+
+    - name: Run pylint analysis
+      run: |
+        echo "🔍 Running pylint analysis..."
+        pylint binlearn/ --rcfile=pyproject.toml --exit-zero || true
+        echo "ℹ️ Pylint completed (warnings/errors reported but not failing build)"
+
     - name: Run mypy type checking
       run: |
         echo "🔍 Running mypy type checking..."
@@ -86,6 +97,8 @@ jobs:
         echo "✅ All quality checks passed!"
         echo "📊 Code coverage: Available in artifacts"
         echo "🔍 Linting: ruff passed"
+        echo "🔍 Code style: flake8 passed"
+        echo "🔍 Code analysis: pylint completed"
         echo "🔍 Type checking: mypy passed"
         echo "🧪 Tests: All tests passed across Python versions"
 
