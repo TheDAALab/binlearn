@@ -14,28 +14,6 @@ from typing import Any
 from ._errors import BinningError, ConfigurationError
 
 
-def handle_sklearn_import_error(
-    import_error: ImportError, method_name: str
-) -> ConfigurationError:  # pylint: disable=unused-argument
-    """Handle sklearn import errors with standardized message.
-
-    Args:
-        import_error: The original ImportError
-        method_name: Name of the binning method requiring sklearn
-
-    Returns:
-        ConfigurationError with helpful message and suggestions
-    """
-    return ConfigurationError(
-        f"{method_name} requires scikit-learn to be installed",
-        suggestions=[
-            "Install scikit-learn: pip install scikit-learn",
-            "Or use conda: conda install scikit-learn",
-            "Alternative: Use a different binning method that doesn't require sklearn",
-        ],
-    )
-
-
 def handle_insufficient_data_error(
     data_size: int, min_required: int, method_name: str
 ) -> ConfigurationError:

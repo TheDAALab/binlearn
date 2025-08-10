@@ -11,36 +11,9 @@ from binlearn.utils._error_handling import (
     handle_convergence_warning,
     handle_insufficient_data_error,
     handle_parameter_bounds_error,
-    handle_sklearn_import_error,
     validate_fitted_state,
 )
 from binlearn.utils._errors import BinningError, ConfigurationError
-
-
-class TestHandleSklearnImportError:
-    """Test the handle_sklearn_import_error function."""
-
-    def test_basic_functionality(self):
-        """Test basic sklearn import error handling."""
-        import_error = ImportError("No module named 'sklearn'")
-        method_name = "TestMethod"
-
-        result = handle_sklearn_import_error(import_error, method_name)
-
-        assert isinstance(result, ConfigurationError)
-        assert "TestMethod requires scikit-learn" in str(result)
-        assert len(result.suggestions) >= 3
-        assert any("pip install scikit-learn" in suggestion for suggestion in result.suggestions)
-
-    def test_different_method_names(self):
-        """Test with different method names."""
-        import_error = ImportError("sklearn not found")
-
-        result1 = handle_sklearn_import_error(import_error, "KMeans")
-        result2 = handle_sklearn_import_error(import_error, "DBSCAN")
-
-        assert "KMeans requires scikit-learn" in str(result1)
-        assert "DBSCAN requires scikit-learn" in str(result2)
 
 
 class TestHandleInsufficientDataError:

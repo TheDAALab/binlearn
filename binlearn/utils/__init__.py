@@ -47,7 +47,6 @@ from ._error_handling import (
     handle_convergence_warning,
     handle_insufficient_data_error,
     handle_parameter_bounds_error,
-    handle_sklearn_import_error,
     validate_fitted_state,
 )
 
@@ -208,7 +207,6 @@ __all__ = [
     "apply_equal_width_fallback",
     "validate_binning_input",
     "ensure_monotonic_edges",
-    "handle_sklearn_import_error",
     "handle_insufficient_data_error",
     "handle_convergence_warning",
     "handle_parameter_bounds_error",
