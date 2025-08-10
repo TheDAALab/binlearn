@@ -18,12 +18,10 @@ from ..utils import (
     BinEdgesDict,
     ConfigurationError,
     FittingError,
-    resolve_n_bins_parameter,
-    validate_bin_number_for_calculation,
-    validate_bin_number_parameter,
     create_param_dict_for_config,
-    handle_sklearn_import_error,
+    resolve_n_bins_parameter,
     safe_sklearn_call,
+    validate_bin_number_parameter,
 )
 
 

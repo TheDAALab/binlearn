@@ -3,14 +3,15 @@ Tests for equal width utilities.
 """
 
 import warnings
-import pytest
+
 import numpy as np
+import pytest
 
 from binlearn.utils._equal_width_utils import (
-    create_equal_width_bins,
     apply_equal_width_fallback,
-    validate_binning_input,
+    create_equal_width_bins,
     ensure_monotonic_edges,
+    validate_binning_input,
 )
 
 
@@ -287,3 +288,29 @@ class TestEnsureMonotonicEdges:
         # This specifically tests the epsilon == 0 branch in the implementation
         assert result[0] == 0.0
         assert result[1] > 0.0  # Should be > 0 due to epsilon handling
+
+    def test_ensure_monotonic_edges_zero_value_branch(self):
+        """Test ensure_monotonic_edges with zero values to cover epsilon == 0 branch."""
+        # Create edges with zeros to trigger the epsilon == 0 condition
+        edges = np.array([0.0, 0.0, 1.0])
+
+        result = ensure_monotonic_edges(edges)
+
+        # Should handle the zero case and create strictly increasing edges
+        assert result[0] == 0.0
+        assert result[1] > result[0]  # Should be greater due to epsilon handling
+        assert result[2] == 1.0
+
+        # Verify the epsilon == 0 branch was covered (line 150 in _equal_width_utils.py)
+        assert all(result[i] > result[i - 1] for i in range(1, len(result)))
+
+    def test_equal_width_ensure_monotonic_zero_epsilon(self):
+        """Test ensure_monotonic_edges when value is exactly zero."""
+        # Create edges where one value is exactly 0.0 to trigger special case
+        edges = np.array([0.0, 0.0])
+
+        result = ensure_monotonic_edges(edges)
+
+        # Should use 1e-10 as epsilon when abs(edges[i-1]) == 0 (covers line 148)
+        assert result[1] > result[0]
+        assert result[1] == 1e-10

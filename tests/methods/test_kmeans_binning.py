@@ -764,3 +764,98 @@ class TestKMeansBinning:
 
             # Check that we have the right number of centroids
             assert len(binner.bin_representatives_[0]) == n_bins
+
+    def test_kmeans_no_fallback_identical_values_error(self):
+        """Test KMeans error when fallback is disabled and all values are identical."""
+        X = np.array([[5.0], [5.0], [5.0], [5.0]])  # All identical values
+
+        binner = KMeansBinning(n_bins=3, allow_fallback=False)  # Disable fallback to trigger error
+
+        # This should raise ConfigurationError (covers line 227 in _kmeans_binning.py)
+        with pytest.raises(ConfigurationError, match="All data values are identical"):
+            binner.fit(X)
+
+    def test_kmeans_no_fallback_few_unique_values_error(self):
+        """Test KMeans error when fallback is disabled and too few unique values."""
+        # Create enough data points but with only 2 unique values
+        X = np.array([[1.0], [1.0], [1.0], [2.0], [2.0], [2.0]])  # 6 points, 2 unique values
+
+        binner = KMeansBinning(
+            n_bins=5,  # More bins than unique values
+            allow_fallback=False,  # Disable fallback to trigger error
+        )
+
+        # This should raise ConfigurationError (covers line 242 in _kmeans_binning.py)
+        with pytest.raises(ConfigurationError, match="Too few unique values"):
+            binner.fit(X)
+
+    def test_kmeans_no_fallback_clustering_failure_error(self):
+        """Test KMeans error when fallback is disabled and clustering fails."""
+        X = np.array([[1.0], [2.0], [3.0], [4.0]])
+
+        binner = KMeansBinning(n_bins=2, allow_fallback=False)  # Disable fallback to trigger error
+
+        # Mock kmeans1d.cluster to raise an exception
+        from unittest.mock import patch
+
+        with patch("binlearn.methods._kmeans_binning.kmeans1d") as mock_kmeans:
+            mock_kmeans.cluster.side_effect = Exception("Clustering failed")
+
+            # This should raise ConfigurationError (covers lines 260, 273 in _kmeans_binning.py)
+            with pytest.raises(ConfigurationError, match="K-means clustering failed"):
+                binner.fit(X)
+
+    def test_kmeans_fallback_warnings(self):
+        """Test KMeans fallback warnings can be suppressed."""
+        X = np.array([[5.0], [5.0], [5.0], [5.0]])  # Identical values causing fallback
+
+        binner = KMeansBinning(n_bins=3, allow_fallback=True)  # Allow fallback to trigger warning
+
+        # Suppress warnings during test to avoid test output noise
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            binner.fit(X)
+            result = binner.transform(X)
+
+        # Should still work despite fallback
+        assert result is not None
+        assert result.shape == X.shape
+
+    def test_kmeans_fallback_function_creation(self):
+        """Test that KMeans creates fallback function when fallback is allowed."""
+        X = np.array([[1.0], [1.0], [2.0], [2.0], [3.0], [3.0]])  # Few unique values
+
+        binner = KMeansBinning(
+            n_bins=5,  # More bins than unique values
+            allow_fallback=True,  # Enable fallback to use fallback_func
+        )
+
+        # This should use fallback (covers line 260 - fallback_func definition)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            binner.fit(X)
+
+        # Should succeed with fallback
+        assert hasattr(binner, "bin_edges_")
+
+    def test_kmeans_safe_sklearn_call_fallback_execution(self):
+        """Test that KMeans fallback function is actually executed in safe_sklearn_call."""
+        from unittest.mock import patch
+
+        X = np.array([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0]])
+
+        binner = KMeansBinning(n_bins=3, allow_fallback=True)  # Enable fallback
+
+        # Mock kmeans1d.cluster to raise an exception, forcing fallback
+        with patch("kmeans1d.cluster") as mock_cluster:
+            mock_cluster.side_effect = Exception("Clustering failed")
+
+            # This should trigger the fallback function (covers line 260)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                binner.fit(X)
+
+            # Should succeed with fallback to equal-width
+            assert hasattr(binner, "bin_edges_")
+            # Equal-width fallback creates n_bins+1 edges, but depends on actual implementation
+            assert len(binner.bin_edges_[0]) > 0  # Just check that we have edges

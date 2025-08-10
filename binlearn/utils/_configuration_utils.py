@@ -7,9 +7,11 @@ multiple binning implementations to reduce code duplication and ensure consisten
 
 from __future__ import annotations
 
-from typing import Any, Dict, Callable
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
+
 from binlearn.config import apply_config_defaults
 
 
@@ -17,7 +19,7 @@ def standardize_init_pattern(
     self: Any,
     method_name: str,
     user_params: dict[str, Any],
-    extra_validations: dict[str, Callable] | None = None,
+    extra_validations: dict[str, Callable[..., Any]] | None = None,
 ) -> None:
     """Standardized initialization pattern for binning methods.
 
@@ -46,7 +48,9 @@ def standardize_init_pattern(
                 validator(getattr(self, param_name))
 
 
-def create_param_dict_for_config(n_bins=None, random_state=None, **kwargs) -> dict[str, Any]:
+def create_param_dict_for_config(
+    n_bins: Any = None, random_state: Any = None, **kwargs: Any
+) -> dict[str, Any]:
     """Create parameter dictionary for configuration, filtering None values.
 
     Args:
@@ -109,7 +113,7 @@ def prepare_sklearn_estimator_params(
     return sklearn_params
 
 
-def handle_common_warnings(method_name: str, **conditions) -> None:
+def handle_common_warnings(method_name: str, **conditions: Any) -> None:
     """Handle common warnings based on conditions.
 
     Args:

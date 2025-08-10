@@ -22,6 +22,13 @@ from ._binning_operations import (
     validate_flexible_bin_spec_format,
     validate_flexible_bins,
 )
+from ._configuration_utils import (
+    create_param_dict_for_config,
+    get_effective_n_bins,
+    handle_common_warnings,
+    prepare_sklearn_estimator_params,
+    standardize_init_pattern,
+)
 
 # Import data handling utilities
 from ._data_handling import (
@@ -30,38 +37,17 @@ from ._data_handling import (
     prepare_input_with_columns,
     return_like_input,
 )
-
-# Import new utility modules
-from ._parameter_validation import (
-    validate_common_parameters,
-    validate_range_parameter,
-    validate_positive_number,
-    validate_positive_integer,
-    validate_random_state,
-    create_configuration_error,
-    COMMON_PARAM_SPECS,
-)
-
-from ._configuration_utils import (
-    standardize_init_pattern,
-    create_param_dict_for_config,
-    get_effective_n_bins,
-    prepare_sklearn_estimator_params,
-    handle_common_warnings,
-)
-
 from ._equal_width_utils import (
-    create_equal_width_bins,
     apply_equal_width_fallback,
-    validate_binning_input,
+    create_equal_width_bins,
     ensure_monotonic_edges,
+    validate_binning_input,
 )
-
 from ._error_handling import (
-    handle_sklearn_import_error,
-    handle_insufficient_data_error,
     handle_convergence_warning,
+    handle_insufficient_data_error,
     handle_parameter_bounds_error,
+    handle_sklearn_import_error,
     safe_sklearn_call,
     validate_fitted_state,
 )
@@ -78,6 +64,17 @@ from ._errors import (
     TransformationError,
     ValidationError,
     suggest_alternatives,
+)
+
+# Import new utility modules
+from ._parameter_validation import (
+    COMMON_PARAM_SPECS,
+    create_configuration_error,
+    validate_common_parameters,
+    validate_positive_integer,
+    validate_positive_number,
+    validate_random_state,
+    validate_range_parameter,
 )
 
 # Import type aliases and constants

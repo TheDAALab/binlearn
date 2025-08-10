@@ -2,18 +2,19 @@
 Tests for parameter validation utilities.
 """
 
-import pytest
 from unittest.mock import Mock
 
-from binlearn.utils._parameter_validation import (
-    validate_common_parameters,
-    validate_range_parameter,
-    validate_positive_number,
-    validate_positive_integer,
-    validate_random_state,
-    create_configuration_error,
-)
+import pytest
+
 from binlearn.utils._errors import ConfigurationError
+from binlearn.utils._parameter_validation import (
+    create_configuration_error,
+    validate_common_parameters,
+    validate_positive_integer,
+    validate_positive_number,
+    validate_random_state,
+    validate_range_parameter,
+)
 
 
 class TestValidateCommonParameters:
@@ -74,7 +75,8 @@ class TestValidateCommonParameters:
         obj = Mock()
         obj.test_param = "valid"
 
-        custom_validator = lambda x: x == "valid"
+        def custom_validator(x):
+            return x == "valid"
 
         param_specs = {
             "test_param": {
@@ -90,7 +92,8 @@ class TestValidateCommonParameters:
         obj = Mock()
         obj.test_param = "invalid"
 
-        custom_validator = lambda x: x == "valid"
+        def custom_validator(x):
+            return x == "valid"
 
         param_specs = {
             "test_param": {

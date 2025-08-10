@@ -4,17 +4,18 @@ Tests for error handling utilities.
 
 import warnings
 from unittest.mock import Mock
+
 import pytest
 
 from binlearn.utils._error_handling import (
-    handle_sklearn_import_error,
-    handle_insufficient_data_error,
     handle_convergence_warning,
+    handle_insufficient_data_error,
     handle_parameter_bounds_error,
+    handle_sklearn_import_error,
     safe_sklearn_call,
     validate_fitted_state,
 )
-from binlearn.utils._errors import ConfigurationError, BinningError
+from binlearn.utils._errors import BinningError, ConfigurationError
 
 
 class TestHandleSklearnImportError:

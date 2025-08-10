@@ -17,14 +17,13 @@ from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
     ConfigurationError,
+    apply_equal_width_fallback,
+    create_param_dict_for_config,
+    handle_insufficient_data_error,
     resolve_n_bins_parameter,
+    safe_sklearn_call,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
-    create_param_dict_for_config,
-    create_equal_width_bins,
-    apply_equal_width_fallback,
-    handle_insufficient_data_error,
-    safe_sklearn_call,
 )
 
 
@@ -251,12 +250,12 @@ class KMeansBinning(IntervalBinningBase):
             ), [float(val) for val in np.linspace(unique_values[0], unique_values[-1], n_bins)]
 
         # Perform K-means clustering with error handling
-        def kmeans_func(data, n_clusters):
+        def kmeans_func(data: Any, n_clusters: int) -> list[float]:
             data_list = data.tolist()
             _, centroids = kmeans1d.cluster(data_list, n_clusters)
             return sorted(centroids)
 
-        def fallback_func(data, n_clusters):
+        def fallback_func(data: Any, n_clusters: int) -> list[float]:
             return list(apply_equal_width_fallback(data, n_clusters, "KMeans"))
 
         try:

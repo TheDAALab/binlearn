@@ -17,12 +17,11 @@ from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
     ConfigurationError,
-    create_param_dict_for_config,
-    validate_positive_number,
-    validate_positive_integer,
     apply_equal_width_fallback,
-    handle_sklearn_import_error,
+    create_param_dict_for_config,
     safe_sklearn_call,
+    validate_positive_integer,
+    validate_positive_number,
 )
 
 

@@ -20,10 +20,7 @@ from ..utils import (
     ConfigurationError,
     FittingError,
     create_param_dict_for_config,
-    handle_sklearn_import_error,
-    apply_equal_width_fallback,
     safe_sklearn_call,
-    validate_fitted_state,
 )
 
 

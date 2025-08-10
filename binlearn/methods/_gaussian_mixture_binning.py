@@ -17,16 +17,14 @@ from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
     ConfigurationError,
+    apply_equal_width_fallback,
+    create_param_dict_for_config,
     resolve_n_bins_parameter,
+    safe_sklearn_call,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
-    create_param_dict_for_config,
-    apply_equal_width_fallback,
-    handle_sklearn_import_error,
-    safe_sklearn_call,
-    handle_insufficient_data_error,
-    validate_random_state,
 )
+from ..utils._parameter_validation import validate_random_state
 
 
 # pylint: disable=too-many-ancestors

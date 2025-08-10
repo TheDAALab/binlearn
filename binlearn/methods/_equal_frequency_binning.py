@@ -16,11 +16,10 @@ from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
     ConfigurationError,
+    create_param_dict_for_config,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
-    create_param_dict_for_config,
-    validate_positive_integer,
     validate_range_parameter,
 )
 

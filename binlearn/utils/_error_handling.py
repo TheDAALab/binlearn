@@ -7,10 +7,11 @@ multiple binning implementations to ensure consistency.
 
 from __future__ import annotations
 
-from typing import Any, Type, Callable
 import warnings
+from collections.abc import Callable
+from typing import Any
 
-from ._errors import ConfigurationError, BinningError
+from ._errors import BinningError, ConfigurationError
 
 
 def handle_sklearn_import_error(import_error: ImportError, method_name: str) -> ConfigurationError:
@@ -28,7 +29,7 @@ def handle_sklearn_import_error(import_error: ImportError, method_name: str) -> 
         suggestions=[
             "Install scikit-learn: pip install scikit-learn",
             "Or use conda: conda install scikit-learn",
-            f"Alternative: Use a different binning method that doesn't require sklearn",
+            "Alternative: Use a different binning method that doesn't require sklearn",
         ],
     )
 
@@ -51,7 +52,7 @@ def handle_insufficient_data_error(
         suggestions=[
             f"Provide more data (at least {min_required} points)",
             "Use a simpler binning method like equal-width or equal-frequency",
-            f"Reduce the number of bins to work with smaller datasets",
+            "Reduce the number of bins to work with smaller datasets",
         ],
     )
 
@@ -118,11 +119,11 @@ def handle_parameter_bounds_error(
 
 
 def safe_sklearn_call(
-    sklearn_func: Callable,
-    *args,
+    sklearn_func: Callable[..., Any],
+    *args: Any,
     method_name: str = "method",
-    fallback_func: Callable | None = None,
-    **kwargs,
+    fallback_func: Callable[..., Any] | None = None,
+    **kwargs: Any,
 ) -> Any:
     """Safely call sklearn function with error handling.
 
@@ -150,7 +151,7 @@ def safe_sklearn_call(
             )
             return fallback_func(*args, **kwargs)
         else:
-            raise handle_sklearn_import_error(e, method_name)
+            raise handle_sklearn_import_error(e, method_name) from e
     except Exception as e:
         if fallback_func is not None:
             warnings.warn(
@@ -163,7 +164,7 @@ def safe_sklearn_call(
             raise BinningError(
                 f"{method_name} failed: {str(e)}",
                 suggestions=["Check input data format and parameters"],
-            )
+            ) from e
 
 
 def validate_fitted_state(obj: Any, method_name: str = "transform") -> None:

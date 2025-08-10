@@ -18,11 +18,9 @@ from ..utils import (
     BinEdgesDict,
     ConfigurationError,
     FittingError,
-    create_param_dict_for_config,
     create_equal_width_bins,
-    validate_positive_number,
+    create_param_dict_for_config,
     validate_positive_integer,
-    validate_range_parameter,
 )
 
 
@@ -169,7 +167,7 @@ class Chi2Binning(SupervisedBinningBase):
         validate_positive_integer(self.initial_bins, "initial_bins")
 
         # Validate alpha (must be between 0 and 1)
-        if not isinstance(self.alpha, (int, float)) or not (0.0 < self.alpha < 1.0):
+        if not isinstance(self.alpha, int | float) or not (0.0 < self.alpha < 1.0):
             raise ConfigurationError(
                 f"alpha must be a number between 0 and 1 (exclusive), got {self.alpha}",
                 suggestions=["Example: alpha=0.05"],

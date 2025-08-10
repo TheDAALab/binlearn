@@ -14,11 +14,10 @@ from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
-    standardize_init_pattern,
+    create_equal_width_bins,
     create_param_dict_for_config,
     validate_positive_integer,
     validate_range_parameter,
-    create_equal_width_bins,
 )
 
 

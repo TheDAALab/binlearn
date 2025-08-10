@@ -9,12 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
-
 from ._errors import ConfigurationError
 
 
-def validate_common_parameters(obj: Any, param_specs: dict[str, dict]) -> None:
+def validate_common_parameters(obj: Any, param_specs: dict[str, dict[str, Any]]) -> None:
     """Validate common parameter patterns with specifications.
 
     Args:
@@ -43,7 +41,7 @@ def validate_common_parameters(obj: Any, param_specs: dict[str, dict]) -> None:
 
         # Numeric range validation
         if "min" in specs or "max" in specs:
-            if isinstance(value, (int, float)):
+            if isinstance(value, int | float):
                 min_val = specs.get("min", float("-inf"))
                 max_val = specs.get("max", float("inf"))
                 if not (min_val <= value <= max_val):
@@ -79,7 +77,7 @@ def validate_range_parameter(value: Any, param_name: str, allow_none: bool = Tru
     if value is None and allow_none:
         return
 
-    if not isinstance(value, (list, tuple)) or len(value) != 2:
+    if not isinstance(value, list | tuple) or len(value) != 2:
         raise create_configuration_error(
             param_name,
             "must be a tuple/list of two numbers (min, max)",
@@ -87,7 +85,7 @@ def validate_range_parameter(value: Any, param_name: str, allow_none: bool = Tru
         )
 
     min_val, max_val = value
-    if not isinstance(min_val, (int, float)) or not isinstance(max_val, (int, float)):
+    if not isinstance(min_val, int | float) or not isinstance(max_val, int | float):
         raise create_configuration_error(
             param_name, "values must be numbers", [f"Example: {param_name}=(0.0, 100.0)"]
         )
@@ -111,7 +109,7 @@ def validate_positive_number(value: Any, param_name: str, allow_zero: bool = Fal
     Raises:
         ConfigurationError: If value is not a positive number
     """
-    if not isinstance(value, (int, float)):
+    if not isinstance(value, int | float):
         raise create_configuration_error(
             param_name,
             f"must be a number, got {type(value).__name__}",

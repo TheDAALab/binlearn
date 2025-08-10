@@ -4,15 +4,15 @@ Tests for configuration utilities.
 
 import warnings
 from unittest.mock import Mock, patch
+
 import pytest
-import numpy as np
 
 from binlearn.utils._configuration_utils import (
-    standardize_init_pattern,
     create_param_dict_for_config,
     get_effective_n_bins,
-    prepare_sklearn_estimator_params,
     handle_common_warnings,
+    prepare_sklearn_estimator_params,
+    standardize_init_pattern,
 )
 
 

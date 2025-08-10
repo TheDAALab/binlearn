@@ -872,3 +872,40 @@ class TestDBSCANBinning:
         # Should have found the main clusters
         n_representatives = len(binner.bin_representatives_[0])
         assert n_representatives >= 2  # At least found the two main clusters
+
+    def test_dbscan_no_fallback_error(self):
+        """Test DBSCAN error when fallback is disabled and insufficient clusters found."""
+        # Create data that will result in very few or no clusters
+        X = np.array([[1.0], [100.0]])  # Two very distant points
+
+        binner = DBSCANBinning(
+            eps=0.1,  # Very small eps to prevent clustering
+            min_samples=2,
+            min_bins=5,  # More bins than possible clusters
+            allow_fallback=False,  # Disable fallback to trigger error
+        )
+
+        # This should raise ConfigurationError (covers line 296 in _dbscan_binning.py)
+        with pytest.raises(ConfigurationError, match="DBSCAN found only .* clusters"):
+            binner.fit(X)
+
+    def test_dbscan_fallback_warnings(self):
+        """Test DBSCAN fallback warnings can be suppressed."""
+        X = np.array([[1.0], [100.0]])  # Data that will cause fallback
+
+        binner = DBSCANBinning(
+            eps=0.1,
+            min_samples=2,
+            min_bins=5,
+            allow_fallback=True,  # Allow fallback to trigger warning
+        )
+
+        # Suppress warnings during test to avoid test output noise
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            binner.fit(X)
+            result = binner.transform(X)
+
+        # Should still work despite fallback
+        assert result is not None
+        assert result.shape == X.shape
