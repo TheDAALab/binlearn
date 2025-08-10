@@ -27,8 +27,6 @@ Example:
     >>> X_binned = binner.fit_transform(X)
 """
 
-from typing import Any, Optional
-
 # Version information
 try:
     from ._version import __version__

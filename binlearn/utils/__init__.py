@@ -71,7 +71,6 @@ from ._parameter_validation import (
     validate_common_parameters,
     validate_positive_integer,
     validate_positive_number,
-    validate_random_state,
     validate_range_parameter,
 )
 
