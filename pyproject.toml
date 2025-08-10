@@ -353,47 +353,6 @@ close-quotes-on-newline = true
 force-wrap = false
 tab-width = 4
 
-# Pylint configuration
-[tool.pylint.main]
-load-plugins = ["pylint.extensions.docparams"]
-jobs = 0  # Use all available processors
-suggestion-mode = true
-
-[tool.pylint.messages_control]
-disable = [
-    "too-many-instance-attributes",
-    "too-many-arguments", 
-    "too-many-locals",
-    "too-many-branches",
-    "too-many-statements",
-    "too-few-public-methods",
-    "duplicate-code",
-    "import-outside-toplevel",
-    "consider-using-f-string",  # We support older Python versions
-]
-
-[tool.pylint.format]
-max-line-length = 100
-max-module-lines = 1000
-
-[tool.pylint.design]
-max-args = 8
-max-locals = 20
-max-returns = 8
-max-branches = 15
-max-statements = 60
-max-parents = 7
-max-attributes = 10
-min-public-methods = 1
-max-public-methods = 25
-max-bool-expr = 6
-
-[tool.pylint.similarities]
-min-similarity-lines = 6
-ignore-comments = true
-ignore-docstrings = true
-ignore-imports = true
-
 # Build and packaging configuration
 [tool.check-manifest]
 ignore = [
