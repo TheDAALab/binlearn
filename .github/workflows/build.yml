@@ -34,35 +34,35 @@ jobs:
 
     - name: Show package info
       run: |
-        python -c "import binlearn; print(f'📦 Package: binlearn v{binlearn.__version__}')"
-        python -c "import sys; print(f'🐍 Python: {sys.version}')"
-        python -c "import pandas; print(f'🐼 Pandas: v{pandas.__version__}')"
-        python -c "import polars as pl; print(f'🐻‍❄️ Polars: v{pl.__version__}')"
+        python -c "import binlearn; print(f'Package: binlearn v{binlearn.__version__}')"
+        python -c "import sys; print(f'Python: {sys.version}')"
+        python -c "import pandas; print(f'Pandas: v{pandas.__version__}')"
+        python -c "import polars as pl; print(f'Polars: v{pl.__version__}')"
 
     - name: Run ruff linting
       run: |
-        echo "🔍 Running ruff linting..."
+        echo "Running ruff linting..."
         ruff check binlearn/
 
     - name: Run flake8 linting
       run: |
-        echo "🔍 Running flake8 linting..."
+        echo "Running flake8 linting..."
         flake8 binlearn/ --max-line-length=100 --extend-ignore=E203,W503
 
     - name: Run pylint analysis
       run: |
-        echo "🔍 Running pylint analysis..."
+        echo "Running pylint analysis..."
         pylint binlearn/ --rcfile=pyproject.toml --exit-zero || true
-        echo "ℹ️ Pylint completed (warnings/errors reported but not failing build)"
+        echo "Pylint completed (warnings/errors reported but not failing build)"
 
     - name: Run mypy type checking
       run: |
-        echo "🔍 Running mypy type checking..."
+        echo "Running mypy type checking..."
         mypy binlearn/ --ignore-missing-imports
 
     - name: Run tests with coverage
       run: |
-        echo "🧪 Running test suite..."
+        echo "Running test suite..."
         pytest --cov=binlearn --cov-report=xml --cov-report=term-missing -v
 
     - name: Upload coverage reports to Codecov
@@ -97,27 +97,27 @@ jobs:
 
     - name: Final quality checks
       run: |
-        echo "✅ All quality checks passed!"
-        echo "📊 Code coverage: Available in artifacts"
-        echo "🔍 Linting: ruff passed"
-        echo "🔍 Code style: flake8 passed"
-        echo "🔍 Code analysis: pylint completed"
-        echo "🔍 Type checking: mypy passed"
-        echo "🧪 Tests: All tests passed across Python versions and OS platforms"
-        echo "🐼 Pandas support: Verified"
-        echo "🐻‍❄️ Polars support: Verified"
+        echo "All quality checks passed!"
+        echo "Code coverage: Available in artifacts"
+        echo "Linting: ruff passed"
+        echo "Code style: flake8 passed"
+        echo "Code analysis: pylint completed"
+        echo "Type checking: mypy passed"
+        echo "Tests: All tests passed across Python versions and OS platforms"
+        echo "Pandas support: Verified"
+        echo "Polars support: Verified"
 
     - name: Build test package
       run: |
         pip install build
         python -m build
-        echo "📦 Package built successfully for testing"
+        echo "Package built successfully for testing"
 
     - name: Validate package
       run: |
         pip install twine
         python -m twine check dist/*
-        echo "✅ Package validation passed"
+        echo "Package validation passed"
 
   # Summary job that can be used as a required status check
   build-success:
@@ -130,9 +130,9 @@ jobs:
     - name: Check build status
       run: |
         if [[ "${{ needs.test.result }}" == "success" && "${{ needs.quality-gate.result }}" == "success" ]]; then
-          echo "✅ Build pipeline completed successfully!"
-          echo "🚀 Ready for release when needed"
+          echo "Build pipeline completed successfully!"
+          echo "Ready for release when needed"
         else
-          echo "❌ Build pipeline failed"
+          echo "Build pipeline failed"
           exit 1
         fi
