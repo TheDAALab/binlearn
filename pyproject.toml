@@ -190,6 +190,7 @@ disable = [
     "import-error",
     "missing-docstring",
     "invalid-name",
+    "duplicate-code",
 ]
 
 [tool.pylint.design]

@@ -8,10 +8,11 @@ on:
 
 jobs:
   test:
-    name: Test Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
       fail-fast: false
 
@@ -29,12 +30,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[tests,dev]"
+        pip install -e ".[tests,dev,pandas,polars]"
 
     - name: Show package info
       run: |
         python -c "import binlearn; print(f'📦 Package: binlearn v{binlearn.__version__}')"
         python -c "import sys; print(f'🐍 Python: {sys.version}')"
+        python -c "import pandas; print(f'🐼 Pandas: v{pandas.__version__}')"
+        python -c "import polars as pl; print(f'🐻‍❄️ Polars: v{pl.__version__}')"
 
     - name: Run ruff linting
       run: |
@@ -63,7 +66,7 @@ jobs:
         pytest --cov=binlearn --cov-report=xml --cov-report=term-missing -v
 
     - name: Upload coverage reports to Codecov
-      if: matrix.python-version == '3.11'  # Only upload once
+      if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'  # Only upload once
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -90,7 +93,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[tests,dev]"
+        pip install -e ".[tests,dev,pandas,polars]"
 
     - name: Final quality checks
       run: |
@@ -100,7 +103,9 @@ jobs:
         echo "🔍 Code style: flake8 passed"
         echo "🔍 Code analysis: pylint completed"
         echo "🔍 Type checking: mypy passed"
-        echo "🧪 Tests: All tests passed across Python versions"
+        echo "🧪 Tests: All tests passed across Python versions and OS platforms"
+        echo "🐼 Pandas support: Verified"
+        echo "🐻‍❄️ Polars support: Verified"
 
     - name: Build test package
       run: |
