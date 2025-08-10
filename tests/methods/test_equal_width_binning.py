@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 
 from binlearn import POLARS_AVAILABLE, pd, pl
 from binlearn.methods import EqualWidthBinning
-from binlearn.utils import FittingError, ValidationError
+from binlearn.utils import ConfigurationError, FittingError, ValidationError
 
 # Skip polars tests if not available
 polars_skip = pytest.mark.skipif(not POLARS_AVAILABLE, reason="polars not available")
@@ -69,23 +69,25 @@ class TestEqualWidthBinning:
     def test_parameter_validation(self):
         """Test parameter validation."""
         # Invalid n_bins
-        with pytest.raises(ValueError, match="n_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
             EqualWidthBinning(n_bins=0)
 
-        with pytest.raises(ValueError, match="n_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
             EqualWidthBinning(n_bins=-1)
 
-        with pytest.raises(ValueError, match="n_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="n_bins must be a positive integer"):
             EqualWidthBinning(n_bins=3.5)  # type: ignore
 
         # Invalid bin_range
-        with pytest.raises(ValueError, match="bin_range must be a tuple"):
+        with pytest.raises(ConfigurationError, match="minimum .* must be less than maximum"):
             EqualWidthBinning(bin_range=(5, 5))  # min == max
 
-        with pytest.raises(ValueError, match="bin_range must be a tuple"):
+        with pytest.raises(ConfigurationError, match="minimum .* must be less than maximum"):
             EqualWidthBinning(bin_range=(10, 5))  # min > max
 
-        with pytest.raises((ValueError, TypeError)):
+        with pytest.raises(
+            ConfigurationError, match="bin_range must be a tuple/list of two numbers"
+        ):
             EqualWidthBinning(bin_range=(1, 2, 3))  # type: ignore  # wrong length
 
     # Input format tests with preserve_dataframe=False

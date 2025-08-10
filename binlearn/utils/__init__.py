@@ -31,6 +31,41 @@ from ._data_handling import (
     return_like_input,
 )
 
+# Import new utility modules
+from ._parameter_validation import (
+    validate_common_parameters,
+    validate_range_parameter,
+    validate_positive_number,
+    validate_positive_integer,
+    validate_random_state,
+    create_configuration_error,
+    COMMON_PARAM_SPECS,
+)
+
+from ._configuration_utils import (
+    standardize_init_pattern,
+    create_param_dict_for_config,
+    get_effective_n_bins,
+    prepare_sklearn_estimator_params,
+    handle_common_warnings,
+)
+
+from ._equal_width_utils import (
+    create_equal_width_bins,
+    apply_equal_width_fallback,
+    validate_binning_input,
+    ensure_monotonic_edges,
+)
+
+from ._error_handling import (
+    handle_sklearn_import_error,
+    handle_insufficient_data_error,
+    handle_convergence_warning,
+    handle_parameter_bounds_error,
+    safe_sklearn_call,
+    validate_fitted_state,
+)
+
 # Import error classes
 from ._errors import (
     BinningError,
@@ -161,4 +196,26 @@ __all__ = [
     "validate_bin_number_parameter",
     "validate_bin_number_for_calculation",
     "validate_tree_params",
+    # New refactored utilities
+    "validate_common_parameters",
+    "validate_range_parameter",
+    "validate_positive_number",
+    "validate_positive_integer",
+    "create_configuration_error",
+    "COMMON_PARAM_SPECS",
+    "standardize_init_pattern",
+    "create_param_dict_for_config",
+    "get_effective_n_bins",
+    "prepare_sklearn_estimator_params",
+    "handle_common_warnings",
+    "create_equal_width_bins",
+    "apply_equal_width_fallback",
+    "validate_binning_input",
+    "ensure_monotonic_edges",
+    "handle_sklearn_import_error",
+    "handle_insufficient_data_error",
+    "handle_convergence_warning",
+    "handle_parameter_bounds_error",
+    "safe_sklearn_call",
+    "validate_fitted_state",
 ]

@@ -20,6 +20,7 @@ from ..utils import (
     ConfigurationError,
     FlexibleBinDefs,
     FlexibleBinSpec,
+    create_param_dict_for_config,
 )
 
 
@@ -200,12 +201,10 @@ class ManualFlexibleBinning(FlexibleBinningBase):
                 ],
             )
 
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "preserve_dataframe": preserve_dataframe,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            preserve_dataframe=preserve_dataframe,
+        )
 
         # Apply configuration defaults for manual_flexible method
         resolved_params = apply_config_defaults("manual_flexible", user_params)

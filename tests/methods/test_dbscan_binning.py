@@ -59,6 +59,13 @@ class TestDBSCANBinning:
             "sparse": np.array([1.0, 5.0, 10.0, 50.0, 100.0]).reshape(-1, 1),  # Sparse data
         }
 
+    @pytest.fixture
+    def expect_fallback_warning(self):
+        """Context manager to test that fallback warnings are raised when expected."""
+        return pytest.warns(
+            UserWarning, match="DBSCAN binning failed, falling back to equal-width binning"
+        )
+
     # Basic functionality tests
 
     def test_init_default_parameters(self):
@@ -119,13 +126,14 @@ class TestDBSCANBinning:
 
     # Input format tests with preserve_dataframe=False
 
-    def test_numpy_input_preserve_false(self, sample_data):
+    def test_numpy_input_preserve_false(self, sample_data, expect_fallback_warning):
         """Test with numpy input and preserve_dataframe=False."""
         binner = DBSCANBinning(eps=2.0, min_samples=3, preserve_dataframe=False)
 
         # Fit and transform
         X_fit = sample_data["simple"]
-        binner.fit(X_fit)
+        with expect_fallback_warning:
+            binner.fit(X_fit)
         X_transformed = binner.transform(X_fit)
 
         assert isinstance(X_transformed, np.ndarray)
@@ -138,13 +146,17 @@ class TestDBSCANBinning:
         assert X_inverse.shape == X_fit.shape
 
     @pandas_skip
-    def test_pandas_input_preserve_false(self, sample_data):
+    def test_pandas_input_preserve_false(self, sample_data, expect_fallback_warning):
         """Test with pandas input and preserve_dataframe=False."""
         binner = DBSCANBinning(eps=2.0, min_samples=3, preserve_dataframe=False)
 
         # Create pandas DataFrame
         df = pd.DataFrame(sample_data["simple"], columns=["feature"])
-        binner.fit(df)
+
+        # This should trigger fallback since eps=2.0 may not find proper clusters in simple data
+        with expect_fallback_warning:
+            binner.fit(df)
+
         df_transformed = binner.transform(df)
 
         # Should return numpy array when preserve_dataframe=False
@@ -156,14 +168,18 @@ class TestDBSCANBinning:
         assert isinstance(df_inverse, np.ndarray)
 
     @polars_skip
-    def test_polars_input_preserve_false(self, sample_data):
+    def test_polars_input_preserve_false(self, sample_data, expect_fallback_warning):
         """Test with polars input and preserve_dataframe=False."""
         binner = DBSCANBinning(eps=2.0, min_samples=3, preserve_dataframe=False)
 
         # Create polars DataFrame
         assert pl is not None
         df = pl.DataFrame({"feature": sample_data["simple"].flatten()})
-        binner.fit(df)
+
+        # This should trigger fallback since eps=2.0 may not find proper clusters in simple data
+        with expect_fallback_warning:
+            binner.fit(df)
+
         df_transformed = binner.transform(df)
 
         # Should return numpy array when preserve_dataframe=False
@@ -177,7 +193,7 @@ class TestDBSCANBinning:
     # Input format tests with preserve_dataframe=True
 
     @pandas_skip
-    def test_pandas_input_preserve_true(self, sample_data):
+    def test_pandas_input_preserve_true(self, sample_data, expect_fallback_warning):
         """Test with pandas input and preserve_dataframe=True."""
         binner = DBSCANBinning(eps=10.0, min_samples=3, preserve_dataframe=True)
 
@@ -186,7 +202,8 @@ class TestDBSCANBinning:
             {"feature1": sample_data["multi_col"][:, 0], "feature2": sample_data["multi_col"][:, 1]}
         )
 
-        binner.fit(df)
+        with expect_fallback_warning:
+            binner.fit(df)
         df_transformed = binner.transform(df)
 
         # Should preserve DataFrame format
@@ -201,7 +218,7 @@ class TestDBSCANBinning:
         assert list(df_inverse.columns) == ["feature1", "feature2"]
 
     @polars_skip
-    def test_polars_input_preserve_true(self, sample_data):
+    def test_polars_input_preserve_true(self, sample_data, expect_fallback_warning):
         """Test with polars input and preserve_dataframe=True."""
         binner = DBSCANBinning(eps=10.0, min_samples=3, preserve_dataframe=True)
 
@@ -211,7 +228,8 @@ class TestDBSCANBinning:
             {"feature1": sample_data["multi_col"][:, 0], "feature2": sample_data["multi_col"][:, 1]}
         )
 
-        binner.fit(df)
+        with expect_fallback_warning:
+            binner.fit(df)
         df_transformed = binner.transform(df)
 
         # Should preserve DataFrame format
@@ -227,12 +245,13 @@ class TestDBSCANBinning:
 
     # Fitted state reconstruction tests
 
-    def test_reconstruction_via_get_params_set_params(self, sample_data):
+    def test_reconstruction_via_get_params_set_params(self, sample_data, expect_fallback_warning):
         """Test fitted state reconstruction via get_params/set_params."""
         # Fit original binner
         binner_original = DBSCANBinning(eps=10.0, min_samples=3)
         X_fit = sample_data["multi_col"]
-        binner_original.fit(X_fit)
+        with expect_fallback_warning:
+            binner_original.fit(X_fit)
 
         # Get parameters
         params = binner_original.get_params()
@@ -254,12 +273,15 @@ class TestDBSCANBinning:
 
         np.testing.assert_array_almost_equal(inverse_original, inverse_reconstructed)
 
-    def test_reconstruction_via_constructor(self, sample_data):
+    def test_reconstruction_via_constructor(self, sample_data, expect_fallback_warning):
         """Test fitted state reconstruction via constructor parameters."""
         # Fit original binner
         binner_original = DBSCANBinning(eps=2.0, min_samples=3)
         X_fit = sample_data["simple"]
-        binner_original.fit(X_fit)
+
+        # Should trigger fallback since eps=2.0 may not find proper clusters in simple data
+        with expect_fallback_warning:
+            binner_original.fit(X_fit)
 
         # Get parameters including fitted state
         params = binner_original.get_params()
@@ -274,38 +296,46 @@ class TestDBSCANBinning:
 
         np.testing.assert_array_equal(result_original, result_reconstructed)
 
-    def test_repeated_fitting_after_reconstruction(self, sample_data):
+        np.testing.assert_array_equal(result_original, result_reconstructed)
+
+    def test_repeated_fitting_after_reconstruction(self, sample_data, expect_fallback_warning):
         """Test repeated fitting on reconstructed state."""
         # Original fitting
         binner = DBSCANBinning(eps=2.0, min_samples=3)
         X_fit1 = sample_data["simple"]
-        binner.fit(X_fit1)
+
+        # Should trigger fallback since eps=2.0 may not find proper clusters in simple data
+        with expect_fallback_warning:
+            binner.fit(X_fit1)
 
         # Get and set params (reconstruction)
         params = binner.get_params()
         binner_new = DBSCANBinning()
         binner_new.set_params(**params)
 
-        # Refit with different data
+        # Refit with different data - uniform data might also trigger fallback with these parameters
         X_fit2 = sample_data["uniform"]
-        binner_new.fit(X_fit2)
+        with expect_fallback_warning:
+            binner_new.fit(X_fit2)
 
         # Should work fine
         result = binner_new.transform(X_fit2[:10])
         assert result is not None
         assert result.shape == (10, 1)
 
-        # Another refit
+        # Another refit with normal data - this should work without warnings
         binner_new.fit(sample_data["normal"])
         result2 = binner_new.transform(sample_data["normal"][:10])
         assert result2 is not None
 
-    def test_various_formats_after_reconstruction(self, sample_data):
+    def test_various_formats_after_reconstruction(self, sample_data, expect_fallback_warning):
         """Test various input formats after fitted state reconstruction."""
         # Original fitting with numpy
         binner_original = DBSCANBinning(eps=10.0, min_samples=3, preserve_dataframe=True)
         X_numpy = sample_data["multi_col"]
-        binner_original.fit(X_numpy)
+
+        with expect_fallback_warning:
+            binner_original.fit(X_numpy)
 
         # Reconstruct
         params = binner_original.get_params()
@@ -327,7 +357,7 @@ class TestDBSCANBinning:
 
     # sklearn pipeline integration tests
 
-    def test_sklearn_pipeline_basic(self, sample_data):
+    def test_sklearn_pipeline_basic(self, sample_data, expect_fallback_warning):
         """Test basic sklearn pipeline integration."""
         # Create pipeline
         pipeline = Pipeline(
@@ -336,8 +366,10 @@ class TestDBSCANBinning:
 
         X = sample_data["normal"]
 
-        # Fit and transform
-        pipeline.fit(X)
+        # Should trigger fallback since eps=0.5 on scaled normal data might not find proper clusters
+        with expect_fallback_warning:
+            pipeline.fit(X)
+
         X_transformed = pipeline.transform(X)
 
         assert X_transformed is not None
@@ -347,7 +379,7 @@ class TestDBSCANBinning:
         # Test named steps access
         assert hasattr(pipeline.named_steps["binner"], "bin_edges_")
 
-    def test_sklearn_pipeline_with_dataframes(self, sample_data):
+    def test_sklearn_pipeline_with_dataframes(self, sample_data, expect_fallback_warning):
         """Test sklearn pipeline with DataFrame inputs."""
         if not hasattr(pd, "DataFrame"):
             pytest.skip("pandas not available")
@@ -360,7 +392,8 @@ class TestDBSCANBinning:
         # Use DataFrame
         df = pd.DataFrame(sample_data["multi_col"], columns=["feat1", "feat2"])
 
-        pipeline.fit(df)
+        with expect_fallback_warning:
+            pipeline.fit(df)
         df_transformed = pipeline.transform(df)
 
         # Should preserve DataFrame format
@@ -385,13 +418,14 @@ class TestDBSCANBinning:
 
     # Edge case tests
 
-    def test_edge_case_nan_values(self, sample_data):
+    def test_edge_case_nan_values(self, sample_data, expect_fallback_warning):
         """Test handling of NaN values."""
         binner = DBSCANBinning(eps=1.0, min_samples=3)
         X_nan = sample_data["with_nan"]
 
         # Should handle NaN values gracefully (base class preprocesses)
-        binner.fit(X_nan)
+        with expect_fallback_warning:
+            binner.fit(X_nan)
         result = binner.transform(X_nan)
 
         assert result is not None
@@ -412,13 +446,15 @@ class TestDBSCANBinning:
             assert result is not None
             assert result.shape == X_inf.shape
 
-    def test_edge_case_constant_column(self, sample_data):
+    def test_edge_case_constant_column(self, sample_data, expect_fallback_warning):
         """Test handling of constant columns."""
         binner = DBSCANBinning(eps=0.1, min_samples=3, min_bins=2)
         X_constant = sample_data["constant"]
 
         # Should fall back to equal-width binning for constant data
-        binner.fit(X_constant)
+        with expect_fallback_warning:
+            binner.fit(X_constant)
+
         result = binner.transform(X_constant)
 
         assert result is not None
@@ -437,27 +473,31 @@ class TestDBSCANBinning:
         ):
             binner.fit(X)
 
-    def test_edge_case_no_clusters_found(self, sample_data):
+    def test_edge_case_no_clusters_found(self, sample_data, expect_fallback_warning):
         """Test when DBSCAN finds no clusters (all noise)."""
         # Use very small eps so no points are close enough to form clusters
         binner = DBSCANBinning(eps=0.001, min_samples=3, min_bins=2)
         X = sample_data["sparse"]  # Sparse data with large gaps
 
         # Should fall back to equal-width binning when no clusters found
-        binner.fit(X)
+        with expect_fallback_warning:
+            binner.fit(X)
+
         result = binner.transform(X)
 
         assert result is not None
         assert result.shape == X.shape
 
-    def test_edge_case_too_few_clusters(self, sample_data):
+    def test_edge_case_too_few_clusters(self, sample_data, expect_fallback_warning):
         """Test when DBSCAN finds fewer clusters than min_bins."""
         # Use parameters that will likely find only 1 cluster
         binner = DBSCANBinning(eps=100.0, min_samples=3, min_bins=3)
         X = sample_data["simple"]
 
         # Should fall back to equal-width binning when too few clusters
-        binner.fit(X)
+        with expect_fallback_warning:
+            binner.fit(X)
+
         result = binner.transform(X)
 
         assert result is not None
@@ -474,24 +514,26 @@ class TestDBSCANBinning:
         assert result is not None
         assert result.shape == X.shape
 
-    def test_edge_case_very_small_range(self):
+    def test_edge_case_very_small_range(self, expect_fallback_warning):
         """Test with very small data range."""
         X = np.array([[1.0000001], [1.0000002], [1.0000003], [1.0000004], [1.0000005]])
         binner = DBSCANBinning(eps=0.000001, min_samples=2)
 
-        binner.fit(X)
+        with expect_fallback_warning:
+            binner.fit(X)
         result = binner.transform(X)
 
         assert result is not None
         assert result.shape == X.shape
 
-    def test_edge_case_large_data(self):
+    def test_edge_case_large_data(self, expect_fallback_warning):
         """Test with large dataset."""
         np.random.seed(42)
         X = np.random.normal(0, 1, (10000, 1))
         binner = DBSCANBinning(eps=0.5, min_samples=10)
 
-        binner.fit(X)
+        with expect_fallback_warning:
+            binner.fit(X)
         result = binner.transform(X[:1000])  # Transform subset
 
         assert result is not None
@@ -635,30 +677,34 @@ class TestDBSCANBinning:
         assert result_small is not None
         assert result_large is not None
 
-    def test_min_bins_parameter_fallback(self, sample_data):
+    def test_min_bins_parameter_fallback(self, sample_data, expect_fallback_warning):
         """Test min_bins parameter triggers fallback."""
         X = sample_data["simple"]
 
         # Use parameters that will find few clusters but require more bins
         binner = DBSCANBinning(eps=10.0, min_samples=3, min_bins=5)
-        binner.fit(X)
+
+        with expect_fallback_warning:
+            binner.fit(X)
         result = binner.transform(X)
 
         # Should fall back to equal-width binning with min_bins
         assert result is not None
         assert len(binner.bin_representatives_[0]) == 5  # Should have min_bins representatives
 
-    def test_fit_jointly_parameter(self, sample_data):
+    def test_fit_jointly_parameter(self, sample_data, expect_fallback_warning):
         """Test fit_jointly parameter (though DBSCAN typically doesn't use it)."""
         X = sample_data["multi_col"]
 
         # Test with fit_jointly=True
         binner_joint = DBSCANBinning(eps=10.0, min_samples=3, fit_jointly=True)
-        binner_joint.fit(X)
+        with expect_fallback_warning:
+            binner_joint.fit(X)
 
         # Test with fit_jointly=False
         binner_indep = DBSCANBinning(eps=10.0, min_samples=3, fit_jointly=False)
-        binner_indep.fit(X)
+        with expect_fallback_warning:
+            binner_indep.fit(X)
 
         # For DBSCAN, the result should be the same since it's inherently per-column
         # But test that both work
@@ -668,12 +714,13 @@ class TestDBSCANBinning:
         assert result_joint is not None
         assert result_indep is not None
 
-    def test_multiple_columns_independent_dbscan(self, sample_data):
+    def test_multiple_columns_independent_dbscan(self, sample_data, expect_fallback_warning):
         """Test that columns use independent DBSCAN clustering."""
         X = sample_data["multi_col"]  # Different ranges per column
         binner = DBSCANBinning(eps=5.0, min_samples=3)
 
-        binner.fit(X)
+        with expect_fallback_warning:
+            binner.fit(X)
 
         # Each column should have its own cluster centers based on its data
         reps_col1 = binner.bin_representatives_[0]
@@ -688,14 +735,15 @@ class TestDBSCANBinning:
             # They might be equal length but should have different values
             assert not np.allclose(reps_col1, reps_col2, rtol=1e-2)
 
-    def test_clip_parameter_functionality(self, sample_data):
+    def test_clip_parameter_functionality(self, sample_data, expect_fallback_warning):
         """Test clip parameter with out-of-range values."""
         X_train = np.array([[0], [5], [10], [15], [20]])
         X_test = np.array([[-5], [25]])  # Out of range values
 
         # Test with clip=True
         binner_clip = DBSCANBinning(eps=3.0, min_samples=2, clip=True)
-        binner_clip.fit(X_train)
+        with expect_fallback_warning:
+            binner_clip.fit(X_train)
         result_clip = binner_clip.transform(X_test)
 
         # Should clip to valid bin range
@@ -705,7 +753,8 @@ class TestDBSCANBinning:
 
         # Test with clip=False
         binner_no_clip = DBSCANBinning(eps=3.0, min_samples=2, clip=False)
-        binner_no_clip.fit(X_train)
+        with expect_fallback_warning:
+            binner_no_clip.fit(X_train)
         result_no_clip = binner_no_clip.transform(X_test)
 
         # May have values outside normal bin range (MISSING_VALUE)
@@ -714,13 +763,14 @@ class TestDBSCANBinning:
 
     # Integration and workflow tests
 
-    def test_full_workflow_with_all_methods(self, sample_data):
+    def test_full_workflow_with_all_methods(self, sample_data, expect_fallback_warning):
         """Test complete workflow: fit, transform, inverse_transform, get_params, set_params."""
         X = sample_data["multi_col"]
 
         # Initialize and fit
         binner = DBSCANBinning(eps=10.0, min_samples=3, preserve_dataframe=False)
-        binner.fit(X)
+        with expect_fallback_warning:
+            binner.fit(X)
 
         # Transform
         X_binned = binner.transform(X)
@@ -761,13 +811,14 @@ class TestDBSCANBinning:
         np.testing.assert_array_equal(result1, result2)
         np.testing.assert_array_equal(result2, result3)
 
-    def test_partial_data_transform(self, sample_data):
+    def test_partial_data_transform(self, sample_data, expect_fallback_warning):
         """Test transforming data subset after fitting on full data."""
         X_full = sample_data["uniform"]  # 100 samples
         X_subset = X_full[:20]  # 20 samples
 
         binner = DBSCANBinning(eps=5.0, min_samples=5)
-        binner.fit(X_full)
+        with expect_fallback_warning:
+            binner.fit(X_full)
 
         # Transform subset
         result_subset = binner.transform(X_subset)

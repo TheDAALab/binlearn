@@ -25,7 +25,7 @@ from sklearn.pipeline import Pipeline
 
 from binlearn import PANDAS_AVAILABLE, POLARS_AVAILABLE, pd, pl
 from binlearn.methods import Chi2Binning
-from binlearn.utils import FittingError, ValidationError
+from binlearn.utils import ConfigurationError, FittingError, ValidationError
 
 
 class TestChi2Binning:
@@ -133,62 +133,72 @@ class TestChi2Binning:
 
     def test_invalid_max_bins_negative(self):
         """Test validation of negative max_bins."""
-        with pytest.raises(ValueError, match="max_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="max_bins must be a positive integer"):
             Chi2Binning(max_bins=-1)
 
     def test_invalid_max_bins_zero(self):
         """Test validation of zero max_bins."""
-        with pytest.raises(ValueError, match="max_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="max_bins must be a positive integer"):
             Chi2Binning(max_bins=0)
 
     def test_invalid_max_bins_type(self):
         """Test validation of invalid max_bins type."""
-        with pytest.raises(ValueError, match="max_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="max_bins must be a positive integer"):
             Chi2Binning(max_bins=3.14)  # type: ignore
 
     def test_invalid_min_bins_negative(self):
         """Test validation of negative min_bins."""
-        with pytest.raises(ValueError, match="min_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="min_bins must be a positive integer"):
             Chi2Binning(min_bins=-1)
 
     def test_invalid_min_bins_zero(self):
         """Test validation of zero min_bins."""
-        with pytest.raises(ValueError, match="min_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="min_bins must be a positive integer"):
             Chi2Binning(min_bins=0)
 
     def test_invalid_min_bins_type(self):
         """Test validation of invalid min_bins type."""
-        with pytest.raises(ValueError, match="min_bins must be a positive integer"):
+        with pytest.raises(ConfigurationError, match="min_bins must be a positive integer"):
             Chi2Binning(min_bins="invalid")  # type: ignore
 
     def test_invalid_bin_constraints(self):
         """Test validation of min_bins > max_bins."""
-        with pytest.raises(ValueError, match="min_bins must be <= max_bins"):
+        with pytest.raises(
+            ConfigurationError, match="min_bins \\(10\\) must be <= max_bins \\(5\\)"
+        ):
             Chi2Binning(min_bins=10, max_bins=5)
 
     def test_invalid_alpha_low(self):
         """Test validation of alpha <= 0."""
-        with pytest.raises(ValueError, match="alpha must be a float between 0 and 1"):
+        with pytest.raises(
+            ConfigurationError, match="alpha must be a number between 0 and 1 \\(exclusive\\)"
+        ):
             Chi2Binning(alpha=0.0)
 
     def test_invalid_alpha_high(self):
         """Test validation of alpha >= 1."""
-        with pytest.raises(ValueError, match="alpha must be a float between 0 and 1"):
+        with pytest.raises(
+            ConfigurationError, match="alpha must be a number between 0 and 1 \\(exclusive\\)"
+        ):
             Chi2Binning(alpha=1.0)
 
     def test_invalid_alpha_type(self):
         """Test validation of invalid alpha type."""
-        with pytest.raises(ValueError, match="alpha must be a float between 0 and 1"):
+        with pytest.raises(
+            ConfigurationError, match="alpha must be a number between 0 and 1 \\(exclusive\\)"
+        ):
             Chi2Binning(alpha="invalid")  # type: ignore
 
     def test_invalid_initial_bins_low(self):
         """Test validation of initial_bins < max_bins."""
-        with pytest.raises(ValueError, match="initial_bins must be an integer >= max_bins"):
+        with pytest.raises(
+            ConfigurationError, match="initial_bins \\(5\\) must be >= max_bins \\(10\\)"
+        ):
             Chi2Binning(max_bins=10, initial_bins=5)
 
     def test_invalid_initial_bins_type(self):
         """Test validation of invalid initial_bins type."""
-        with pytest.raises(ValueError, match="initial_bins must be an integer >= max_bins"):
+        with pytest.raises(ConfigurationError, match="initial_bins must be a positive integer"):
             Chi2Binning(initial_bins="invalid")  # type: ignore
 
     # ======================
@@ -1169,7 +1179,9 @@ class TestChi2Binning:
         assert binner._chi2_is_significant(0.1, unique_classes) is False  # Low chi2
 
         # Test _above_minimum_bins (line 319->322 branch)
-        assert binner._above_minimum_bins([1, 2]) is True  # 2 >= 2 (default min_bins)   # type: ignore
+        assert (
+            binner._above_minimum_bins([1, 2]) is True
+        )  # 2 >= 2 (default min_bins)   # type: ignore
         assert binner._above_minimum_bins([1]) is False  # 1 < 2 (default min_bins)   # type: ignore
 
         # Test complete _should_stop_merging logic

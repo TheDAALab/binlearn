@@ -20,6 +20,12 @@ from ..utils import (
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
+    create_param_dict_for_config,
+    apply_equal_width_fallback,
+    handle_sklearn_import_error,
+    safe_sklearn_call,
+    handle_insufficient_data_error,
+    validate_random_state,
 )
 
 
@@ -56,6 +62,9 @@ class GaussianMixtureBinning(IntervalBinningBase):
         random_state: Random seed for reproducible GMM fitting. Controls the random
             initialization of component parameters. If None, results may vary between
             runs due to random initialization.
+        allow_fallback: Whether to fall back to equal-width binning when GMM fitting
+            fails. If True (default), uses equal-width binning as fallback with a warning.
+            If False, raises an error when GMM fails. If None, uses configuration default.
         clip: Whether to clip values outside the fitted range to the nearest bin edge.
             If None, uses configuration default.
         preserve_dataframe: Whether to preserve pandas DataFrame structure in transform
@@ -72,6 +81,8 @@ class GaussianMixtureBinning(IntervalBinningBase):
     Attributes:
         n_components: Number of mixture components to fit
         random_state: Random seed for reproducible results
+        allow_fallback: Whether to fall back to equal-width binning when needed
+        allow_fallback: Whether to fall back to equal-width binning on failure
 
     Example:
         >>> import numpy as np
@@ -117,6 +128,7 @@ class GaussianMixtureBinning(IntervalBinningBase):
         self,
         n_components: int | str | None = None,
         random_state: int | None = None,
+        allow_fallback: bool | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
@@ -140,6 +152,10 @@ class GaussianMixtureBinning(IntervalBinningBase):
             random_state: Random seed for reproducible GMM fitting. Controls the
                 random initialization of component parameters. Should be a non-negative
                 integer. If None, results may vary between runs.
+            allow_fallback: Whether to fall back to equal-width binning when GMM
+                fitting fails. If True (default), uses equal-width binning as fallback
+                with a warning. If False, raises an error when GMM fails. If None,
+                uses configuration default.
             clip: Whether to clip transformed values outside the fitted range to the
                 nearest bin edge. If None, uses configuration default.
             preserve_dataframe: Whether to preserve pandas DataFrame structure in
@@ -178,33 +194,33 @@ class GaussianMixtureBinning(IntervalBinningBase):
             - n_components can use dynamic expressions for adaptive bin counts
             - Reconstruction parameters should not be provided during normal usage
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "n_components": n_components,
-            "random_state": random_state,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-            "fit_jointly": fit_jointly,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            n_components=n_components,
+            random_state=random_state,
+            allow_fallback=allow_fallback,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
+        )
 
-        # Apply configuration defaults for gaussian_mixture method
+        # Apply configuration defaults
         resolved_params = apply_config_defaults("gaussian_mixture", user_params)
 
         # Store method-specific parameters
         self.n_components = resolved_params.get("n_components", 10)
         self.random_state = resolved_params.get("random_state", None)
+        self.allow_fallback = resolved_params.get("allow_fallback", True)
 
-        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        # Initialize parent with resolved parameters
         IntervalBinningBase.__init__(
             self,
             clip=resolved_params.get("clip"),
             preserve_dataframe=resolved_params.get("preserve_dataframe"),
             fit_jointly=resolved_params.get("fit_jointly"),
-            guidance_columns=None,  # Not needed for unsupervised binning
-            bin_edges=bin_edges,  # Never configurable
-            bin_representatives=bin_representatives,  # Never configurable
+            guidance_columns=None,
+            bin_edges=bin_edges,
+            bin_representatives=bin_representatives,
         )
 
     def _validate_params(self) -> None:
@@ -215,12 +231,8 @@ class GaussianMixtureBinning(IntervalBinningBase):
         # Validate n_components using centralized utility
         validate_bin_number_parameter(self.n_components, param_name="n_components")
 
-        # Validate random_state parameter
-        if self.random_state is not None and not isinstance(self.random_state, int):
-            raise ConfigurationError(
-                "random_state must be an integer or None",
-                suggestions=["Example: random_state=42"],
-            )
+        # Validate random_state parameter using centralized utility
+        validate_random_state(self.random_state)
 
     def _calculate_bins(
         self,
@@ -286,11 +298,11 @@ class GaussianMixtureBinning(IntervalBinningBase):
         X_reshaped = x_col_clean.reshape(-1, 1)
 
         try:
-            # Apply Gaussian Mixture Model clustering
+            # Apply Gaussian Mixture Model clustering using safe sklearn call
             gmm = GaussianMixture(
                 n_components=n_components, random_state=self.random_state, covariance_type="full"
             )
-            gmm.fit(X_reshaped)
+            safe_sklearn_call(gmm.fit, X_reshaped)
 
             # Get component means and sort them
             means = np.array(gmm.means_).flatten()
@@ -325,67 +337,20 @@ class GaussianMixtureBinning(IntervalBinningBase):
             return edges, reps
 
         except Exception as e:
-            # Fall back to equal-width binning if GMM fails
-            return self._fallback_equal_width_bins(x_col, col_id, n_components, e)
+            # Check if fallback is allowed
+            if not self.allow_fallback:
+                raise ConfigurationError(
+                    f"GMM fitting failed: {str(e)}",
+                    suggestions=[
+                        "Try reducing n_components",
+                        "Increase sample size",
+                        "Check data distribution",
+                        "Set allow_fallback=True to enable equal-width fallback",
+                    ],
+                ) from e
 
-    def _fallback_equal_width_bins(
-        self,
-        x_col: np.ndarray[Any, Any],
-        col_id: Any,
-        n_components: int,
-        original_error: Exception,
-    ) -> tuple[list[float], list[float]]:
-        """Fallback to equal-width binning when GMM fails.
-
-        Args:
-            x_col: Preprocessed column data
-            col_id: Column identifier for error reporting
-            n_components: Number of bins to create
-            original_error: The original GMM error
-
-        Returns:
-            Tuple of (bin_edges, bin_representatives)
-        """
-        import warnings
-
-        from ..utils._errors import DataQualityWarning
-
-        warnings.warn(
-            f"Column {col_id}: GMM clustering failed ({original_error}). "
-            f"Falling back to equal-width binning.",
-            DataQualityWarning,
-            stacklevel=2,
-        )
-
-        min_val, max_val = float(np.min(x_col)), float(np.max(x_col))
-
-        # Handle constant data case
-        if min_val == max_val:
-            # For constant data, create bins around the single value
-            # with small artificial spread to ensure monotonicity
-            epsilon = 1e-8  # Small value to create artificial range
-            edges = []
-            reps = []
-
-            # Create edges from (value - epsilon) to (value + epsilon)
-            for i in range(n_components + 1):
-                edge = min_val - epsilon + (2 * epsilon * i / n_components)
-                edges.append(edge)
-
-            # Create representatives as the constant value
-            for _i in range(n_components):
-                reps.append(min_val)
-
-            return edges, reps
-
-        # Create equal-width bins for non-constant data
-        edges_array = np.linspace(min_val, max_val, n_components + 1)
-        edges = list(edges_array)
-
-        # Create representatives as bin centers
-        reps = []
-        for i in range(n_components):
-            rep = (edges[i] + edges[i + 1]) / 2
-            reps.append(rep)
-
-        return edges, reps
+            # Use standardized equal-width fallback
+            return list(apply_equal_width_fallback(x_col_clean, n_components, "GMM")), [
+                float(val)
+                for val in np.linspace(np.min(x_col_clean), np.max(x_col_clean), n_components)
+            ]

@@ -13,7 +13,7 @@ import numpy as np
 
 from ..base._interval_binning_base import IntervalBinningBase
 from ..config import apply_config_defaults
-from ..utils import ArrayLike, BinEdgesDict, ConfigurationError
+from ..utils import ArrayLike, BinEdgesDict, ConfigurationError, create_param_dict_for_config
 
 
 # pylint: disable=too-many-ancestors
@@ -179,13 +179,11 @@ class ManualIntervalBinning(IntervalBinningBase):
                 ],
             )
 
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+        )
 
         # Apply configuration defaults for manual_interval method
         resolved_params = apply_config_defaults("manual_interval", user_params)

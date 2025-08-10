@@ -107,23 +107,31 @@ class TestEqualFrequencyBinning:
     def test_parameter_validation_quantile_range(self):
         """Test quantile_range parameter validation."""
         # Invalid quantile_range formats
-        with pytest.raises(ConfigurationError, match="quantile_range must be a tuple"):
+        with pytest.raises(
+            ConfigurationError, match="quantile_range must be a tuple/list of two numbers"
+        ):
             EqualFrequencyBinning(quantile_range=(0.1, 0.5, 0.9))  # type: ignore # wrong length
 
-        with pytest.raises(ConfigurationError, match="quantile_range must be a tuple"):
-            EqualFrequencyBinning(quantile_range=[0.1, 0.9])  # type: ignore   # not tuple
+        with pytest.raises(
+            ConfigurationError, match="quantile_range must be a tuple/list of two numbers"
+        ):
+            EqualFrequencyBinning(quantile_range="invalid")  # type: ignore   # not tuple
 
         # Invalid quantile values
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
+        with pytest.raises(
+            ConfigurationError, match="quantile_range values must be numbers between 0 and 1"
+        ):
             EqualFrequencyBinning(quantile_range=(-0.1, 0.9))  # negative
 
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
+        with pytest.raises(
+            ConfigurationError, match="quantile_range values must be numbers between 0 and 1"
+        ):
             EqualFrequencyBinning(quantile_range=(0.1, 1.1))  # > 1
 
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
+        with pytest.raises(ConfigurationError, match="minimum .* must be less than maximum"):
             EqualFrequencyBinning(quantile_range=(0.9, 0.1))  # min >= max
 
-        with pytest.raises(ConfigurationError, match="values must be numbers between 0 and 1"):
+        with pytest.raises(ConfigurationError, match="minimum .* must be less than maximum"):
             EqualFrequencyBinning(quantile_range=(0.5, 0.5))  # min == max
 
     # Input format tests with preserve_dataframe=False

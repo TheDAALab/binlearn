@@ -19,7 +19,11 @@ from ..utils import (
     ConfigurationError,
     FittingError,
     resolve_n_bins_parameter,
+    validate_bin_number_for_calculation,
     validate_bin_number_parameter,
+    create_param_dict_for_config,
+    handle_sklearn_import_error,
+    safe_sklearn_call,
 )
 
 
@@ -224,18 +228,17 @@ class IsotonicBinning(SupervisedBinningBase):
             - Guidance columns must be specified for supervised binning to work properly
         """
         # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "max_bins": max_bins,
-            "min_samples_per_bin": min_samples_per_bin,
-            "increasing": increasing,
-            "y_min": y_min,
-            "y_max": y_max,
-            "min_change_threshold": min_change_threshold,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            max_bins=max_bins,
+            min_samples_per_bin=min_samples_per_bin,
+            increasing=increasing,
+            y_min=y_min,
+            y_max=y_max,
+            min_change_threshold=min_change_threshold,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+        )
 
         # Apply configuration defaults for isotonic method
         resolved_params = apply_config_defaults("isotonic", user_params)
@@ -410,7 +413,7 @@ class IsotonicBinning(SupervisedBinningBase):
         x_sorted = x_sorted.flatten()
         y_sorted = y_sorted.flatten()
 
-        # Fit isotonic regression
+        # Fit isotonic regression using safe sklearn call
         try:
             isotonic_model = IsotonicRegression(
                 increasing=self.increasing,
@@ -418,7 +421,13 @@ class IsotonicBinning(SupervisedBinningBase):
                 y_max=self.y_max,
                 out_of_bounds="clip",
             )
-            y_fitted = isotonic_model.fit_transform(x_sorted, y_sorted)
+            y_fitted = safe_sklearn_call(
+                isotonic_model.fit_transform,
+                x_sorted,
+                y_sorted,
+                method_name="IsotonicRegression",
+                fallback_func=None,
+            )
         except Exception as e:
             raise ValueError(f"Column {col_id}: Isotonic regression failed: {e}") from e
 

@@ -15,7 +15,16 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from ..base import SupervisedBinningBase
 from ..config import apply_config_defaults, get_config
-from ..utils import BinEdgesDict, ConfigurationError, FittingError
+from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
+    FittingError,
+    create_param_dict_for_config,
+    handle_sklearn_import_error,
+    apply_equal_width_fallback,
+    safe_sklearn_call,
+    validate_fitted_state,
+)
 
 
 # pylint: disable=too-many-ancestors
@@ -199,17 +208,15 @@ class TreeBinning(SupervisedBinningBase):
             - Guidance columns must be specified for supervised binning to work properly
             - Reconstruction parameters should not be provided during normal usage
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "task_type": task_type,
-            "tree_params": tree_params,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            task_type=task_type,
+            tree_params=tree_params,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+        )
 
-        # Apply configuration defaults for supervised method
+        # Apply configuration defaults
         resolved_params = apply_config_defaults("supervised", user_params)
 
         # Store method-specific parameters
@@ -227,14 +234,14 @@ class TreeBinning(SupervisedBinningBase):
         self._tree_importance: dict[Any, float] = {}
         self._tree_template: DecisionTreeClassifier | DecisionTreeRegressor | None = None
 
-        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        # Initialize parent with resolved parameters
         SupervisedBinningBase.__init__(
             self,
             clip=resolved_params.get("clip"),
             preserve_dataframe=resolved_params.get("preserve_dataframe"),
-            guidance_columns=guidance_columns,  # Never configurable
-            bin_edges=bin_edges,  # Never configurable
-            bin_representatives=bin_representatives,  # Never configurable
+            guidance_columns=guidance_columns,
+            bin_edges=bin_edges,
+            bin_representatives=bin_representatives,
         )
 
         # Create tree template after parent initialization
@@ -330,7 +337,7 @@ class TreeBinning(SupervisedBinningBase):
             tree = clone(self._tree_template)
             # Reshape x_col_clean to 2D for sklearn compatibility
             x_col_2d = x_col_clean.reshape(-1, 1)
-            tree.fit(x_col_2d, guidance_clean)
+            safe_sklearn_call(tree.fit, x_col_2d, guidance_clean)
         except Exception as e:
             raise FittingError(
                 f"Column {col_id}: Failed to fit decision tree: {str(e)}",

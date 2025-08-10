@@ -14,7 +14,16 @@ from scipy.stats import chi2_contingency
 
 from ..base import SupervisedBinningBase
 from ..config import apply_config_defaults
-from ..utils import BinEdgesDict, FittingError
+from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
+    FittingError,
+    create_param_dict_for_config,
+    create_equal_width_bins,
+    validate_positive_number,
+    validate_positive_integer,
+    validate_range_parameter,
+)
 
 
 # pylint: disable=too-many-ancestors
@@ -117,17 +126,15 @@ class Chi2Binning(SupervisedBinningBase):
         module_: str | None = None,  # For reconstruction compatibility
     ):
         """Initialize Chi-square binning."""
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "max_bins": max_bins,
-            "min_bins": min_bins,
-            "alpha": alpha,
-            "initial_bins": initial_bins,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            max_bins=max_bins,
+            min_bins=min_bins,
+            alpha=alpha,
+            initial_bins=initial_bins,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+        )
 
         # Apply configuration defaults for chi2 method
         params = apply_config_defaults("chi2", user_params)
@@ -156,25 +163,31 @@ class Chi2Binning(SupervisedBinningBase):
         # Call parent validation
         SupervisedBinningBase._validate_params(self)
 
-        # Validate max_bins
-        if not isinstance(self.max_bins, int) or self.max_bins < 1:
-            raise ValueError("max_bins must be a positive integer")
+        # Use standardized validation utilities
+        validate_positive_integer(self.max_bins, "max_bins")
+        validate_positive_integer(self.min_bins, "min_bins")
+        validate_positive_integer(self.initial_bins, "initial_bins")
 
-        # Validate min_bins
-        if not isinstance(self.min_bins, int) or self.min_bins < 1:
-            raise ValueError("min_bins must be a positive integer")
+        # Validate alpha (must be between 0 and 1)
+        if not isinstance(self.alpha, (int, float)) or not (0.0 < self.alpha < 1.0):
+            raise ConfigurationError(
+                f"alpha must be a number between 0 and 1 (exclusive), got {self.alpha}",
+                suggestions=["Example: alpha=0.05"],
+            )
 
         # Validate bin constraints
         if self.min_bins > self.max_bins:
-            raise ValueError("min_bins must be <= max_bins")
+            raise ConfigurationError(
+                f"min_bins ({self.min_bins}) must be <= max_bins ({self.max_bins})",
+                suggestions=["Reduce min_bins or increase max_bins"],
+            )
 
-        # Validate alpha
-        if not isinstance(self.alpha, int | float) or not (0.0 < self.alpha < 1.0):
-            raise ValueError("alpha must be a float between 0 and 1")
-
-        # Validate initial_bins
-        if not isinstance(self.initial_bins, int) or self.initial_bins < self.max_bins:
-            raise ValueError("initial_bins must be an integer >= max_bins")
+        # Validate initial_bins constraint
+        if self.initial_bins < self.max_bins:
+            raise ConfigurationError(
+                f"initial_bins ({self.initial_bins}) must be >= max_bins ({self.max_bins})",
+                suggestions=["Increase initial_bins or reduce max_bins"],
+            )
 
     def _calculate_bins(
         self,
@@ -237,9 +250,8 @@ class Chi2Binning(SupervisedBinningBase):
 
         Separated for easier testing of binning logic.
         """
-        data_min = float(np.min(x_col))
-        data_max = float(np.max(x_col))
-        initial_edges = np.linspace(data_min, data_max, self.initial_bins + 1)
+        # Use standardized equal-width binning utility
+        initial_edges = create_equal_width_bins(x_col, self.initial_bins)
 
         # Create bin assignments
         bin_indices = np.digitize(x_col, initial_edges) - 1

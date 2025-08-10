@@ -24,6 +24,13 @@ class TestKMeansBinning:
     """Comprehensive test suite for KMeansBinning."""
 
     @pytest.fixture
+    def expect_fallback_warning(self):
+        """Context manager to test that fallback warnings are raised when expected."""
+        return pytest.warns(
+            UserWarning, match="KMeans binning failed, falling back to equal-width binning"
+        )
+
+    @pytest.fixture
     def sample_data(self):
         """Generate sample data for testing."""
         np.random.seed(42)
@@ -396,16 +403,21 @@ class TestKMeansBinning:
         X = np.array([[1], [2], [3]])  # Only 3 data points
         binner = KMeansBinning(n_bins=5)  # More bins than data
 
-        # Should raise ValueError because insufficient data for clustering
-        with pytest.raises(ValueError, match="Insufficient values \\(3\\) for 5 clusters"):
+        # Should raise ConfigurationError because insufficient data for clustering
+        with pytest.raises(
+            ConfigurationError, match="KMeansBinning requires at least 5 data points, got 3"
+        ):
             binner.fit(X)
 
-    def test_edge_case_more_bins_than_unique_values(self, sample_data):
+    def test_edge_case_more_bins_than_unique_values(self, sample_data, expect_fallback_warning):
         """Test when n_bins > number of unique values."""
         X = sample_data["few_unique"]  # Only 3 unique values but 6 data points
         binner = KMeansBinning(n_bins=5)  # More bins than unique values
 
-        binner.fit(X)
+        # Should trigger fallback since KMeans can't create more clusters than unique values
+        with expect_fallback_warning:
+            binner.fit(X)
+
         result = binner.transform(X)
 
         assert result is not None
@@ -452,8 +464,10 @@ class TestKMeansBinning:
         X = np.array([[5.0]])
         binner = KMeansBinning(n_bins=3)
 
-        # Should raise ValueError because insufficient data for clustering
-        with pytest.raises(ValueError, match="Insufficient values \\(1\\) for 3 clusters"):
+        # Should raise ConfigurationError because insufficient data for clustering
+        with pytest.raises(
+            ConfigurationError, match="KMeansBinning requires at least 3 data points, got 1"
+        ):
             binner.fit(X)
 
     def test_single_row_data_with_single_bin(self):
@@ -481,18 +495,28 @@ class TestKMeansBinning:
         """Test to cover K-means clustering error handling."""
         import unittest.mock
 
-        # Mock kmeans1d.cluster to raise an exception to test error handling
+        # Mock kmeans1d.cluster to raise an exception to test fallback behavior
         with unittest.mock.patch(
             "kmeans1d.cluster", side_effect=Exception("Mock clustering error")
         ):
             X = np.array([[1.0], [2.0], [3.0], [4.0], [5.0]])
             binner = KMeansBinning(n_bins=3)
 
-            # Should catch the Exception from clustering and re-raise with better message
-            with pytest.raises(
-                ValueError, match="Column 0: Error in K-means clustering: Mock clustering error"
-            ):
+            # Should fall back to equal-width binning with warning instead of raising exception
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
                 binner.fit(X)
+
+            # Should have issued a warning about fallback
+            assert len(w) > 0
+            # Changed warning message due to new fallback mechanism
+            assert "KMeans failed with sklearn" in str(
+                w[0].message
+            ) or "KMeans binning failed" in str(w[0].message)
+            assert "fallback" in str(w[0].message)  # Should still work and produce valid results
+            result = binner.transform(X)
+            assert result is not None
+            assert result.shape == X.shape
 
     # Specific K-means binning tests
 

@@ -536,8 +536,8 @@ class TestGaussianMixtureBinning:
 
                 # Should have issued a warning about fallback
                 assert len(w) > 0
-                assert "GMM clustering failed" in str(w[0].message)
-                assert "Falling back to equal-width binning" in str(w[0].message)
+                assert "GMM binning failed" in str(w[0].message)
+                assert "falling back to equal-width binning" in str(w[0].message)
 
             # Should still work with fallback
             result = binner.transform(X)

@@ -19,6 +19,8 @@ from ..utils import (
     ConfigurationError,
     DataQualityWarning,
     FittingError,
+    create_param_dict_for_config,
+    create_equal_width_bins,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
@@ -210,16 +212,14 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
             - Guidance columns must point to weight data for the minimum weight constraint to work
             - Reconstruction parameters should not be provided during normal usage
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "n_bins": n_bins,
-            "minimum_weight": minimum_weight,
-            "bin_range": bin_range,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            n_bins=n_bins,
+            minimum_weight=minimum_weight,
+            bin_range=bin_range,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+        )
 
         # Apply configuration defaults for equal_width_minimum_weight method
         resolved_params = apply_config_defaults("equal_width_minimum_weight", user_params)
@@ -360,8 +360,11 @@ class EqualWidthMinimumWeightBinning(SupervisedBinningBase):
             representatives = [min_val]
             return edges, representatives
 
-        # Create initial equal-width bins
-        initial_edges = np.linspace(min_val, max_val, n_bins + 1)
+        # Create initial equal-width bins using standardized utility
+        if self.bin_range is not None:
+            initial_edges = create_equal_width_bins(x_col, n_bins, data_range=self.bin_range)
+        else:
+            initial_edges = create_equal_width_bins(x_col, n_bins)
 
         # Calculate weights in each initial bin
         bin_weights = []

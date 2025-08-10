@@ -14,7 +14,16 @@ from sklearn.cluster import DBSCAN
 
 from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
-from ..utils import BinEdgesDict, ConfigurationError
+from ..utils import (
+    BinEdgesDict,
+    ConfigurationError,
+    create_param_dict_for_config,
+    validate_positive_number,
+    validate_positive_integer,
+    apply_equal_width_fallback,
+    handle_sklearn_import_error,
+    safe_sklearn_call,
+)
 
 
 # pylint: disable=too-many-ancestors
@@ -48,6 +57,10 @@ class DBSCANBinning(IntervalBinningBase):
         min_bins: Minimum number of bins to create. If DBSCAN produces fewer clusters,
             falls back to equal-width binning. Must be at least 1. If None, uses
             configuration default.
+        allow_fallback: Whether to fall back to equal-width binning when DBSCAN produces
+            fewer clusters than min_bins. If True (default), uses equal-width binning as
+            fallback with a warning. If False, raises an error when insufficient clusters
+            are found. If None, uses configuration default.
         clip: Whether to clip values outside the fitted range to the nearest bin edge.
             If None, uses configuration default.
         preserve_dataframe: Whether to preserve pandas DataFrame structure in transform
@@ -65,6 +78,7 @@ class DBSCANBinning(IntervalBinningBase):
         eps: Maximum distance for neighborhood definition
         min_samples: Minimum samples for core point definition
         min_bins: Minimum number of bins to ensure
+        allow_fallback: Whether to fall back to equal-width binning when needed
 
     Example:
         >>> import numpy as np
@@ -109,6 +123,7 @@ class DBSCANBinning(IntervalBinningBase):
         eps: float | None = None,
         min_samples: int | None = None,
         min_bins: int | None = None,
+        allow_fallback: bool | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
@@ -134,6 +149,10 @@ class DBSCANBinning(IntervalBinningBase):
             min_bins: Minimum number of bins to ensure. If DBSCAN produces fewer
                 clusters, falls back to equal-width binning. Must be at least 1.
                 If None, uses configuration default.
+            allow_fallback: Whether to fall back to equal-width binning when DBSCAN
+                produces fewer clusters than min_bins. If True (default), uses equal-width
+                binning as fallback with a warning. If False, raises an error when
+                insufficient clusters are found. If None, uses configuration default.
             clip: Whether to clip transformed values outside the fitted range to the
                 nearest bin edge. If None, uses configuration default.
             preserve_dataframe: Whether to preserve pandas DataFrame structure in
@@ -172,35 +191,35 @@ class DBSCANBinning(IntervalBinningBase):
             - The eps parameter is critical for DBSCAN performance and may require
               experimentation based on data characteristics
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "eps": eps,
-            "min_samples": min_samples,
-            "min_bins": min_bins,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-            "fit_jointly": fit_jointly,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            eps=eps,
+            min_samples=min_samples,
+            min_bins=min_bins,
+            allow_fallback=allow_fallback,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
+        )
 
-        # Apply configuration defaults for dbscan method
+        # Apply configuration defaults
         resolved_params = apply_config_defaults("dbscan", user_params)
 
         # Store method-specific parameters
         self.eps = resolved_params.get("eps", 0.1)
         self.min_samples = resolved_params.get("min_samples", 5)
         self.min_bins = resolved_params.get("min_bins", 2)
+        self.allow_fallback = resolved_params.get("allow_fallback", True)
 
-        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        # Initialize parent with resolved parameters
         IntervalBinningBase.__init__(
             self,
             clip=resolved_params.get("clip"),
             preserve_dataframe=resolved_params.get("preserve_dataframe"),
             fit_jointly=resolved_params.get("fit_jointly"),
-            guidance_columns=None,  # Not needed for unsupervised binning
-            bin_edges=bin_edges,  # Never configurable
-            bin_representatives=bin_representatives,  # Never configurable
+            guidance_columns=None,
+            bin_edges=bin_edges,
+            bin_representatives=bin_representatives,
         )
 
     def _validate_params(self) -> None:
@@ -208,26 +227,10 @@ class DBSCANBinning(IntervalBinningBase):
         # Call parent validation
         IntervalBinningBase._validate_params(self)
 
-        # Validate eps parameter
-        if not isinstance(self.eps, int | float) or self.eps <= 0:
-            raise ConfigurationError(
-                "eps must be a positive number",
-                suggestions=["Example: eps=0.1"],
-            )
-
-        # Validate min_samples parameter
-        if not isinstance(self.min_samples, int) or self.min_samples <= 0:
-            raise ConfigurationError(
-                "min_samples must be a positive integer",
-                suggestions=["Example: min_samples=5"],
-            )
-
-        # Validate min_bins parameter
-        if not isinstance(self.min_bins, int) or self.min_bins < 1:
-            raise ConfigurationError(
-                "min_bins must be a positive integer",
-                suggestions=["Example: min_bins=2"],
-            )
+        # Use standardized validation utilities
+        validate_positive_number(self.eps, "eps", allow_zero=False)
+        validate_positive_integer(self.min_samples, "min_samples")
+        validate_positive_integer(self.min_bins, "min_bins")
 
     def _calculate_bins(
         self,
@@ -280,16 +283,31 @@ class DBSCANBinning(IntervalBinningBase):
         # Reshape data for DBSCAN (expects 2D array)
         X_reshaped = x_col_clean.reshape(-1, 1)
 
-        # Apply DBSCAN clustering
+        # Apply DBSCAN clustering using safe sklearn call
         dbscan = DBSCAN(eps=self.eps, min_samples=self.min_samples)
-        cluster_labels = dbscan.fit_predict(X_reshaped)
+        cluster_labels = safe_sklearn_call(dbscan.fit_predict, X_reshaped)
 
         # Get unique clusters (excluding noise points labeled as -1)
         unique_clusters = np.unique(cluster_labels[cluster_labels != -1])
 
         if len(unique_clusters) < self.min_bins:
+            # Check if fallback is allowed
+            if not self.allow_fallback:
+                raise ConfigurationError(
+                    f"DBSCAN found only {len(unique_clusters)} clusters, but min_bins={self.min_bins}",
+                    suggestions=[
+                        f"Reduce min_bins to {len(unique_clusters)} or lower",
+                        "Adjust eps parameter to find more clusters",
+                        "Reduce min_samples parameter",
+                        "Set allow_fallback=True to enable equal-width fallback",
+                    ],
+                )
+
             # Fall back to equal-width binning if too few clusters
-            return self._fallback_equal_width_bins(x_col_clean, col_id)
+            return list(apply_equal_width_fallback(x_col_clean, self.min_bins, "DBSCAN")), [
+                float(val)
+                for val in np.linspace(np.min(x_col_clean), np.max(x_col_clean), self.min_bins)
+            ]
 
         # Calculate cluster centers and boundaries
         cluster_centers = []
@@ -319,30 +337,3 @@ class DBSCANBinning(IntervalBinningBase):
         reps = [center for center, _, _ in cluster_centers]
 
         return edges, reps
-
-    def _fallback_equal_width_bins(
-        self,
-        x_col: np.ndarray[Any, Any],
-        col_id: Any,
-    ) -> tuple[list[float], list[float]]:
-        """Fallback to equal-width binning when DBSCAN produces too few clusters.
-
-        Args:
-            x_col: Clean column data (finite values only)
-            col_id: Column identifier for error reporting
-
-        Returns:
-            Tuple of (bin_edges, bin_representatives)
-        """
-        min_val, max_val = float(np.min(x_col)), float(np.max(x_col))
-
-        # Create equal-width bins
-        edges = np.linspace(min_val, max_val, self.min_bins + 1)
-
-        # Create representatives as bin centers
-        reps = []
-        for i in range(self.min_bins):
-            rep = (edges[i] + edges[i + 1]) / 2
-            reps.append(rep)
-
-        return list(edges), reps

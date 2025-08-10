@@ -12,7 +12,14 @@ import numpy as np
 
 from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
-from ..utils import BinEdgesDict
+from ..utils import (
+    BinEdgesDict,
+    standardize_init_pattern,
+    create_param_dict_for_config,
+    validate_positive_integer,
+    validate_range_parameter,
+    create_equal_width_bins,
+)
 
 
 # pylint: disable=too-many-ancestors
@@ -155,26 +162,23 @@ class EqualWidthBinning(IntervalBinningBase):
             - Pre-computed edges and representatives enable object reconstruction
             - Class follows sklearn's estimator interface conventions
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "n_bins": n_bins,
-            "bin_range": bin_range,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-            "fit_jointly": fit_jointly,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            n_bins=n_bins,
+            bin_range=bin_range,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
+        )
 
-        # Apply configuration defaults for equal_width method
+        # Apply configuration defaults
         params = apply_config_defaults("equal_width", user_params)
 
         # Store equal width specific parameters
-        self.n_bins = params.get("n_bins", 5)  # Fallback to 5 if not in config
+        self.n_bins = params.get("n_bins", 5)
         self.bin_range = params.get("bin_range", bin_range)
 
         # Initialize parent with resolved config parameters
-        # Note: bin_edges, bin_representatives, guidance_columns are never set from config
         IntervalBinningBase.__init__(
             self,
             clip=params.get("clip"),
@@ -193,7 +197,7 @@ class EqualWidthBinning(IntervalBinningBase):
         parameter types, ranges, and logical consistency.
 
         Raises:
-            ValueError: If any parameter is invalid:
+            ConfigurationError: If any parameter is invalid:
                 - n_bins is not a positive integer
                 - bin_range is not a valid (min, max) tuple with min < max
 
@@ -206,18 +210,11 @@ class EqualWidthBinning(IntervalBinningBase):
         # Call parent validation
         IntervalBinningBase._validate_params(self)
 
-        # Validate n_bins
-        if not isinstance(self.n_bins, int) or self.n_bins < 1:
-            raise ValueError("n_bins must be a positive integer")
+        # Validate n_bins using standardized validator
+        validate_positive_integer(self.n_bins, "n_bins")
 
-        # Validate bin_range
-        if self.bin_range is not None:
-            if (
-                not isinstance(self.bin_range, tuple)
-                or len(self.bin_range) != 2
-                or self.bin_range[0] >= self.bin_range[1]
-            ):
-                raise ValueError("bin_range must be a tuple (min, max) with min < max")
+        # Validate bin_range using standardized validator
+        validate_range_parameter(self.bin_range, "bin_range")
 
     def _calculate_bins(
         self,
@@ -257,83 +254,12 @@ class EqualWidthBinning(IntervalBinningBase):
             - Representatives are calculated as interval midpoints
             - Handles edge cases like constant data (handled by parent class)
         """
-        # Get range for this data
-        if self.bin_range is not None:
-            min_val, max_val = self.bin_range
-        else:
-            min_val, max_val = self._get_data_range(x_col, col_id)
-
-        return self._create_equal_width_bins(min_val, max_val, self.n_bins)
-
-    def _get_data_range(self, x_col: np.ndarray[Any, Any], col_id: Any) -> tuple[float, float]:
-        """Get the data range from preprocessed column data.
-
-        Computes the minimum and maximum values from the preprocessed column data
-        to determine the range for bin creation. The data has already been validated
-        and cleaned by the parent class.
-
-        Args:
-            x_col: Preprocessed column data containing only finite numeric values.
-                Missing values, infinities, and non-numeric data have been handled
-                by the parent class validation.
-            col_id: Column identifier used for error reporting and debugging.
-
-        Returns:
-            Tuple of (min_value, max_value) as floats representing the data range
-            that will be used for creating equal-width bins.
-
-        Example:
-            >>> x_col = np.array([1.5, 2.3, 4.7, 3.1])
-            >>> min_val, max_val = binner._get_data_range(x_col, 'feature1')
-            >>> # Returns: (1.5, 4.7)
-
-        Note:
-            - Data has been preprocessed so no additional validation is needed
-            - Returns exact min/max values from the data
-            - Used when bin_range parameter is not provided
-            - Constant data (min == max) is handled by parent class before this method
-        """
-        min_val: float = np.min(x_col)
-        max_val: float = np.max(x_col)
-
-        return float(min_val), float(max_val)
-
-    def _create_equal_width_bins(
-        self, min_val: float, max_val: float, n_bins: int
-    ) -> tuple[list[float], list[float]]:
-        """Create equal-width bins given range and number of bins.
-
-        This method implements the core equal width binning algorithm by creating
-        evenly-spaced intervals within the specified range and computing appropriate
-        representative values for each bin.
-
-        Args:
-            min_val: Minimum value of the range within which to create bins.
-                Can come from data or user-specified bin_range parameter.
-            max_val: Maximum value of the range within which to create bins.
-                Must be greater than min_val.
-            n_bins: Number of equal-width bins to create. Must be positive integer.
-
-        Returns:
-            Tuple containing:
-            - edges: List of n_bins + 1 equally-spaced edge values from min_val to max_val
-            - representatives: List of n_bins representative values (bin centers)
-
-        Example:
-            >>> edges, reps = binner._create_equal_width_bins(0.0, 10.0, 4)
-            >>> # edges = [0.0, 2.5, 5.0, 7.5, 10.0]
-            >>> # reps = [1.25, 3.75, 6.25, 8.75]
-
-        Note:
-            - Uses numpy.linspace for precise equal spacing
-            - Representatives are calculated as arithmetic mean of bin boundaries
-            - The range has been validated to ensure min_val < max_val
-            - Creates exactly n_bins intervals with width = (max_val - min_val) / n_bins
-        """
-        # Create equal-width bin edges
-        edges = np.linspace(min_val, max_val, n_bins + 1)
+        # Use the new equal-width utility
+        edges = create_equal_width_bins(
+            data=x_col, n_bins=self.n_bins, data_range=self.bin_range, add_epsilon=True
+        )
 
         # Create representatives as bin centers
-        reps = [(edges[i] + edges[i + 1]) / 2 for i in range(n_bins)]
+        representatives = [(edges[i] + edges[i + 1]) / 2 for i in range(self.n_bins)]
 
-        return list(edges), reps
+        return list(edges), representatives

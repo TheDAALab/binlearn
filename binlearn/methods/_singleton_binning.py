@@ -14,7 +14,10 @@ import numpy as np
 
 from ..base import FlexibleBinningBase
 from ..config import apply_config_defaults
-from ..utils import DataQualityWarning
+from ..utils import (
+    DataQualityWarning,
+    create_param_dict_for_config,
+)
 
 
 # pylint: disable=too-many-ancestors
@@ -147,13 +150,11 @@ class SingletonBinning(FlexibleBinningBase):
               during normal usage
             - No guidance_columns parameter since this is an unsupervised method
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "preserve_dataframe": preserve_dataframe,
-            "fit_jointly": fit_jointly,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
+        )
 
         # Apply configuration defaults for singleton method
         params = apply_config_defaults("singleton", user_params)

@@ -19,6 +19,9 @@ from ..utils import (
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
+    create_param_dict_for_config,
+    validate_positive_integer,
+    validate_range_parameter,
 )
 
 
@@ -163,16 +166,14 @@ class EqualFrequencyBinning(IntervalBinningBase):
             - Pre-computed edges and representatives enable object reconstruction
             - Parameters integrate with binlearn's global configuration system
         """
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "n_bins": n_bins,
-            "quantile_range": quantile_range,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-            "fit_jointly": fit_jointly,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            n_bins=n_bins,
+            quantile_range=quantile_range,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
+        )
 
         # Apply configuration defaults for equal_frequency method
         resolved_params = apply_config_defaults("equal_frequency", user_params)
@@ -200,22 +201,13 @@ class EqualFrequencyBinning(IntervalBinningBase):
         # Validate n_bins using centralized utility
         validate_bin_number_parameter(self.n_bins, param_name="n_bins")
 
-        # Validate quantile_range if provided
+        # Validate quantile_range using standardized utility
         if self.quantile_range is not None:
-            if not isinstance(self.quantile_range, tuple) or len(self.quantile_range) != 2:
-                raise ConfigurationError(
-                    "quantile_range must be a tuple (min_quantile, max_quantile)",
-                    suggestions=["Example: quantile_range=(0.1, 0.9)"],
-                )
+            validate_range_parameter(self.quantile_range, "quantile_range")
 
             min_q, max_q = self.quantile_range
-            if (
-                not isinstance(min_q, int | float)
-                or not isinstance(max_q, int | float)
-                or min_q < 0
-                or max_q > 1
-                or min_q >= max_q
-            ):
+            # Additional validation for quantile range constraints
+            if min_q < 0 or max_q > 1 or min_q >= max_q:
                 raise ConfigurationError(
                     "quantile_range values must be numbers between 0 and 1 with min < max",
                     suggestions=["Example: quantile_range=(0.1, 0.9)"],

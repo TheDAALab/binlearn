@@ -16,9 +16,15 @@ from ..base import IntervalBinningBase
 from ..config import apply_config_defaults
 from ..utils import (
     BinEdgesDict,
+    ConfigurationError,
     resolve_n_bins_parameter,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
+    create_param_dict_for_config,
+    create_equal_width_bins,
+    apply_equal_width_fallback,
+    handle_insufficient_data_error,
+    safe_sklearn_call,
 )
 
 
@@ -60,8 +66,14 @@ class KMeansBinning(IntervalBinningBase):
             - 'log2': number of bins = log2(n_samples)
             - 'sturges': Sturges' rule for histogram bins
             Default value can be configured globally via binlearn.config.
+        allow_fallback: Whether to fall back to equal-width binning when K-means
+            clustering fails or when data has insufficient variation. If True (default),
+            uses equal-width binning as fallback with a warning. If False, raises an
+            error when clustering fails. Default can be configured globally.
 
     Attributes:
+        n_bins: Number of clusters/bins to create
+        allow_fallback: Whether to fall back to equal-width binning when needed
         bin_edges_: Dictionary mapping column identifiers to lists of bin edges
             after fitting. Edges are positioned at midpoints between cluster centroids.
         bin_representatives_: Dictionary mapping column identifiers to lists
@@ -106,6 +118,7 @@ class KMeansBinning(IntervalBinningBase):
     def __init__(
         self,
         n_bins: int | str | None = None,
+        allow_fallback: bool | None = None,
         clip: bool | None = None,
         preserve_dataframe: bool | None = None,
         fit_jointly: bool | None = None,
@@ -116,31 +129,31 @@ class KMeansBinning(IntervalBinningBase):
         module_: str | None = None,  # For reconstruction compatibility
     ):
         """Initialize K-means binning."""
-        # Prepare user parameters for config integration (exclude never-configurable params)
-        user_params = {
-            "n_bins": n_bins,
-            "clip": clip,
-            "preserve_dataframe": preserve_dataframe,
-            "fit_jointly": fit_jointly,
-        }
-        # Remove None values to allow config defaults to take effect
-        user_params = {k: v for k, v in user_params.items() if v is not None}
+        # Use standardized initialization pattern
+        user_params = create_param_dict_for_config(
+            n_bins=n_bins,
+            allow_fallback=allow_fallback,
+            clip=clip,
+            preserve_dataframe=preserve_dataframe,
+            fit_jointly=fit_jointly,
+        )
 
-        # Apply configuration defaults for kmeans method
+        # Apply configuration defaults
         resolved_params = apply_config_defaults("kmeans", user_params)
 
         # Store method-specific parameters
         self.n_bins = resolved_params.get("n_bins", 10)
+        self.allow_fallback = resolved_params.get("allow_fallback", True)
 
-        # Initialize parent with resolved parameters (never-configurable params passed as-is)
+        # Initialize parent with resolved parameters
         IntervalBinningBase.__init__(
             self,
             clip=resolved_params.get("clip"),
             preserve_dataframe=resolved_params.get("preserve_dataframe"),
             fit_jointly=resolved_params.get("fit_jointly"),
-            guidance_columns=None,  # Not needed for unsupervised binning
-            bin_edges=bin_edges,  # Never configurable
-            bin_representatives=bin_representatives,  # Never configurable
+            guidance_columns=None,
+            bin_edges=bin_edges,
+            bin_representatives=bin_representatives,
         )
 
     def _validate_params(self) -> None:
@@ -202,80 +215,95 @@ class KMeansBinning(IntervalBinningBase):
             The data is already preprocessed by the base class, so we don't need
             to handle NaN/inf values or constant data here.
         """
+        # Check for insufficient data
         if len(x_col) < n_bins:
-            raise ValueError(
-                f"Column {col_id}: Insufficient values ({len(x_col)}) "
-                f"for {n_bins} clusters. Need at least {n_bins} values."
+            raise handle_insufficient_data_error(len(x_col), n_bins, "KMeansBinning")
+
+        # Handle case where all values are the same or very few unique values
+        unique_values = np.unique(x_col)
+        if len(unique_values) == 1:
+            # All data points are the same - fallback to equal-width
+            if not self.allow_fallback:
+                raise ConfigurationError(
+                    "All data values are identical - cannot create meaningful bins",
+                    suggestions=[
+                        "Provide data with more variation",
+                        "Set allow_fallback=True to enable equal-width fallback",
+                    ],
+                )
+            return (
+                list(apply_equal_width_fallback(x_col, n_bins, "KMeans", warn_on_fallback=True)),
+                [float(unique_values[0])] * n_bins,
             )
 
-        # Handle case where all values are the same
-        if len(np.unique(x_col)) == 1:
-            # All data points are the same - create equal-width bins around the value
-            value = float(x_col[0])
-            epsilon = 1e-8 if value != 0 else 1e-8
-            edges_array = np.linspace(value - epsilon, value + epsilon, n_bins + 1)
-            edges = list(edges_array)
-            reps = [(edges[i] + edges[i + 1]) / 2 for i in range(n_bins)]
-            return edges, reps
-
-        # Handle case where we have fewer unique values than desired clusters
-        unique_values = np.unique(x_col)
         if len(unique_values) < n_bins:
-            # Create bins around each unique value
-            sorted_values = np.sort(unique_values)
-            unique_edges: list[float] = []
+            # Fewer unique values than desired bins - fallback to equal-width
+            if not self.allow_fallback:
+                raise ConfigurationError(
+                    f"Too few unique values ({len(unique_values)}) for {n_bins} bins",
+                    suggestions=[
+                        f"Reduce n_bins to {len(unique_values)} or fewer",
+                        "Set allow_fallback=True to enable equal-width fallback",
+                    ],
+                )
+            return list(
+                apply_equal_width_fallback(x_col, n_bins, "KMeans", warn_on_fallback=True)
+            ), [float(val) for val in np.linspace(unique_values[0], unique_values[-1], n_bins)]
 
-            # First edge: extend slightly below minimum
-            unique_edges.append(sorted_values[0] - (sorted_values[-1] - sorted_values[0]) * 0.01)
+        # Perform K-means clustering with error handling
+        def kmeans_func(data, n_clusters):
+            data_list = data.tolist()
+            _, centroids = kmeans1d.cluster(data_list, n_clusters)
+            return sorted(centroids)
 
-            # Intermediate edges: midpoints between consecutive unique values
-            for i in range(len(sorted_values) - 1):
-                mid = (sorted_values[i] + sorted_values[i + 1]) / 2
-                unique_edges.append(mid)
+        def fallback_func(data, n_clusters):
+            return list(apply_equal_width_fallback(data, n_clusters, "KMeans"))
 
-            # Last edge: extend slightly above maximum
-            unique_edges.append(sorted_values[-1] + (sorted_values[-1] - sorted_values[0]) * 0.01)
-
-            # Representatives are the unique values themselves
-            reps = [float(val) for val in sorted_values]
-
-            return unique_edges, reps
-
-        # Perform K-means clustering
         try:
-            # Convert numpy array to list for kmeans1d compatibility
-            data_list = x_col.tolist()
-            _, centroids = kmeans1d.cluster(data_list, n_bins)
+            if self.allow_fallback:
+                # Use fallback function when allowed
+                centroids = safe_sklearn_call(
+                    kmeans_func,
+                    x_col,
+                    n_bins,
+                    method_name="KMeans",
+                    fallback_func=fallback_func,
+                )
+            else:
+                # Don't use fallback - handle exceptions manually
+                centroids = safe_sklearn_call(
+                    kmeans_func,
+                    x_col,
+                    n_bins,
+                    method_name="KMeans",
+                    fallback_func=None,
+                )
         except Exception as e:
-            raise ValueError(f"Column {col_id}: Error in K-means clustering: {e}") from e
-
-        # Sort centroids to ensure proper ordering
-        centroids = sorted(centroids)
+            # Only reached when allow_fallback=False
+            raise ConfigurationError(
+                f"K-means clustering failed: {str(e)}",
+                suggestions=[
+                    "Try reducing n_bins",
+                    "Increase sample size",
+                    "Check data distribution",
+                    "Set allow_fallback=True to enable equal-width fallback",
+                ],
+            ) from e
 
         # Create bin edges as midpoints between adjacent centroids
         cluster_edges: list[float] = []
 
-        # First edge: extend below the minimum centroid
+        # First edge: extend below the minimum centroid or use data min
         data_min: float = float(np.min(x_col))
-        if centroids[0] > data_min:
-            cluster_edges.append(data_min)
-        else:
-            # Extend slightly below the first centroid
-            edge_extension = (centroids[-1] - centroids[0]) * 0.05
-            cluster_edges.append(centroids[0] - edge_extension)
+        cluster_edges.append(data_min)
 
         # Intermediate edges: midpoints between consecutive centroids
         for i in range(len(centroids) - 1):
             midpoint = (centroids[i] + centroids[i + 1]) / 2
             cluster_edges.append(midpoint)
 
-        # Last edge: extend above the maximum centroid
+        # Last edge: extend above the maximum centroid or use data max
         data_max: float = float(np.max(x_col))
-        if centroids[-1] < data_max:
-            cluster_edges.append(data_max)
-        else:
-            # Extend slightly above the last centroid
-            edge_extension = (centroids[-1] - centroids[0]) * 0.05
-            cluster_edges.append(centroids[-1] + edge_extension)
+        cluster_edges.append(data_max)
 
         return cluster_edges, centroids
