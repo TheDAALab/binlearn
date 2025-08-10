@@ -19,6 +19,7 @@ from ._errors import ConfigurationError
 # =============================================================================
 
 
+# pylint: disable=too-many-branches
 def resolve_n_bins_parameter(
     n_bins: int | str,
     data_shape: tuple[int, ...] | None = None,
@@ -249,6 +250,7 @@ def resolve_string_parameter(
 # =============================================================================
 
 
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 def validate_numeric_parameter(
     value: Any,
     param_name: str,

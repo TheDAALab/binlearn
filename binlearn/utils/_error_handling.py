@@ -120,53 +120,6 @@ def handle_parameter_bounds_error(
     )
 
 
-def safe_sklearn_call(
-    sklearn_func: Callable[..., Any],
-    *args: Any,
-    method_name: str = "method",
-    fallback_func: Callable[..., Any] | None = None,
-    **kwargs: Any,
-) -> Any:
-    """Safely call sklearn function with error handling.
-
-    Args:
-        sklearn_func: The sklearn function to call
-        *args: Positional arguments for sklearn_func
-        method_name: Name of binning method (for error messages)
-        fallback_func: Optional fallback function if sklearn call fails
-        **kwargs: Keyword arguments for sklearn_func
-
-    Returns:
-        Result of sklearn_func or fallback_func
-
-    Raises:
-        BinningError: If both sklearn_func and fallback_func fail
-    """
-    try:
-        return sklearn_func(*args, **kwargs)
-    except ImportError as e:
-        if fallback_func is not None:
-            warnings.warn(
-                f"{method_name} falling back to simpler implementation due to sklearn import error",
-                category=UserWarning,
-                stacklevel=3,
-            )
-            return fallback_func(*args, **kwargs)
-        raise handle_sklearn_import_error(e, method_name) from e
-    except Exception as e:
-        if fallback_func is not None:
-            warnings.warn(
-                f"{method_name} failed with sklearn, using fallback: {str(e)}",
-                category=UserWarning,
-                stacklevel=3,
-            )
-            return fallback_func(*args, **kwargs)
-        raise BinningError(
-            f"{method_name} failed: {str(e)}",
-            suggestions=["Check input data format and parameters"],
-        ) from e
-
-
 def validate_fitted_state(obj: Any, method_name: str = "transform") -> None:
     """Validate that an estimator has been fitted before use.
 

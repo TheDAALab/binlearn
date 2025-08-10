@@ -837,25 +837,3 @@ class TestKMeansBinning:
 
         # Should succeed with fallback
         assert hasattr(binner, "bin_edges_")
-
-    def test_kmeans_safe_sklearn_call_fallback_execution(self):
-        """Test that KMeans fallback function is actually executed in safe_sklearn_call."""
-        from unittest.mock import patch
-
-        X = np.array([[1.0], [2.0], [3.0], [4.0], [5.0], [6.0]])
-
-        binner = KMeansBinning(n_bins=3, allow_fallback=True)  # Enable fallback
-
-        # Mock kmeans1d.cluster to raise an exception, forcing fallback
-        with patch("kmeans1d.cluster") as mock_cluster:
-            mock_cluster.side_effect = Exception("Clustering failed")
-
-            # This should trigger the fallback function (covers line 260)
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                binner.fit(X)
-
-            # Should succeed with fallback to equal-width
-            assert hasattr(binner, "bin_edges_")
-            # Equal-width fallback creates n_bins+1 edges, but depends on actual implementation
-            assert len(binner.bin_edges_[0]) > 0  # Just check that we have edges

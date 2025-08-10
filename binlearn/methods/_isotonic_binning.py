@@ -20,7 +20,6 @@ from ..utils import (
     FittingError,
     create_param_dict_for_config,
     resolve_n_bins_parameter,
-    safe_sklearn_call,
     validate_bin_number_parameter,
 )
 
@@ -423,13 +422,7 @@ class IsotonicBinning(SupervisedBinningBase):
                 y_max=self.y_max,
                 out_of_bounds="clip",
             )
-            y_fitted = safe_sklearn_call(
-                isotonic_model.fit_transform,
-                x_sorted,
-                y_sorted,
-                method_name="IsotonicRegression",
-                fallback_func=None,
-            )
+            y_fitted = isotonic_model.fit_transform(x_sorted, y_sorted)
         except (
             ValueError,
             RuntimeError,

@@ -7,6 +7,7 @@ Uses K-means clustering to find natural groupings and creates bins at cluster bo
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import kmeans1d
@@ -21,7 +22,6 @@ from ..utils import (
     create_param_dict_for_config,
     handle_insufficient_data_error,
     resolve_n_bins_parameter,
-    safe_sklearn_call,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
@@ -264,23 +264,19 @@ class KMeansBinning(IntervalBinningBase):
 
         try:
             if self.allow_fallback:
-                # Use fallback function when allowed
-                centroids = safe_sklearn_call(
-                    kmeans_func,
-                    x_col,
-                    n_bins,
-                    method_name="KMeans",
-                    fallback_func=fallback_func,
-                )
+                # Try K-means with fallback to equal-width on failure
+                try:
+                    centroids = kmeans_func(x_col, n_bins)
+                except Exception:
+                    warnings.warn(
+                        "KMeans failed with sklearn, using fallback: clustering error",
+                        category=UserWarning,
+                        stacklevel=3,
+                    )
+                    centroids = fallback_func(x_col, n_bins)
             else:
-                # Don't use fallback - handle exceptions manually
-                centroids = safe_sklearn_call(
-                    kmeans_func,
-                    x_col,
-                    n_bins,
-                    method_name="KMeans",
-                    fallback_func=None,
-                )
+                # Don't use fallback - let exceptions propagate
+                centroids = kmeans_func(x_col, n_bins)
         except (
             ValueError,
             RuntimeError,

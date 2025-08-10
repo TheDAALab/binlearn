@@ -7,6 +7,7 @@ Uses Gaussian Mixture Model clustering to find natural probabilistic bin boundar
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
@@ -21,7 +22,6 @@ from ..utils import (
     apply_equal_width_fallback,
     create_param_dict_for_config,
     resolve_n_bins_parameter,
-    safe_sklearn_call,
     validate_bin_number_for_calculation,
     validate_bin_number_parameter,
 )
@@ -305,7 +305,7 @@ class GaussianMixtureBinning(IntervalBinningBase):
             gmm = GaussianMixture(
                 n_components=n_components, random_state=self.random_state, covariance_type="full"
             )
-            safe_sklearn_call(gmm.fit, X_reshaped)
+            gmm.fit(X_reshaped)
 
             # Get component means and sort them
             means = np.array(gmm.means_).flatten()

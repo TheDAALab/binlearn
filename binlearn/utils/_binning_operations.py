@@ -519,7 +519,8 @@ def validate_flexible_bin_spec_format(
         >>>
         >>> # With finite bounds check
         >>> bin_spec_with_inf = {'col': [(-float('inf'), 0), (0, float('inf'))]}
-        >>> validate_flexible_bin_spec_format(bin_spec_with_inf, check_finite_bounds=True)  # ValueError
+        >>> validate_flexible_bin_spec_format(bin_spec_with_inf, check_finite_bounds=True)
+        >>> # ValueError
         >>>
         >>> # Lenient validation
         >>> empty_spec = {'col': []}
@@ -898,7 +899,8 @@ def get_flexible_bin_count(bin_spec: FlexibleBinSpec) -> BinCountDict:
     Note:
         - This function performs a simple length calculation on each bin definitions list
         - Useful for validation, memory allocation, and algorithm initialization
-        - Does not validate the bin definitions themselves - use validate_flexible_bin_spec_format for that
+        - Does not validate the bin definitions themselves - use validate_flexible_bin_spec_format
+            for that
         - Returns an empty dictionary if the input specification is empty
         - Compatible with any column identifier type (string, int, etc.)
     """

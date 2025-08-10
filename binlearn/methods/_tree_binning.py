@@ -20,7 +20,8 @@ from ..utils import (
     ConfigurationError,
     FittingError,
     create_param_dict_for_config,
-    safe_sklearn_call,
+    validate_bin_number_for_calculation,
+    validate_tree_params,
 )
 
 
@@ -338,7 +339,7 @@ class TreeBinning(SupervisedBinningBase):
             tree = clone(self._tree_template)
             # Reshape x_col_clean to 2D for sklearn compatibility
             x_col_2d = x_col_clean.reshape(-1, 1)
-            safe_sklearn_call(tree.fit, x_col_2d, guidance_clean)
+            tree.fit(x_col_2d, guidance_clean)
         except (
             ValueError,
             RuntimeError,

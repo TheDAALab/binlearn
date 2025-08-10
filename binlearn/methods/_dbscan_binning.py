@@ -19,7 +19,6 @@ from ..utils import (
     ConfigurationError,
     apply_equal_width_fallback,
     create_param_dict_for_config,
-    safe_sklearn_call,
     validate_positive_integer,
     validate_positive_number,
 )
@@ -288,7 +287,7 @@ class DBSCANBinning(IntervalBinningBase):
 
         # Apply DBSCAN clustering using safe sklearn call
         dbscan = DBSCAN(eps=self.eps, min_samples=self.min_samples)
-        cluster_labels = safe_sklearn_call(dbscan.fit_predict, X_reshaped)
+        cluster_labels = dbscan.fit_predict(X_reshaped)
 
         # Get unique clusters (excluding noise points labeled as -1)
         unique_clusters = np.unique(cluster_labels[cluster_labels != -1])

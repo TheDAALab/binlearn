@@ -48,7 +48,6 @@ from ._error_handling import (
     handle_insufficient_data_error,
     handle_parameter_bounds_error,
     handle_sklearn_import_error,
-    safe_sklearn_call,
     validate_fitted_state,
 )
 
@@ -213,6 +212,5 @@ __all__ = [
     "handle_insufficient_data_error",
     "handle_convergence_warning",
     "handle_parameter_bounds_error",
-    "safe_sklearn_call",
     "validate_fitted_state",
 ]

@@ -16,6 +16,7 @@ from binlearn import _pandas_config, _polars_config
 from ._types import ArrayLike, OptionalColumnList
 
 
+# pylint: disable=too-many-return-statements
 def convert_to_python_types(value: Any) -> Any:
     """Convert numpy types to pure Python types recursively for serialization.
 

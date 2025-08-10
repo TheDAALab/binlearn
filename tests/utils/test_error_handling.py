@@ -12,7 +12,6 @@ from binlearn.utils._error_handling import (
     handle_insufficient_data_error,
     handle_parameter_bounds_error,
     handle_sklearn_import_error,
-    safe_sklearn_call,
     validate_fitted_state,
 )
 from binlearn.utils._errors import BinningError, ConfigurationError
@@ -148,85 +147,6 @@ class TestHandleParameterBoundsError:
         # Test where min_val is large
         result = handle_parameter_bounds_error("test_param", 0, min_val=10, max_val=20)
         assert "test_param=15" in result.suggestions[0]
-
-
-class TestSafeSklearnCall:
-    """Test the safe_sklearn_call function."""
-
-    def test_successful_call(self):
-        """Test successful sklearn function call."""
-        mock_func = Mock(return_value="success")
-
-        result = safe_sklearn_call(
-            mock_func, "arg1", "arg2", method_name="TestMethod", kwarg1="value1"
-        )
-
-        assert result == "success"
-        mock_func.assert_called_once_with("arg1", "arg2", kwarg1="value1")
-
-    def test_import_error_with_fallback(self):
-        """Test ImportError handling with fallback function."""
-        mock_func = Mock(side_effect=ImportError("No sklearn"))
-        mock_fallback = Mock(return_value="fallback_success")
-
-        with pytest.warns(UserWarning, match="falling back to simpler implementation"):
-            result = safe_sklearn_call(
-                mock_func, "arg1", method_name="TestMethod", fallback_func=mock_fallback
-            )
-
-        assert result == "fallback_success"
-        mock_fallback.assert_called_once_with("arg1")
-
-    def test_import_error_without_fallback(self):
-        """Test ImportError handling without fallback function."""
-        mock_func = Mock(side_effect=ImportError("No sklearn"))
-
-        with pytest.raises(ConfigurationError, match="TestMethod requires scikit-learn"):
-            safe_sklearn_call(mock_func, method_name="TestMethod")
-
-    def test_general_exception_with_fallback(self):
-        """Test general exception handling with fallback."""
-        mock_func = Mock(side_effect=ValueError("Some error"))
-        mock_fallback = Mock(return_value="fallback_result")
-
-        with pytest.warns(UserWarning, match="TestMethod failed with sklearn"):
-            result = safe_sklearn_call(
-                mock_func, "arg1", method_name="TestMethod", fallback_func=mock_fallback
-            )
-
-        assert result == "fallback_result"
-
-    def test_general_exception_without_fallback(self):
-        """Test general exception handling without fallback."""
-        mock_func = Mock(side_effect=ValueError("Some error"))
-
-        with pytest.raises(BinningError, match="TestMethod failed: Some error"):
-            safe_sklearn_call(mock_func, method_name="TestMethod")
-
-    def test_default_method_name(self):
-        """Test with default method name."""
-        mock_func = Mock(side_effect=ValueError("Error"))
-
-        with pytest.raises(BinningError, match="method failed"):
-            safe_sklearn_call(mock_func)  # Default method_name="method"
-
-    def test_fallback_with_args_and_kwargs(self):
-        """Test fallback function receives correct arguments."""
-        mock_func = Mock(side_effect=ValueError("Error"))
-        mock_fallback = Mock(return_value="result")
-
-        with pytest.warns(UserWarning):
-            safe_sklearn_call(
-                mock_func,
-                "arg1",
-                "arg2",
-                method_name="TestMethod",
-                fallback_func=mock_fallback,
-                kwarg1="value1",
-                kwarg2="value2",
-            )
-
-        mock_fallback.assert_called_once_with("arg1", "arg2", kwarg1="value1", kwarg2="value2")
 
 
 class TestValidateFittedState:
